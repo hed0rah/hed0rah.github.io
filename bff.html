@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BFF // PRIMORDIAL SOUP</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+  :root {
+    --bg:#0a0a0c;--bg2:#111114;--bg3:#18181d;--border:#2a2a35;
+    --cyan:#00ffe9;--cdim:#00b8a6;--red:#ff2244;--rdim:#8b1224;
+    --amb:#ffaa00;--grn:#00ff88;--wht:#e8e8f0;--dim:#5a5a6e;
+    --mono:'Space Mono',monospace;--disp:'Bebas Neue',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--wht);font-family:var(--mono);
+    font-size:12px;line-height:1.5;height:100vh;overflow:hidden;
+    display:flex;flex-direction:column}
+  #hdr{display:flex;align-items:baseline;gap:18px;padding:6px 14px;
+    border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+  #hdr h1{font-family:var(--disp);font-size:26px;letter-spacing:4px;color:var(--cyan);line-height:1}
+  #hdr .sub{color:var(--dim);font-size:9px;letter-spacing:2px;text-transform:uppercase}
+  .pill{margin-left:auto;padding:3px 10px;border:1px solid var(--border);font-size:9px;
+    letter-spacing:2px;color:var(--dim)}
+  .pill.pre {border-color:var(--cdim);color:var(--cdim)}
+  .pill.tr  {border-color:var(--amb);color:var(--amb);animation:blink .5s infinite alternate}
+  .pill.att {border-color:var(--red);color:var(--red)}
+  @keyframes blink{from{opacity:1}to{opacity:.3}}
+  #main{display:grid;grid-template-columns:1fr 300px;grid-template-rows:1fr 170px;
+    flex:1;min-height:0}
+  /* tape */
+  #ts{grid-row:1;grid-column:1;border-right:1px solid var(--border);
+    border-bottom:1px solid var(--border);display:flex;flex-direction:column;
+    overflow:hidden;min-height:0}
+  .ph{padding:4px 12px;border-bottom:1px solid var(--border);background:var(--bg2);
+    display:flex;align-items:center;gap:12px;flex-shrink:0}
+  .pl{font-family:var(--disp);font-size:13px;letter-spacing:2px;color:var(--cdim)}
+  .pm{color:var(--dim);font-size:9px}
+  #tw{flex:1;overflow:hidden;position:relative;min-height:0}
+  #tc{display:block;width:100%;height:100%}
+  #tb{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:rgba(10,10,12,.93);border:1px solid var(--amb);padding:8px 20px;
+    font-family:var(--disp);font-size:18px;letter-spacing:4px;color:var(--amb);
+    pointer-events:none;display:none;z-index:10}
+  /* inspector */
+  #ins{grid-row:1;grid-column:2;border-bottom:1px solid var(--border);
+    display:flex;flex-direction:column;overflow:hidden;min-height:0}
+  #ib{flex:1;overflow-y:auto;padding:8px 12px;min-height:0}
+  #ib::-webkit-scrollbar{width:3px}
+  #ib::-webkit-scrollbar-thumb{background:var(--border)}
+  .sr{display:flex;justify-content:space-between;padding:2px 0;
+    border-bottom:1px solid var(--bg3);font-size:9px}
+  .sk{color:var(--dim)}.sv{color:var(--cyan);font-weight:700}
+  .sv.r{color:var(--red)}.sv.a{color:var(--amb)}.sv.g{color:var(--grn)}
+  #tb2{margin-top:8px;font-size:8px;line-height:2;word-break:break-all;color:var(--dim)}
+  .bo{color:var(--cyan);font-weight:700}.bz{color:var(--rdim)}.bd{color:var(--amb)}
+  #ta{margin-top:6px;font-size:8px;color:var(--dim);word-break:break-all;
+    line-height:2;letter-spacing:1px}
+  /* chart */
+  #cs{grid-row:2;grid-column:1;border-right:1px solid var(--border);
+    display:flex;flex-direction:column;overflow:hidden}
+  .li{display:flex;align-items:center;gap:5px;font-size:8px;color:var(--dim)}
+  .ld{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  #cc{display:block;flex:1;width:100%}
+  /* controls */
+  #ctr{grid-row:2;grid-column:2;display:flex;flex-direction:column;overflow:hidden}
+  #ctb{flex:1;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:6px}
+  .cr{display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .cr label{font-size:8px;color:var(--dim);letter-spacing:1px;
+    text-transform:uppercase;flex-shrink:0;min-width:70px}
+  .cr input[type=range]{flex:1;accent-color:var(--cyan);height:2px}
+  .cr .vd{font-size:9px;color:var(--cyan);min-width:60px;text-align:right}
+  .ed{font-family:var(--disp);font-size:20px;letter-spacing:3px;
+    color:var(--wht);text-align:center}
+  .ed span{color:var(--cyan)}
+  .br{display:flex;gap:5px;flex-wrap:wrap}
+  button{font-family:var(--mono);font-size:8px;letter-spacing:1px;
+    text-transform:uppercase;padding:4px 8px;background:none;
+    border:1px solid var(--border);color:var(--dim);cursor:pointer;transition:all .1s}
+  button:hover{border-color:var(--cyan);color:var(--cyan)}
+  button.on{border-color:var(--grn);color:var(--grn);background:rgba(0,255,136,.05)}
+  button.dg{border-color:var(--rdim);color:var(--red)}
+  button.dg:hover{background:rgba(255,34,68,.08)}
+  button.wn{border-color:var(--amb);color:var(--amb)}
+  #log{font-size:8px;color:var(--dim);line-height:1.8;max-height:44px;overflow:hidden}
+  #log .ev{color:var(--amb)}
+  #log .rp{color:var(--red);font-weight:700}
+  #log .in{color:var(--cdim)}
+  #tip{position:fixed;background:var(--bg2);border:1px solid var(--cdim);
+    padding:4px 8px;font-size:8px;color:var(--wht);pointer-events:none;
+    display:none;z-index:100}
+  .spd{height:2px;width:60px;background:var(--cdim);transition:background .3s}
+  .spd.fast{background:var(--amb)}
+  .spd.turbo{background:var(--red);animation:blink .3s infinite alternate}
+
+  /* INFO BUTTON */
+  #binfo{font-family:var(--mono);font-size:9px;letter-spacing:2px;
+    padding:3px 10px;background:none;border:1px solid var(--border);
+    color:var(--dim);cursor:pointer;transition:all .15s;margin-left:6px}
+  #binfo:hover{border-color:var(--cyan);color:var(--cyan)}
+
+  /* MODAL OVERLAY */
+  #modal-overlay{
+    position:fixed;inset:0;background:rgba(4,4,6,.88);
+    display:none;align-items:center;justify-content:center;
+    z-index:1000;backdrop-filter:blur(3px);
+  }
+  #modal-overlay.open{display:flex}
+
+  #modal{
+    width:min(680px,94vw);max-height:88vh;
+    background:var(--bg2);border:1px solid var(--border);
+    display:flex;flex-direction:column;
+    box-shadow:0 0 60px rgba(0,245,255,.06),0 0 0 1px rgba(0,245,255,.04);
+    animation:modalIn .18s ease;
+  }
+  @keyframes modalIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+  #modal-hdr{
+    padding:10px 16px;border-bottom:1px solid var(--border);
+    background:var(--bg);display:flex;align-items:baseline;gap:14px;flex-shrink:0;
+  }
+  #modal-hdr h2{font-family:var(--disp);font-size:22px;letter-spacing:4px;color:var(--cyan)}
+  #modal-hdr .mver{font-size:9px;color:var(--dim);letter-spacing:2px}
+  #modal-close{
+    margin-left:auto;font-family:var(--mono);font-size:9px;letter-spacing:2px;
+    padding:3px 8px;background:none;border:1px solid var(--border);
+    color:var(--dim);cursor:pointer;transition:all .1s;
+  }
+  #modal-close:hover{border-color:var(--red);color:var(--red)}
+
+  #modal-body{
+    overflow-y:auto;padding:0;flex:1;
+  }
+  #modal-body::-webkit-scrollbar{width:4px}
+  #modal-body::-webkit-scrollbar-thumb{background:var(--border)}
+
+  /* Tab nav */
+  .mtabs{
+    display:flex;border-bottom:1px solid var(--border);
+    background:var(--bg);flex-shrink:0;position:sticky;top:0;z-index:2;
+  }
+  .mtab{
+    font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;
+    padding:7px 14px;border:none;border-bottom:2px solid transparent;
+    background:none;color:var(--dim);cursor:pointer;transition:all .1s;
+  }
+  .mtab:hover{color:var(--wht)}
+  .mtab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+
+  .mpanel{display:none;padding:18px 20px 24px}
+  .mpanel.active{display:block}
+
+  /* Content typography */
+  .mpanel h3{
+    font-family:var(--disp);font-size:16px;letter-spacing:3px;
+    color:var(--cyan);margin:18px 0 8px;
+  }
+  .mpanel h3:first-child{margin-top:0}
+  .mpanel h4{
+    font-size:9px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--amb);margin:12px 0 5px;
+  }
+  .mpanel p{font-size:10px;color:var(--dim);line-height:1.8;margin-bottom:8px}
+  .mpanel p strong{color:var(--wht)}
+  .mpanel p code,.mpanel li code{
+    font-family:var(--mono);font-size:9px;color:var(--cyan);
+    background:rgba(0,245,255,.07);padding:1px 4px;
+  }
+  .mpanel ul,.mpanel ol{padding-left:16px;margin-bottom:8px}
+  .mpanel li{font-size:10px;color:var(--dim);line-height:1.8}
+  .mpanel li strong{color:var(--wht)}
+  .mpanel a{color:var(--cdim);text-decoration:none}
+  .mpanel a:hover{color:var(--cyan);text-decoration:underline}
+
+  /* Instruction table */
+  .itable{width:100%;border-collapse:collapse;margin:10px 0;font-size:9px}
+  .itable th{
+    text-align:left;padding:4px 10px;font-weight:700;
+    color:var(--amb);border-bottom:1px solid var(--border);letter-spacing:1px;
+  }
+  .itable td{padding:4px 10px;border-bottom:1px solid var(--bg3);color:var(--dim)}
+  .itable td:first-child{color:var(--cyan);font-weight:700;font-size:12px;width:36px}
+  .itable tr:hover td{background:rgba(255,255,255,.02)}
+
+  /* Phase timeline */
+  .phases{display:flex;flex-direction:column;gap:0;margin:10px 0}
+  .phase{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--bg3)}
+  .phase:last-child{border-bottom:none}
+  .phase-dot{
+    width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;
+  }
+  .phase-content .pt{font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px}
+  .phase-content .pd{font-size:9px;color:var(--dim);line-height:1.7}
+
+  /* Code block */
+  .cblock{
+    background:var(--bg);border:1px solid var(--border);
+    padding:10px 12px;margin:8px 0;font-size:9px;
+    font-family:var(--mono);color:var(--cyan);line-height:2;
+    overflow-x:auto;
+  }
+  .cblock .cm{color:var(--dim)}
+
+  /* Divider */
+  .mdiv{border:none;border-top:1px solid var(--border);margin:16px 0}
+
+  /* Metric legend rows */
+  .mleg{display:flex;align-items:flex-start;gap:10px;padding:5px 0;border-bottom:1px solid var(--bg3)}
+  .mleg:last-child{border-bottom:none}
+  .mleg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:3px}
+  .mleg-body .mt{font-size:9px;font-weight:700;letter-spacing:1px;margin-bottom:1px}
+  .mleg-body .md{font-size:9px;color:var(--dim);line-height:1.6}
+</style>
+</head>
+<body>
+<div id="hdr">
+  <h1>BFF</h1>
+  <span class="sub">Brainfuck++ Primordial Soup // Agüera y Arcas et al. 2024</span>
+  <div id="sbar" class="spd"></div>
+  <div id="pill" class="pill pre">PRE-LIFE</div>
+  <button id="binfo">INFO</button>
+</div>
+<div id="main">
+  <div id="ts">
+    <div class="ph">
+      <span class="pl">SOUP GRID</span>
+      <span class="pm" id="gmeta">--</span>
+      <span class="pm" style="margin-left:auto">click tape to inspect</span>
+    </div>
+    <div id="tw"><canvas id="tc"></canvas><div id="tb">STATE TRANSITION</div></div>
+  </div>
+  <div id="ins">
+    <div class="ph">
+      <span class="pl">TAPE INSPECTOR</span>
+      <span class="pm" id="ihead">T:--</span>
+    </div>
+    <div id="ib">
+      <div class="sr"><span class="sk">BF OPS / TAPE</span><span class="sv" id="i0">--</span></div>
+      <div class="sr"><span class="sk">ZEROS</span><span class="sv r" id="i1">--</span></div>
+      <div class="sr"><span class="sk">SHANNON ENT</span><span class="sv a" id="i2">--</span></div>
+      <div class="sr"><span class="sk">LOOP+COPY SIG</span><span class="sv g" id="i3">NONE</span></div>
+      <div class="sr"><span class="sk">OP-PALINDROME</span><span class="sv" id="i4">--</span></div>
+      <div id="tb2"></div>
+      <div id="ta"></div>
+    </div>
+  </div>
+  <div id="cs">
+    <div class="ph">
+      <span class="pl">METRICS</span>
+      <div class="li"><div class="ld" style="background:var(--cyan)"></div>high-order entropy</div>
+      <div class="li"><div class="ld" style="background:var(--red)"></div>zero fraction</div>
+      <div class="li"><div class="ld" style="background:var(--amb)"></div>unique tokens</div>
+      <div class="li"><div class="ld" style="background:var(--grn)"></div>replicator density</div>
+    </div>
+    <canvas id="cc"></canvas>
+  </div>
+  <div id="ctr">
+    <div class="ph"><span class="pl">PARAMETERS</span></div>
+    <div id="ctb">
+      <div class="ed">E <span id="en">0</span></div>
+      <div class="cr">
+        <label>Tapes (2^n)</label>
+        <input type="range" id="cs2" min="5" max="11" step="1" value="8">
+        <span class="vd" id="ds">256</span>
+      </div>
+      <div class="cr">
+        <label>Tape Len</label>
+        <input type="range" id="cl" min="16" max="64" step="8" value="64">
+        <span class="vd" id="dl">64 B</span>
+      </div>
+      <div class="cr">
+        <label>Mut Rate</label>
+        <input type="range" id="cm" min="0" max="200" value="24">
+        <span class="vd" id="dm">0.024%</span>
+      </div>
+      <div class="cr">
+        <label>Steps/Frame</label>
+        <input type="range" id="cspd" min="1" max="1000" value="8">
+        <span class="vd" id="dspd">8</span>
+      </div>
+      <div class="br">
+        <button id="brun" class="on">PAUSE</button>
+        <button id="bstep">STEP</button>
+        <button id="breset" class="dg">RESET</button>
+        <button id="bseed" class="wn">SEED REPL</button>
+      </div>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+<div id="tip"></div>
+
+<!-- INFO MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <div id="modal-hdr">
+      <h2>BFF</h2>
+      <span class="mver">PRIMORDIAL SOUP SIMULATOR // v2.0</span>
+      <button id="modal-close">CLOSE [ESC]</button>
+    </div>
+    <div id="modal-body">
+      <div class="mtabs">
+        <button class="mtab active" data-tab="overview">OVERVIEW</button>
+        <button class="mtab" data-tab="spec">BFF SPEC</button>
+        <button class="mtab" data-tab="soup">SOUP DYNAMICS</button>
+        <button class="mtab" data-tab="metrics">METRICS</button>
+        <button class="mtab" data-tab="impl">IMPLEMENTATION</button>
+        <button class="mtab" data-tab="refs">REFERENCES</button>
+      </div>
+
+      <!-- OVERVIEW -->
+      <div class="mpanel active" id="tab-overview">
+        <h3>WHAT IS THIS</h3>
+        <p>This is an interactive browser simulation of the <strong>BFF primordial soup</strong> experiment described in <em>Computational Life: How Well-formed, Self-replicating Programs Emerge from Simple Interaction</em> by Blaise Agüera y Arcas, Jyrki Alakuijala, James Evans, Ben Laurie, Alexander Mordvintsev, Eyvind Niklasson, Ettore Randazzo, and Luca Versari (Google / University of Chicago, 2024).</p>
+        <p>The central question: <strong>can self-replicating programs arise spontaneously</strong> from a soup of random, non-self-replicating programs, with no fitness function, no goal, no designer? The answer, demonstrated across multiple computational substrates, is <strong>yes</strong>.</p>
+
+        <h3>THE BIG IDEA</h3>
+        <p>The paper draws an analogy to the <strong>Origin of Life</strong>. Biology has the RNA world hypothesis: at some point in prebiotic chemistry, self-replicating molecules arose from a soup of random organic compounds. The authors ask whether this transition from <em>pre-life</em> to <em>life</em> is a general property of any sufficiently expressive computational substrate, not just biochemistry.</p>
+        <p>They show that when random programs interact and modify each other, <strong>self-replication emerges as an attractor state</strong>. The mechanism is primarily <strong>self-modification</strong>, not random initialization or background mutation. Once a replicator arises, it rapidly colonizes the soup. This is a <em>phase transition</em>: a sudden, irreversible change in the dynamics.</p>
+
+        <h3>HOW TO USE THIS SIMULATOR</h3>
+        <div class="phases">
+          <div class="phase">
+            <div class="phase-dot" style="background:var(--cdim)"></div>
+            <div class="phase-content">
+              <div class="pt" style="color:var(--cdim)">Watch the soup grid</div>
+              <div class="pd">Each pixel square is one BFF tape. <span style="color:var(--cyan)">Cyan</span> = op-heavy (replicator candidate). <span style="color:var(--red)">Red</span> = zero-poisoned. Dark = random noise. Click any cell to inspect its raw tape content in the right panel.</div>
+            </div>
+          </div>
+          <div class="phase">
+            <div class="phase-dot" style="background:var(--amb)"></div>
+            <div class="phase-content">
+              <div class="pt" style="color:var(--amb)">Watch the metrics chart</div>
+              <div class="pd">The four colored lines track soup complexity over time. The key event: a sudden rise in <span style="color:var(--cyan)">high-order entropy</span> and <span style="color:var(--grn)">replicator density</span> accompanied by a spike in <span style="color:var(--red)">zero fraction</span>, the zero-poisoning phase described in the paper.</div>
+            </div>
+          </div>
+          <div class="phase">
+            <div class="phase-dot" style="background:var(--grn)"></div>
+            <div class="phase-content">
+              <div class="pt" style="color:var(--grn)">Crank up the speed</div>
+              <div class="pd">The paper ran 16k epochs on CUDA with 131,072 tapes. In the browser we run serially, so try 100-500 steps/frame in the parameters panel. The speed bar turns amber then red (TURBO). State transitions typically happen within a few thousand epochs.</div>
+            </div>
+          </div>
+          <div class="phase">
+            <div class="phase-dot" style="background:var(--red)"></div>
+            <div class="phase-content">
+              <div class="pt" style="color:var(--red)">Seed a replicator</div>
+              <div class="pd">The SEED REPL button drops the paper's actual example replicator <code>[[{.>]-]]-]>.{[[</code> into a random tape. Watch it propagate. The paper found ~22% of seeded replicators successfully colonize the soup, so it may take a few tries.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BFF SPEC -->
+      <div class="mpanel" id="tab-spec">
+        <h3>BFF INSTRUCTION SET</h3>
+        <p>BFF (<strong>Brainfuck+</strong>) extends the original Brainfuck language by replacing I/O streams with two independent <strong>heads</strong> operating on a single unified instruction+data tape. This allows programs to read and write to each other's code, enabling self-modification and, eventually, self-replication.</p>
+
+        <h4>HEADS</h4>
+        <p><strong>head0</strong> is the read/data head. <strong>head1</strong> is the write head. Both move independently over the same tape. All head positions wrap modulo tape length.</p>
+
+        <h4>INSTRUCTION TABLE</h4>
+        <table class="itable">
+          <tr><th>OP</th><th>ACTION</th><th>NOTES</th></tr>
+          <tr><td>&lt;</td><td>head0 -= 1</td><td>Move read head left (wraps)</td></tr>
+          <tr><td>&gt;</td><td>head0 += 1</td><td>Move read head right (wraps)</td></tr>
+          <tr><td>{</td><td>head1 -= 1</td><td>Move write head left (wraps)</td></tr>
+          <tr><td>}</td><td>head1 += 1</td><td>Move write head right (wraps)</td></tr>
+          <tr><td>+</td><td>tape[head0] += 1</td><td>Increment byte at read head (mod 256)</td></tr>
+          <tr><td>-</td><td>tape[head0] -= 1</td><td>Decrement byte at read head (mod 256)</td></tr>
+          <tr><td>.</td><td>tape[head1] = tape[head0]</td><td>Copy: read head → write head position</td></tr>
+          <tr><td>,</td><td>tape[head0] = tape[head1]</td><td>Copy: write head → read head position</td></tr>
+          <tr><td>[</td><td>if tape[head0] == 0: jump past ]</td><td>Loop start (conditioned on read head)</td></tr>
+          <tr><td>]</td><td>if tape[head0] != 0: jump to [</td><td>Loop end</td></tr>
+          <tr><td>(other)</td><td>no-op</td><td>All 246 other byte values do nothing</td></tr>
+        </table>
+
+        <h4>TERMINATION</h4>
+        <p>A program terminates when the instruction pointer reaches the end of the tape, or after <strong>2<sup>13</sup> = 8,192 IP reads</strong> (the paper's exact limit). Unmatched brackets also terminate. This prevents infinite loops from stalling the simulation.</p>
+
+        <h4>THE PALINDROMIC REPLICATOR</h4>
+        <p>The paper's example emergent replicator (from Figure 4) is:</p>
+        <div class="cblock">[[{.&gt;]-]]-]&gt;.{[[  <span class="cm">// 16 bytes, palindromic</span></div>
+        <p>When this program runs with its write head positioned at the left edge of the adjacent tape:</p>
+        <ul>
+          <li>The outer loop drives execution while <code>tape[head0] != 0</code></li>
+          <li>The inner loop copies one instruction per iteration: <code>.</code> copies read→write</li>
+          <li>The write head moves <strong>left</strong> (<code>{</code>), the read head moves <strong>right</strong> (<code>&gt;</code>)</li>
+          <li>Result: the program is copied to the adjacent tape <strong>in reverse</strong></li>
+          <li>Since the sequence is a <strong>palindrome</strong>, the reversed copy is identical</li>
+          <li>The copy can then replicate itself: true self-replication</li>
+        </ul>
+        <p>The inspector panel shows <strong>OP-PALINDROME: YES</strong> when a tape's BF operator subsequence reads the same forwards and backwards. This is one fingerprint of a replicator family.</p>
+      </div>
+
+      <!-- SOUP DYNAMICS -->
+      <div class="mpanel" id="tab-soup">
+        <h3>PRIMORDIAL SOUP SETUP</h3>
+        <p>The simulation follows the paper's "Turing gas" variant (after Fontana 1990). Parameters faithful to the paper:</p>
+        <ul>
+          <li><strong>N tapes</strong> of <strong>L bytes</strong>, uniformly randomly initialized (every byte 0-255 equally likely)</li>
+          <li>Default: <strong>2<sup>17</sup> = 131,072 tapes</strong> of <strong>64 bytes</strong> each. Browser uses smaller N for performance.</li>
+          <li>Tapes interact as a <strong>Turing gas</strong>: random ordered pairs (A, B) are selected, concatenated into a 2L-byte scratch tape, executed, then split back</li>
+          <li>Background mutation: Poisson-sampled number of random byte flips per epoch, at rate <strong>0.024%</strong> per byte by default</li>
+        </ul>
+
+        <h3>LIFECYCLE OF A STATE TRANSITION</h3>
+        <div class="phases">
+          <div class="phase">
+            <div class="phase-dot" style="background:var(--dim)"></div>
+            <div class="phase-content">
+              <div class="pt">PRE-LIFE PERIOD</div>
+              <div class="pd">Random byte distributions. Most self-modifications happen at tape ends. Character distribution slowly converges toward a stationary bias for certain BF operators. Soup complexity (HOE) is low and roughly flat.</div>
+            </div>
+          </div>
+          <div class="phase">
+            <div class="phase-dot" style="background:var(--cdim)"></div>
+            <div class="phase-content">
+              <div class="pt">FIRST REPLICATOR EMERGES</div>
+              <div class="pd">Through accumulated self-modification, not random luck, a tape acquires a loop-and-copy structure. The paper traces this to a "complex rewrite event" where a pre-replicator loop in tape A inadvertently constructs a replicator in tape B, which then constructs the direct version. Complexity begins to rise.</div>
+            </div>
+          </div>
+          <div class="phase">
+            <div class="phase-dot" style="background:var(--amb)"></div>
+            <div class="phase-content">
+              <div class="pt">ZERO-POISONING</div>
+              <div class="pd">The first replicator has a <code>[,}&lt;]</code> structure: its loop breaks when <code>head0</code> sees a zero byte. It <em>can</em> copy zeros but <em>cannot</em> write over them. Zeros accumulate in the soup (up to ~14% of all bytes at peak), stalling replication. Complexity temporarily degrades. This is the red spike visible in the metrics chart.</div>
+            </div>
+          </div>
+          <div class="phase">
+            <div class="phase-dot" style="background:var(--red)"></div>
+            <div class="phase-content">
+              <div class="pt">SECOND-GENERATION REPLICATOR</div>
+              <div class="pd">A more robust replicator with <code>[&lt;,}]</code> structure emerges that can overwrite zeros. It rapidly displaces the first replicator and its zero-sensitive kin. The soup becomes a "very busy place" with multiple replicator variants overwriting each other. Complexity rises sharply then steadily.</div>
+            </div>
+          </div>
+          <div class="phase">
+            <div class="phase-dot" style="background:var(--grn)"></div>
+            <div class="phase-content">
+              <div class="pt">ATTRACTOR STATE</div>
+              <div class="pd">The soup reaches a dynamic equilibrium dominated by replicators. This is the attractor: a fixed basin in the system's state space. Even after the soup is "taken over," competition continues; no single program dominates permanently. The paper observes 40% of runs reach this state within 16k epochs.</div>
+            </div>
+          </div>
+        </div>
+
+        <h3>KEY RESULT</h3>
+        <p>The paper shows through ablation that <strong>self-modification is the primary cause</strong> of replicator emergence, not random initialization or background mutation. Runs with zero mutation still produce replicators. Runs with only 128 epochs (too short for self-modification to accumulate) produce replicators only 0.3% of the time. The "long-no-noise" condition (no mutation, fixed interaction order) still produces replicators ~50% of the time.</p>
+      </div>
+
+      <!-- METRICS -->
+      <div class="mpanel" id="tab-metrics">
+        <h3>CHART METRICS</h3>
+        <div class="phases">
+          <div class="mleg">
+            <div class="mleg-dot" style="background:var(--cyan)"></div>
+            <div class="mleg-body">
+              <div class="mt" style="color:var(--cyan)">HIGH-ORDER ENTROPY (HOE)</div>
+              <div class="md">The paper's primary complexity metric. Defined as Shannon entropy minus normalized Kolmogorov complexity. Intuitively: captures information that can only be explained by <em>relationships between characters</em>, not just their individual frequencies. Random noise has HOE near 0 (high entropy, also high Kolmogorov complexity; both cancel). A soup of replicator copies has high HOE (structured repetition with non-trivial content). The paper approximates Kolmogorov complexity with brotli compression; we use a bigram repetition proxy. The state transition shows as a sharp HOE rise.</div>
+            </div>
+          </div>
+          <div class="mleg">
+            <div class="mleg-dot" style="background:var(--red)"></div>
+            <div class="mleg-body">
+              <div class="mt" style="color:var(--red)">ZERO FRACTION</div>
+              <div class="md">Fraction of all tape bytes that are zero (null byte). Zero bytes are significant because the loop condition <code>[ ]</code> in BFF is conditioned on <code>tape[head0] == 0</code>. The zero-poisoning phase is visually distinct: a spike in this metric coincides with the first replicator generation's vulnerability to zero bytes. Watch the grid turn red during this phase.</div>
+            </div>
+          </div>
+          <div class="mleg">
+            <div class="mleg-dot" style="background:var(--amb)"></div>
+            <div class="mleg-body">
+              <div class="mt" style="color:var(--amb)">UNIQUE TOKENS (NORMALIZED)</div>
+              <div class="md">Number of distinct byte values present in the soup, divided by 256. Random initialization uses nearly all 256 values. As replicators colonize the soup, they overwrite random bytes with their own narrow set of BF operator bytes, causing the unique token count to drop sharply. The paper uses "tracer tokens" (epoch+position tuples attached to each byte) to detect this same signal precisely; our normalized unique count is a cheap approximation of the same effect.</div>
+            </div>
+          </div>
+          <div class="mleg">
+            <div class="mleg-dot" style="background:var(--grn)"></div>
+            <div class="mleg-body">
+              <div class="mt" style="color:var(--grn)">REPLICATOR DENSITY</div>
+              <div class="md">Fraction of tapes that match a heuristic replicator signature: more than 22% BF operator bytes <em>and</em> at least one matched bracket pair <em>and</em> at least one copy instruction (<code>.</code> or <code>,</code>). This is a proxy; the paper uses proper token-tracer analysis to identify true replicators, which is computationally intractable here. But the signal is clear: this metric rises sharply at the state transition and plateaus at the attractor.</div>
+            </div>
+          </div>
+        </div>
+
+        <h3>GRID COLORS</h3>
+        <ul>
+          <li><strong style="color:var(--cyan)">Cyan</strong>: high BF operator density with copy instructions. Likely replicator or replicator variant.</li>
+          <li><strong style="color:var(--red)">Red</strong>: zero-poisoned tape. More than ~50% zero bytes. Often a tape that has been overwritten by a zero-producing replicator or failed copy.</li>
+          <li><strong style="color:var(--cdim)">Dim teal</strong>: some BF structure but insufficient for replication. Pre-replicator or partial rewrite.</li>
+          <li><strong style="color:var(--dim)">Dark</strong>: random noise. The pre-life default state.</li>
+          <li><strong style="color:var(--cyan)">Bright blue highlight</strong>: currently selected/inspected tape.</li>
+        </ul>
+      </div>
+
+      <!-- IMPLEMENTATION -->
+      <div class="mpanel" id="tab-impl">
+        <h3>THIS IMPLEMENTATION</h3>
+        <p>Written in vanilla HTML5/JS with no dependencies. Runs in any modern browser. The simulation is single-threaded; the paper used CUDA with parallel execution across all 131k tapes simultaneously. A JS WebWorker port would be the natural next step for matching paper-scale performance.</p>
+
+        <h4>INTERPRETER FAITHFULNESS</h4>
+        <ul>
+          <li>Termination: <strong>2<sup>13</sup> = 8,192 IP reads</strong>, matching the paper exactly</li>
+          <li>Tape length: <strong>64 bytes</strong> default (paper's value)</li>
+          <li>Concatenation: A + B → exec → split at byte 64, exactly as described</li>
+          <li>Mutations: Poisson-sampled byte flips at configurable rate (default 0.024%)</li>
+          <li>Bracket matching: precomputed jump table per execution for O(1) loop jumps</li>
+          <li>Heads wrap modulo tape length</li>
+        </ul>
+
+        <h4>PALINDROME DETECTION</h4>
+        <p>The paper notes that the first emergent replicator was a palindrome. The key insight: if a loop copies the tape in <em>reverse</em> (write head moving opposite to read head), and the source sequence is a palindrome, then the reversed copy is identical to the original, enabling faithful self-replication without needing to know the direction of copying.</p>
+        <p>The inspector computes palindrome status by extracting the <strong>BF operator subsequence</strong> of a tape (ignoring data bytes) and checking if it reads the same forwards and backwards. This is a necessary but not sufficient condition for replicator status; many palindromes are not replicators.</p>
+
+        <h4>HOE APPROXIMATION</h4>
+        <p>The paper computes high-order entropy using brotli compression as a Kolmogorov complexity proxy. We use a <strong>bigram repetition ratio</strong> (fraction of consecutive byte pairs that are equal) combined with Shannon entropy. This is cheaper to compute and captures the same qualitative signal: the state transition is detectable as the structured repetition of replicator sequences overwhelms the random background.</p>
+
+        <h4>SPEED MODES</h4>
+        <p>The steps/frame slider controls how many soup interactions execute per animation frame (~60fps):</p>
+        <ul>
+          <li><strong>1-10/frame</strong>: Slow, watch individual tapes change in real time</li>
+          <li><strong>10-150/frame</strong> (amber bar): Fast, chart fills quickly</li>
+          <li><strong>150-1000/frame</strong> (red TURBO): Thousands of epochs/second, state transitions in seconds</li>
+        </ul>
+        <p>At high speeds, stats recording and rendering are throttled to avoid blocking the JS thread. The simulation itself is never throttled; all steps run.</p>
+
+        <h4>SOURCE</h4>
+        <p>This is a single self-contained HTML file. Open in any browser, or host on GitHub Pages with zero configuration.</p>
+        <div class="cblock"><span class="cm">// paper's code (CUDA/CPU):</span>
+github.com/paradigms-of-intelligence/cubff
+<span class="cm">// run BFF variant:</span>
+./cubff --lang bff_noheads</div>
+      </div>
+
+      <!-- REFS -->
+      <div class="mpanel" id="tab-refs">
+        <h3>PRIMARY REFERENCE</h3>
+        <p><strong>Agüera y Arcas B, Alakuijala J, Evans J, Laurie B, Mordvintsev A, Niklasson E, Randazzo E, Versari L.</strong><br>
+        <em>Computational Life: How Well-formed, Self-replicating Programs Emerge from Simple Interaction.</em><br>
+        arXiv:2406.19108v2, 2 August 2024.</p>
+        <p><a href="https://arxiv.org/abs/2406.19108" target="_blank">arxiv.org/abs/2406.19108</a> | <a href="https://github.com/paradigms-of-intelligence/cubff" target="_blank">github: cubff</a></p>
+
+        <hr class="mdiv">
+        <h3>RELATED WORK CITED IN PAPER</h3>
+        <ul>
+          <li><strong>Tierra</strong>: Ray, T.S. (1991). Assembly-language ALife, hand-crafted ancestor replicator, parasites emerge. The original computational evolution experiment.</li>
+          <li><strong>Avida</strong>: Ofria & Wilke (2004). Tierra-like with explicit fitness for auxiliary computation. Both Tierra and Avida start with a designed replicator; BFF paper starts from scratch.</li>
+          <li><strong>Coreworld</strong>: Rasmussen et al. (1990). Multiple programs sharing an instruction tape with local energy resource. Two-instruction (MOV-SPL) replicators dominate.</li>
+          <li><strong>Fontana's Turing Gas</strong>: Fontana (1990). Lambda calculus programs randomly interact. Identity function emerges as trivial replicator. BFF paper is directly inspired by this setup.</li>
+          <li><strong>Neural CA</strong>: Mordvintsev et al. (2020). Cellular automata extended with neural networks, trained to self-replicate patterns.</li>
+          <li><strong>SUBLEQ</strong>: the paper's counterexample: a Turing-complete one-instruction language where the shortest possible self-replicator is too long (~60 bytes) for spontaneous emergence. No state transitions observed after billions of executions.</li>
+        </ul>
+
+        <hr class="mdiv">
+        <h3>BACKGROUND CONCEPTS</h3>
+        <ul>
+          <li><strong>Origins of Life (OoL)</strong>: the biological question this paper maps onto computation. RNA World hypothesis, autocatalytic networks, prebiotic chemistry.</li>
+          <li><strong>Kolmogorov Complexity</strong>: theoretical measure of string compressibility. Uncomputable in general; approximated here with repetition ratio, in the paper with brotli.</li>
+          <li><strong>Sophistication / Effective Complexity</strong>: alternative complexity metrics (Koppel, Gell-Mann & Lloyd) that attempt to factor out random noise. HOE is related but practically motivated.</li>
+          <li><strong>Attractor State</strong>: in dynamical systems theory, an attractor is a set of states toward which the system evolves. Once the soup enters the replicator-dominated regime, it does not spontaneously return to the random noise state. The replicator regime is the attractor basin.</li>
+        </ul>
+
+        <hr class="mdiv">
+        <h3>BRAINFUCK LINEAGE</h3>
+        <p>The original Brainfuck was created by Urban Müller in 1993 as a minimalist Turing-complete language with 8 commands. BFF replaces its I/O commands (<code>.</code> <code>,</code>) with copy operations between two independent heads on a unified tape, eliminating external I/O and making the language entirely self-contained. This is the key modification that enables self-interaction and replication.</p>
+      </div>
+
+    </div><!-- /modal-body -->
+  </div><!-- /modal -->
+</div><!-- /modal-overlay -->
+
+<script>
+// ================================================================
+// BFF INTERPRETER
+// Faithful to Agüera y Arcas et al. 2024, Section 2.
+//
+// Instruction set (10 ops, all others = no-op):
+//   <  head0 -= 1        >  head0 += 1
+//   {  head1 -= 1        }  head1 += 1
+//   +  tape[head0] += 1  -  tape[head0] -= 1
+//   .  tape[head1] = tape[head0]   (copy: read->write)
+//   ,  tape[head0] = tape[head1]   (copy: write->read)
+//   [  if tape[head0]==0: jump past matching ]
+//   ]  if tape[head0]!=0: jump back to matching [
+//
+// - Tape is unified instruction+data space (1 byte per cell).
+// - IP starts at 0, head0 starts at 0, head1 starts at 0.
+// - Heads wrap modulo tape length.
+// - Termination: after 2^13 = 8192 IP reads (per paper).
+// - Unmatched bracket terminates program.
+// ================================================================
+
+const OC_LT  = 0x3c; // <
+const OC_GT  = 0x3e; // >
+const OC_LC  = 0x7b; // {
+const OC_RC  = 0x7d; // }
+const OC_PL  = 0x2b; // +
+const OC_MI  = 0x2d; // -
+const OC_DT  = 0x2e; // .
+const OC_CM  = 0x2c; // ,
+const OC_LB  = 0x5b; // [
+const OC_RB  = 0x5d; // ]
+
+const OP_BYTES = new Uint8Array([OC_LT,OC_GT,OC_LC,OC_RC,OC_PL,OC_MI,OC_DT,OC_CM,OC_LB,OC_RB]);
+const IS_OP = new Uint8Array(256);
+for (const b of OP_BYTES) IS_OP[b] = 1;
+
+const MAX_READS = 8192; // 2^13 per paper
+
+// Build bracket jump table for a tape
+function buildBT(tape) {
+  const n = tape.length;
+  const bt = new Int32Array(n).fill(-1);
+  const stk = [];
+  for (let i = 0; i < n; i++) {
+    if (tape[i] === OC_LB) stk.push(i);
+    else if (tape[i] === OC_RB && stk.length > 0) {
+      const j = stk.pop();
+      bt[i] = j; bt[j] = i;
+    }
+  }
+  return bt;
+}
+
+function execBFF(tape) {
+  const n = tape.length;
+  const bt = buildBT(tape);
+  let ip = 0, h0 = 0, h1 = 0, reads = 0;
+  while (ip < n && reads < MAX_READS) {
+    reads++;
+    const op = tape[ip];
+    if      (op === OC_LT) { h0 = (h0 - 1 + n) % n; ip++; }
+    else if (op === OC_GT) { h0 = (h0 + 1)      % n; ip++; }
+    else if (op === OC_LC) { h1 = (h1 - 1 + n)  % n; ip++; }
+    else if (op === OC_RC) { h1 = (h1 + 1)      % n; ip++; }
+    else if (op === OC_PL) { tape[h0] = (tape[h0] + 1) & 0xff; ip++; }
+    else if (op === OC_MI) { tape[h0] = (tape[h0] + 255) & 0xff; ip++; }
+    else if (op === OC_DT) { tape[h1] = tape[h0]; ip++; }
+    else if (op === OC_CM) { tape[h0] = tape[h1]; ip++; }
+    else if (op === OC_LB) {
+      if (tape[h0] === 0) { const t = bt[ip]; if (t < 0) break; ip = t + 1; }
+      else ip++;
+    }
+    else if (op === OC_RB) {
+      if (tape[h0] !== 0) { const t = bt[ip]; if (t < 0) break; ip = t; }
+      else ip++;
+    }
+    else ip++;
+  }
+}
+
+// ================================================================
+// PRIMORDIAL SOUP  (Section 2.1)
+// N tapes of L bytes, uniform random init.
+// Each epoch: random ordered pair (ia, ib), concatenate A+B,
+// execute BFF in-place, split back to A', B'.
+// Background mutations: Poisson(N*L*mutRate) random byte flips per epoch.
+// ================================================================
+
+class Soup {
+  constructor(n, L, mutRate) {
+    this.n = n; this.L = L; this.mutRate = mutRate;
+    this.epoch = 0;
+    this.data  = new Uint8Array(n * L);
+    this.scr   = new Uint8Array(L * 2); // concat scratch
+    crypto.getRandomValues(this.data);
+
+    this.maxH = 500;
+    this.hHOE = []; this.hZ = []; this.hU = []; this.hR = [];
+
+    this.transitioned = false; this.tEpoch = -1;
+    this.sel = 0;
+  }
+
+  tape(i) { return this.data.subarray(i * this.L, (i+1) * this.L); }
+
+  step() {
+    const {n, L, scr} = this;
+    const ia = (Math.random() * n) | 0;
+    let ib; do { ib = (Math.random() * n) | 0; } while (ib === ia);
+
+    scr.set(this.tape(ia), 0);
+    scr.set(this.tape(ib), L);
+    execBFF(scr);
+    this.data.set(scr.subarray(0, L),   ia * L);
+    this.data.set(scr.subarray(L, 2*L), ib * L);
+
+    // Poisson mutations
+    if (this.mutRate > 0) {
+      const lam = n * L * this.mutRate;
+      const nm  = poissonSample(lam);
+      const tot = n * L;
+      for (let m = 0; m < nm; m++) this.data[(Math.random() * tot) | 0] = (Math.random() * 256) | 0;
+    }
+    this.epoch++;
+  }
+
+  stats() {
+    const {n, L} = this;
+    const tot  = n * L;
+    const freq = new Uint32Array(256);
+    for (let i = 0; i < tot; i++) freq[this.data[i]]++;
+
+    // Shannon entropy
+    let H = 0;
+    for (let c = 0; c < 256; c++) {
+      if (freq[c]) { const p = freq[c] / tot; H -= p * Math.log2(p); }
+    }
+    const zF = freq[0] / tot;
+
+    // Unique byte count
+    let uC = 0;
+    for (let c = 0; c < 256; c++) if (freq[c]) uC++;
+
+    // HOE approximation via bigram compressibility proxy
+    // Paper uses brotli; we use consecutive-repeat fraction as Kolmogorov proxy.
+    // Random noise -> near-zero repeats -> HOE tracks entropy.
+    // Replicator takeover -> many repeats (structured) -> HOE rises then plateaus.
+    let rep = 0;
+    for (let i = 1; i < tot; i++) if (this.data[i] === this.data[i-1]) rep++;
+    const compR = rep / (tot - 1);
+    // Normalize: HOE = 0 for pure noise, rises as structure appears
+    const hoe = Math.max(0, Math.min(1,
+      (H / 8) * compR * 4 + (1 - uC/256) * 0.3
+    ));
+
+    // Replicator density: tapes with >25% BF ops AND loop AND copy op
+    let rC = 0;
+    for (let t = 0; t < n; t++) {
+      const b = t * L;
+      let ops = 0, hasLp = false, hasCp = false;
+      for (let j = 0; j < L; j++) {
+        const v = this.data[b + j];
+        if (IS_OP[v]) ops++;
+        if (v === OC_LB || v === OC_RB) hasLp = true;
+        if (v === OC_DT || v === OC_CM) hasCp = true;
+      }
+      if (ops / L > 0.22 && hasLp && hasCp) rC++;
+    }
+    const rF = rC / n;
+
+    if (!this.transitioned && rF > 0.1 && zF > 0.03 && this.epoch > 20) {
+      this.transitioned = true; this.tEpoch = this.epoch;
+    }
+    return { H, hoe, zF, uF: uC/256, rF };
+  }
+
+  record() {
+    const s = this.stats();
+    this.hHOE.push(s.hoe); this.hZ.push(s.zF);
+    this.hU.push(s.uF);    this.hR.push(s.rF);
+    if (this.hHOE.length > this.maxH) {
+      this.hHOE.shift(); this.hZ.shift(); this.hU.shift(); this.hR.shift();
+    }
+    return s;
+  }
+
+  tapeInfo(idx) {
+    const t = this.tape(idx), L = this.L;
+    let ops = 0, zeros = 0, hasLp = false, hasCp = false;
+    const freq = new Uint32Array(256);
+    for (let i = 0; i < L; i++) {
+      const v = t[i]; freq[v]++;
+      if (IS_OP[v]) ops++;
+      if (v === 0) zeros++;
+      if (v === OC_LB || v === OC_RB) hasLp = true;
+      if (v === OC_DT || v === OC_CM) hasCp = true;
+    }
+    let H = 0;
+    for (let c = 0; c < 256; c++) { if (freq[c]) { const p=freq[c]/L; H-=p*Math.log2(p); } }
+
+    // Palindrome check on BF op subsequence
+    const ops2 = [];
+    for (let i = 0; i < L; i++) if (IS_OP[t[i]]) ops2.push(t[i]);
+    let isPalin = ops2.length >= 4;
+    if (isPalin) for (let i = 0; i < ops2.length>>1; i++)
+      if (ops2[i] !== ops2[ops2.length-1-i]) { isPalin = false; break; }
+
+    return {t, ops, zeros, H: H.toFixed(3), hasLp, hasCp, isPalin, isRepl: hasLp && hasCp};
+  }
+
+  // Paper's example replicator from Figure 4: [[{.>]-]]-]>.{[[
+  // Palindromic: write head moves left, read head right, copies in reverse.
+  // Since it's a palindrome the reversed copy is identical -> self-replication.
+  seedReplicator() {
+    const r = '[[{.>]-]]-]>.{[[';
+    const idx = (Math.random() * this.n) | 0;
+    const t = this.tape(idx);
+    for (let i = 0; i < t.length; i++) t[i] = i < r.length ? r.charCodeAt(i) : 0;
+    return idx;
+  }
+}
+
+function poissonSample(lam) {
+  if (lam < 12) {
+    let L = Math.exp(-lam), k = 0, p = 1;
+    do { k++; p *= Math.random(); } while (p > L);
+    return k - 1;
+  }
+  return Math.max(0, Math.round(lam + Math.sqrt(lam) * (Math.random()-0.5) * 3.46));
+}
+
+// ================================================================
+// RENDER
+// ================================================================
+
+let soup = null, running = true, lastS = null, logLines = [];
+
+const tcv = document.getElementById('tc');
+const ccv = document.getElementById('cc');
+const tct = tcv.getContext('2d');
+const cct = ccv.getContext('2d');
+const tip = document.getElementById('tip');
+const bnr = document.getElementById('tb');
+
+function drawGrid() {
+  const W = tcv.parentElement.clientWidth;
+  const H = tcv.parentElement.clientHeight;
+  tcv.width = W; tcv.height = H;
+  if (!soup) return;
+  const {n, L} = soup;
+  const cols = Math.ceil(Math.sqrt(n));
+  const rows = Math.ceil(n / cols);
+  const cW = W / cols, cH = H / rows;
+  const img = tct.createImageData(W, H);
+  const px = img.data;
+
+  for (let t = 0; t < n; t++) {
+    const col = t % cols, row = (t / cols) | 0;
+    const cx = (col * cW) | 0, cy = (row * cH) | 0;
+    const cxe = Math.min((cx + cW) | 0, W), cye = Math.min((cy + cH) | 0, H);
+    const base = t * L;
+    let ops=0, zeros=0, hasCp=false;
+    for (let j = 0; j < L; j++) {
+      const v = soup.data[base+j];
+      if (IS_OP[v]) ops++;
+      if (v === 0) zeros++;
+      if (v === OC_DT || v === OC_CM) hasCp = true;
+    }
+    const opF = ops/L, zF = zeros/L, sel = t === soup.sel;
+    let r, g, b;
+    if (sel) { r=0; g=200; b=255; }
+    else if (zF > 0.5) { // zero-poisoning phase (paper Section 2.1)
+      r=(55 + zF*140)|0; g=8; b=14;
+    } else if (opF > 0.26 && hasCp) { // replicator candidate
+      r=0; g=(opF*230)|0; b=(opF*240+30)|0;
+    } else if (opF > 0.14) { // partial BF structure
+      r=4; g=(opF*90)|0; b=(opF*110+18)|0;
+    } else { // random noise
+      const v = (soup.data[base] ^ soup.data[base+(L>>1)]);
+      r=13+(v&0x0f)>>1; g=13+(v&0x07)>>1; b=20+(v&0x1f)>>2;
+    }
+    for (let py=cy; py<cye; py++) for (let px2=cx; px2<cxe; px2++) {
+      const i=(py*W+px2)*4;
+      if ((cW>3&&px2===cx)||(cH>3&&py===cy)) { px[i]=20;px[i+1]=20;px[i+2]=28;px[i+3]=255; }
+      else { px[i]=r;px[i+1]=g;px[i+2]=b;px[i+3]=255; }
+    }
+  }
+  tct.putImageData(img, 0, 0);
+}
+
+function drawCharts() {
+  if (!soup) return;
+  const W = ccv.parentElement.clientWidth;
+  const H = ccv.offsetHeight || 120;
+  ccv.width=W; ccv.height=H;
+  cct.fillStyle='#0a0a0c'; cct.fillRect(0,0,W,H);
+  cct.strokeStyle='#141419'; cct.lineWidth=1;
+  for (let i=0;i<=4;i++){const y=H*(1-i/4);cct.beginPath();cct.moveTo(0,y);cct.lineTo(W,y);cct.stroke();}
+
+  const series=[
+    {d:soup.hHOE,c:'#00f5ff'},{d:soup.hZ,c:'#ff2244'},
+    {d:soup.hU,c:'#ffaa00'}, {d:soup.hR,c:'#00ff88'},
+  ];
+  for (const s of series) {
+    if (s.d.length < 2) continue;
+    cct.strokeStyle=s.c; cct.lineWidth=1.5;
+    cct.shadowColor=s.c; cct.shadowBlur=3;
+    cct.beginPath();
+    for (let i=0;i<s.d.length;i++){
+      const x=(i/(soup.maxH-1))*W, y=H*(1-Math.min(1,s.d[i]));
+      i===0?cct.moveTo(x,y):cct.lineTo(x,y);
+    }
+    cct.stroke(); cct.shadowBlur=0;
+  }
+  if (soup.transitioned) {
+    const ago = soup.epoch - soup.tEpoch;
+    const idx = soup.hHOE.length-1-ago;
+    if (idx>=0&&idx<soup.maxH){
+      const x=(idx/(soup.maxH-1))*W;
+      cct.strokeStyle='#ffaa0077';cct.lineWidth=1;cct.setLineDash([3,3]);
+      cct.beginPath();cct.moveTo(x,0);cct.lineTo(x,H);cct.stroke();
+      cct.setLineDash([]);cct.fillStyle='#ffaa00';cct.font='8px "Space Mono"';
+      cct.fillText('E'+soup.tEpoch,Math.min(x+3,W-60),12);
+    }
+  }
+  cct.fillStyle='#2a2a3a';cct.font='7px "Space Mono"';
+  const step=Math.max(1,(soup.maxH/5)|0);
+  for(let i=0;i<=5;i++){
+    const x=(i/5)*W;
+    const ep=Math.max(0,soup.epoch-(5-i)*step);
+    cct.fillText(ep,x+2,H-3);
+  }
+}
+
+function updateInspector() {
+  if (!soup) return;
+  const info = soup.tapeInfo(soup.sel);
+  document.getElementById('ihead').textContent='T:'+soup.sel;
+  document.getElementById('i0').textContent=info.ops+' / '+soup.L;
+  document.getElementById('i1').textContent=info.zeros;
+  document.getElementById('i2').textContent=info.H+' bits';
+  const r3=document.getElementById('i3');
+  r3.textContent=info.isRepl?'LOOP+COPY':'NONE'; r3.className='sv '+(info.isRepl?'g':'');
+  const r4=document.getElementById('i4');
+  r4.textContent=info.isPalin?'YES':'NO'; r4.className='sv '+(info.isPalin?'g':'');
+
+  let html='';
+  const BFC=new Set([...'<>{}+-.,[]']);
+  for (let i=0;i<info.t.length;i++){
+    const v=info.t[i], ch=String.fromCharCode(v);
+    if(v===0) html+='<span class="bz">00 </span>';
+    else if(BFC.has(ch)) html+=`<span class="bo">${ch.replace('<','&lt;').replace('>','&gt;')} </span>`;
+    else html+=`<span class="bd">${v.toString(16).padStart(2,'0')} </span>`;
+  }
+  document.getElementById('tb2').innerHTML=html;
+
+  let ascii='';
+  for(let i=0;i<info.t.length;i++){const v=info.t[i];ascii+=(v>=32&&v<127)?String.fromCharCode(v):'.';}
+  document.getElementById('ta').textContent=ascii;
+}
+
+function updateStatus(s) {
+  const pill=document.getElementById('pill');
+  if(soup.transitioned&&s.rF>0.3){pill.textContent='ATTRACTOR';pill.className='pill att';}
+  else if(soup.transitioned){
+    pill.textContent='TRANSITION';pill.className='pill tr';
+    if(bnr.style.display!=='block'){bnr.style.display='block';setTimeout(()=>{bnr.style.display='none';},4000);}
+  } else {pill.textContent='PRE-LIFE';pill.className='pill pre';}
+  document.getElementById('en').textContent=soup.epoch;
+  document.getElementById('gmeta').textContent=
+    soup.n+' tapes // '+soup.L+'B // HOE: '+(s.hoe*8).toFixed(3)+' bits // zeros: '+(s.zF*100).toFixed(1)+'%';
+}
+
+function addLog(msg,type){
+  logLines.unshift({msg,type});
+  if(logLines.length>5)logLines.pop();
+  document.getElementById('log').innerHTML=logLines.map(l=>
+    `<div class="${l.type}">[${soup?soup.epoch:0}] ${l.msg}</div>`
+  ).join('');
+}
+
+// ================================================================
+// MAIN LOOP - speed control: steps per frame (1..1000+)
+// ================================================================
+let frameId=null;
+
+function frame(){
+  frameId=requestAnimationFrame(frame);
+  if(!soup||!running)return;
+
+  const spf=parseInt(document.getElementById('cspd').value);
+  const bar=document.getElementById('sbar');
+  if(spf<=10)bar.className='spd'; else if(spf<=150)bar.className='spd fast'; else bar.className='spd turbo';
+
+  for(let s=0;s<spf;s++) soup.step();
+
+  // At very high speeds, record less often to avoid GC pressure
+  const recInterval = spf < 50 ? 1 : Math.ceil(spf / 20);
+  if(soup.epoch % recInterval === 0){
+    const s=soup.record(); lastS=s;
+    updateStatus(s); drawGrid(); updateInspector(); drawCharts();
+
+    if(soup.transitioned && soup.tEpoch===soup.epoch) addLog('STATE TRANSITION DETECTED','rp');
+    else if(soup.epoch % Math.max(100, spf*3) === 0){
+      if(s.rF>0.01) addLog('REPL '+( s.rF*100).toFixed(1)+'% // ZEROS '+(s.zF*100).toFixed(1)+'%','ev');
+      else addLog('HOE '+(s.hoe*8).toFixed(3)+' bits // uniq '+Math.round(s.uF*256),'in');
+    }
+  }
+}
+
+// ================================================================
+// CONTROLS WIRING
+// ================================================================
+
+function initSoup(){
+  const n=1<<parseInt(document.getElementById('cs2').value);
+  const L=parseInt(document.getElementById('cl').value);
+  const mr=parseInt(document.getElementById('cm').value)/100000;
+  soup=new Soup(n,L,mr);
+  lastS=null; bnr.style.display='none'; logLines=[];
+  addLog('INIT: '+n+' TAPES / '+L+' B / MUT '+(mr*100).toFixed(4)+'%','in');
+  const s=soup.record(); lastS=s;
+  updateStatus(s); drawGrid(); updateInspector(); drawCharts();
+}
+
+function refreshDisplays(){
+  document.getElementById('ds').textContent=(1<<parseInt(document.getElementById('cs2').value))+' tapes';
+  document.getElementById('dl').textContent=document.getElementById('cl').value+' B';
+  document.getElementById('dm').textContent=(parseInt(document.getElementById('cm').value)/1000).toFixed(3)+'%';
+  document.getElementById('dspd').textContent=document.getElementById('cspd').value+'/frame';
+}
+
+document.getElementById('cs2').addEventListener('input',refreshDisplays);
+document.getElementById('cl').addEventListener('input',refreshDisplays);
+document.getElementById('cm').addEventListener('input',refreshDisplays);
+document.getElementById('cspd').addEventListener('input',refreshDisplays);
+
+document.getElementById('brun').addEventListener('click',()=>{
+  running=!running;
+  document.getElementById('brun').textContent=running?'PAUSE':'RUN';
+  document.getElementById('brun').className=running?'on':'';
+});
+document.getElementById('bstep').addEventListener('click',()=>{
+  if(!soup)return; soup.step();
+  const s=soup.record();lastS=s;
+  drawGrid();updateInspector();updateStatus(s);drawCharts();
+});
+document.getElementById('breset').addEventListener('click',initSoup);
+document.getElementById('bseed').addEventListener('click',()=>{
+  if(!soup)return;
+  const idx=soup.seedReplicator(); soup.sel=idx;
+  addLog('SEEDED [[{.>]-]]-]>.{[[ AT T:'+idx,'rp');
+  drawGrid();updateInspector();
+});
+
+tcv.addEventListener('click',e=>{
+  if(!soup)return;
+  const W=tcv.width,H=tcv.height,n=soup.n;
+  const cols=Math.ceil(Math.sqrt(n));
+  const cW=W/cols,cH=H/Math.ceil(n/cols);
+  const rect=tcv.getBoundingClientRect();
+  const mx=(e.clientX-rect.left)*(W/rect.width);
+  const my=(e.clientY-rect.top)*(H/rect.height);
+  const idx=((my/cH)|0)*cols+((mx/cW)|0);
+  if(idx>=0&&idx<n){soup.sel=idx;updateInspector();drawGrid();}
+});
+tcv.addEventListener('mousemove',e=>{
+  if(!soup)return;
+  const W=tcv.width,H=tcv.height,n=soup.n;
+  const cols=Math.ceil(Math.sqrt(n));
+  const cW=W/cols,cH=H/Math.ceil(n/cols);
+  const rect=tcv.getBoundingClientRect();
+  const mx=(e.clientX-rect.left)*(W/rect.width);
+  const my=(e.clientY-rect.top)*(H/rect.height);
+  const idx=((my/cH)|0)*cols+((mx/cW)|0);
+  if(idx>=0&&idx<n){
+    const inf=soup.tapeInfo(idx);
+    tip.style.display='block';
+    tip.style.left=(e.clientX+12)+'px';
+    tip.style.top=(e.clientY+12)+'px';
+    tip.textContent='T:'+idx+' OPS:'+inf.ops+' Z:'+inf.zeros+
+      (inf.isRepl?' [REPL]':'')+(inf.isPalin?' [PALIN]':'');
+  }
+});
+tcv.addEventListener('mouseleave',()=>{tip.style.display='none';});
+
+// ================================================================
+// INFO MODAL
+// ================================================================
+
+const overlay = document.getElementById('modal-overlay');
+
+function openModal() { overlay.classList.add('open'); }
+function closeModal() { overlay.classList.remove('open'); }
+
+document.getElementById('binfo').addEventListener('click', openModal);
+document.getElementById('modal-close').addEventListener('click', closeModal);
+
+// Close on overlay click (outside modal box)
+overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+
+// Close on Escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// Tab switching
+document.querySelectorAll('.mtab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.mtab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.mpanel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    // Reset scroll on tab change
+    document.getElementById('modal-body').scrollTop = 0;
+  });
+});
+
+// ================================================================
+// BOOT
+// ================================================================
+refreshDisplays();
+initSoup();
+frameId=requestAnimationFrame(frame);
+</script>
+</body>
+</html>
