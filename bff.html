@@ -346,7 +346,7 @@
             <div class="phase-dot" style="background:var(--red)"></div>
             <div class="phase-content">
               <div class="pt" style="color:var(--red)">Seed a replicator</div>
-              <div class="pd">The SEED REPL button drops the paper's actual example replicator <code>[[{.>]-]]-]>.{[[</code> into a random tape. Watch it propagate. The paper found ~22% of seeded replicators successfully colonize the soup, so it may take a few tries.</div>
+              <div class="pd">The SEED REPL button plants the paper's replicator <code>[[{.>]-]]-]>.{[[</code> as a <strong>full-tape genome</strong>: the 64-byte tape is filled with <code>[</code> padding, with the replicator in the last 16 bytes. This matters because the replicator always copies to position 48 of the target tape -- the <code>[</code> prefix ensures the outer loop guard fires on the next generation. Several copies are seeded at once. Crank the speed up and watch the cyan spread.</div>
             </div>
           </div>
         </div>
@@ -738,7 +738,10 @@ class Soup {
     }
     const rF = rC / n;
 
-    if (!this.transitioned && rF > 0.1 && zF > 0.03 && this.epoch > 20) {
+    // State transition: replicator density rising is the primary signal.
+    // Zero-poisoning (zF spike) is a secondary indicator but doesn't always
+    // appear at small soup sizes. Detect on rF alone with a lower threshold.
+    if (!this.transitioned && rF > 0.04 && this.epoch > 10) {
       this.transitioned = true; this.tEpoch = this.epoch;
     }
     return { H, hoe, zF, uF: uC/256, rF };
@@ -782,11 +785,26 @@ class Soup {
   // Palindromic: write head moves left, read head right, copies in reverse.
   // Since it's a palindrome the reversed copy is identical -> self-replication.
   seedReplicator() {
-    const r = '[[{.>]-]]-]>.{[[';
-    const idx = (Math.random() * this.n) | 0;
-    const t = this.tape(idx);
-    for (let i = 0; i < t.length; i++) t[i] = i < r.length ? r.charCodeAt(i) : 0;
-    return idx;
+    // The replicator [[{.>]-]]-]>.{[[ copies itself via h1 wrapping to 2L-1,
+    // writing backwards into the B tape region at B[48..63].
+    // For the copy to survive, tape[0] must be nonzero when that B tape later
+    // runs as A (otherwise the outer [ guard skips the whole program).
+    // Solution: fill the tape with '[' (0x5b) and place the replicator in the
+    // last 16 bytes. The '[' flood is nonzero so the guard fires, and the copy
+    // into B replicates the replicator at B[0..15] followed by '[' padding --
+    // a self-sustaining genome. Seed several copies for survival odds.
+    const repl = '[[{.>]-]]-]>.{[[';
+    const seeds = Math.max(4, Math.min(12, this.n >> 4));
+    let firstIdx = -1;
+    for (let s = 0; s < seeds; s++) {
+      const idx = (Math.random() * this.n) | 0;
+      const t = this.tape(idx);
+      t.fill(OC_LB); // fill with '[' -- nonzero guard, loops as no-ops
+      for (let i = 0; i < repl.length; i++) t[this.L - repl.length + i] = repl.charCodeAt(i);
+      if (firstIdx < 0) firstIdx = idx;
+    }
+    this.sel = firstIdx;
+    return firstIdx;
   }
 }
 
@@ -1018,8 +1036,8 @@ document.getElementById('bstep').addEventListener('click',()=>{
 document.getElementById('breset').addEventListener('click',initSoup);
 document.getElementById('bseed').addEventListener('click',()=>{
   if(!soup)return;
-  const idx=soup.seedReplicator(); soup.sel=idx;
-  addLog('SEEDED [[{.>]-]]-]>.{[[ AT T:'+idx,'rp');
+  const idx=soup.seedReplicator();
+  addLog('SEEDED FULL-TAPE GENOME AT T:'+idx+' (x'+Math.max(4,Math.min(12,soup.n>>4))+' copies)','rp');
   drawGrid();updateInspector();
 });
 
