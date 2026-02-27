@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Activation Functions</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --panel: #0f0f1a;
+    --border: #1e1e3a;
+    --sig: #00e5ff;
+    --relu: #ff3d71;
+    --grad-sig: #7c4dff;
+    --grad-relu: #ff9100;
+    --text: #c8c8e0;
+    --dim: #555570;
+    --white: #eeeeff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .noise {
+    position: fixed;
+    inset: 0;
+    opacity: 0.03;
+    pointer-events: none;
+    z-index: 1000;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  }
+
+  header {
+    padding: 3rem 2rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 8vw, 7rem);
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    color: var(--white);
+  }
+
+  h1 span.sig { color: var(--sig); }
+  h1 span.relu { color: var(--relu); }
+
+  .subtitle {
+    font-size: 0.7rem;
+    color: var(--dim);
+    line-height: 1.6;
+    max-width: 320px;
+    padding-bottom: 0.5rem;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    margin: 1px;
+  }
+
+  .panel {
+    background: var(--panel);
+    padding: 2rem;
+    position: relative;
+  }
+
+  .panel-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 0.5rem;
+  }
+
+  .fn-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+
+  .fn-name.sig { color: var(--sig); }
+  .fn-name.relu { color: var(--relu); }
+
+  .formula {
+    font-size: 0.75rem;
+    color: var(--dim);
+    margin-bottom: 1.5rem;
+    border-left: 2px solid var(--border);
+    padding-left: 0.75rem;
+  }
+
+  canvas.fn-canvas {
+    width: 100%;
+    height: 200px;
+    display: block;
+    border: 1px solid var(--border);
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    margin-top: 1px;
+    background: var(--border);
+  }
+
+  .stat {
+    background: var(--panel);
+    padding: 0.75rem 1rem;
+  }
+
+  .stat-key {
+    font-size: 0.55rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 0.2rem;
+  }
+
+  .stat-val {
+    font-size: 0.85rem;
+    color: var(--white);
+    line-height: 1.4;
+  }
+
+  .stat-val.good { color: #69ff6e; }
+  .stat-val.bad { color: var(--relu); }
+
+  .full-width {
+    grid-column: 1 / -1;
+    background: var(--panel);
+    padding: 2rem;
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    color: var(--white);
+    letter-spacing: 0.05em;
+    margin-bottom: 1.5rem;
+  }
+
+  .gradient-demo {
+    position: relative;
+  }
+
+  .layer-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .layer-label {
+    font-size: 0.6rem;
+    color: var(--dim);
+    width: 60px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .gradient-bar {
+    height: 28px;
+    border-radius: 2px;
+    position: relative;
+    transition: width 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    display: flex;
+    align-items: center;
+    padding-left: 0.5rem;
+  }
+
+  .gradient-bar span {
+    font-size: 0.6rem;
+    color: rgba(0,0,0,0.8);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .bar-sig { background: var(--sig); opacity: 0.9; }
+  .bar-relu { background: var(--relu); opacity: 0.9; }
+
+  .bar-track {
+    flex: 1;
+    height: 28px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .compare-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .compare-col {
+    background: var(--panel);
+    padding: 1.5rem;
+  }
+
+  .compare-col h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    letter-spacing: 0.05em;
+  }
+
+  .compare-col.sig h3 { color: var(--sig); }
+  .compare-col.relu h3 { color: var(--relu); }
+
+  .trait {
+    margin-bottom: 0.75rem;
+    font-size: 0.7rem;
+    line-height: 1.6;
+    color: var(--text);
+    padding-left: 1rem;
+    border-left: 2px solid var(--border);
+    position: relative;
+  }
+
+  .trait::before {
+    content: attr(data-mark);
+    position: absolute;
+    left: -1rem;
+    color: var(--dim);
+    font-size: 0.5rem;
+  }
+
+  .trait.pro { border-left-color: #69ff6e; }
+  .trait.con { border-left-color: var(--relu); }
+  .trait.pro::before { content: '+'; color: #69ff6e; font-size: 0.8rem; }
+  .trait.con::before { content: '-'; color: var(--relu); font-size: 0.8rem; }
+
+  .neuron-demo {
+    margin-top: 1rem;
+  }
+
+  .neuron-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .neuron {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+
+  .arrow {
+    flex: 1;
+    height: 2px;
+    position: relative;
+    transition: background 0.3s;
+  }
+
+  .arrow::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -3px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+  }
+
+  .input-val {
+    font-size: 0.6rem;
+    color: var(--dim);
+    width: 50px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .controls {
+    background: var(--panel);
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .control-group label {
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 180px;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    outline: none;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--white);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .val-display {
+    font-size: 0.75rem;
+    color: var(--white);
+    min-width: 3rem;
+  }
+
+  footer {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.6rem;
+    color: var(--dim);
+    letter-spacing: 0.05em;
+  }
+
+  @media (max-width: 700px) {
+    .grid, .compare-cols { grid-template-columns: 1fr; }
+    .full-width { grid-column: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+
+<header>
+  <h1><span class="sig">SIGMOID</span><br>vs<br><span class="relu">RELU</span></h1>
+  <p class="subtitle">Activation functions define how neurons decide to fire. The choice shapes whether deep networks can learn at all — or slowly suffocate under vanishing gradients.</p>
+</header>
+
+<div class="grid">
+  <!-- Sigmoid Panel -->
+  <div class="panel">
+    <div class="panel-label">activation / 01</div>
+    <div class="fn-name sig">SIGMOID</div>
+    <div class="formula">f(x) = 1 / (1 + e^(-x)) &nbsp;&nbsp; f'(x) = f(x)(1 - f(x))</div>
+    <canvas class="fn-canvas" id="sigCanvas"></canvas>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-key">Output Range</div>
+        <div class="stat-val">(0, 1) exclusive</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Max Gradient</div>
+        <div class="stat-val bad">0.25 at x=0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Differentiable</div>
+        <div class="stat-val good">everywhere</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Era</div>
+        <div class="stat-val">1980s - 2010s</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ReLU Panel -->
+  <div class="panel">
+    <div class="panel-label">activation / 02</div>
+    <div class="fn-name relu">RELU</div>
+    <div class="formula">f(x) = max(0, x) &nbsp;&nbsp; f'(x) = 0 if x&lt;0, else 1</div>
+    <canvas class="fn-canvas" id="reluCanvas"></canvas>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-key">Output Range</div>
+        <div class="stat-val">[0, +inf)</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Max Gradient</div>
+        <div class="stat-val good">1 (no decay)</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Differentiable</div>
+        <div class="stat-val bad">not at x=0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-key">Era</div>
+        <div class="stat-val">2010s - present</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gradient Flow Section -->
+  <div class="full-width">
+    <div class="section-title">Gradient Flow Through Layers</div>
+    <p style="font-size:0.7rem; color:var(--dim); margin-bottom:1.5rem; max-width:600px;">
+      During backpropagation, gradients multiply through every layer. Sigmoid's max gradient of 0.25 means each layer shrinks the signal by at least 75%. Stack 10 layers and the gradient reaching layer 1 is less than 0.25^10 — effectively zero. ReLU passes gradients unchanged on the positive side.
+    </p>
+
+    <div id="gradientBars"></div>
+
+    <div style="margin-top:1rem; display:flex; gap:1.5rem; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.6rem; color:var(--dim);">
+        <div style="width:12px; height:12px; background:var(--sig); border-radius:2px;"></div>
+        Sigmoid gradient magnitude
+      </div>
+      <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.6rem; color:var(--dim);">
+        <div style="width:12px; height:12px; background:var(--relu); border-radius:2px;"></div>
+        ReLU gradient magnitude
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Demo -->
+  <div class="full-width" style="padding-bottom:0;">
+    <div class="section-title">Live Output Comparison</div>
+    <p style="font-size:0.7rem; color:var(--dim); margin-bottom:1.5rem;">
+      Drag the slider to see how each function responds to the same input. Note the saturation zones for sigmoid where the curve flattens — identical gradients for very different inputs.
+    </p>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="control-group">
+    <label>Input x</label>
+    <div style="display:flex; align-items:center; gap:0.75rem;">
+      <input type="range" id="xSlider" min="-6" max="6" step="0.01" value="0">
+      <span class="val-display" id="xDisplay">0.00</span>
+    </div>
+  </div>
+  <div style="display:flex; gap:2rem; flex-wrap:wrap;">
+    <div>
+      <div style="font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--dim); margin-bottom:0.3rem;">Sigmoid f(x)</div>
+      <div id="sigOutput" style="font-family:'Bebas Neue'; font-size:2rem; color:var(--sig);">0.5000</div>
+    </div>
+    <div>
+      <div style="font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--dim); margin-bottom:0.3rem;">Sigmoid f'(x)</div>
+      <div id="sigGrad" style="font-family:'Bebas Neue'; font-size:2rem; color:var(--grad-sig);">0.2500</div>
+    </div>
+    <div>
+      <div style="font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--dim); margin-bottom:0.3rem;">ReLU f(x)</div>
+      <div id="reluOutput" style="font-family:'Bebas Neue'; font-size:2rem; color:var(--relu);">0.0000</div>
+    </div>
+    <div>
+      <div style="font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--dim); margin-bottom:0.3rem;">ReLU f'(x)</div>
+      <div id="reluGrad" style="font-family:'Bebas Neue'; font-size:2rem; color:var(--grad-relu);">0.0000</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid" style="margin-top:1px;">
+  <div class="compare-cols" style="grid-column:1/-1;">
+    <div class="compare-col sig">
+      <h3>Sigmoid</h3>
+      <div class="trait pro">Smooth, continuous, and differentiable at every point — nice theoretical properties.</div>
+      <div class="trait pro">Output interpretable as a probability for binary classification output layers.</div>
+      <div class="trait pro">Both positive and negative outputs (via tanh variant) handle negative correlations.</div>
+      <div class="trait con">Vanishing gradient: saturates at both extremes, gradient approaches zero. Kills learning in deep nets.</div>
+      <div class="trait con">Not zero-centered — outputs always positive, causes zig-zagging gradient updates.</div>
+      <div class="trait con">Exponential in the denominator: computationally slower than ReLU.</div>
+      <div class="trait con">Was the default until ~2012. Then AlexNet used ReLU and changed everything.</div>
+    </div>
+    <div class="compare-col relu">
+      <h3>ReLU</h3>
+      <div class="trait pro">Gradient is exactly 1 for all positive inputs — no decay across layers.</div>
+      <div class="trait pro">Computationally trivial: just a max() operation, no exponentials.</div>
+      <div class="trait pro">Sparse activation — roughly half the neurons output zero, creating efficient representations.</div>
+      <div class="trait pro">Enabled training of networks 10+ layers deep. VGG, ResNet, everything after 2012.</div>
+      <div class="trait con">Dying ReLU: neurons stuck outputting zero for all inputs never recover. Gradient is exactly 0 there.</div>
+      <div class="trait con">Unbounded output can cause exploding activations without proper weight init or normalization.</div>
+      <div class="trait con">Not differentiable at x=0, though in practice this is handled by convention (set to 0 or 1).</div>
+      <div class="trait con">Variants (Leaky ReLU, ELU, GELU) address dying neuron problem at some compute cost.</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  ACTIVATION FUNCTIONS — THE NONLINEARITY THAT MAKES NEURAL NETWORKS NEURAL &nbsp;/&nbsp; WITHOUT THESE, YOU JUST HAVE LINEAR ALGEBRA STACKED ON LINEAR ALGEBRA &nbsp;/&nbsp; DEEP LEARNING EXPLAINER
+</footer>
+
+<script>
+function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+function sigmoidDeriv(x) { const s = sigmoid(x); return s * (1 - s); }
+function relu(x) { return Math.max(0, x); }
+function reluDeriv(x) { return x > 0 ? 1 : 0; }
+
+function drawGraph(canvasId, fns, opts) {
+  const canvas = document.getElementById(canvasId);
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const W = rect.width, H = rect.height;
+  const pad = 30;
+
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fillRect(0, 0, W, H);
+
+  const xMin = opts.xMin || -6, xMax = opts.xMax || 6;
+  const yMin = opts.yMin || -0.2, yMax = opts.yMax || 1.2;
+
+  function toScreen(x, y) {
+    return {
+      sx: pad + (x - xMin) / (xMax - xMin) * (W - 2*pad),
+      sy: H - pad - (y - yMin) / (yMax - yMin) * (H - 2*pad)
+    };
+  }
+
+  // Grid
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = 1;
+  for (let gx = Math.ceil(xMin); gx <= xMax; gx++) {
+    const {sx} = toScreen(gx, 0);
+    ctx.beginPath(); ctx.moveTo(sx, pad); ctx.lineTo(sx, H-pad); ctx.stroke();
+  }
+  for (let gy = -1; gy <= 2; gy += 0.5) {
+    const {sy} = toScreen(0, gy);
+    ctx.beginPath(); ctx.moveTo(pad, sy); ctx.lineTo(W-pad, sy); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1.5;
+  const origin = toScreen(0, 0);
+  ctx.beginPath(); ctx.moveTo(pad, origin.sy); ctx.lineTo(W-pad, origin.sy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(origin.sx, pad); ctx.lineTo(origin.sx, H-pad); ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = '#444466';
+  ctx.font = '9px Space Mono';
+  ctx.textAlign = 'center';
+  for (let gx = xMin+1; gx <= xMax-1; gx += 2) {
+    const {sx, sy} = toScreen(gx, 0);
+    ctx.fillText(gx, sx, sy + 14);
+  }
+
+  // Functions
+  fns.forEach(fn => {
+    ctx.beginPath();
+    ctx.strokeStyle = fn.color;
+    ctx.lineWidth = fn.width || 2;
+    let first = true;
+    for (let px = 0; px <= W - 2*pad; px++) {
+      const x = xMin + px / (W - 2*pad) * (xMax - xMin);
+      const y = fn.f(x);
+      const {sx, sy} = toScreen(x, y);
+      if (first) { ctx.moveTo(sx, sy); first = false; }
+      else ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+  });
+
+  // Draw indicator for current x if provided
+  if (opts.markerX !== undefined) {
+    const x = opts.markerX;
+    const {sx} = toScreen(x, 0);
+    ctx.strokeStyle = '#ffffff33';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(sx, pad); ctx.lineTo(sx, H-pad); ctx.stroke();
+    ctx.setLineDash([]);
+
+    fns.forEach(fn => {
+      const y = fn.f(x);
+      const {sx: fx, sy: fy} = toScreen(x, y);
+      ctx.fillStyle = fn.color;
+      ctx.beginPath(); ctx.arc(fx, fy, 5, 0, Math.PI*2); ctx.fill();
+    });
+  }
+}
+
+let currentX = 0;
+
+function renderAll() {
+  drawGraph('sigCanvas', [
+    { f: sigmoid, color: '#00e5ff', width: 2.5 },
+    { f: sigmoidDeriv, color: '#7c4dff', width: 1.5 }
+  ], { xMin: -6, xMax: 6, yMin: -0.2, yMax: 1.2, markerX: currentX });
+
+  drawGraph('reluCanvas', [
+    { f: relu, color: '#ff3d71', width: 2.5 },
+    { f: reluDeriv, color: '#ff9100', width: 1.5 }
+  ], { xMin: -6, xMax: 6, yMin: -0.5, yMax: 4, markerX: currentX });
+}
+
+function buildGradientBars() {
+  const container = document.getElementById('gradientBars');
+  const layers = 8;
+  let sigGrad = 1.0;
+  let reluGrad = 1.0;
+
+  for (let i = 0; i < layers; i++) {
+    sigGrad *= 0.25;
+    // ReLU: assume about 50% active neurons, gradient stays 1 on those
+    // so on average ~0.5-1.0 depending on sparsity. Simplified: 0.85
+    reluGrad *= 0.85;
+
+    const sigPct = Math.min(100, sigGrad * 200);
+    const reluPct = Math.min(100, reluGrad * 100);
+
+    const row = document.createElement('div');
+    row.className = 'layer-row';
+    row.innerHTML = `
+      <span class="layer-label">layer ${i+1}</span>
+      <div class="bar-track">
+        <div class="gradient-bar bar-sig" style="width:${reluPct}%; position:absolute; top:0; left:0; height:100%; border-radius:0;">
+        </div>
+        <div class="gradient-bar bar-sig" style="width:${sigPct}%; position:absolute; top:0; left:0; height:100%; border-radius:0; background:var(--sig);">
+        </div>
+      </div>
+    `;
+
+    // re-do properly
+    row.innerHTML = '';
+    const label = document.createElement('span');
+    label.className = 'layer-label';
+    label.textContent = `layer ${i+1}`;
+    row.appendChild(label);
+
+    const track = document.createElement('div');
+    track.className = 'bar-track';
+
+    const reluBar = document.createElement('div');
+    reluBar.style.cssText = `position:absolute; top:0; left:0; height:100%; width:${reluPct}%; background:var(--relu); opacity:0.7; border-radius:2px;`;
+    track.appendChild(reluBar);
+
+    const sigBar = document.createElement('div');
+    sigBar.style.cssText = `position:absolute; top:0; left:0; height:100%; width:${sigPct}%; background:var(--sig); opacity:0.7; border-radius:2px;`;
+    track.appendChild(sigBar);
+
+    const sigLabel = document.createElement('span');
+    sigLabel.style.cssText = `position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:0.6rem; color:var(--dim);`;
+    sigLabel.textContent = `sig: ${sigGrad.toExponential(2)}  relu: ${reluGrad.toFixed(3)}`;
+    track.appendChild(sigLabel);
+
+    row.appendChild(track);
+    container.appendChild(row);
+  }
+}
+
+const slider = document.getElementById('xSlider');
+slider.addEventListener('input', () => {
+  currentX = parseFloat(slider.value);
+  document.getElementById('xDisplay').textContent = currentX.toFixed(2);
+
+  const so = sigmoid(currentX);
+  const sd = sigmoidDeriv(currentX);
+  const ro = relu(currentX);
+  const rd = reluDeriv(currentX);
+
+  document.getElementById('sigOutput').textContent = so.toFixed(4);
+  document.getElementById('sigGrad').textContent = sd.toFixed(4);
+  document.getElementById('reluOutput').textContent = ro.toFixed(4);
+  document.getElementById('reluGrad').textContent = rd.toFixed(1);
+
+  renderAll();
+});
+
+// Initial render
+window.addEventListener('load', () => {
+  renderAll();
+  buildGradientBars();
+});
+
+window.addEventListener('resize', renderAll);
+</script>
+</body>
+</html>

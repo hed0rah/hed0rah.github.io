@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PERCEPTRON // CODE WALKTHROUGH</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+  --bg:         #0a0a0a;
+  --surface:    #111111;
+  --surface2:   #0d0d0d;
+  --border:     #1e1e1e;
+  --border2:    #2a2a2a;
+  --cyan:       #00ffe9;
+  --yellow:     #ffe900;
+  --magenta:    #e900ff;
+  --red:        #ff2d55;
+  --green:      #39ff14;
+  --orange:     #ff6b00;
+  --dim:        #3a3a3a;
+  --text:       #cccccc;
+  --bright:     #ffffff;
+  --hi-cyan:    rgba(0,255,233,0.07);
+  --hi-red:     rgba(255,45,85,0.08);
+  --hi-yellow:  rgba(255,233,0,0.07);
+}
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Space Mono', monospace;
+    color: var(--text);
+    padding: 32px 24px;
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.8rem;
+    letter-spacing: 0.1em;
+    color: var(--cyan);
+    margin-bottom: 2px;
+  }
+
+  .subtitle {
+    font-size: 0.65rem;
+    color: var(--dim);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+
+  .section { margin-bottom: 40px; }
+
+  .section-header {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 0.12em;
+    color: var(--bright);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-num {
+    font-size: 0.6rem;
+    color: var(--dim);
+    border: 1px solid var(--dim);
+    padding: 2px 6px;
+    letter-spacing: 0.1em;
+  }
+
+  .section-desc {
+    font-size: 0.72rem;
+    color: var(--dim);
+    margin-bottom: 16px;
+    line-height: 1.7;
+    max-width: 680px;
+  }
+
+  .code-block {
+    background: #0d0d0d;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--cyan);
+    padding: 16px 20px;
+    font-size: 0.75rem;
+    line-height: 1.9;
+    margin-bottom: 16px;
+    overflow-x: auto;
+  }
+
+  .code-line {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    transition: background 0.2s;
+    padding: 0 4px;
+    margin: 0 -4px;
+    cursor: default;
+  }
+
+  .code-line:hover { background: rgba(255,255,255,0.02); }
+  .code-line.hl-red { background: var(--hi-red); }
+  .code-line.hl-blue { background: var(--hi-cyan); }
+
+  .ln {
+    color: var(--dim);
+    font-size: 0.6rem;
+    min-width: 22px;
+    user-select: none;
+    padding-top: 2px;
+  }
+
+  .kw { color: var(--cyan); }
+  .num { color: var(--green); }
+  .cm { color: #555; font-style: italic; }
+  .fn { color: var(--yellow); }
+  .macro { color: var(--red); }
+
+  .annotation {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+    padding: 10px 14px;
+    background: rgba(0,255,233,0.04);
+    border-left: 3px solid var(--cyan);
+    font-size: 0.7rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .ann-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; color: var(--cyan); }
+
+  .array-visual { margin: 16px 0; }
+
+  .array-label {
+    font-size: 0.6rem;
+    color: var(--dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .array-cell {
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    font-size: 0.8rem;
+    background: var(--surface);
+    text-align: center;
+    min-width: 52px;
+    position: relative;
+    transition: all 0.2s;
+    cursor: pointer;
+    color: var(--text);
+  }
+
+  .array-cell .cell-idx {
+    position: absolute;
+    top: 2px;
+    left: 3px;
+    font-size: 0.48rem;
+    color: var(--dim);
+  }
+
+  .array-cell.active-cell {
+    background: rgba(0,255,233,0.1);
+    color: var(--cyan);
+    border-color: var(--cyan);
+  }
+
+  .array-cell.active-cell .cell-idx { color: rgba(0,255,233,0.5); }
+
+  .array-cell.target-cell {
+    background: rgba(57,255,20,0.1);
+    color: var(--green);
+    border-color: var(--green);
+  }
+
+  .weight-flow-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-top: 16px;
+  }
+
+  .wf-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.12em;
+    margin-bottom: 16px;
+    color: var(--yellow);
+  }
+
+  .wf-controls {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .wf-ctrl {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .wf-ctrl label {
+    font-size: 0.58rem;
+    color: var(--dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .wf-ctrl input[type=range] {
+    -webkit-appearance: none;
+    width: 120px;
+    height: 2px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+  }
+
+  .wf-ctrl input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--cyan);
+    cursor: pointer;
+  }
+
+  .wf-ctrl .wf-val {
+    font-size: 0.75rem;
+    color: var(--cyan);
+    font-weight: 700;
+  }
+
+  .wf-inputs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .wf-input-btn {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--dim);
+    padding: 8px 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .wf-input-btn.selected {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: rgba(0,255,233,0.06);
+  }
+
+  .wf-diagram {
+    position: relative;
+    height: 200px;
+    margin-bottom: 16px;
+  }
+
+  svg.wf-svg { width: 100%; height: 100%; }
+
+  .wire-path {
+    fill: none;
+    stroke: #222;
+    stroke-width: 1.5;
+    transition: stroke 0.3s, stroke-width 0.3s;
+  }
+
+  .wire-path.active-wire {
+    stroke: var(--cyan);
+    stroke-width: 2.5;
+  }
+
+  .wire-path.zero-wire {
+    stroke: #222;
+    stroke-dasharray: 4 4;
+  }
+
+  .wf-result {
+    font-size: 0.72rem;
+    line-height: 1.9;
+    color: var(--text);
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+
+  .wf-result span.val { color: var(--cyan); font-weight: 700; }
+  .wf-result span.pos { color: var(--green); font-weight: 700; }
+  .wf-result span.neg { color: var(--red); }
+
+  .rule-box {
+    border: 1px solid var(--border);
+    padding: 20px;
+    margin: 16px 0;
+    background: var(--surface);
+  }
+
+  .rule-eq {
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+    line-height: 2;
+    color: var(--bright);
+  }
+
+  .rule-eq .r-w { color: var(--red); }
+  .rule-eq .r-lr { color: var(--cyan); }
+  .rule-eq .r-e { color: var(--green); }
+  .rule-eq .r-x { color: var(--yellow); }
+
+  .rule-legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    font-size: 0.65rem;
+    color: var(--dim);
+  }
+
+  .rule-legend span { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .epoch-demo { margin-top: 16px; }
+
+  .epoch-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.68rem;
+  }
+
+  .epoch-table th {
+    text-align: left;
+    font-size: 0.58rem;
+    color: var(--dim);
+    letter-spacing: 0.12em;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+
+  .epoch-table td {
+    padding: 7px 8px;
+    border-bottom: 1px solid #111111;
+    vertical-align: top;
+    color: var(--text);
+  }
+
+  .epoch-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .correct { color: var(--green); }
+  .wrong { color: var(--red); }
+
+  .step-btn {
+    padding: 10px 24px;
+    background: transparent;
+    color: var(--red);
+    border: 1px solid var(--red);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    transition: all 0.15s;
+    margin-top: 12px;
+  }
+
+  .step-btn:hover { background: var(--red); color: #000; }
+
+  .step-btn.secondary {
+    color: var(--dim);
+    border-color: var(--dim);
+    margin-left: 8px;
+  }
+
+  .step-btn.secondary:hover { background: var(--dim); color: #000; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 32px 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>PERCEPTRON // CODE WALKTHROUGH</h1>
+<p class="subtitle">how the data flows, what the weights actually do, and why it learns</p>
+
+<!-- SECTION 1: DEFINES + TRAINING DATA -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">01</span>
+    THE TRAINING DATA
+  </div>
+  <p class="section-desc">Before the perceptron can learn anything, we define what we want it to learn. This is the full truth table for AND, as two C arrays - one for inputs, one for expected outputs.</p>
+
+  <div class="code-block">
+    <div class="code-line hl-red"><span class="ln">8</span><span class="kw">float</span> training_inputs[<span class="num">4</span>][<span class="num">2</span>] = {</div>
+    <div class="code-line"><span class="ln">9</span>&nbsp;&nbsp;&nbsp;&nbsp;{<span class="num">0</span>, <span class="num">0</span>},</div>
+    <div class="code-line"><span class="ln">10</span>&nbsp;&nbsp;&nbsp;&nbsp;{<span class="num">0</span>, <span class="num">1</span>},</div>
+    <div class="code-line"><span class="ln">11</span>&nbsp;&nbsp;&nbsp;&nbsp;{<span class="num">1</span>, <span class="num">0</span>},</div>
+    <div class="code-line"><span class="ln">12</span>&nbsp;&nbsp;&nbsp;&nbsp;{<span class="num">1</span>, <span class="num">1</span>}</div>
+    <div class="code-line"><span class="ln">13</span>};</div>
+    <div class="code-line" style="margin-top:6px"><span class="ln">15</span><span class="kw">float</span> training_targets[<span class="num">4</span>] = {<span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">1</span>};</div>
+  </div>
+
+  <div class="annotation">
+    <span class="ann-icon">&#9432;</span>
+    <span><code>training_inputs</code> is a 4x2 array. Four examples, two inputs each. <code>training_targets</code> is what we want the perceptron to output for each example. Only the last case (1 AND 1) should produce 1.</span>
+  </div>
+
+  <div class="array-visual" style="margin-top:20px">
+    <div class="array-label">training_inputs[4][2] -- click a row to highlight</div>
+    <div style="display:flex;flex-direction:column;gap:4px" id="inputGrid">
+      <div style="display:flex;gap:4px;align-items:center">
+        <div style="font-size:0.55rem;color:var(--dim);width:36px;text-align:right">[0]</div>
+        <div class="array-cell" data-row="0" data-col="0" onclick="selectRow(0)"><span class="cell-idx">[0][0]</span>0</div>
+        <div class="array-cell" data-row="0" data-col="1" onclick="selectRow(0)"><span class="cell-idx">[0][1]</span>0</div>
+        <div style="font-size:0.7rem;color:var(--dim);margin-left:8px">&#8594;</div>
+        <div class="array-cell" data-target="0" onclick="selectRow(0)"><span class="cell-idx">target</span>0</div>
+        <div style="font-size:0.62rem;color:var(--dim);margin-left:8px">0 AND 0 = 0</div>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <div style="font-size:0.55rem;color:var(--dim);width:36px;text-align:right">[1]</div>
+        <div class="array-cell" data-row="1" data-col="0" onclick="selectRow(1)"><span class="cell-idx">[1][0]</span>0</div>
+        <div class="array-cell" data-row="1" data-col="1" onclick="selectRow(1)"><span class="cell-idx">[1][1]</span>1</div>
+        <div style="font-size:0.7rem;color:var(--dim);margin-left:8px">&#8594;</div>
+        <div class="array-cell" data-target="1" onclick="selectRow(1)"><span class="cell-idx">target</span>0</div>
+        <div style="font-size:0.62rem;color:var(--dim);margin-left:8px">0 AND 1 = 0</div>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <div style="font-size:0.55rem;color:var(--dim);width:36px;text-align:right">[2]</div>
+        <div class="array-cell" data-row="2" data-col="0" onclick="selectRow(2)"><span class="cell-idx">[2][0]</span>1</div>
+        <div class="array-cell" data-row="2" data-col="1" onclick="selectRow(2)"><span class="cell-idx">[2][1]</span>0</div>
+        <div style="font-size:0.7rem;color:var(--dim);margin-left:8px">&#8594;</div>
+        <div class="array-cell" data-target="2" onclick="selectRow(2)"><span class="cell-idx">target</span>0</div>
+        <div style="font-size:0.62rem;color:var(--dim);margin-left:8px">1 AND 0 = 0</div>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <div style="font-size:0.55rem;color:var(--dim);width:36px;text-align:right">[3]</div>
+        <div class="array-cell" data-row="3" data-col="0" onclick="selectRow(3)"><span class="cell-idx">[3][0]</span>1</div>
+        <div class="array-cell" data-row="3" data-col="1" onclick="selectRow(3)"><span class="cell-idx">[3][1]</span>1</div>
+        <div style="font-size:0.7rem;color:var(--dim);margin-left:8px">&#8594;</div>
+        <div class="array-cell" data-target="3" onclick="selectRow(3)"><span class="cell-idx">target</span>1</div>
+        <div style="font-size:0.62rem;color:var(--dim);margin-left:8px">1 AND 1 = 1 &#10003;</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 2: FORWARD PASS -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">02</span>
+    THE FORWARD PASS
+  </div>
+  <p class="section-desc">This is how the perceptron produces an output from inputs. Multiply each input by its weight, sum everything up, add the bias, pass through the step function. Every single inference is just this loop.</p>
+
+  <div class="code-block">
+    <div class="code-line"><span class="ln">18</span><span class="kw">int</span> <span class="fn">forward</span>(<span class="kw">float</span> *inputs, <span class="kw">float</span> *weights, <span class="kw">float</span> bias) {</div>
+    <div class="code-line hl-blue"><span class="ln">19</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">float</span> sum = bias; <span class="cm">// start at bias, not 0</span></div>
+    <div class="code-line hl-red"><span class="ln">20</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">0</span>; i &lt; INPUTS; i++) {</div>
+    <div class="code-line hl-red"><span class="ln">21</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sum += inputs[i] * weights[i]; <span class="cm">// accumulate</span></div>
+    <div class="code-line hl-red"><span class="ln">22</span>&nbsp;&nbsp;&nbsp;&nbsp;}</div>
+    <div class="code-line"><span class="ln">23</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="fn">step</span>(sum);</div>
+    <div class="code-line"><span class="ln">24</span>}</div>
+  </div>
+
+  <div class="annotation">
+    <span class="ann-icon">&#9432;</span>
+    <span>We initialize <code>sum = bias</code> instead of 0 so the bias is just automatically included in the accumulation. Then each input gets multiplied by its corresponding weight. The bias lets the threshold shift - without it the decision boundary is always forced through the origin.</span>
+  </div>
+
+  <!-- INTERACTIVE WEIGHT FLOW -->
+  <div class="weight-flow-section">
+    <div class="wf-title">WATCH THE WEIGHTS FLOW</div>
+
+    <div style="font-size:0.65rem;color:var(--dim);margin-bottom:12px;letter-spacing:0.08em">SELECT INPUT PAIR:</div>
+    <div class="wf-inputs">
+      <button class="wf-input-btn" onclick="setWFInput(0,0)">A=0, B=0</button>
+      <button class="wf-input-btn" onclick="setWFInput(0,1)">A=0, B=1</button>
+      <button class="wf-input-btn" onclick="setWFInput(1,0)">A=1, B=0</button>
+      <button class="wf-input-btn selected" onclick="setWFInput(1,1)">A=1, B=1</button>
+    </div>
+
+    <div class="wf-controls">
+      <div class="wf-ctrl">
+        <label>W0 (weight for A)</label>
+        <input type="range" id="wfW0" min="-1" max="1" step="0.05" value="0.2" oninput="updateWF()">
+        <div class="wf-val" id="wfW0Val">0.20</div>
+      </div>
+      <div class="wf-ctrl">
+        <label>W1 (weight for B)</label>
+        <input type="range" id="wfW1" min="-1" max="1" step="0.05" value="0.1" oninput="updateWF()">
+        <div class="wf-val" id="wfW1Val">0.10</div>
+      </div>
+      <div class="wf-ctrl">
+        <label>BIAS</label>
+        <input type="range" id="wfBias" min="-1" max="1" step="0.05" value="-0.2" oninput="updateWF()">
+        <div class="wf-val" id="wfBiasVal">-0.20</div>
+      </div>
+    </div>
+
+    <div class="wf-diagram">
+      <svg class="wf-svg" id="wfSvg" viewBox="0 0 700 200" preserveAspectRatio="xMidYMid meet">
+        <!-- Input nodes -->
+        <rect x="20" y="60" width="60" height="40" fill="#111" stroke="#1e1e1e" stroke-width="1"/>
+        <text x="50" y="76" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#444">INPUT A</text>
+        <text x="50" y="92" text-anchor="middle" font-family="Space Mono,monospace" font-size="14" fill="#ccc" id="svgA">1</text>
+
+        <rect x="20" y="120" width="60" height="40" fill="#111" stroke="#1e1e1e" stroke-width="1"/>
+        <text x="50" y="136" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#444">INPUT B</text>
+        <text x="50" y="152" text-anchor="middle" font-family="Space Mono,monospace" font-size="14" fill="#ccc" id="svgB">1</text>
+
+        <!-- Bias node -->
+        <rect x="20" y="10" width="60" height="36" fill="#111" stroke="#1e1e1e" stroke-width="1" stroke-dasharray="3 2"/>
+        <text x="50" y="24" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#444">BIAS</text>
+        <text x="50" y="40" text-anchor="middle" font-family="Space Mono,monospace" font-size="11" fill="#ccc" id="svgBiasVal">-0.20</text>
+
+        <!-- Wires from inputs to neuron -->
+        <path d="M80 80 C200 80 200 100 280 100" class="wire-path active-wire" id="wireA"/>
+        <path d="M80 140 C200 140 200 100 280 100" class="wire-path active-wire" id="wireB"/>
+        <path d="M80 28 C180 28 220 90 280 98" class="wire-path" id="wireBias" stroke-dasharray="4 3"/>
+
+        <!-- Weight labels on wires -->
+        <rect x="145" y="58" width="64" height="18" fill="rgba(10,10,10,0.9)"/>
+        <text x="177" y="71" text-anchor="middle" font-family="Space Mono,monospace" font-size="10" fill="#00ffe9" id="svgW0Label">A x 0.20</text>
+
+        <rect x="145" y="118" width="64" height="18" fill="rgba(10,10,10,0.9)"/>
+        <text x="177" y="131" text-anchor="middle" font-family="Space Mono,monospace" font-size="10" fill="#00ffe9" id="svgW1Label">B x 0.10</text>
+
+        <!-- Neuron circle -->
+        <circle cx="320" cy="100" r="40" fill="#111" stroke="#ccc" stroke-width="1.5" id="svgNeuron"/>
+        <text x="320" y="94" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#444">SUM</text>
+        <text x="320" y="108" text-anchor="middle" font-family="Space Mono,monospace" font-size="13" fill="#ccc" id="svgSum">0.10</text>
+        <text x="320" y="122" text-anchor="middle" font-family="Space Mono,monospace" font-size="8" fill="#444" id="svgSumEq">= 0.1</text>
+
+        <!-- Step function box -->
+        <rect x="390" y="76" width="80" height="48" fill="#111" stroke="#1e1e1e" stroke-width="1"/>
+        <text x="430" y="92" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#444">STEP fn</text>
+        <text x="430" y="108" text-anchor="middle" font-family="Space Mono,monospace" font-size="10" fill="#444" id="svgStepRule">sum&gt;0 ?</text>
+        <!-- step function mini graph -->
+        <polyline points="398,116 412,116 412,88 422,88" fill="none" stroke="#333" stroke-width="1"/>
+
+        <!-- Wire from neuron to step -->
+        <path d="M360 100 L390 100" class="wire-path" id="wireToStep" stroke="#333"/>
+
+        <!-- Wire from step to output -->
+        <path d="M470 100 L530 100" class="wire-path" id="wireToOut" stroke="#333"/>
+
+        <!-- Output node -->
+        <rect x="530" y="76" width="80" height="48" fill="#111" stroke="#1e1e1e" stroke-width="1.5" id="svgOutputBox"/>
+        <text x="570" y="97" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#444">OUTPUT</text>
+        <text x="570" y="116" text-anchor="middle" font-family="Space Mono,monospace" font-size="22" fill="#ccc" id="svgOutput">1</text>
+
+        <!-- Contribution labels -->
+        <text x="350" y="155" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#444" id="svgContrib"></text>
+      </svg>
+    </div>
+
+    <div class="wf-result" id="wfResult"></div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- SECTION 3: LEARNING RULE -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">03</span>
+    THE LEARNING RULE
+  </div>
+  <p class="section-desc">After each forward pass, we compare the output to the target. The difference is the error. We use that error to nudge the weights in the right direction. This is the entire learning algorithm.</p>
+
+  <div class="code-block">
+    <div class="code-line"><span class="ln">38</span><span class="kw">int</span> output = <span class="fn">forward</span>(training_inputs[i], weights, bias);</div>
+    <div class="code-line hl-red"><span class="ln">39</span><span class="kw">float</span> error = training_targets[i] - output;</div>
+    <div class="code-line hl-blue"><span class="ln">40</span><span class="kw">for</span> (<span class="kw">int</span> j = <span class="num">0</span>; j &lt; INPUTS; j++) {</div>
+    <div class="code-line hl-blue"><span class="ln">41</span>&nbsp;&nbsp;&nbsp;&nbsp;weights[j] += <span class="macro">LEARNING_RATE</span> * error * training_inputs[i][j];</div>
+    <div class="code-line hl-blue"><span class="ln">42</span>}</div>
+    <div class="code-line"><span class="ln">43</span>bias += <span class="macro">LEARNING_RATE</span> * error;</div>
+  </div>
+
+  <div class="rule-box">
+    <div class="rule-eq">
+      <span class="r-w">w</span> = <span class="r-w">w</span> + ( <span class="r-lr">lr</span> &times; <span class="r-e">error</span> &times; <span class="r-x">input</span> )
+    </div>
+    <div class="rule-legend">
+      <span><div class="dot" style="background:var(--red)"></div> <b>w</b> = the weight being updated</span>
+      <span><div class="dot" style="background:var(--blue)"></div> <b>lr</b> = learning rate (how big a step to take, 0.1)</span>
+      <span><div class="dot" style="background:var(--green)"></div> <b>error</b> = target - output (can be -1, 0, or 1)</span>
+      <span><div class="dot" style="background:var(--orange)"></div> <b>input</b> = the input value for this weight</span>
+    </div>
+  </div>
+
+  <div class="annotation">
+    <span class="ann-icon">&#9432;</span>
+    <span>If error is 0, the weight doesn't change. If we output 0 but should have output 1, error = +1, so we increase the weights. If we output 1 but should have output 0, error = -1, so we decrease. The input term means: weights connected to inputs that were 0 don't change at all - they didn't contribute to the wrong answer, so they don't get blamed.</span>
+  </div>
+
+  <!-- STEP THROUGH DEMO -->
+  <div class="epoch-demo">
+    <div style="font-size:0.65rem;color:#444;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px">Step through an epoch -- watch weights update after each example</div>
+    <table class="epoch-table">
+      <tr>
+        <th>EXAMPLE</th>
+        <th>A, B</th>
+        <th>TARGET</th>
+        <th>OUTPUT</th>
+        <th>ERROR</th>
+        <th>W0 BEFORE</th>
+        <th>W1 BEFORE</th>
+        <th>BIAS BEFORE</th>
+        <th>W0 AFTER</th>
+        <th>W1 AFTER</th>
+        <th>BIAS AFTER</th>
+      </tr>
+      <tbody id="epochTableBody"></tbody>
+    </table>
+    <div style="display:flex;gap:0;margin-top:12px">
+      <button class="step-btn" onclick="stepEpoch()">STEP NEXT EXAMPLE</button>
+      <button class="step-btn secondary" onclick="resetEpoch()">RESET</button>
+    </div>
+    <div style="font-size:0.65rem;color:#444;margin-top:8px" id="epochStatus">W0=0.00 | W1=0.00 | BIAS=0.00 | example 0/4</div>
+  </div>
+</div>
+
+<script>
+// -- SECTION 1: row highlight --
+function selectRow(r) {
+  document.querySelectorAll('.array-cell').forEach(c => {
+    c.classList.remove('active-cell','target-cell');
+  });
+  document.querySelectorAll(`[data-row="${r}"]`).forEach(c => c.classList.add('active-cell'));
+  document.querySelectorAll(`[data-target="${r}"]`).forEach(c => c.classList.add('target-cell'));
+}
+
+// -- SECTION 2: weight flow --
+let wfInputs = [1, 1];
+
+function setWFInput(a, b) {
+  wfInputs = [a, b];
+  document.querySelectorAll('.wf-input-btn').forEach((btn, i) => {
+    btn.classList.toggle('selected', i === (a * 2 + b));
+  });
+  updateWF();
+}
+
+function updateWF() {
+  const w0 = parseFloat(document.getElementById('wfW0').value);
+  const w1 = parseFloat(document.getElementById('wfW1').value);
+  const bias = parseFloat(document.getElementById('wfBias').value);
+  const A = wfInputs[0], B = wfInputs[1];
+
+  document.getElementById('wfW0Val').textContent = w0.toFixed(2);
+  document.getElementById('wfW1Val').textContent = w1.toFixed(2);
+  document.getElementById('wfBiasVal').textContent = bias.toFixed(2);
+
+  const contribA = A * w0;
+  const contribB = B * w1;
+  const sum = contribA + contribB + bias;
+  const output = sum > 0 ? 1 : 0;
+
+  // SVG updates
+  document.getElementById('svgA').textContent = A;
+  document.getElementById('svgB').textContent = B;
+  document.getElementById('svgBiasVal').textContent = bias.toFixed(2);
+  document.getElementById('svgW0Label').textContent = `${A} x ${w0.toFixed(2)}`;
+  document.getElementById('svgW1Label').textContent = `${B} x ${w1.toFixed(2)}`;
+  document.getElementById('svgSum').textContent = sum.toFixed(2);
+  document.getElementById('svgSumEq').textContent = `${contribA.toFixed(2)}+${contribB.toFixed(2)}+${bias.toFixed(2)}`;
+  document.getElementById('svgOutput').textContent = output;
+
+  // wire activity
+  document.getElementById('wireA').className.baseVal = `wire-path ${A > 0 ? 'active-wire' : 'zero-wire'}`;
+  document.getElementById('wireB').className.baseVal = `wire-path ${B > 0 ? 'active-wire' : 'zero-wire'}`;
+  document.getElementById('wireToStep').style.stroke = sum !== 0 ? '#00ffe9' : '#333';
+  document.getElementById('wireToOut').style.stroke = output === 1 ? '#39ff14' : '#333';
+
+  // neuron color
+  const neuron = document.getElementById('svgNeuron');
+  neuron.style.fill = output === 1 ? 'rgba(57,255,20,0.08)' : '#111';
+  neuron.style.stroke = output === 1 ? '#39ff14' : '#ccc';
+
+  // output box
+  const outBox = document.getElementById('svgOutputBox');
+  outBox.style.stroke = output === 1 ? '#39ff14' : '#1e1e1e';
+  outBox.style.fill = output === 1 ? 'rgba(57,255,20,0.08)' : '#111';
+  document.getElementById('svgOutput').style.fill = output === 1 ? '#39ff14' : '#ccc';
+
+  document.getElementById('wfResult').innerHTML =
+    `sum = (${A} &times; <span class="val">${w0.toFixed(2)}</span>) + (${B} &times; <span class="val">${w1.toFixed(2)}</span>) + <span class="val">${bias.toFixed(2)}</span><br>` +
+    `sum = ${contribA.toFixed(3)} + ${contribB.toFixed(3)} + ${bias.toFixed(3)} = <span class="val">${sum.toFixed(3)}</span><br>` +
+    `step(${sum.toFixed(3)}) = <span class="${output===1?'pos':'neg'}">${output}</span> &nbsp; (${sum > 0 ? 'sum > 0, fires' : sum === 0 ? 'sum = 0, no fire' : 'sum < 0, no fire'})`;
+}
+
+updateWF();
+
+// -- SECTION 3: epoch step demo --
+const trainingInputs = [[0,0],[0,1],[1,0],[1,1]];
+const trainingTargets = [0, 0, 0, 1];
+const LR = 0.1;
+
+let epochWeights = [0, 0];
+let epochBias = 0;
+let epochStep = 0;
+
+function step_fn(s) { return s > 0 ? 1 : 0; }
+
+function fwd(inp, w, b) {
+  let s = b;
+  for (let i = 0; i < 2; i++) s += inp[i] * w[i];
+  return { sum: s, output: step_fn(s) };
+}
+
+function stepEpoch() {
+  if (epochStep >= 4) {
+    epochStep = 0;
+  }
+
+  const i = epochStep;
+  const inp = trainingInputs[i];
+  const target = trainingTargets[i];
+  const { output } = fwd(inp, epochWeights, epochBias);
+  const error = target - output;
+
+  const w0Before = epochWeights[0], w1Before = epochWeights[1], biasB = epochBias;
+
+  epochWeights[0] += LR * error * inp[0];
+  epochWeights[1] += LR * error * inp[1];
+  epochBias += LR * error;
+
+  const errClass = error !== 0 ? 'wrong' : 'correct';
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td>${i}</td>
+    <td>${inp[0]}, ${inp[1]}</td>
+    <td>${target}</td>
+    <td class="${output===target?'correct':'wrong'}">${output}</td>
+    <td class="${errClass}">${error > 0 ? '+' : ''}${error}</td>
+    <td>${w0Before.toFixed(2)}</td>
+    <td>${w1Before.toFixed(2)}</td>
+    <td>${biasB.toFixed(2)}</td>
+    <td style="color:${epochWeights[0]!==w0Before?'#c0392b':'#9a9080'}">${epochWeights[0].toFixed(2)}</td>
+    <td style="color:${epochWeights[1]!==w1Before?'#c0392b':'#9a9080'}">${epochWeights[1].toFixed(2)}</td>
+    <td style="color:${epochBias!==biasB?'#c0392b':'#9a9080'}">${epochBias.toFixed(2)}</td>
+  `;
+  document.getElementById('epochTableBody').appendChild(row);
+
+  epochStep++;
+  document.getElementById('epochStatus').textContent =
+    `W0=${epochWeights[0].toFixed(2)} | W1=${epochWeights[1].toFixed(2)} | BIAS=${epochBias.toFixed(2)} | example ${Math.min(epochStep,4)}/4`;
+}
+
+function resetEpoch() {
+  epochWeights = [0, 0];
+  epochBias = 0;
+  epochStep = 0;
+  document.getElementById('epochTableBody').innerHTML = '';
+  document.getElementById('epochStatus').textContent = 'W0=0.00 | W1=0.00 | BIAS=0.00 | example 0/4';
+}
+</script>
+</body>
+</html>

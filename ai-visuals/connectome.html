@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CONNECTOME</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+  :root {
+  --bg:         #0a0a0a;
+  --surface:    #111111;
+  --surface2:   #0d0d0d;
+  --border:     #1e1e1e;
+  --border2:    #2a2a2a;
+  --cyan:       #00ffe9;
+  --yellow:     #ffe900;
+  --magenta:    #e900ff;
+  --red:        #ff2d55;
+  --green:      #39ff14;
+  --orange:     #ff6b00;
+  --dim:        #3a3a3a;
+  --text:       #cccccc;
+  --bright:     #ffffff;
+  --hi-cyan:    rgba(0,255,233,0.07);
+  --hi-red:     rgba(255,45,85,0.08);
+  --hi-yellow:  rgba(255,233,0,0.07);
+}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;font-size:11px;line-height:1.65;padding:36px 30px;max-width:980px;margin:0 auto;}
+  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:999;}
+  .masthead{border-top:3px solid var(--cyan);padding:14px 0 10px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border);}
+  .masthead h1{font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:4px;color:var(--bright);line-height:1;}
+  .masthead h1 em{color:var(--cyan);font-style:normal;}
+  .masthead-right{text-align:right;font-size:10px;color:#444;letter-spacing:2px;text-transform:uppercase;}
+  .masthead-right strong{display:block;color:var(--yellow);font-size:11px;margin-bottom:2px;}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:2px;}
+  .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-bottom:2px;}
+  .g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2px;margin-bottom:2px;}
+  .gfull{margin-bottom:2px;}
+  .panel{background:var(--surface);border:1px solid var(--border);padding:18px;}
+  .plabel{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:3px;color:#383838;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .ptitle{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--bright);margin-bottom:8px;line-height:1;}
+  .ptitle.cy{color:var(--cyan);}.ptitle.rd{color:var(--red);}.ptitle.yl{color:var(--yellow);}.ptitle.pu{color:var(--magenta);}.ptitle.or{color:var(--orange);}
+  .bar{width:28px;height:2px;margin-bottom:10px;background:var(--cyan);}
+  .bar.rd{background:var(--red);}.bar.yl{background:var(--yellow);}.bar.pu{background:var(--magenta);}.bar.or{background:var(--orange);}
+  p{font-size:11px;color:var(--text);margin-bottom:7px;line-height:1.65;}
+  .hl{color:var(--cyan);font-weight:700;}.hl.rd{color:var(--red);}.hl.yl{color:var(--yellow);}.hl.pu{color:var(--magenta);}.hl.or{color:var(--orange);}
+  .footer{border-top:1px solid var(--border);margin-top:14px;padding-top:10px;display:flex;justify-content:space-between;font-size:9px;color:#2a2a2a;letter-spacing:1px;}
+  .tag{display:inline-block;border:1px solid var(--border);padding:1px 6px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#444;margin:2px 2px 2px 0;}
+  .tag.cy{border-color:var(--cyan);color:var(--cyan);}.tag.rd{border-color:var(--red);color:var(--red);}.tag.yl{border-color:var(--yellow);color:var(--yellow);}.tag.pu{border-color:var(--magenta);color:var(--magenta);}.tag.or{border-color:var(--orange);color:var(--orange);}
+  .org-header{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;line-height:1;margin-bottom:3px;}
+  .org-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #111;font-size:10px;}
+  .org-row-label{color:#333;text-transform:uppercase;letter-spacing:1px;font-size:9px;}
+  .org-row-val{font-weight:700;}
+  .progress-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+  .pr-label{font-size:10px;color:#555;width:100px;flex-shrink:0;text-align:right;}
+  .pr-track{flex:1;background:#0a0a0a;border:1px solid #161616;height:12px;}
+  .pr-fill{height:100%;}
+  .pr-val{font-size:10px;width:50px;font-weight:700;flex-shrink:0;}
+  .timeline-item{display:flex;gap:12px;margin-bottom:12px;padding-left:14px;position:relative;}
+  .timeline-item::before{content:'';position:absolute;left:0;top:5px;width:6px;height:6px;border:1px solid var(--cyan);background:var(--bg);}
+  .tl-year{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;color:var(--cyan);flex-shrink:0;width:50px;}
+  .tl-content{font-size:10px;color:#555;}
+  .tl-content strong{color:var(--bright);display:block;margin-bottom:1px;}
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>THE CON<em>NECT</em>OME</h1>
+  <div class="masthead-right">
+    <strong>COMPLETE WIRING DIAGRAMS OF NERVOUS SYSTEMS</strong>
+    302 NEURONS TO 86 BILLION // ELECTRON MICROSCOPY<br>
+    GRAPH THEORY MEETS NEUROSCIENCE
+  </div>
+</div>
+
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">01 // What Is A Connectome</div>
+    <div class="ptitle cy">COMPLETE NEURAL WIRING DIAGRAM</div>
+    <div class="bar"></div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+      <div>
+        <p>A connectome is a comprehensive map of all neural connections in a nervous system - every neuron, every synapse, the strength and type of each connection. It's the structural blueprint of a brain, the way a netlist is the blueprint of a circuit.</p>
+        <p>Producing one requires <span class="hl">serial section electron microscopy</span>: brain tissue is embedded in resin, sliced into thousands of ultrathin sections (20-40nm), each section imaged at nanometer resolution, then sections computationally reconstructed into a 3D volume. Individual synapses are visible. Every axon can be traced. The process generates petabytes of raw image data for even small tissue samples.</p>
+        <p>The computational challenge of reconstructing traced neurons from this data is as hard as the imaging itself. Automated segmentation using convolutional networks has made it tractable - but manual proofreading is still required. A full human brain connectome remains decades away even with current technology.</p>
+      </div>
+      <div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="text-align:center;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--cyan);line-height:1;">302</div>
+            <div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">C. elegans<br>complete</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--yellow);line-height:1;">140K</div>
+            <div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">Drosophila<br>complete 2023</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--magenta);line-height:1;">~1mm³</div>
+            <div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">Human cortex<br>mapped 2021</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--red);line-height:1;">86B</div>
+            <div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">Human whole<br>unmapped</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="g4">
+  <div class="panel">
+    <div class="org-header" style="color:var(--cyan);">C. ELEGANS</div>
+    <div style="font-size:9px;color:#333;margin-bottom:10px;letter-spacing:1px;">NEMATODE // FULLY COMPLETE</div>
+    <div class="org-row"><span class="org-row-label">Neurons</span><span class="org-row-val" style="color:var(--cyan)">302</span></div>
+    <div class="org-row"><span class="org-row-label">Synapses</span><span class="org-row-val">7,000</span></div>
+    <div class="org-row"><span class="org-row-label">Gap junctions</span><span class="org-row-val">2,000</span></div>
+    <div class="org-row"><span class="org-row-label">Status</span><span class="org-row-val" style="color:var(--cyan)">100% complete</span></div>
+    <div class="org-row"><span class="org-row-label">Year</span><span class="org-row-val">1986</span></div>
+    <div class="org-row"><span class="org-row-label">Method</span><span class="org-row-val">EM serial section</span></div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">John White, Sydney Brenner. 13 years of manual reconstruction. The gold standard. OpenWorm reproduced the worm's behavior in simulation using only this connectome + muscle model.</p>
+    <div style="margin-top:6px;"><span class="tag cy">complete</span><span class="tag">model org</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="org-header" style="color:var(--yellow);">DROSOPHILA</div>
+    <div style="font-size:9px;color:#333;margin-bottom:10px;letter-spacing:1px;">FRUIT FLY // COMPLETE 2023</div>
+    <div class="org-row"><span class="org-row-label">Neurons</span><span class="org-row-val" style="color:var(--yellow)">~140,000</span></div>
+    <div class="org-row"><span class="org-row-label">Synapses</span><span class="org-row-val">~50 million</span></div>
+    <div class="org-row"><span class="org-row-label">Image data</span><span class="org-row-val">40 TB</span></div>
+    <div class="org-row"><span class="org-row-label">Status</span><span class="org-row-val" style="color:var(--yellow)">complete 2023</span></div>
+    <div class="org-row"><span class="org-row-label">Effort</span><span class="org-row-val">FlyEM // Janelia</span></div>
+    <div class="org-row"><span class="org-row-label">Method</span><span class="org-row-val">EM + AI seg.</span></div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">FlyWire project (Princeton/Seung lab) completed the full adult fly brain connectome in 2023. 12 million+ AI-traced neuron segments, community proofreading. First complete connectome of an organism with a complex brain.</p>
+    <div style="margin-top:6px;"><span class="tag yl">complete</span><span class="tag yl">2023</span><span class="tag">AI-assisted</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="org-header" style="color:var(--orange);">ZEBRAFISH</div>
+    <div style="font-size:9px;color:#333;margin-bottom:10px;letter-spacing:1px;">LARVAL // PARTIAL</div>
+    <div class="org-row"><span class="org-row-label">Neurons</span><span class="org-row-val">~100,000</span></div>
+    <div class="org-row"><span class="org-row-label">Mapped %</span><span class="org-row-val" style="color:var(--orange)">~30%</span></div>
+    <div class="org-row"><span class="org-row-label">Resolution</span><span class="org-row-val">light sheet</span></div>
+    <div class="org-row"><span class="org-row-label">Status</span><span class="org-row-val">ongoing</span></div>
+    <div class="org-row"><span class="org-row-label">Effort</span><span class="org-row-val">multiple labs</span></div>
+    <div class="org-row"><span class="org-row-label">Advantage</span><span class="org-row-val">transparent</span></div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">Larval zebrafish are optically transparent and genetically tractable. Calcium imaging can record the activity of nearly every neuron simultaneously in a living animal while it behaves. Unique window into whole-brain dynamics.</p>
+    <div style="margin-top:6px;"><span class="tag or">partial</span><span class="tag">live imaging</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="org-header" style="color:var(--red);">HUMAN</div>
+    <div style="font-size:9px;color:#333;margin-bottom:10px;letter-spacing:1px;">HOMO SAPIENS // UNMAPPED</div>
+    <div class="org-row"><span class="org-row-label">Neurons</span><span class="org-row-val" style="color:var(--red)">86 billion</span></div>
+    <div class="org-row"><span class="org-row-label">Synapses</span><span class="org-row-val">~100 trillion</span></div>
+    <div class="org-row"><span class="org-row-label">EM data est.</span><span class="org-row-val" style="color:var(--red)">~1 zettabyte</span></div>
+    <div class="org-row"><span class="org-row-label">Status</span><span class="org-row-val" style="color:var(--red)">1mm³ done</span></div>
+    <div class="org-row"><span class="org-row-label">Timeline</span><span class="org-row-val">decades+</span></div>
+    <div class="org-row"><span class="org-row-label">Blocker</span><span class="org-row-val">data volume</span></div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">Google + Harvard mapped 1 cubic millimeter of human temporal cortex (H01 dataset, 2021). 57,000 cells, 150M synapses, 1.4 petabytes. That's 1/1,000,000th of the brain. Extrapolating: a full connectome ~1 zettabyte of image data.</p>
+    <div style="margin-top:6px;"><span class="tag rd">unmapped</span><span class="tag">H01</span></div>
+  </div>
+</div>
+
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">05 // C. Elegans Circuit // Case Study</div>
+    <div class="ptitle cy">302 NEURONS // FULL BEHAVIOR</div>
+    <div class="bar"></div>
+    <p>The C. elegans connectome isn't just a curiosity - it's a fully characterized circuit that explains the worm's complete behavioral repertoire. Every neuron has been named and its role characterized:</p>
+
+    <svg viewBox="0 0 400 200" width="100%" height="200">
+      <!-- Simplified circuit diagram -->
+      <!-- Sensory neurons -->
+      <rect x="20" y="60" width="70" height="80" fill="#0a0a0a" stroke="#1e3a3a" stroke-width="1" rx="2"/>
+      <text x="55" y="78" font-family="Bebas Neue" font-size="11" fill="#00ffe9" text-anchor="middle" letter-spacing="1">SENSORY</text>
+      <text x="55" y="92" font-family="Space Mono" font-size="7" fill="#004d44" text-anchor="middle">ASE, AWC</text>
+      <text x="55" y="104" font-family="Space Mono" font-size="7" fill="#004d44" text-anchor="middle">chemotaxis</text>
+      <text x="55" y="116" font-family="Space Mono" font-size="7" fill="#004d44" text-anchor="middle">AWB nociception</text>
+      <text x="55" y="128" font-family="Space Mono" font-size="7" fill="#004d44" text-anchor="middle">AFD thermosense</text>
+
+      <!-- Interneurons -->
+      <rect x="165" y="40" width="70" height="120" fill="#0a0a0a" stroke="#3a1a4a" stroke-width="1" rx="2"/>
+      <text x="200" y="58" font-family="Bebas Neue" font-size="11" fill="#e900ff" text-anchor="middle" letter-spacing="1">INTER</text>
+      <text x="200" y="72" font-family="Space Mono" font-size="7" fill="#4a1a5a" text-anchor="middle">AIY forward</text>
+      <text x="200" y="84" font-family="Space Mono" font-size="7" fill="#4a1a5a" text-anchor="middle">AIZ reverse</text>
+      <text x="200" y="96" font-family="Space Mono" font-size="7" fill="#4a1a5a" text-anchor="middle">AVA command</text>
+      <text x="200" y="108" font-family="Space Mono" font-size="7" fill="#4a1a5a" text-anchor="middle">AVB command</text>
+      <text x="200" y="120" font-family="Space Mono" font-size="7" fill="#4a1a5a" text-anchor="middle">RIA navigation</text>
+      <text x="200" y="132" font-family="Space Mono" font-size="7" fill="#4a1a5a" text-anchor="middle">RIB modulation</text>
+      <text x="200" y="144" font-family="Space Mono" font-size="7" fill="#4a1a5a" text-anchor="middle">~50 more</text>
+
+      <!-- Motor neurons -->
+      <rect x="310" y="60" width="70" height="80" fill="#0a0a0a" stroke="#3a1a00" stroke-width="1" rx="2"/>
+      <text x="345" y="78" font-family="Bebas Neue" font-size="11" fill="#ff6b00" text-anchor="middle" letter-spacing="1">MOTOR</text>
+      <text x="345" y="92" font-family="Space Mono" font-size="7" fill="#4a2200" text-anchor="middle">VA/VB ventral</text>
+      <text x="345" y="104" font-family="Space Mono" font-size="7" fill="#4a2200" text-anchor="middle">DA/DB dorsal</text>
+      <text x="345" y="116" font-family="Space Mono" font-size="7" fill="#4a2200" text-anchor="middle">AS undulation</text>
+      <text x="345" y="128" font-family="Space Mono" font-size="7" fill="#4a2200" text-anchor="middle">→ 95 body muscle</text>
+
+      <!-- Arrows -->
+      <line x1="90" y1="100" x2="165" y2="100" stroke="#004d44" stroke-width="1.5"/>
+      <polygon points="162,96 170,100 162,104" fill="#004d44"/>
+      <line x1="235" y1="100" x2="310" y2="100" stroke="#4a1a5a" stroke-width="1.5"/>
+      <polygon points="307,96 315,100 307,104" fill="#4a1a5a"/>
+
+      <!-- Feedback -->
+      <path d="M 345 60 C 345 20, 55 20, 55 60" fill="none" stroke="#222" stroke-width="1" stroke-dasharray="3,2"/>
+      <polygon points="52,63 60,58 58,67" fill="#222"/>
+      <text x="200" y="14" font-family="Space Mono" font-size="7" fill="#2a2a2a" text-anchor="middle">proprioceptive feedback</text>
+
+      <!-- Labels -->
+      <text x="55" y="156" font-family="Space Mono" font-size="8" fill="#333" text-anchor="middle">32 neurons</text>
+      <text x="200" y="175" font-family="Space Mono" font-size="8" fill="#333" text-anchor="middle">~80 neurons</text>
+      <text x="345" y="156" font-family="Space Mono" font-size="8" fill="#333" text-anchor="middle">~120 neurons</text>
+    </svg>
+
+    <p style="font-size:10px;color:#444;margin-top:4px;">This circuit produces thermotaxis, chemotaxis, foraging, mating, escape responses, and simple learning. All from 302 neurons. Every connection in this diagram has been verified by electron microscopy.</p>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">06 // Graph Theory Properties</div>
+    <div class="ptitle yl">NETWORK TOPOLOGY</div>
+    <div class="bar yl"></div>
+    <p>Connectomes aren't random graphs. They exhibit specific topological properties that appear conserved across species and may be fundamental to how nervous systems work:</p>
+
+    <div style="margin:10px 0;">
+      <div style="background:#0a0a0a;border:1px solid var(--border);padding:10px;margin-bottom:2px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--yellow);margin-bottom:4px;">SMALL WORLD TOPOLOGY</div>
+        <p style="margin:0;font-size:10px;color:#444;">High clustering coefficient + short average path length. Any two neurons connected by few hops. Efficient information routing with localized processing. Found in C. elegans, Drosophila, human fMRI networks.</p>
+      </div>
+      <div style="background:#0a0a0a;border:1px solid var(--border);padding:10px;margin-bottom:2px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--cyan);margin-bottom:4px;">RICH CLUB ORGANIZATION</div>
+        <p style="margin:0;font-size:10px;color:#444;">High-degree "hub" neurons are more densely interconnected with each other than predicted by chance. These form a rich club - a densely connected core that integrates information from periphery. In humans: default mode network nodes.</p>
+      </div>
+      <div style="background:#0a0a0a;border:1px solid var(--border);padding:10px;margin-bottom:2px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--magenta);margin-bottom:4px;">MODULARITY</div>
+        <p style="margin:0;font-size:10px;color:#444;">Neurons cluster into modules with dense internal and sparse external connections. Modules correspond roughly to functional regions. Hierarchical modularity at multiple scales.</p>
+      </div>
+      <div style="background:#0a0a0a;border:1px solid var(--border);padding:10px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--orange);margin-bottom:4px;">SCALE-FREE DEGREE DIST.</div>
+        <p style="margin:0;font-size:10px;color:#444;">Most neurons have few connections. A small number are extremely highly connected hubs. Power-law distribution. Robust to random failure, vulnerable to targeted hub attack. Mirrors many natural networks.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">07 // Historical Timeline // Connectomics</div>
+    <div class="ptitle">MAPPING THE WIRED BRAIN</div>
+    <div class="bar rd"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div>
+        <div class="timeline-item">
+          <div class="tl-year">1963</div>
+          <div class="tl-content"><strong>Brenner launches C. elegans program</strong>Proposes nematode as model organism precisely because complete wiring could be mapped. 23-year project begins.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-year">1986</div>
+          <div class="tl-content"><strong>White, Brenner, Thomson et al.</strong>First complete connectome published. 302 neurons, 5000+ chemical synapses. Hand-traced from EM serial sections. Nobel Prize 2002.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-year">2000s</div>
+          <div class="tl-content"><strong>Sebastian Seung - "Connectome" vision</strong>Argues identity is connectome. Popularizes field. Develops automated EM segmentation tools. EyeWire citizen science project traces retinal neurons via game.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-year">2013</div>
+          <div class="tl-content"><strong>Obama BRAIN Initiative</strong>$100M+ federal funding for brain mapping technologies. Accelerates development of CLARITY, expansion microscopy, and high-throughput EM pipelines.</div>
+        </div>
+      </div>
+      <div>
+        <div class="timeline-item">
+          <div class="tl-year">2020</div>
+          <div class="tl-content"><strong>OpenWorm runs on Lego robot</strong>C. elegans connectome simulated in software, uploaded to Raspberry Pi in a Lego robot. Robot navigates without explicit programming - behavior emerges from circuit. Landmark demonstration.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-year">2021</div>
+          <div class="tl-content"><strong>H01: 1mm³ human cortex</strong>Google + Harvard release petabyte-scale dataset of human temporal cortex. 57,000 cells, 150M synapses. Largest EM dataset of human tissue. Reveals unexpected axon-to-axon synapses.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-year">2023</div>
+          <div class="tl-content"><strong>Full Drosophila connectome</strong>FlyWire project completes adult fly brain. 140,000 neurons, 50M synapses. AI-assisted segmentation + community proofreading. First complex-brain complete connectome.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="tl-year">2024+</div>
+          <div class="tl-content"><strong>Mouse cortex underway</strong>Allen Institute + multiple groups targeting mouse visual cortex mm³ patches. Developing automated pipelines for larger volumes. Full mouse brain connectome a 10-20 year project.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>WHITE ET AL. 1986 // OPENWORM 2014 // H01 DATASET 2021 // FLYWIRE // DORKENWALD ET AL. 2023</span>
+  <span>BRUTALIST TERMINAL v2 // CONNECTOMICS</span>
+</div>
+
+</body>
+</html>

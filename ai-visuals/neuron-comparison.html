@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEURON // BIO vs MACHINE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+
+  :root {
+  --bg:         #0a0a0a;
+  --surface:    #111111;
+  --surface2:   #0d0d0d;
+  --border:     #1e1e1e;
+  --border2:    #2a2a2a;
+  --cyan:       #00ffe9;
+  --yellow:     #ffe900;
+  --magenta:    #e900ff;
+  --red:        #ff2d55;
+  --green:      #39ff14;
+  --orange:     #ff6b00;
+  --dim:        #3a3a3a;
+  --text:       #cccccc;
+  --bright:     #ffffff;
+  --hi-cyan:    rgba(0,255,233,0.07);
+  --hi-red:     rgba(255,45,85,0.08);
+  --hi-yellow:  rgba(255,233,0,0.07);
+}
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    line-height: 1.65;
+    padding: 36px 30px;
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* MASTHEAD */
+  .masthead {
+    border-top: 3px solid var(--red);
+    padding: 14px 0 10px;
+    margin-bottom: 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .masthead h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 68px;
+    letter-spacing: 4px;
+    color: var(--bright);
+    line-height: 1;
+  }
+
+  .masthead h1 em { color: var(--red); font-style: normal; }
+
+  .masthead-right {
+    text-align: right;
+    font-size: 10px;
+    color: #444;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .masthead-right strong {
+    display: block;
+    color: var(--cyan);
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+
+  /* LAYOUT */
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-bottom: 2px; }
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; margin-bottom: 2px; }
+  .g4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 2px; margin-bottom: 2px; }
+  .gfull { margin-bottom: 2px; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 18px;
+  }
+
+  .plabel {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: #383838;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ptitle {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 2px;
+    color: var(--bright);
+    margin-bottom: 8px;
+    line-height: 1;
+  }
+
+  .ptitle.cy { color: var(--cyan); }
+  .ptitle.rd { color: var(--red); }
+  .ptitle.yl { color: var(--yellow); }
+  .ptitle.pu { color: var(--magenta); }
+  .ptitle.or { color: var(--orange); }
+
+  .bar { width: 28px; height: 2px; margin-bottom: 10px; background: var(--cyan); }
+  .bar.rd { background: var(--red); }
+  .bar.yl { background: var(--yellow); }
+  .bar.pu { background: var(--magenta); }
+  .bar.or { background: var(--orange); }
+
+  p { font-size: 11px; color: var(--text); margin-bottom: 7px; line-height: 1.65; }
+
+  .hl { color: var(--cyan); font-weight: 700; }
+  .hl.rd { color: var(--red); }
+  .hl.yl { color: var(--yellow); }
+  .hl.pu { color: var(--magenta); }
+  .hl.or { color: var(--orange); }
+
+  /* NEURON DIAGRAMS */
+  .bio-neuron {
+    position: relative;
+    padding: 16px 8px;
+  }
+
+  svg.neuron-svg {
+    width: 100%;
+    overflow: visible;
+  }
+
+  /* SPIKE CHART */
+  .spike-chart {
+    background: #050505;
+    border: 1px solid var(--border);
+    padding: 10px;
+    margin: 10px 0;
+    position: relative;
+  }
+
+  .spike-chart-label {
+    font-size: 9px;
+    color: #333;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .spike-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .spike-name {
+    font-size: 9px;
+    color: #444;
+    width: 60px;
+    flex-shrink: 0;
+    text-align: right;
+    letter-spacing: 1px;
+  }
+
+  .spike-track {
+    flex: 1;
+    height: 20px;
+    position: relative;
+    background: #0a0a0a;
+    border: 1px solid #161616;
+  }
+
+  .spike {
+    position: absolute;
+    width: 2px;
+    background: var(--cyan);
+    top: 2px;
+    bottom: 2px;
+  }
+
+  .spike.rd { background: var(--red); }
+  .spike.yl { background: var(--yellow); }
+  .spike.pu { background: var(--magenta); }
+
+  /* COMPARISON TABLE */
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .comp-table th {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #444;
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .comp-table th.cy { color: var(--cyan); border-bottom-color: var(--cyan); }
+  .comp-table th.rd { color: var(--red); border-bottom-color: var(--red); }
+
+  .comp-table td {
+    padding: 7px 8px;
+    font-size: 10px;
+    border-bottom: 1px solid #111;
+    vertical-align: top;
+  }
+
+  .comp-table td:first-child {
+    color: #3a3a3a;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .comp-table tr:hover td { background: #111; }
+
+  /* ION CHANNEL */
+  .ion-timeline {
+    margin: 10px 0;
+    position: relative;
+  }
+
+  .ion-phase {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding-left: 14px;
+    position: relative;
+  }
+
+  .ion-phase::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    width: 6px;
+    height: 6px;
+    border: 1px solid var(--cyan);
+    background: var(--bg);
+  }
+
+  .ion-phase-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--cyan);
+    flex-shrink: 0;
+    width: 100px;
+  }
+
+  .ion-phase p { margin: 0; font-size: 10px; color: #555; }
+
+  /* ANN NEURON MATH */
+  .math-block {
+    background: #060606;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--yellow);
+    padding: 12px 14px;
+    margin: 10px 0;
+    font-size: 12px;
+  }
+
+  .math-block .eq { color: var(--yellow); margin-bottom: 4px; }
+  .math-block .note { font-size: 9px; color: #444; margin-top: 6px; }
+
+  /* ORGANISM CARDS */
+  .org-card {
+    padding: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .org-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .org-stat {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+    padding: 5px 0;
+    font-size: 10px;
+  }
+
+  .org-stat-label { color: #333; text-transform: uppercase; letter-spacing: 1px; }
+  .org-stat-val { font-weight: 700; }
+
+  /* ACTIVATION FUNCTIONS */
+  .activ-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    margin-top: 8px;
+  }
+
+  .activ-item {
+    background: #0a0a0a;
+    border: 1px solid var(--border);
+    padding: 10px;
+  }
+
+  .activ-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+
+  .activ-formula {
+    font-size: 10px;
+    color: var(--yellow);
+    margin-bottom: 4px;
+  }
+
+  .activ-note { font-size: 9px; color: #444; }
+
+  /* POWER STATS */
+  .power-meter {
+    margin: 10px 0;
+  }
+
+  .pm-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .pm-label { font-size: 10px; color: #555; width: 110px; flex-shrink: 0; }
+  .pm-bar-wrap { flex: 1; background: #0a0a0a; border: 1px solid #161616; height: 14px; position: relative; }
+  .pm-bar { height: 100%; }
+  .pm-val { font-size: 10px; color: var(--bright); width: 55px; text-align: right; flex-shrink: 0; font-weight: 700; }
+
+  .stat-big {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 38px;
+    line-height: 1;
+    letter-spacing: 2px;
+  }
+
+  .stat-sub { font-size: 9px; color: #444; text-transform: uppercase; letter-spacing: 2px; margin-top: 2px; }
+
+  .footer {
+    border-top: 1px solid var(--border);
+    margin-top: 14px;
+    padding-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #2a2a2a;
+    letter-spacing: 1px;
+  }
+
+  .divider-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: #222;
+    text-align: center;
+    padding: 6px 0 4px;
+    text-transform: uppercase;
+  }
+
+  .tag {
+    display: inline-block;
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #444;
+    margin: 2px 2px 2px 0;
+  }
+
+  .tag.cy { border-color: var(--cyan); color: var(--cyan); }
+  .tag.rd { border-color: var(--red); color: var(--red); }
+  .tag.yl { border-color: var(--yellow); color: var(--yellow); }
+  .tag.pu { border-color: var(--magenta); color: var(--magenta); }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>NEU<em>RON</em></h1>
+  <div class="masthead-right">
+    <strong>BIO vs MACHINE // COMPARATIVE ANATOMY</strong>
+    ACTION POTENTIALS // ANN UNITS // SPIKING NETWORKS<br>
+    HUMAN // INSECT // CEPHALOPOD // SILICON
+  </div>
+</div>
+
+<!-- ROW 1: Biological neuron anatomy + action potential -->
+<div class="g2">
+
+  <div class="panel">
+    <div class="plabel">01 // Biological Neuron</div>
+    <div class="ptitle rd">THE REAL THING</div>
+    <div class="bar rd"></div>
+
+    <!-- SVG neuron diagram -->
+    <svg class="neuron-svg" viewBox="0 0 400 160" height="160">
+      <!-- Dendrites -->
+      <line x1="30" y1="40" x2="80" y2="78" stroke="#2a2a2a" stroke-width="2"/>
+      <line x1="15" y1="65" x2="80" y2="80" stroke="#2a2a2a" stroke-width="2"/>
+      <line x1="25" y1="95" x2="80" y2="85" stroke="#2a2a2a" stroke-width="2"/>
+      <line x1="35" y1="120" x2="80" y2="88" stroke="#2a2a2a" stroke-width="2"/>
+      <!-- Dendritic tips -->
+      <circle cx="30" cy="40" r="4" fill="none" stroke="#ff2d55" stroke-width="1"/>
+      <circle cx="15" cy="65" r="4" fill="none" stroke="#ff2d55" stroke-width="1"/>
+      <circle cx="25" cy="95" r="4" fill="none" stroke="#ff2d55" stroke-width="1"/>
+      <circle cx="35" cy="120" r="4" fill="none" stroke="#ff2d55" stroke-width="1"/>
+      <!-- Labels -->
+      <text x="5" y="38" font-family="Space Mono" font-size="8" fill="#ff2d55">DENDRITES</text>
+      <!-- Soma -->
+      <ellipse cx="120" cy="82" rx="38" ry="30" fill="#111111" stroke="#333" stroke-width="1.5"/>
+      <text x="108" y="79" font-family="Space Mono" font-size="8" fill="#666">SOMA</text>
+      <text x="104" y="90" font-family="Space Mono" font-size="7" fill="#333">NUCLEUS</text>
+      <circle cx="120" cy="82" r="9" fill="none" stroke="#222" stroke-width="1" stroke-dasharray="2,2"/>
+      <!-- Axon hillock -->
+      <path d="M 158 82 L 190 82" stroke="#444" stroke-width="2.5"/>
+      <text x="158" y="74" font-family="Space Mono" font-size="7" fill="#444">HILLOCK</text>
+      <!-- Axon -->
+      <line x1="190" y1="82" x2="330" y2="82" stroke="#00ffe9" stroke-width="2.5"/>
+      <text x="230" y="74" font-family="Space Mono" font-size="8" fill="#00ffe9">AXON</text>
+      <!-- Myelin sheaths -->
+      <rect x="200" y="76" width="22" height="12" rx="6" fill="none" stroke="#1e4a42" stroke-width="1.5"/>
+      <rect x="238" y="76" width="22" height="12" rx="6" fill="none" stroke="#1e4a42" stroke-width="1.5"/>
+      <rect x="276" y="76" width="22" height="12" rx="6" fill="none" stroke="#1e4a42" stroke-width="1.5"/>
+      <text x="200" y="103" font-family="Space Mono" font-size="7" fill="#1e4a42">MYELIN SHEATH</text>
+      <!-- Terminal boutons -->
+      <line x1="330" y1="82" x2="358" y2="55" stroke="#555" stroke-width="1.5"/>
+      <line x1="330" y1="82" x2="365" y2="82" stroke="#555" stroke-width="1.5"/>
+      <line x1="330" y1="82" x2="358" y2="109" stroke="#555" stroke-width="1.5"/>
+      <circle cx="363" cy="52" r="5" fill="none" stroke="#ffe900" stroke-width="1.5"/>
+      <circle cx="372" cy="82" r="5" fill="none" stroke="#ffe900" stroke-width="1.5"/>
+      <circle cx="363" cy="112" r="5" fill="none" stroke="#ffe900" stroke-width="1.5"/>
+      <text x="346" y="44" font-family="Space Mono" font-size="7" fill="#ffe900">SYNAPSES</text>
+      <!-- Voltage arrow -->
+      <text x="189" y="120" font-family="Space Mono" font-size="7" fill="#555">-70mV rest → +40mV spike → refractory</text>
+    </svg>
+
+    <p>Biological neurons integrate electrochemical signals across thousands of <span class="hl rd">dendritic inputs</span>. The soma sums weighted inputs continuously. When membrane potential crosses threshold (~-55mV) at the axon hillock, an <span class="hl rd">action potential fires</span> - a stereotyped all-or-nothing voltage spike propagating down the axon.</p>
+    <p>Signals transmit at synapses via <span class="hl">neurotransmitter release</span> into the synaptic cleft, binding receptors on the postsynaptic cell. Both excitatory (AMPA, NMDA) and inhibitory (GABA) synapses exist. The ratio and timing of both shape output.</p>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">02 // Action Potential</div>
+    <div class="ptitle cy">THE SPIKE</div>
+    <div class="bar"></div>
+
+    <div class="ion-timeline">
+      <div class="ion-phase">
+        <div class="ion-phase-label">RESTING</div>
+        <p>-70mV. Na⁺/K⁺ pumps maintain electrochemical gradient. Membrane is polarized. Na⁺ channels closed, K⁺ leak channels open. Cell is integrating dendritic input continuously.</p>
+      </div>
+      <div class="ion-phase">
+        <div class="ion-phase-label">DEPOLARIZE</div>
+        <p>Sufficient input drives membrane to ~-55mV threshold. Voltage-gated Na⁺ channels open. Na⁺ floods in. Membrane potential rockets to +40mV in ~1ms. This is the spike.</p>
+      </div>
+      <div class="ion-phase">
+        <div class="ion-phase-label">REPOLARIZE</div>
+        <p>Na⁺ channels inactivate. Voltage-gated K⁺ channels open. K⁺ flows out. Membrane returns toward resting potential. Slight hyperpolarization (undershoot, ~-80mV).</p>
+      </div>
+      <div class="ion-phase">
+        <div class="ion-phase-label">REFRACTORY</div>
+        <p>Absolute refractory: cannot fire again for ~1-2ms regardless of input. Relative refractory: can fire with stronger stimulus. Limits max firing rate ~500-1000Hz. Enforces directionality.</p>
+      </div>
+    </div>
+
+    <div class="spike-chart">
+      <div class="spike-chart-label">spike train encoding // time →</div>
+      <div class="spike-row">
+        <div class="spike-name">RATE CODE</div>
+        <div class="spike-track">
+          <div class="spike" style="left:8%"></div>
+          <div class="spike" style="left:16%"></div>
+          <div class="spike" style="left:24%"></div>
+          <div class="spike" style="left:32%"></div>
+          <div class="spike" style="left:40%"></div>
+          <div class="spike" style="left:48%"></div>
+          <div class="spike" style="left:56%"></div>
+          <div class="spike" style="left:64%"></div>
+          <div class="spike" style="left:72%"></div>
+          <div class="spike" style="left:80%"></div>
+        </div>
+      </div>
+      <div class="spike-row">
+        <div class="spike-name">TEMPORAL</div>
+        <div class="spike-track">
+          <div class="spike" style="left:5%"></div>
+          <div class="spike" style="left:22%"></div>
+          <div class="spike" style="left:23%"></div>
+          <div class="spike" style="left:55%"></div>
+          <div class="spike" style="left:56%"></div>
+          <div class="spike" style="left:57%"></div>
+          <div class="spike" style="left:88%"></div>
+        </div>
+      </div>
+      <div class="spike-row">
+        <div class="spike-name">SILENCE</div>
+        <div class="spike-track">
+          <div class="spike" style="left:75%"></div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:9px; color:#444;">Rate coding: information in spike frequency. Temporal coding: information in precise timing and burst patterns. Brain likely uses both. ANNs use neither - they output continuous values.</p>
+  </div>
+
+</div>
+
+<!-- ROW 2: Organism comparison 4-up -->
+<div class="g4">
+
+  <div class="org-card">
+    <div class="org-name" style="color:var(--red)">HUMAN</div>
+    <div style="font-size:9px; color:#333; margin-bottom:10px; letter-spacing:1px;">HOMO SAPIENS</div>
+    <div class="org-stat"><span class="org-stat-label">Neurons</span><span class="org-stat-val" style="color:var(--red)">86 billion</span></div>
+    <div class="org-stat"><span class="org-stat-label">Synapses</span><span class="org-stat-val">~100 trillion</span></div>
+    <div class="org-stat"><span class="org-stat-label">Speed</span><span class="org-stat-val">0.5–120 m/s</span></div>
+    <div class="org-stat"><span class="org-stat-label">Power</span><span class="org-stat-val" style="color:var(--cyan)">~20W</span></div>
+    <div class="org-stat"><span class="org-stat-label">Neuron type</span><span class="org-stat-val">Centralized CNS</span></div>
+    <div class="org-stat"><span class="org-stat-label">Plasticity</span><span class="org-stat-val" style="color:var(--cyan)">Hebbian/LTP</span></div>
+    <p style="margin-top:10px; font-size:10px; color:#555;">Highly myelinated long-range axons. Prefrontal cortex enables abstraction and planning. Dense cortico-thalamic loops. Glial cells (astrocytes) actively modulate synaptic transmission - not just support cells.</p>
+    <div style="margin-top:8px;">
+      <span class="tag cy">cortex</span>
+      <span class="tag cy">cerebellum</span>
+      <span class="tag">myelin</span>
+    </div>
+  </div>
+
+  <div class="org-card">
+    <div class="org-name" style="color:var(--magenta)">OCTOPUS</div>
+    <div style="font-size:9px; color:#333; margin-bottom:10px; letter-spacing:1px;">OCTOPUS VULGARIS</div>
+    <div class="org-stat"><span class="org-stat-label">Neurons</span><span class="org-stat-val" style="color:var(--magenta)">500 million</span></div>
+    <div class="org-stat"><span class="org-stat-label">In arms</span><span class="org-stat-val" style="color:var(--magenta)">~350M (70%)</span></div>
+    <div class="org-stat"><span class="org-stat-label">Speed</span><span class="org-stat-val">slow, unmyelinated</span></div>
+    <div class="org-stat"><span class="org-stat-label">Power</span><span class="org-stat-val" style="color:var(--cyan)">very low</span></div>
+    <div class="org-stat"><span class="org-stat-label">Neuron type</span><span class="org-stat-val">Distributed</span></div>
+    <div class="org-stat"><span class="org-stat-label">Plasticity</span><span class="org-stat-val" style="color:var(--magenta)">RNA editing</span></div>
+    <p style="margin-top:10px; font-size:10px; color:#555;">Each arm contains an autonomous ganglion that processes sensory data and executes motor commands <span style="color:var(--magenta)">without central brain input</span>. Distributed intelligence. No myelin but giant axons for squid escape reflex (Mauthner equivalent). Unique: recodes proteins via RNA editing to adapt to temp.</p>
+    <div style="margin-top:8px;">
+      <span class="tag pu">distributed</span>
+      <span class="tag pu">RNA edit</span>
+      <span class="tag">no myelin</span>
+    </div>
+  </div>
+
+  <div class="org-card">
+    <div class="org-name" style="color:var(--yellow)">HONEYBEE</div>
+    <div style="font-size:9px; color:#333; margin-bottom:10px; letter-spacing:1px;">APIS MELLIFERA</div>
+    <div class="org-stat"><span class="org-stat-label">Neurons</span><span class="org-stat-val" style="color:var(--yellow)">~1 million</span></div>
+    <div class="org-stat"><span class="org-stat-label">Brain vol</span><span class="org-stat-val">1 mm³</span></div>
+    <div class="org-stat"><span class="org-stat-label">Speed</span><span class="org-stat-val">fast for size</span></div>
+    <div class="org-stat"><span class="org-stat-label">Power</span><span class="org-stat-val" style="color:var(--cyan)">&lt;1 mW</span></div>
+    <div class="org-stat"><span class="org-stat-label">Neuron type</span><span class="org-stat-val">Compact ganglia</span></div>
+    <div class="org-stat"><span class="org-stat-label">Plasticity</span><span class="org-stat-val" style="color:var(--yellow)">Mushroom body</span></div>
+    <p style="margin-top:10px; font-size:10px; color:#555;">Insect neurons are small, often monopolar (single process), and tightly packed. Mushroom bodies (the insect analogue of cortex) support associative learning, memory, navigation. Bees perform path integration, symbolic communication (waggle dance), concept formation - all from 1 million neurons.</p>
+    <div style="margin-top:8px;">
+      <span class="tag yl">monopolar</span>
+      <span class="tag yl">ganglia</span>
+      <span class="tag">compact</span>
+    </div>
+  </div>
+
+  <div class="org-card">
+    <div class="org-name" style="color:var(--cyan)">C. ELEGANS</div>
+    <div style="font-size:9px; color:#333; margin-bottom:10px; letter-spacing:1px;">NEMATODE // FULLY MAPPED</div>
+    <div class="org-stat"><span class="org-stat-label">Neurons</span><span class="org-stat-val" style="color:var(--cyan)">302 exactly</span></div>
+    <div class="org-stat"><span class="org-stat-label">Synapses</span><span class="org-stat-val">~7,000</span></div>
+    <div class="org-stat"><span class="org-stat-label">Connectome</span><span class="org-stat-val" style="color:var(--cyan)">fully known</span></div>
+    <div class="org-stat"><span class="org-stat-label">Power</span><span class="org-stat-val" style="color:var(--cyan)">sub-microwatt</span></div>
+    <div class="org-stat"><span class="org-stat-label">Neuron type</span><span class="org-stat-val">Simple ganglia</span></div>
+    <div class="org-stat"><span class="org-stat-label">Plasticity</span><span class="org-stat-val">limited</span></div>
+    <p style="margin-top:10px; font-size:10px; color:#555;">The only organism with a <span style="color:var(--cyan)">fully mapped connectome</span> (Brenner, White et al. 1986). 302 neurons producing locomotion, chemotaxis, thermotaxis, learning. Critical model organism for neural circuit research. OpenWorm project simulated the full nervous system in software.</p>
+    <div style="margin-top:8px;">
+      <span class="tag cy">connectome</span>
+      <span class="tag cy">model org</span>
+      <span class="tag">302 neurons</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ROW 3: ANN unit + comparison table -->
+<div class="g2">
+
+  <div class="panel">
+    <div class="plabel">05 // Artificial Neuron</div>
+    <div class="ptitle yl">THE ANN UNIT</div>
+    <div class="bar yl"></div>
+
+    <!-- ANN diagram SVG -->
+    <svg viewBox="0 0 380 130" width="100%" height="130" style="margin:8px 0;">
+      <!-- Inputs -->
+      <line x1="20" y1="30" x2="140" y2="65" stroke="#1e3a3a" stroke-width="1.5"/>
+      <line x1="20" y1="65" x2="140" y2="65" stroke="#1e3a3a" stroke-width="1.5"/>
+      <line x1="20" y1="100" x2="140" y2="65" stroke="#1e3a3a" stroke-width="1.5"/>
+      <!-- Input labels -->
+      <text x="2" y="33" font-family="Space Mono" font-size="9" fill="#00ffe9">x₁</text>
+      <text x="2" y="68" font-family="Space Mono" font-size="9" fill="#00ffe9">x₂</text>
+      <text x="2" y="103" font-family="Space Mono" font-size="9" fill="#00ffe9">x₃</text>
+      <!-- Weight labels -->
+      <text x="55" y="44" font-family="Space Mono" font-size="8" fill="#ffe900">w₁</text>
+      <text x="72" y="62" font-family="Space Mono" font-size="8" fill="#ffe900">w₂</text>
+      <text x="55" y="93" font-family="Space Mono" font-size="8" fill="#ffe900">w₃</text>
+      <!-- Soma circle -->
+      <circle cx="165" cy="65" r="30" fill="#111111" stroke="#333" stroke-width="1.5"/>
+      <text x="153" y="61" font-family="Space Mono" font-size="8" fill="#666">Σ(xᵢwᵢ)</text>
+      <text x="158" y="73" font-family="Space Mono" font-size="8" fill="#444">+ bias</text>
+      <!-- Activation arrow -->
+      <line x1="195" y1="65" x2="245" y2="65" stroke="#444" stroke-width="2"/>
+      <text x="203" y="58" font-family="Space Mono" font-size="8" fill="#444">σ(z)</text>
+      <!-- Activation box -->
+      <rect x="245" y="50" width="60" height="30" fill="#0a1a0a" stroke="#ffe900" stroke-width="1"/>
+      <text x="253" y="68" font-family="Space Mono" font-size="9" fill="#ffe900">ACTIV</text>
+      <!-- Output -->
+      <line x1="305" y1="65" x2="360" y2="65" stroke="#00ffe9" stroke-width="2"/>
+      <text x="340" y="58" font-family="Space Mono" font-size="9" fill="#00ffe9">ŷ</text>
+      <!-- Bias input -->
+      <line x1="165" y1="95" x2="165" y2="110" stroke="#2a2a2a" stroke-width="1.5" stroke-dasharray="3,2"/>
+      <text x="150" y="122" font-family="Space Mono" font-size="8" fill="#333">b (bias)</text>
+    </svg>
+
+    <div class="math-block">
+      <div class="eq">z = Σᵢ (xᵢ · wᵢ) + b</div>
+      <div class="eq" style="color:#00ffe9;">output = σ(z)</div>
+      <div class="note">// continuous float in, continuous float out. no time dimension. no refractory period. no ion channels. just linear algebra + nonlinearity.</div>
+    </div>
+
+    <div class="activ-row">
+      <div class="activ-item">
+        <div class="activ-name" style="color:var(--yellow)">ReLU</div>
+        <div class="activ-formula">max(0, z)</div>
+        <div class="activ-note">sparse activation, fast. most used in deep networks. dies at negative z.</div>
+      </div>
+      <div class="activ-item">
+        <div class="activ-name" style="color:var(--cyan)">SOFTMAX</div>
+        <div class="activ-formula">eᶻⁱ / Σ eᶻʲ</div>
+        <div class="activ-note">probability distribution over outputs. used in classification heads.</div>
+      </div>
+      <div class="activ-item">
+        <div class="activ-name" style="color:var(--magenta)">SIGMOID</div>
+        <div class="activ-formula">1 / (1 + e⁻ᶻ)</div>
+        <div class="activ-note">biological inspiration. vanishing gradient problem at extremes.</div>
+      </div>
+      <div class="activ-item">
+        <div class="activ-name" style="color:var(--orange)">GELU</div>
+        <div class="activ-formula">z·Φ(z)</div>
+        <div class="activ-note">used in transformers (GPT, BERT). smooth, probabilistic gating.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">06 // Head to Head</div>
+    <div class="ptitle">BIO vs ANN</div>
+    <div class="bar rd"></div>
+
+    <table class="comp-table">
+      <tr>
+        <th></th>
+        <th class="rd">BIOLOGICAL</th>
+        <th class="cy">ARTIFICIAL</th>
+      </tr>
+      <tr>
+        <td>Signal type</td>
+        <td style="color:#ff2d55">Discrete spikes (binary events)</td>
+        <td style="color:#00ffe9">Continuous floats</td>
+      </tr>
+      <tr>
+        <td>Computation</td>
+        <td>Spatial + temporal integration</td>
+        <td>Weighted sum + nonlinearity</td>
+      </tr>
+      <tr>
+        <td>Time</td>
+        <td style="color:#ff2d55">Temporal dynamics matter</td>
+        <td style="color:#444">No time dimension</td>
+      </tr>
+      <tr>
+        <td>Learning</td>
+        <td>Hebbian, STDP, neuromod</td>
+        <td>Backprop + gradient descent</td>
+      </tr>
+      <tr>
+        <td>Synapse type</td>
+        <td>Excitatory + inhibitory + modulatory</td>
+        <td>Weights only (positive or negative)</td>
+      </tr>
+      <tr>
+        <td>Dendrites</td>
+        <td style="color:#ff2d55">Compute themselves (active)</td>
+        <td style="color:#444">Not modeled</td>
+      </tr>
+      <tr>
+        <td>Plasticity</td>
+        <td>Continuous, lifelong</td>
+        <td style="color:#444">Train-time only (mostly)</td>
+      </tr>
+      <tr>
+        <td>Noise</td>
+        <td>Inherent stochasticity</td>
+        <td>Deterministic (mostly)</td>
+      </tr>
+      <tr>
+        <td>Glial cells</td>
+        <td style="color:#ff2d55">Active role in computation</td>
+        <td style="color:#444">Not modeled at all</td>
+      </tr>
+      <tr>
+        <td>Fan-in</td>
+        <td>1,000 - 100,000 synapses</td>
+        <td>Thousands to millions</td>
+      </tr>
+      <tr>
+        <td>Fan-out</td>
+        <td>100 - 10,000 targets</td>
+        <td>Architecture-defined</td>
+      </tr>
+      <tr>
+        <td>Refractory</td>
+        <td style="color:#ff2d55">Hard physiological limit</td>
+        <td style="color:#444">None</td>
+      </tr>
+    </table>
+  </div>
+
+</div>
+
+<!-- ROW 4: SNN + power -->
+<div class="g2">
+
+  <div class="panel">
+    <div class="plabel">07 // Spiking Neural Networks</div>
+    <div class="ptitle cy">SNN // THE BRIDGE</div>
+    <div class="bar"></div>
+
+    <p>Spiking Neural Networks attempt to close the gap - neurons fire discrete spikes and time carries information. The standard SNN neuron model is the <span class="hl">Leaky Integrate-and-Fire (LIF)</span>:</p>
+
+    <div class="math-block">
+      <div class="eq">τ · (dV/dt) = -V(t) + R·I(t)</div>
+      <div style="color:#00ffe9; margin-top:4px;">if V(t) ≥ V_threshold → SPIKE → V reset to V_rest</div>
+      <div class="note">// membrane potential leaks toward rest. integrates current. fires when threshold crossed. refractory period enforced. much closer to biology.</div>
+    </div>
+
+    <p>More complex models (Hodgkin-Huxley, Izhikevich) simulate actual ion channel dynamics but are computationally heavier. The trade-off: biological fidelity vs tractability.</p>
+
+    <p>SNNs are <span class="hl">event-driven</span> - computation only happens when spikes occur. On neuromorphic hardware this is extremely efficient. Intel Loihi 2 and IBM TrueNorth implement spiking networks in silicon, achieving orders of magnitude better energy per inference than GPU-based ANNs for certain tasks.</p>
+
+    <div style="margin-top:10px; background:#050505; border:1px solid var(--border); padding:12px;">
+      <div class="spike-chart-label" style="font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:2px; color:#333; margin-bottom:8px;">HARDWARE TARGET // NEUROMORPHIC</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div>
+          <div style="font-size:10px; color:#444; margin-bottom:4px; letter-spacing:1px;">INTEL LOIHI 2</div>
+          <div style="font-size:10px; color:var(--cyan);">128 neuro-cores</div>
+          <div style="font-size:10px; color:#444;">1M spiking neurons</div>
+          <div style="font-size:10px; color:#444;">120M synapses</div>
+          <div style="font-size:10px; color:var(--cyan);">~1W at full load</div>
+        </div>
+        <div>
+          <div style="font-size:10px; color:#444; margin-bottom:4px; letter-spacing:1px;">IBM TRUENORTH</div>
+          <div style="font-size:10px; color:var(--magenta);">4096 neuro-cores</div>
+          <div style="font-size:10px; color:#444;">256 neurons/core</div>
+          <div style="font-size:10px; color:#444;">256M synapses</div>
+          <div style="font-size:10px; color:var(--magenta);">70mW inference</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">08 // Energy // The Real Gap</div>
+    <div class="ptitle or">POWER CONSUMPTION</div>
+    <div class="bar or"></div>
+
+    <p>The brain's efficiency advantage is the single most motivating fact in neuromorphic computing. <span class="hl or">20 watts</span> to run a human brain. The biological solution uses sparse spiking, analog computation, co-located memory and processing, and massive parallelism.</p>
+
+    <div class="power-meter">
+      <div class="pm-row">
+        <div class="pm-label">Human brain</div>
+        <div class="pm-bar-wrap"><div class="pm-bar" style="width:0.4%; background:var(--cyan);"></div></div>
+        <div class="pm-val" style="color:var(--cyan)">20 W</div>
+      </div>
+      <div class="pm-row">
+        <div class="pm-label">Honeybee brain</div>
+        <div class="pm-bar-wrap"><div class="pm-bar" style="width:0.01%; background:var(--yellow);"></div></div>
+        <div class="pm-val" style="color:var(--yellow)">&lt;1 mW</div>
+      </div>
+      <div class="pm-row">
+        <div class="pm-label">Intel Loihi 2</div>
+        <div class="pm-bar-wrap"><div class="pm-bar" style="width:0.2%; background:var(--magenta);"></div></div>
+        <div class="pm-val" style="color:var(--magenta)">~1 W</div>
+      </div>
+      <div class="pm-row">
+        <div class="pm-label">RTX 4090</div>
+        <div class="pm-bar-wrap"><div class="pm-bar" style="width:48%; background:#333;"></div></div>
+        <div class="pm-val">450 W</div>
+      </div>
+      <div class="pm-row">
+        <div class="pm-label">H100 (training)</div>
+        <div class="pm-bar-wrap"><div class="pm-bar" style="width:70%; background:#2a2a2a;"></div></div>
+        <div class="pm-val">700 W</div>
+      </div>
+      <div class="pm-row">
+        <div class="pm-label">GPT-4 cluster est.</div>
+        <div class="pm-bar-wrap"><div class="pm-bar" style="width:100%; background:#1a1a1a;"></div></div>
+        <div class="pm-val">&gt;50 MW</div>
+      </div>
+    </div>
+
+    <p style="font-size:10px; color:#444; margin-top:8px;">The brain's trick: von Neumann architectures separate memory from compute, requiring massive data movement (the "memory wall"). The brain co-locates both at the synapse. Each synaptic weight is stored exactly where computation happens. No bus, no bandwidth bottleneck.</p>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
+      <div>
+        <div class="stat-big" style="color:var(--cyan)">10<span style="font-size:20px;">¹⁵</span></div>
+        <div class="stat-sub">ops/sec/watt // brain estimate</div>
+      </div>
+      <div>
+        <div class="stat-big" style="color:#333">10<span style="font-size:20px;">¹²</span></div>
+        <div class="stat-sub">ops/sec/watt // best GPU (FP16)</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <span>NEURON // BIO vs MACHINE // HODGKIN-HUXLEY 1952 // ROSENBLATT 1958 // MAHOWALD & DOUGLAS 1991 // HU ET AL 2021</span>
+  <span>BRUTALIST TERMINAL v2 // COMPARATIVE NEURO</span>
+</div>
+
+</body>
+</html>
