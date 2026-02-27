@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hopfield Networks</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #0a0a0a;
+  --surface:   #111111;
+  --surface2:  #0d0d0d;
+  --border:    #1e1e1e;
+  --border2:   #2a2a2a;
+  --cyan:      #00ffe9;
+  --yellow:    #ffe900;
+  --magenta:   #e900ff;
+  --red:       #ff2d55;
+  --green:     #39ff14;
+  --orange:    #ff6b00;
+  --dim:       #3a3a3a;
+  --text:      #cccccc;
+  --bright:    #ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;font-size:11px;line-height:1.65;padding:36px 30px;max-width:980px;margin:0 auto;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:999;}
+.masthead{border-top:3px solid var(--green);padding:14px 0 10px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border);}
+.masthead h1{font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:4px;color:var(--bright);line-height:1;}
+.masthead h1 em{color:var(--green);font-style:normal;}
+.masthead-right{text-align:right;font-size:10px;color:#444;letter-spacing:2px;text-transform:uppercase;}
+.masthead-right strong{display:block;color:var(--cyan);font-size:11px;margin-bottom:2px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:2px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-bottom:2px;}
+.gfull{margin-bottom:2px;}
+.panel{background:var(--surface);border:1px solid var(--border);padding:18px;}
+.plabel{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:3px;color:#383838;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.ptitle{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--bright);margin-bottom:8px;line-height:1;}
+.ptitle.cy{color:var(--cyan);}.ptitle.rd{color:var(--red);}.ptitle.yl{color:var(--yellow);}.ptitle.pu{color:var(--magenta);}.ptitle.or{color:var(--orange);}.ptitle.gr{color:var(--green);}
+.bar{width:28px;height:2px;margin-bottom:10px;background:var(--green);}
+.bar.cy{background:var(--cyan);}.bar.rd{background:var(--red);}.bar.yl{background:var(--yellow);}.bar.pu{background:var(--magenta);}.bar.or{background:var(--orange);}
+p{font-size:11px;color:var(--text);margin-bottom:7px;line-height:1.65;}
+.hl{color:var(--green);font-weight:700;}.hl.cy{color:var(--cyan);}.hl.rd{color:var(--red);}.hl.yl{color:var(--yellow);}.hl.or{color:var(--orange);}.hl.pu{color:var(--magenta);}
+.math-block{background:#060606;border:1px solid var(--border);border-left:3px solid var(--green);padding:12px 14px;margin:10px 0;font-size:11px;}
+.math-block.cy{border-left-color:var(--cyan);}.math-block.yl{border-left-color:var(--yellow);}.math-block.pu{border-left-color:var(--magenta);}
+.eq{color:var(--green);}.eq.cy{color:var(--cyan);}.eq.yl{color:var(--yellow);}.eq.pu{color:var(--magenta);}
+.org-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #111;font-size:10px;}
+.org-row:last-child{border-bottom:none;}
+.org-row-label{color:#333;text-transform:uppercase;letter-spacing:1px;font-size:9px;}
+.org-row-val{font-weight:700;}
+.tag{display:inline-block;border:1px solid var(--border);padding:1px 6px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#444;margin:2px 2px 2px 0;}
+.tag.cy{border-color:var(--cyan);color:var(--cyan);}.tag.rd{border-color:var(--red);color:var(--red);}.tag.yl{border-color:var(--yellow);color:var(--yellow);}.tag.pu{border-color:var(--magenta);color:var(--magenta);}.tag.or{border-color:var(--orange);color:var(--orange);}.tag.gr{border-color:var(--green);color:var(--green);}
+.footer{border-top:1px solid var(--border);margin-top:14px;padding-top:10px;display:flex;justify-content:space-between;font-size:9px;color:#2a2a2a;letter-spacing:1px;}
+button{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:7px 12px;border:1px solid var(--border2);background:var(--surface2);color:var(--dim);cursor:pointer;transition:all 0.1s;}
+button:hover{background:var(--border2);color:var(--bright);}
+button.act{background:var(--green);color:var(--bg);border-color:var(--green);}
+canvas{display:block;}
+@media(max-width:700px){.g2,.g3{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>HOP<em>FIELD</em><br>NETWORKS</h1>
+  <div class="masthead-right">
+    <strong>ENERGY-BASED ASSOCIATIVE MEMORY</strong>
+    HEBBIAN LEARNING // ENERGY LANDSCAPES<br>
+    MODERN HOPFIELD // ANCESTOR OF ATTENTION
+  </div>
+</div>
+
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">01 // Concept</div>
+    <div class="ptitle gr">MEMORY AS ENERGY MINIMA</div>
+    <div class="bar"></div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+      <div>
+        <p>A Hopfield Network is a recurrent neural network that functions as an <span class="hl">associative memory</span> — given a partial or corrupted pattern, it retrieves the closest stored memory. John Hopfield introduced it in 1982, and it was immediately recognized as a landmark: for the first time, memory storage and retrieval were understood as a single physical process — <span class="hl">energy minimization</span>.</p>
+        <p>Every configuration of the network's N binary neurons corresponds to a point in a 2^N-dimensional state space. The network defines an <span class="hl">energy function</span> over this space, and stored memories are local energy minima — valleys in the landscape. Given a starting state (a noisy or incomplete query), the network's update rule always moves downhill. The system converges to a nearby minimum, retrieving the stored pattern.</p>
+        <p>The biological analogy is direct: this is how the brain might store and retrieve episodic memories. A smell triggers a whole scene. A fragment of a song surfaces the whole song. The Hopfield model gave the first mathematically rigorous account of how this could work in a neural substrate — using nothing but physics.</p>
+      </div>
+      <div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;">
+          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--green);line-height:1;">1982</div><div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">Hopfield<br>paper</div></div>
+          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--cyan);line-height:1;">0.14N</div><div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">Classic<br>capacity</div></div>
+          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--yellow);line-height:1;">2^N</div><div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">Modern<br>capacity</div></div>
+          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--magenta);line-height:1;">2021</div><div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">Nobel<br>Prize</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">02 // Interactive // Energy Landscape</div>
+    <div class="ptitle gr">MEMORY RETRIEVAL AS GRADIENT DESCENT</div>
+    <div class="bar"></div>
+    <p>The energy landscape has valleys at stored memories. Click anywhere on the landscape to start a state — watch it roll downhill to the nearest memory. The update rule always decreases energy until a fixed point is reached.</p>
+    <div style="display:grid;grid-template-columns:1fr 200px;gap:12px;margin-top:10px;">
+      <canvas id="cvEnergy" width="600" height="300" style="width:100%;height:300px;background:#060606;border:1px solid var(--border);cursor:crosshair;"></canvas>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="background:#060606;border:1px solid var(--border);padding:10px;">
+          <div style="font-size:9px;color:#444;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Current Energy</div>
+          <div id="energyVal" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--green);">—</div>
+        </div>
+        <div style="background:#060606;border:1px solid var(--border);padding:10px;">
+          <div style="font-size:9px;color:#444;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Converged To</div>
+          <div id="memLabel" style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--cyan);">—</div>
+        </div>
+        <div style="background:#060606;border:1px solid var(--border);padding:10px;">
+          <div style="font-size:9px;color:#444;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Steps</div>
+          <div id="stepsVal" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--yellow);">0</div>
+        </div>
+        <button id="btnAddMem">Store Memory</button>
+        <button id="btnClearMem">Clear All</button>
+        <div style="font-size:9px;color:#333;line-height:1.5;margin-top:4px;">Click landscape to release a particle. It rolls to the nearest memory (energy minimum).</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">03 // Classical Hopfield</div>
+    <div class="ptitle gr">THE 1982 MODEL</div>
+    <div class="bar"></div>
+    <p>N binary neurons, each s_i ∈ {-1, +1}. The energy function (from physics — identical to the Ising spin glass model):</p>
+    <div class="math-block"><span class="eq">E = -½ Σᵢⱼ wᵢⱼ · sᵢ · sⱼ</span><br><span style="color:#444;font-size:10px;">sum over all pairs i≠j, wᵢⱼ = wⱼᵢ (symmetric)</span></div>
+    <p>To store M patterns ξ¹,...,ξᴹ, use Hebbian learning — neurons that fire together wire together:</p>
+    <div class="math-block"><span class="eq">wᵢⱼ = (1/N) Σ_μ ξᵢᵘ · ξⱼᵘ</span><br><span style="color:#444;font-size:10px;">outer product rule — one shot, no backprop needed</span></div>
+    <p>The update rule: flip neuron i to sign(Σⱼ wᵢⱼ sⱼ). Each flip is guaranteed to decrease E. The system converges — guaranteed — to a local minimum. The stored patterns are exactly those minima.</p>
+    <p style="font-size:10px;color:#555;"><span class="hl">Capacity limit:</span> stores at most ~0.14N patterns reliably. Beyond this, "spurious memories" (local minima that aren't stored patterns) proliferate and retrieval fails.</p>
+    <div style="margin-top:6px;"><span class="tag gr">Hebbian</span><span class="tag gr">0.14N limit</span><span class="tag">Ising model</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">04 // Classical // Pattern Demo</div>
+    <div class="ptitle cy">5x5 BINARY MEMORY</div>
+    <div class="bar cy"></div>
+    <p>Store binary patterns (5x5 pixels). Corrupt one and watch the network retrieve the original through iterated updates.</p>
+    <div style="display:flex;gap:12px;margin:10px 0;flex-wrap:wrap;">
+      <div>
+        <div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Stored A</div>
+        <canvas id="cvPatA" width="75" height="75" style="width:75px;height:75px;border:1px solid var(--green);"></canvas>
+      </div>
+      <div>
+        <div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Stored B</div>
+        <canvas id="cvPatB" width="75" height="75" style="width:75px;height:75px;border:1px solid var(--cyan);"></canvas>
+      </div>
+      <div>
+        <div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Corrupted Query</div>
+        <canvas id="cvQuery" width="75" height="75" style="width:75px;height:75px;border:1px solid var(--yellow);cursor:pointer;"></canvas>
+      </div>
+      <div>
+        <div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Retrieved</div>
+        <canvas id="cvRetrieved" width="75" height="75" style="width:75px;height:75px;border:1px solid var(--border);"></canvas>
+      </div>
+    </div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;">
+      <button id="btnRetrieve" class="act">Retrieve</button>
+      <button id="btnCorrupt">Re-corrupt</button>
+      <button id="btnFlip">Query = B</button>
+    </div>
+    <div id="retrieveInfo" style="margin-top:8px;font-size:10px;color:#444;"></div>
+  </div>
+</div>
+
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">05 // Modern Hopfield Networks // 2020</div>
+    <div class="ptitle yl">EXPONENTIAL CAPACITY</div>
+    <div class="bar yl"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div>
+        <p>Ramsauer et al. (2020) showed that replacing the quadratic energy function with an exponential one shatters the 0.14N capacity limit:</p>
+        <div class="math-block yl"><span class="eq yl">E = -lse(β, Xᵀξ) + ½ξᵀξ + (1/β)log(N) + C</span><br><span style="color:#444;font-size:10px;">lse = log-sum-exp. β = inverse temperature</span></div>
+        <p style="font-size:10px;color:#555;">The new update rule is the softmax over dot products between the query and all stored patterns — which is exactly the attention mechanism in transformers.</p>
+        <div class="math-block yl"><span class="eq yl">ξ_new = X · softmax(β · Xᵀξ)</span><br><span style="color:#444;font-size:10px;">one update step = one attention operation</span></div>
+        <p style="font-size:10px;color:#555;">Capacity scales exponentially with N: can store up to 2^(N/2) patterns without interference. The price: continuous-valued patterns instead of binary, and a polynomial energy function of high degree (tied to β).</p>
+      </div>
+      <div>
+        <p style="font-size:10px;color:#555;">This is one of the most surprising theoretical results in recent deep learning: the transformer attention mechanism is mathematically equivalent to one update step of a modern Hopfield network trying to retrieve a stored pattern.</p>
+        <div class="math-block" style="border-left-color:var(--cyan);">
+          <span style="color:#444;font-size:9px;text-transform:uppercase;letter-spacing:2px;">Transformer attention:</span><br>
+          <span class="eq cy">Attn(Q,K,V) = V · softmax(QKᵀ/√d)</span><br><br>
+          <span style="color:#444;font-size:9px;text-transform:uppercase;letter-spacing:2px;">Modern Hopfield update:</span><br>
+          <span class="eq yl">ξ_new = X · softmax(β · Xᵀξ)</span><br><br>
+          <span style="color:#444;font-size:10px;">Q = query ξ, K = stored patterns X, V = stored patterns X<br>β = 1/√d (inverse temperature = scale factor)</span>
+        </div>
+        <p style="font-size:10px;color:#555;">The correspondence: keys and values are both the stored pattern matrix X. The query ξ is the retrieval probe. The scale factor β controls retrieval sharpness — high β focuses on the closest pattern (winner-take-all), low β averages across many.</p>
+        <div style="margin-top:6px;"><span class="tag yl">exponential capacity</span><span class="tag cy">= attention</span><span class="tag">Ramsauer 2020</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">06 // Interactive // Attention as Hopfield Retrieval</div>
+    <div class="ptitle cy">TEMPERATURE DEMO</div>
+    <div class="bar cy"></div>
+    <p>In the modern Hopfield model, β (inverse temperature) controls retrieval sharpness. Drag the slider to see how it transitions from averaging across all memories (low β, soft attention) to sharp winner-take-all retrieval (high β, hard attention). This is exactly what the attention scale factor 1/√d does in transformers.</p>
+    <div style="margin-top:10px;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+      <canvas id="cvTemp" width="560" height="200" style="flex:1;min-width:300px;height:200px;background:#060606;border:1px solid var(--border);"></canvas>
+      <div style="width:180px;flex-shrink:0;">
+        <div style="font-size:9px;color:#444;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">Beta (β)</div>
+        <div id="betaVal" style="font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--green);line-height:1;">1.0</div>
+        <div style="font-size:9px;color:#333;margin-bottom:8px;">inverse temperature</div>
+        <input type="range" id="betaSlider" min="1" max="50" value="5" style="-webkit-appearance:none;width:100%;height:2px;background:var(--border2);outline:none;border:none;margin-bottom:8px;">
+        <div style="font-size:9px;color:#555;line-height:1.6;">
+          Low β: spreads weight across all patterns. Equivalent to low attention temperature — mixes context.<br><br>
+          High β: concentrates on nearest pattern. Hard retrieval. Winner-take-all.
+        </div>
+        <div style="margin-top:8px;"><span class="tag gr">β=1 soft</span><span class="tag gr">β=50 hard</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">07 // Physics Connection</div>
+    <div class="ptitle or">SPIN GLASSES + STAT MECH</div>
+    <div class="bar or"></div>
+    <p>The Hopfield network energy function is identical to the <span class="hl or">Ising spin glass model</span> — a statistical mechanics model of disordered magnetic systems, studied since the 1970s. Hopfield saw that the same mathematics that described frustrated magnets could describe memory.</p>
+    <div class="math-block" style="border-left-color:var(--orange);"><span class="eq" style="color:var(--orange);">Ising Hamiltonian: H = -Σᵢⱼ Jᵢⱼ σᵢ σⱼ</span><br><span class="eq" style="color:var(--orange);">Hopfield energy: E = -½ Σᵢⱼ wᵢⱼ sᵢ sⱼ</span><br><span style="color:#444;font-size:10px;">Formally identical. J = w, σ = s.</span></div>
+    <p style="font-size:10px;color:#555;">Amit, Gutfreund, and Sompolinsky (1985) did the full statistical mechanics analysis of Hopfield networks using replica theory — borrowed from spin glass theory. They derived the 0.14N capacity limit rigorously. The tools of physics became tools of neural network theory.</p>
+    <div style="margin-top:6px;"><span class="tag or">Ising model</span><span class="tag or">spin glass</span><span class="tag">replica theory</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">08 // In Modern ML</div>
+    <div class="ptitle pu">WHERE HOPFIELD LIVES NOW</div>
+    <div class="bar pu"></div>
+    <p>The 2020 reinterpretation of transformers as Hopfield networks isn't just theoretical — it's changed how people think about what attention is <span class="hl pu">doing</span>:</p>
+    <div class="org-row"><span class="org-row-label">Transformer KV cache</span><span class="org-row-val" style="color:var(--cyan);">stored pattern matrix X</span></div>
+    <div class="org-row"><span class="org-row-label">Query vector q</span><span class="org-row-val" style="color:var(--green);">retrieval probe ξ</span></div>
+    <div class="org-row"><span class="org-row-label">Attention weights</span><span class="org-row-val" style="color:var(--yellow);">softmax(β·Xᵀξ)</span></div>
+    <div class="org-row"><span class="org-row-label">Attention output</span><span class="org-row-val" style="color:var(--magenta);">retrieved pattern</span></div>
+    <div class="org-row"><span class="org-row-label">Scale 1/√d</span><span class="org-row-val">β (inverse temp)</span></div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">This framing also explains why attention heads behave as "lookup operations" — each head is an associative memory retrieval with different stored patterns. It also motivated new architectures: LSTM-inspired recurrent models using the Hopfield retrieval update as an explicit memory module.</p>
+    <div style="margin-top:6px;"><span class="tag pu">Hopfield layer</span><span class="tag cy">attention = retrieval</span><span class="tag">Ramsauer 2020</span></div>
+  </div>
+</div>
+
+<div class="g3">
+  <div class="panel">
+    <div class="plabel">09 // Boltzmann Machines</div>
+    <div class="ptitle">STOCHASTIC HOPFIELD</div>
+    <div class="bar rd"></div>
+    <p style="font-size:10px;color:#555;">Add temperature T to the Hopfield update: instead of deterministic sign(.), flip neuron i with probability P(s_i=1) = σ(2/T · Σⱼ wᵢⱼ sⱼ). At T→0: deterministic Hopfield. At T→∞: random. At the right T: a Boltzmann distribution over states. This is the Boltzmann Machine (Hinton, Sejnowski 1986) — the first model of learned probabilistic inference in neural networks.</p>
+    <div class="math-block rd"><span class="eq rd">P(s) ∝ exp(-E(s)/T)</span><br><span style="color:#444;font-size:10px;">thermal equilibrium = Boltzmann distribution</span></div>
+    <div style="margin-top:6px;"><span class="tag rd">Hinton 1986</span><span class="tag">stochastic</span><span class="tag">RBM ancestor</span></div>
+  </div>
+  <div class="panel">
+    <div class="plabel">10 // Capacity</div>
+    <div class="ptitle">CLASSICAL vs MODERN</div>
+    <div class="bar yl"></div>
+    <div class="org-row"><span class="org-row-label">Classical storage</span><span class="org-row-val" style="color:var(--red);">~0.14N patterns</span></div>
+    <div class="org-row"><span class="org-row-label">Modern (β→∞)</span><span class="org-row-val" style="color:var(--green);">2^(N/2) patterns</span></div>
+    <div class="org-row"><span class="org-row-label">Pattern type</span><span class="org-row-val">binary → continuous</span></div>
+    <div class="org-row"><span class="org-row-label">Update steps</span><span class="org-row-val">many → one</span></div>
+    <div class="org-row"><span class="org-row-label">Spurious memories</span><span class="org-row-val">yes → no</span></div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">The exponential capacity comes at a cost: energy function requires polynomial terms of degree 2n (where n controls capacity-error tradeoff), making it more computationally expensive. The β→∞ limit achieves exponential capacity but requires exact nearest-neighbor lookup — equivalent to hard attention.</p>
+    <div style="margin-top:6px;"><span class="tag yl">2^N vs 0.14N</span></div>
+  </div>
+  <div class="panel">
+    <div class="plabel">11 // Nobel Prize</div>
+    <div class="ptitle">2024 PHYSICS</div>
+    <div class="bar gr"></div>
+    <p style="font-size:10px;color:#555;">John Hopfield and Geoffrey Hinton were awarded the 2024 Nobel Prize in Physics for "foundational discoveries and inventions that enable machine learning with artificial neural networks." Hopfield specifically for the associative memory network; Hinton for the Boltzmann Machine and backpropagation work.</p>
+    <p style="font-size:10px;color:#555;">The Nobel committee explicitly highlighted the physics connection: the Hopfield network imported the Ising model and spin glass theory directly into neuroscience and AI. Statistical mechanics became a design tool for computing systems.</p>
+    <div style="margin-top:6px;"><span class="tag gr">Nobel 2024</span><span class="tag gr">Physics</span><span class="tag">Hopfield + Hinton</span></div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>HOPFIELD 1982 // AMIT ET AL. 1985 // HINTON + SEJNOWSKI 1986 // RAMSAUER ET AL. 2020</span>
+  <span>BRUTALIST TERMINAL v2 // HOPFIELD NETWORKS</span>
+</div>
+
+<script>
+// ============================================================
+// Energy landscape visualization
+// ============================================================
+const cvE = document.getElementById('cvEnergy');
+const ctxE = cvE.getContext('2d');
+
+// Stored memories as 2D positions
+let memories = [
+  {x: 0.25, y: 0.35, name: 'Memory A'},
+  {x: 0.72, y: 0.28, name: 'Memory B'},
+  {x: 0.45, y: 0.72, name: 'Memory C'},
+];
+
+let particle = null;
+let particleHistory = [];
+let animStep = null;
+
+function energyAt(x, y) {
+  // Energy = negative sum of Gaussians at memory positions
+  let e = 0;
+  memories.forEach(m => {
+    const dx = x - m.x, dy = y - m.y;
+    const d2 = dx*dx + dy*dy;
+    e -= 2.5 * Math.exp(-d2 / 0.04);
+  });
+  // add gentle bowl
+  e += 0.3 * ((x-0.5)*(x-0.5) + (y-0.5)*(y-0.5));
+  return e;
+}
+
+function gradEnergy(x, y) {
+  const h = 0.002;
+  const gx = (energyAt(x+h, y) - energyAt(x-h, y)) / (2*h);
+  const gy = (energyAt(x, y+h) - energyAt(x, y-h)) / (2*h);
+  return {gx, gy};
+}
+
+function drawEnergyLandscape() {
+  const W = cvE.offsetWidth, H = 300;
+  const dpr = window.devicePixelRatio || 1;
+  cvE.width = W * dpr; cvE.height = H * dpr;
+  ctxE.scale(dpr, dpr);
+  ctxE.fillStyle = '#060606'; ctxE.fillRect(0,0,W,H);
+
+  // draw energy as color map
+  const res = 3;
+  for (let px = 0; px < W; px += res) {
+    for (let py = 0; py < H; py += res) {
+      const x = px / W, y = py / H;
+      const e = energyAt(x, y);
+      // map energy to color: deep minima = green, high energy = dark
+      const t = Math.max(0, Math.min(1, (-e + 0.2) / 2.8));
+      const r = Math.round(t * 57);
+      const g = Math.round(t * 255);
+      const b = Math.round(t * 20 + (1-t)*10);
+      ctxE.fillStyle = `rgb(${r},${g},${b})`;
+      ctxE.fillRect(px, py, res, res);
+    }
+  }
+
+  // draw contour lines
+  ctxE.strokeStyle = 'rgba(57,255,20,0.1)'; ctxE.lineWidth = 1;
+  // simplified: draw circles around each memory
+  memories.forEach(m => {
+    for (let r = 0.05; r < 0.25; r += 0.05) {
+      ctxE.beginPath();
+      ctxE.arc(m.x * W, m.y * H, r * Math.min(W, H), 0, Math.PI*2);
+      ctxE.stroke();
+    }
+  });
+
+  // draw memory markers
+  memories.forEach((m, i) => {
+    const mx = m.x * W, my = m.y * H;
+    // glow
+    const grd = ctxE.createRadialGradient(mx,my,0,mx,my,30);
+    grd.addColorStop(0,'rgba(57,255,20,0.3)'); grd.addColorStop(1,'transparent');
+    ctxE.fillStyle = grd; ctxE.beginPath(); ctxE.arc(mx,my,30,0,Math.PI*2); ctxE.fill();
+    // dot
+    ctxE.fillStyle = '#39ff14'; ctxE.shadowColor='#39ff14'; ctxE.shadowBlur=12;
+    ctxE.beginPath(); ctxE.arc(mx,my,7,0,Math.PI*2); ctxE.fill(); ctxE.shadowBlur=0;
+    // label
+    ctxE.fillStyle='#39ff14'; ctxE.font="bold 10px Space Mono";
+    ctxE.fillText(m.name, mx+10, my-8);
+  });
+
+  // draw particle trail
+  if (particleHistory.length > 1) {
+    ctxE.strokeStyle = 'rgba(255,233,0,0.5)'; ctxE.lineWidth = 1.5;
+    ctxE.beginPath();
+    particleHistory.forEach((p, i) => {
+      const sx = p.x * W, sy = p.y * H;
+      i === 0 ? ctxE.moveTo(sx, sy) : ctxE.lineTo(sx, sy);
+    });
+    ctxE.stroke();
+  }
+
+  // draw particle
+  if (particle) {
+    const px = particle.x * W, py = particle.y * H;
+    const grd = ctxE.createRadialGradient(px,py,0,px,py,16);
+    grd.addColorStop(0,'rgba(255,233,0,0.6)'); grd.addColorStop(1,'transparent');
+    ctxE.fillStyle = grd; ctxE.beginPath(); ctxE.arc(px,py,16,0,Math.PI*2); ctxE.fill();
+    ctxE.fillStyle='#ffe900'; ctxE.shadowColor='#ffe900'; ctxE.shadowBlur=10;
+    ctxE.beginPath(); ctxE.arc(px,py,5,0,Math.PI*2); ctxE.fill(); ctxE.shadowBlur=0;
+    document.getElementById('energyVal').textContent = energyAt(particle.x, particle.y).toFixed(3);
+  }
+
+  // instruction
+  ctxE.fillStyle='#2a2a2a'; ctxE.font="9px Space Mono";
+  ctxE.fillText('CLICK TO DROP PARTICLE', 10, H-10);
+}
+
+function stepParticle() {
+  if (!particle) return;
+  const lr = 0.015;
+  const {gx, gy} = gradEnergy(particle.x, particle.y);
+  particle.x -= lr * gx;
+  particle.y -= lr * gy;
+  particle.x = Math.max(0.01, Math.min(0.99, particle.x));
+  particle.y = Math.max(0.01, Math.min(0.99, particle.y));
+  particleHistory.push({x: particle.x, y: particle.y});
+  particle.steps++;
+
+  // check convergence
+  const speed = Math.sqrt(gx*gx + gy*gy);
+  document.getElementById('stepsVal').textContent = particle.steps;
+
+  // find nearest memory
+  let minDist = Infinity, nearestMem = null;
+  memories.forEach(m => {
+    const d = Math.sqrt((particle.x-m.x)**2 + (particle.y-m.y)**2);
+    if (d < minDist) { minDist = d; nearestMem = m; }
+  });
+  if (minDist < 0.06 || (speed < 0.05 && particle.steps > 5)) {
+    document.getElementById('memLabel').textContent = nearestMem ? nearestMem.name : 'Spurious';
+    clearInterval(animStep); animStep = null;
+    return;
+  }
+  drawEnergyLandscape();
+}
+
+cvE.addEventListener('click', e => {
+  const rect = cvE.getBoundingClientRect();
+  const W = cvE.offsetWidth, H = 300;
+  const x = (e.clientX - rect.left) / W;
+  const y = (e.clientY - rect.top) / H;
+  if (animStep) clearInterval(animStep);
+  particle = {x, y, steps: 0};
+  particleHistory = [{x, y}];
+  document.getElementById('memLabel').textContent = '...';
+  document.getElementById('stepsVal').textContent = '0';
+  animStep = setInterval(stepParticle, 30);
+  drawEnergyLandscape();
+});
+
+document.getElementById('btnAddMem').addEventListener('click', () => {
+  const x = 0.2 + Math.random() * 0.6;
+  const y = 0.2 + Math.random() * 0.6;
+  memories.push({x, y, name: `Memory ${String.fromCharCode(65 + memories.length)}`});
+  drawEnergyLandscape();
+});
+
+document.getElementById('btnClearMem').addEventListener('click', () => {
+  memories = [];
+  particle = null; particleHistory = [];
+  if (animStep) { clearInterval(animStep); animStep = null; }
+  document.getElementById('memLabel').textContent = '—';
+  document.getElementById('stepsVal').textContent = '0';
+  document.getElementById('energyVal').textContent = '—';
+  drawEnergyLandscape();
+});
+
+// ============================================================
+// Binary pattern demo (5x5 Hopfield)
+// ============================================================
+// Pattern A: letter-like shape
+const PAT_A = [
+  -1, 1, 1, 1,-1,
+   1,-1,-1,-1, 1,
+   1, 1, 1, 1, 1,
+   1,-1,-1,-1, 1,
+   1,-1,-1,-1, 1,
+];
+// Pattern B: different shape
+const PAT_B = [
+   1, 1, 1, 1,-1,
+   1,-1,-1, 1,-1,
+   1, 1, 1, 1,-1,
+   1,-1,-1, 1,-1,
+   1, 1, 1, 1,-1,
+];
+
+// Compute weight matrix (Hebbian)
+const N = 25;
+let W_hop = new Array(N*N).fill(0);
+function computeWeights(patterns) {
+  W_hop = new Array(N*N).fill(0);
+  patterns.forEach(p => {
+    for (let i = 0; i < N; i++)
+      for (let j = 0; j < N; j++)
+        if (i !== j) W_hop[i*N+j] += p[i]*p[j] / N;
+  });
+}
+computeWeights([PAT_A, PAT_B]);
+
+let currentQuery = [...PAT_A];
+let activeQuery = 'A';
+
+function corruptPattern(pat, flips=7) {
+  const c = [...pat];
+  const indices = Array.from({length:N},(_,i)=>i);
+  for (let f = 0; f < flips; f++) {
+    const idx = Math.floor(Math.random() * indices.length);
+    c[indices[idx]] *= -1;
+    indices.splice(idx, 1);
+  }
+  return c;
+}
+
+function hopfieldUpdate(state, iters=20) {
+  const s = [...state];
+  for (let iter = 0; iter < iters; iter++) {
+    const order = Array.from({length:N},(_,i)=>i).sort(()=>Math.random()-0.5);
+    let changed = false;
+    order.forEach(i => {
+      let sum = 0;
+      for (let j = 0; j < N; j++) sum += W_hop[i*N+j] * s[j];
+      const newVal = sum >= 0 ? 1 : -1;
+      if (newVal !== s[i]) { s[i] = newVal; changed = true; }
+    });
+    if (!changed) break;
+  }
+  return s;
+}
+
+function drawPattern(cvId, pat, color='#39ff14') {
+  const cv = document.getElementById(cvId);
+  const ctx = cv.getContext('2d');
+  const S = 15;
+  ctx.fillStyle = '#060606'; ctx.fillRect(0,0,75,75);
+  for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) {
+    const v = pat[i*5+j];
+    ctx.fillStyle = v > 0 ? color : '#111';
+    ctx.fillRect(j*S, i*S, S-1, S-1);
+  }
+}
+
+function hamming(a, b) {
+  return a.reduce((s,v,i) => s + (v!==b[i]?1:0), 0);
+}
+
+document.getElementById('btnRetrieve').addEventListener('click', () => {
+  const retrieved = hopfieldUpdate(currentQuery);
+  drawPattern('cvRetrieved', retrieved, '#00ffe9');
+  const dA = hamming(retrieved, PAT_A), dB = hamming(retrieved, PAT_B);
+  const which = dA <= dB ? 'Pattern A' : 'Pattern B';
+  document.getElementById('retrieveInfo').textContent =
+    `Retrieved: ${which} (hamming A=${dA}, B=${dB})`;
+});
+
+document.getElementById('btnCorrupt').addEventListener('click', () => {
+  const base = activeQuery === 'A' ? PAT_A : PAT_B;
+  currentQuery = corruptPattern(base, 8);
+  drawPattern('cvQuery', currentQuery, '#ffe900');
+  drawPattern('cvRetrieved', new Array(25).fill(-1), '#1e1e1e');
+  document.getElementById('retrieveInfo').textContent = '';
+});
+
+document.getElementById('btnFlip').addEventListener('click', () => {
+  activeQuery = activeQuery === 'A' ? 'B' : 'A';
+  document.getElementById('btnFlip').textContent = `Query = ${activeQuery === 'A' ? 'B' : 'A'}`;
+  const base = activeQuery === 'A' ? PAT_A : PAT_B;
+  currentQuery = corruptPattern(base, 8);
+  drawPattern('cvQuery', currentQuery, '#ffe900');
+  drawPattern('cvRetrieved', new Array(25).fill(-1), '#1e1e1e');
+  document.getElementById('retrieveInfo').textContent = '';
+});
+
+// ============================================================
+// Temperature / attention weight demo
+// ============================================================
+const cvT = document.getElementById('cvTemp');
+const ctxT = cvT.getContext('2d');
+
+// 6 stored patterns in 1D (positions on a line)
+const stored = [0.1, 0.25, 0.45, 0.6, 0.75, 0.9];
+const storedNames = ['CAT','DOG','WOLF','HORSE','COW','FISH'];
+let queryPos = 0.35;
+
+function softmax(arr, beta) {
+  const scaled = arr.map(v => v * beta);
+  const maxV = Math.max(...scaled);
+  const exps = scaled.map(v => Math.exp(v - maxV));
+  const sum = exps.reduce((a,b)=>a+b,0);
+  return exps.map(v => v/sum);
+}
+
+function drawTempDemo(beta) {
+  const W = cvT.offsetWidth, H = 200;
+  const dpr = window.devicePixelRatio || 1;
+  cvT.width = W * dpr; cvT.height = H * dpr;
+  ctxT.scale(dpr, dpr);
+  ctxT.fillStyle = '#060606'; ctxT.fillRect(0,0,W,H);
+
+  // dots for stored patterns (similarity = negative distance)
+  const sims = stored.map(s => -Math.abs(s - queryPos) * 5);
+  const weights = softmax(sims, beta);
+
+  const padL = 40, padR = 40, midY = 100;
+  const trackW = W - padL - padR;
+
+  // baseline
+  ctxT.strokeStyle = '#1e1e1e'; ctxT.lineWidth = 1;
+  ctxT.beginPath(); ctxT.moveTo(padL, midY); ctxT.lineTo(padL+trackW, midY); ctxT.stroke();
+
+  // draw weight bars below
+  stored.forEach((s, i) => {
+    const sx = padL + s * trackW;
+    const barH = weights[i] * 120;
+
+    // bar
+    ctxT.fillStyle = `rgba(57,255,20,${0.2 + weights[i] * 0.8})`;
+    ctxT.fillRect(sx-8, midY - barH, 16, barH);
+
+    // top indicator
+    ctxT.fillStyle = '#39ff14'; ctxT.shadowColor='#39ff14'; ctxT.shadowBlur=weights[i]*15;
+    ctxT.beginPath(); ctxT.arc(sx, midY-barH, 4+weights[i]*6, 0, Math.PI*2); ctxT.fill();
+    ctxT.shadowBlur=0;
+
+    // label
+    ctxT.fillStyle = `rgba(200,200,200,${0.3 + weights[i]*0.7})`;
+    ctxT.font = `${weights[i]>0.15?'bold ':''} 9px Space Mono`;
+    ctxT.textAlign = 'center';
+    ctxT.fillText(storedNames[i], sx, midY+16);
+    ctxT.fillText((weights[i]*100).toFixed(0)+'%', sx, midY+28);
+  });
+
+  // query marker
+  const qx = padL + queryPos * trackW;
+  ctxT.strokeStyle = '#ffe900'; ctxT.lineWidth = 2;
+  ctxT.beginPath(); ctxT.moveTo(qx, midY-10); ctxT.lineTo(qx, midY+10); ctxT.stroke();
+  ctxT.fillStyle = '#ffe900';
+  ctxT.font = "bold 9px Space Mono"; ctxT.textAlign = 'center';
+  ctxT.fillText('QUERY', qx, midY+42);
+
+  // beta annotation
+  ctxT.fillStyle = '#3a3a3a'; ctxT.font = "9px Space Mono"; ctxT.textAlign='left';
+  ctxT.fillText(`β=${beta.toFixed(0)}  ${beta < 5 ? '← soft retrieval (attention spreads)' : beta > 30 ? '← hard retrieval (winner-take-all)' : '← moderate focus'}`, padL, H-10);
+
+  ctxT.textAlign='left';
+}
+
+document.getElementById('betaSlider').addEventListener('input', e => {
+  const b = parseFloat(e.target.value);
+  document.getElementById('betaVal').textContent = b.toFixed(0);
+  drawTempDemo(b);
+});
+
+// click to move query on temp canvas
+cvT.addEventListener('click', e => {
+  const rect = cvT.getBoundingClientRect();
+  const W = cvT.offsetWidth;
+  const x = (e.clientX - rect.left) / W;
+  queryPos = Math.max(0.05, Math.min(0.95, x));
+  drawTempDemo(parseFloat(document.getElementById('betaSlider').value));
+});
+
+window.addEventListener('load', () => {
+  drawEnergyLandscape();
+  drawPattern('cvPatA', PAT_A, '#39ff14');
+  drawPattern('cvPatB', PAT_B, '#00ffe9');
+  currentQuery = corruptPattern(PAT_A, 8);
+  drawPattern('cvQuery', currentQuery, '#ffe900');
+  drawPattern('cvRetrieved', new Array(25).fill(-1), '#1e1e1e');
+  drawTempDemo(5);
+});
+
+window.addEventListener('resize', () => {
+  drawEnergyLandscape();
+  drawTempDemo(parseFloat(document.getElementById('betaSlider').value));
+});
+</script>
+</body>
+</html>

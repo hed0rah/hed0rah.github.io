@@ -4,208 +4,61 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ML EXPLAINERS</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0A0A0A;
-    --cyan: #00FFE9;
-    --red: #FF2233;
-    --dim: #1a1a1a;
-    --border: #222;
-    --text: #c8c8c8;
-    --mono: 'Space Mono', monospace;
-    --display: 'Bebas Neue', sans-serif;
-  }
+:root {
+  --bg:      #0a0a0a;
+  --cyan:    #00ffe9;
+  --yellow:  #ffe900;
+  --magenta: #e900ff;
+  --red:     #ff2d55;
+  --green:   #39ff14;
+  --orange:  #ff6b00;
+  --surface: #111111;
+  --border:  #1e1e1e;
+  --border2: #2a2a2a;
+  --text:    #cccccc;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;font-size:13px;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px);pointer-events:none;z-index:100;}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+header{border-bottom:1px solid var(--border);padding:48px 64px 32px;position:relative;}
+header::after{content:'';position:absolute;bottom:-2px;left:0;width:100%;height:1px;background:var(--cyan);opacity:0.2;}
+.label{font-size:11px;color:var(--cyan);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:12px;opacity:0.6;}
+h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(56px,8vw,120px);color:#fff;line-height:0.9;letter-spacing:0.02em;}
+h1 span{color:var(--cyan);}
+.subtitle{margin-top:16px;color:#444;font-size:11px;letter-spacing:0.05em;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.count{display:inline-block;background:var(--red);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:0.1em;padding:2px 8px;}
+.legend{display:flex;gap:20px;margin-top:14px;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:7px;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#333;}
+.legend-dot{width:8px;height:8px;border:1px solid;}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 13px;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+main{padding:40px 64px;max-width:1280px;}
+.section-label{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:4px;color:#282828;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #141414;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:20px;}
 
-  /* scanline overlay */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
-    );
-    pointer-events: none;
-    z-index: 100;
-  }
+.card{background:var(--bg);padding:22px 26px;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;transition:background 0.1s;}
+.card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;transform:scaleY(0);transition:transform 0.15s ease;transform-origin:bottom;}
+.card:hover{background:var(--surface);}
+.card:hover::before{transform:scaleY(1);}
+.ac-cy::before{background:var(--cyan);}.ac-cy:hover .card-title{color:var(--cyan);}
+.ac-yl::before{background:var(--yellow);}.ac-yl:hover .card-title{color:var(--yellow);}
+.ac-pu::before{background:var(--magenta);}.ac-pu:hover .card-title{color:var(--magenta);}
+.ac-rd::before{background:var(--red);}.ac-rd:hover .card-title{color:var(--red);}
+.ac-gr::before{background:var(--green);}.ac-gr:hover .card-title{color:var(--green);}
+.ac-or::before{background:var(--orange);}.ac-or:hover .card-title{color:var(--orange);}
 
-  header {
-    border-bottom: 1px solid var(--border);
-    padding: 48px 64px 32px;
-    position: relative;
-  }
+.card-index{font-size:10px;color:#282828;letter-spacing:0.15em;}
+.card-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#eee;letter-spacing:0.04em;line-height:1.1;transition:color 0.1s;}
+.card-tag{font-size:10px;color:#333;letter-spacing:0.12em;text-transform:uppercase;margin-top:2px;}
+.card-arrow{position:absolute;right:22px;top:50%;transform:translateY(-50%);color:#1e1e1e;font-size:16px;transition:color 0.1s,right 0.15s;}
+.card:hover .card-arrow{color:#3a3a3a;right:16px;}
 
-  header::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 100%;
-    height: 1px;
-    background: var(--cyan);
-    opacity: 0.3;
-  }
 
-  .label {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--cyan);
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    opacity: 0.7;
-  }
+footer{padding:28px 64px;border-top:1px solid var(--border);color:#222;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;}
 
-  h1 {
-    font-family: var(--display);
-    font-size: clamp(56px, 8vw, 120px);
-    color: #fff;
-    line-height: 0.9;
-    letter-spacing: 0.02em;
-  }
-
-  h1 span {
-    color: var(--cyan);
-  }
-
-  .subtitle {
-    margin-top: 16px;
-    color: #555;
-    font-size: 12px;
-    letter-spacing: 0.05em;
-  }
-
-  .count {
-    display: inline-block;
-    background: var(--red);
-    color: #fff;
-    font-family: var(--display);
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    padding: 2px 8px;
-    margin-left: 12px;
-    vertical-align: middle;
-  }
-
-  main {
-    padding: 48px 64px;
-    max-width: 1200px;
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-  }
-
-  .card {
-    background: var(--bg);
-    padding: 24px 28px;
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    transition: background 0.1s;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .card::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: var(--cyan);
-    transform: scaleY(0);
-    transition: transform 0.15s ease;
-    transform-origin: bottom;
-  }
-
-  .card:hover {
-    background: var(--dim);
-  }
-
-  .card:hover::before {
-    transform: scaleY(1);
-  }
-
-  .card:hover .card-title {
-    color: var(--cyan);
-  }
-
-  .card-index {
-    font-size: 10px;
-    color: #333;
-    letter-spacing: 0.15em;
-    font-family: var(--mono);
-  }
-
-  .card-title {
-    font-family: var(--display);
-    font-size: 22px;
-    color: #eee;
-    letter-spacing: 0.04em;
-    line-height: 1.1;
-    transition: color 0.1s;
-  }
-
-  .card-tag {
-    font-size: 10px;
-    color: #444;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-top: 4px;
-  }
-
-  .card-arrow {
-    position: absolute;
-    right: 24px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #222;
-    font-size: 18px;
-    transition: color 0.1s, right 0.15s;
-  }
-
-  .card:hover .card-arrow {
-    color: var(--cyan);
-    right: 18px;
-  }
-
-  footer {
-    padding: 32px 64px;
-    border-top: 1px solid var(--border);
-    color: #2a2a2a;
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  @media (max-width: 600px) {
-    header, main, footer { padding-left: 24px; padding-right: 24px; }
-    .grid { grid-template-columns: 1fr; }
-  }
+@media(max-width:640px){header,main,footer{padding-left:24px;padding-right:24px;}.grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -215,109 +68,140 @@
   <h1>ML <span>INDEX</span></h1>
   <div class="subtitle">
     interactive visualizations + technical deep dives
-    <span class="count">14 files</span>
+    <span class="count">16 files</span>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="border-color:var(--cyan);background:rgba(0,255,233,0.12);"></div>Gen 2 &mdash; canonical spec</div>
   </div>
 </header>
 
 <main>
+
+  <div class="section-label">Gen 2 canonical &mdash; 16 files</div>
   <div class="grid">
 
-    <a class="card" href="activation-functions.html">
-      <div class="card-index">01</div>
+    <a class="card ac-cy" href="activation-functions.html">
+      <div class="card-index">16</div>
       <div class="card-title">Activation Functions</div>
-      <div class="card-tag">fundamentals / nonlinearity</div>
+      <div class="card-tag">sigmoid / relu / gelu / vanishing gradient</div>
       <div class="card-arrow">&#8594;</div>
     </a>
 
-    <a class="card" href="attention-mechanism.html">
-      <div class="card-index">02</div>
+
+    <a class="card ac-cy" href="attention-mechanism.html">
+      <div class="card-index">01</div>
       <div class="card-title">Attention Mechanism</div>
-      <div class="card-tag">transformers / query-key-value</div>
+      <div class="card-tag">transformers / qkv / multi-head / flash attn</div>
       <div class="card-arrow">&#8594;</div>
     </a>
 
-    <a class="card" href="attention-mechanism2.html">
-      <div class="card-index">03</div>
+    <a class="card ac-cy" href="attention-mechanism2.html">
+      <div class="card-index">02</div>
       <div class="card-title">Attention Mechanism II</div>
-      <div class="card-tag">transformers / extended</div>
+      <div class="card-tag">transformers / query-key-value / extended</div>
       <div class="card-arrow">&#8594;</div>
     </a>
 
-    <a class="card" href="backprop-vs-stdp.html">
-      <div class="card-index">04</div>
+    <a class="card ac-pu" href="backprop-vs-stdp.html">
+      <div class="card-index">03</div>
       <div class="card-title">Backprop vs STDP</div>
       <div class="card-tag">learning rules / bio-plausibility</div>
       <div class="card-arrow">&#8594;</div>
     </a>
 
-    <a class="card" href="backprop.html">
-      <div class="card-index">05</div>
+    <a class="card ac-rd" href="backprop.html">
+      <div class="card-index">04</div>
       <div class="card-title">Backpropagation</div>
       <div class="card-tag">gradient descent / chain rule</div>
       <div class="card-arrow">&#8594;</div>
     </a>
 
-    <a class="card" href="connectome.html">
+    <a class="card ac-yl" href="cnn-explainer.html">
+      <div class="card-index">05</div>
+      <div class="card-title">Convolutional Networks</div>
+      <div class="card-tag">kernels / feature maps / receptive field</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card ac-cy" href="connectome.html">
       <div class="card-index">06</div>
       <div class="card-title">Connectome</div>
-      <div class="card-tag">network topology / graph</div>
+      <div class="card-tag">network topology / graph structure</div>
       <div class="card-arrow">&#8594;</div>
     </a>
 
-    <a class="card" href="embedding-geometry.html">
+    <a class="card ac-pu" href="diffusion-models.html">
       <div class="card-index">07</div>
-      <div class="card-title">Embedding Geometry</div>
-      <div class="card-tag">vector space / representations</div>
+      <div class="card-title">Diffusion Models</div>
+      <div class="card-tag">ddpm / score matching / latent diffusion</div>
       <div class="card-arrow">&#8594;</div>
     </a>
 
-    <a class="card" href="embeddings-vector-space.html">
+    <a class="card ac-cy" href="embedding-geometry.html">
       <div class="card-index">08</div>
+      <div class="card-title">Embedding Geometry</div>
+      <div class="card-tag">vector space / superposition / homology</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card ac-or" href="embeddings-vector-space.html">
+      <div class="card-index">09</div>
       <div class="card-title">Embeddings + Vector Space</div>
       <div class="card-tag">semantic geometry / dimensionality</div>
       <div class="card-arrow">&#8594;</div>
     </a>
 
-    <a class="card" href="lora-explainer.html">
-      <div class="card-index">09</div>
+    <a class="card ac-gr" href="hopfield-networks.html">
+      <div class="card-index">10</div>
+      <div class="card-title">Hopfield Networks</div>
+      <div class="card-tag">energy landscapes / associative memory / attention</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card ac-cy" href="lora-explainer.html">
+      <div class="card-index">11</div>
       <div class="card-title">LoRA Explainer</div>
       <div class="card-tag">fine-tuning / low-rank adaptation</div>
       <div class="card-arrow">&#8594;</div>
     </a>
 
-    <a class="card" href="neuron-comparison.html">
-      <div class="card-index">10</div>
+    <a class="card ac-cy" href="neuron-comparison.html">
+      <div class="card-index">12</div>
       <div class="card-title">Neuron Comparison</div>
       <div class="card-tag">bio vs artificial / morphology</div>
       <div class="card-arrow">&#8594;</div>
     </a>
 
-    <a class="card" href="perceptron_code_walkthrough.html">
-      <div class="card-index">11</div>
+    <a class="card ac-cy" href="perceptron_code_walkthrough.html">
+      <div class="card-index">13</div>
       <div class="card-title">Perceptron Walkthrough</div>
       <div class="card-tag">code / step-by-step</div>
       <div class="card-arrow">&#8594;</div>
     </a>
 
-    <a class="card" href="perceptron_viz.html">
-      <div class="card-index">12</div>
+    <a class="card ac-cy" href="perceptron_viz.html">
+      <div class="card-index">14</div>
       <div class="card-title">Perceptron Viz</div>
       <div class="card-tag">interactive / weights + bias</div>
       <div class="card-arrow">&#8594;</div>
     </a>
 
-    <a class="card" href="reservoir-computing.html">
-      <div class="card-index">13</div>
+    <a class="card ac-rd" href="reservoir-computing.html">
+      <div class="card-index">15</div>
       <div class="card-title">Reservoir Computing</div>
       <div class="card-tag">echo state networks / dynamics</div>
       <div class="card-arrow">&#8594;</div>
     </a>
 
   </div>
+
+
+
 </main>
 
 <footer>
-  // drop index.html into repo root &mdash; all paths are relative
+  <span>// drop index.html in repo root &mdash; all paths are relative</span>
+  <span>brutalist terminal v2 &mdash; <span style="color:#2a2a2a;">gen1 = rebuild queue</span></span>
 </footer>
 
 </body>
