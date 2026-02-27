@@ -277,9 +277,50 @@ body::after {
   background: rgba(0,0,0,.25); border-bottom: 1px solid var(--b1);
 }
 
+/* ── command intent classes ── */
+/* read-only: no tint, default */
+/* mutate: very subtle yellow-left edge */
+.cmd.mutate .cmd-ps { color: var(--yellow); opacity: 0.5; }
+.cmd.mutate { border-left: 2px solid rgba(255,233,0,0.18); }
+.cmd.mutate:hover { background: rgba(255,233,0,0.04); }
+
+/* danger: subtle red edge, orange on hover */
+.cmd.danger .cmd-ps { color: var(--orange); opacity: 0.7; }
+.cmd.danger { border-left: 2px solid rgba(255,107,0,0.25); }
+.cmd.danger:hover {
+  background: rgba(255,107,0,0.06);
+}
+.cmd.danger:hover .cmd-pre { color: var(--orange); }
+.cmd.danger:hover .cmd-ps  { color: var(--orange); opacity: 1; }
+
 /* copy flash */
 @keyframes flash { 0%,100%{opacity:1} 50%{opacity:.35} }
 .copying { animation: flash .2s ease; }
+
+/* copied badge */
+.copy-badge {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--cyan);
+  border: 1px solid rgba(0,255,233,0.35);
+  background: rgba(0,255,233,0.08);
+  padding: 2px 6px;
+  pointer-events: none;
+  animation: badgein .08s ease, badgeout .3s ease 0.9s forwards;
+}
+.cmd.danger .copy-badge {
+  color: var(--orange);
+  border-color: rgba(255,107,0,0.4);
+  background: rgba(255,107,0,0.08);
+}
+@keyframes badgein  { from { opacity:0; } to { opacity:1; } }
+@keyframes badgeout { from { opacity:1; } to { opacity:0; } }
 
 /* scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -381,7 +422,9 @@ function esc(s) {
 // note  = short description (plain text, supports *warn* and `code`)
 // ex    = example object { lines: [{type:'cmd'|'out'|'comment', text}] }
 let _uid = 0;
-function cmd(sig, note, ex) {
+function cmd(sig, note, ex, type) {
+  // handle cmd(sig, note, 'm') shorthand where type lands in ex position
+  if (typeof ex === 'string') { type = ex; ex = null; }
   const id = 'ex' + (_uid++);
   const noteHtml = note
     ? `<div class="cmd-note${note.startsWith('!')?' warn':''}">${
@@ -411,7 +454,10 @@ function cmd(sig, note, ex) {
   // Store plain text for copy/search
   const plain = sig.replace(/[[\]{}`|"]/g,'').replace(/\s+/g,' ').trim();
 
-  return `<div class="cmd" data-plain="${plain.replace(/"/g,'&quot;')}">
+  // type: 'r'=read (default), 'm'=mutate, 'd'=danger
+  const cls = type==='m' ? ' mutate' : type==='d' ? ' danger' : '';
+
+  return `<div class="cmd${cls}" data-plain="${plain.replace(/"/g,'&quot;')}">
     <div class="cmd-row" onclick="copyCmd(this)">
       <span class="cmd-ps">$</span>
       <span class="cmd-pre">${tok(sig)}</span>
@@ -465,10 +511,10 @@ ${cmd('kubectl config get-contexts','list all configured contexts',
    {t:'o',text:'*         k3s-ersatz   k3s-ersatz   k3s-ersatz   demo'}])}
 ${cmd('kubectl config current-context','show which context is active')}
 ${cmd('kubectl config use-context [name]','switch active context',
-  [{t:'c',text:'kubectl config use-context k3s-prod'}])}
+  [{t:'c',text:'kubectl config use-context k3s-prod'}],'m')}
 ${cmd('kubectl config set-context {--current} {--namespace=[ns]}','set default namespace for session',
   [{t:'m',text:'avoids typing -n demo on every command'},
-   {t:'c',text:'kubectl config set-context --current --namespace=demo'}])}
+   {t:'c',text:'kubectl config set-context --current --namespace=demo'}],'m')}
 ${cmd('kubectl cluster-info','show API server + CoreDNS addresses')}
 ${cmd('kubectl get nodes {-o wide}','list nodes with IPs, OS, kernel version')}
 ${cmd('kubectl describe node [name]','capacity, allocatable, conditions, taints, events')}
@@ -478,8 +524,8 @@ ${cmd('kubectl version {--short}','client and server versions')}
 ${sec('namespaces','#00d4ff',`
 ${cmd('kubectl get namespaces','')}
 ${cmd('kubectl create namespace [ns]','',
-  [{t:'c',text:'kubectl create namespace staging'}])}
-${cmd('kubectl delete namespace [ns]','!warning: deletes every resource inside it')}
+  [{t:'c',text:'kubectl create namespace staging'}],'m')}
+${cmd('kubectl delete namespace [ns]','!warning: deletes every resource inside it','d')}
 ${cmd('kubectl get all {-n [ns]}','all resources in a namespace')}
 ${cmd('kubectl get all {-A}','all resources across every namespace')}
 `)}
@@ -512,15 +558,15 @@ ${tbl([
 ${sec('apply + delete','#00ff88',`
 ${cmd('kubectl apply {-f} [file.yaml]','create or update — idempotent',
   [{t:'c',text:'kubectl apply -f deployment.yaml'},
-   {t:'o',text:'deployment.apps/my-app configured'}])}
-${cmd('kubectl apply {-f} [directory/]','apply all YAML files in a directory')}
-${cmd('kubectl apply {-f} [file.yaml] {--dry-run=server}','validate against API — no changes made')}
-${cmd('kubectl apply {-f} [file.yaml] {--dry-run=client}','local validation only')}
+   {t:'o',text:'deployment.apps/my-app configured'}],'m')}
+${cmd('kubectl apply {-f} [directory/]','apply all YAML files in a directory','m')}
+${cmd('kubectl apply {-f} [file.yaml] {--dry-run=server}','validate against API — no changes made','m')}
+${cmd('kubectl apply {-f} [file.yaml] {--dry-run=client}','local validation only','m')}
 ${cmd('kubectl diff {-f} [file.yaml]','show exactly what would change')}
-${cmd('kubectl delete {-f} [file.yaml]','delete resources defined in file')}
-${cmd('kubectl delete [resource] [name] {-n [ns]}','delete by name')}
-${cmd('kubectl delete [resource] {-l app=[name]} {-n [ns]}','delete by label')}
-${cmd('kubectl delete pod [name] {--grace-period=0} {--force}','!last resort — force delete stuck pod')}
+${cmd('kubectl delete {-f} [file.yaml]','delete resources defined in file','d')}
+${cmd('kubectl delete [resource] [name] {-n [ns]}','delete by name','d')}
+${cmd('kubectl delete [resource] {-l app=[name]} {-n [ns]}','delete by label','d')}
+${cmd('kubectl delete pod [name] {--grace-period=0} {--force}','!last resort — force delete stuck pod','d')}
 `)}
 
 ${sec('describe + events','#ffcc00',`
@@ -533,17 +579,17 @@ ${cmd('kubectl get events {-n [ns]} {--field-selector=type=Warning}','warnings o
 `)}
 
 ${sec('edit + patch','#ff7a2f',`
-${cmd('kubectl edit [resource] [name] {-n [ns]}','open in $EDITOR — save to apply immediately')}
+${cmd('kubectl edit [resource] [name] {-n [ns]}','open in $EDITOR — save to apply immediately','m')}
 ${cmd('kubectl patch [resource] [name] {-p} "{"spec":{"replicas":3}}"','JSON merge patch',
   [{t:'c',text:'kubectl patch deployment my-app -p \'{"spec":{"replicas":3}}\''},
-   {t:'o',text:'deployment.apps/my-app patched'}])}
+   {t:'o',text:'deployment.apps/my-app patched'}],'m')}
 ${cmd('kubectl set image deployment/[name] [container]=[image]:[tag] {-n [ns]}','update image — triggers rolling update',
-  [{t:'c',text:'kubectl set image deployment/api api=192.168.1.187:32000/api:2.1.0 -n demo'}])}
-${cmd('kubectl scale deployment [name] {--replicas=[n]} {-n [ns]}','change replica count')}
-${cmd('kubectl label [resource] [name] [key]=[val]','add/update a label')}
-${cmd('kubectl annotate [resource] [name] [key]=[val]','add/update an annotation')}
-${cmd('kubectl taint node [name] [key]=[val]:[effect]','add taint — NoSchedule | PreferNoSchedule | NoExecute')}
-${cmd('kubectl taint node [name] [key]-','remove taint (trailing -)')}
+  [{t:'c',text:'kubectl set image deployment/api api=192.168.1.187:32000/api:2.1.0 -n demo'}],'m')}
+${cmd('kubectl scale deployment [name] {--replicas=[n]} {-n [ns]}','change replica count','m')}
+${cmd('kubectl label [resource] [name] [key]=[val]','add/update a label','m')}
+${cmd('kubectl annotate [resource] [name] [key]=[val]','add/update an annotation','m')}
+${cmd('kubectl taint node [name] [key]=[val]:[effect]','add taint — NoSchedule | PreferNoSchedule | NoExecute','m')}
+${cmd('kubectl taint node [name] [key]-','remove taint (trailing -)','m')}
 `)}
 
 `},
@@ -609,23 +655,23 @@ ${sec('debug pods','#ffcc00',`
 ${cmd('kubectl run debug {--image=busybox} {--rm} {-it} {--restart=Never} -- /bin/sh','throwaway debug pod — deleted on exit',
   [{t:'c',text:'kubectl run debug --image=busybox --rm -it --restart=Never -- /bin/sh'},
    {t:'o',text:'If you don\'t see a command prompt, try pressing enter.'},
-   {t:'o',text:'/ #'}])}
+   {t:'o',text:'/ #'}],'m')}
 ${cmd('kubectl run debug {--image=nicolaka/netshoot} {--rm} {-it} {--restart=Never} -- bash','network tools — ping, dig, curl, ss, tcpdump',
   [{t:'m',text:'netshoot is the go-to for network debugging'},
-   {t:'c',text:'kubectl run debug --image=nicolaka/netshoot --rm -it --restart=Never -- bash'}])}
-${cmd('kubectl run debug {--image=curlimages/curl} {--rm} {-it} {--restart=Never} -- sh','curl available')}
-${cmd('kubectl run debug {-n [ns]} {--image=busybox} {--rm} {-it} {--restart=Never} -- sh','debug in a specific namespace')}
+   {t:'c',text:'kubectl run debug --image=nicolaka/netshoot --rm -it --restart=Never -- bash'}],'m')}
+${cmd('kubectl run debug {--image=curlimages/curl} {--rm} {-it} {--restart=Never} -- sh','curl available','m')}
+${cmd('kubectl run debug {-n [ns]} {--image=busybox} {--rm} {-it} {--restart=Never} -- sh','debug in a specific namespace','m')}
 ${cmd('kubectl debug [pod] {-it} {--image=busybox} {--copy-to=debug-pod}','k8s 1.23+ ephemeral container — attach to running pod')}
 `)}
 
 ${sec('port forward','#4488ff',`
-${cmd('kubectl port-forward [pod] [local]:[remote] {-n [ns]}','bypass ingress for direct pod access')}
+${cmd('kubectl port-forward [pod] [local]:[remote] {-n [ns]}','bypass ingress for direct pod access','m')}
 ${cmd('kubectl port-forward service/[name] [local]:[remote] {-n [ns]}','forward to a service',
   [{t:'c',text:'kubectl port-forward service/argocd-server 8080:80 -n argocd'},
-   {t:'m',text:'then open http://localhost:8080 in browser'}])}
-${cmd('kubectl port-forward service/argocd-server `8080:80` {-n argocd}','argocd UI')}
-${cmd('kubectl port-forward service/nginx `8888:80` {-n demo}','')}
-${cmd('kubectl port-forward deployment/[name] [local]:[remote]','')}
+   {t:'m',text:'then open http://localhost:8080 in browser'}],'m')}
+${cmd('kubectl port-forward service/argocd-server `8080:80` {-n argocd}','argocd UI','m')}
+${cmd('kubectl port-forward service/nginx `8888:80` {-n demo}','','m')}
+${cmd('kubectl port-forward deployment/[name] [local]:[remote]','','m')}
 `)}
 
 ${sec('resource usage','#a855f7',`
@@ -643,7 +689,7 @@ ${sec('one-liners','#ff4da6',`
 ${cmd('kubectl get pods {-A} {--field-selector=status.phase!=Running} | grep -v Completed','all non-running pods')}
 ${cmd('kubectl get pods {-A} {--sort-by=".status.containerStatuses[0].restartCount"}','sorted by restart count — find crashlooping pods')}
 ${cmd('kubectl get pods {-A} {--field-selector=spec.nodeName=[node]}','all pods on a specific node')}
-${cmd('kubectl delete pods {-n [ns]} {-l app=[name]}','delete all matching pods — deployment recreates them')}
+${cmd('kubectl delete pods {-n [ns]} {-l app=[name]}','delete all matching pods — deployment recreates them','d')}
 ${cmd('kubectl get pods {-n [ns]} {-o jsonpath=`{.items[*].metadata.name}`}','list pod names only')}
 ${cmd('kubectl get pods {-n [ns]} {-l app=[name]} {-o name} | xargs -I{} kubectl exec {} -- [cmd]','run command in all matching pods')}
 `)}
@@ -664,13 +710,13 @@ ${cmd('kubectl get deployments {-n [ns]}','',
 ${cmd('kubectl describe deployment [name] {-n [ns]}','show strategy, replicas, selector, conditions')}
 ${cmd('kubectl get deploy [name] {-n [ns]} {-o yaml}','full spec')}
 ${cmd('kubectl scale deployment [name] {--replicas=[n]} {-n [ns]}','',
-  [{t:'c',text:'kubectl scale deployment demo-app --replicas=4 -n demo'}])}
+  [{t:'c',text:'kubectl scale deployment demo-app --replicas=4 -n demo'}],'m')}
 ${cmd('kubectl set image deployment/[name] [container]=[image]:[tag] {-n [ns]}','triggers rolling update',
   [{t:'c',text:'kubectl set image deployment/api api=registry:32000/api:2.0 -n demo'},
-   {t:'o',text:'deployment.apps/api image updated'}])}
-${cmd('kubectl set env deployment/[name] [KEY]=[value] {-n [ns]}','add/update env var')}
-${cmd('kubectl edit deployment [name] {-n [ns]}','live edit in $EDITOR')}
-${cmd('kubectl delete deployment [name] {-n [ns]}','')}
+   {t:'o',text:'deployment.apps/api image updated'}],'m')}
+${cmd('kubectl set env deployment/[name] [KEY]=[value] {-n [ns]}','add/update env var','m')}
+${cmd('kubectl edit deployment [name] {-n [ns]}','live edit in $EDITOR','m')}
+${cmd('kubectl delete deployment [name] {-n [ns]}','','d')}
 `)}
 
 ${sec('rollouts','#00d4ff',`
@@ -682,11 +728,11 @@ ${cmd('kubectl rollout history deployment/[name] {-n [ns]}','list revision histo
 ${cmd('kubectl rollout history deployment/[name] {-n [ns]} {--revision=2}','see what changed in revision 2')}
 ${cmd('kubectl rollout undo deployment/[name] {-n [ns]}','*rollback to previous revision*',
   [{t:'c',text:'kubectl rollout undo deployment/api -n demo'},
-   {t:'o',text:'deployment.apps/api rolled back'}])}
-${cmd('kubectl rollout undo deployment/[name] {-n [ns]} {--to-revision=2}','rollback to specific revision')}
-${cmd('kubectl rollout restart deployment/[name] {-n [ns]}','rolling restart — new pods, no config change')}
-${cmd('kubectl rollout pause deployment/[name] {-n [ns]}','pause mid-rollout')}
-${cmd('kubectl rollout resume deployment/[name] {-n [ns]}','resume paused rollout')}
+   {t:'o',text:'deployment.apps/api rolled back'}],'d')}
+${cmd('kubectl rollout undo deployment/[name] {-n [ns]} {--to-revision=2}','rollback to specific revision','d')}
+${cmd('kubectl rollout restart deployment/[name] {-n [ns]}','rolling restart — new pods, no config change','m')}
+${cmd('kubectl rollout pause deployment/[name] {-n [ns]}','pause mid-rollout','m')}
+${cmd('kubectl rollout resume deployment/[name] {-n [ns]}','resume paused rollout','m')}
 `)}
 
 ${sec('services','#00ff88',`
@@ -700,7 +746,7 @@ ${cmd('kubectl get endpoints [name] {-n [ns]}','*if ADDRESS is empty, selector m
   [{t:'c',text:'kubectl get endpoints demo-app -n demo'},
    {t:'o',text:'NAME       ENDPOINTS                     AGE'},
    {t:'o',text:'demo-app   10.42.0.14:8080,10.42.0.15:8080   3d'}])}
-${cmd('kubectl expose deployment [name] {--port=80} {--target-port=8080}','create ClusterIP service from deployment')}
+${cmd('kubectl expose deployment [name] {--port=80} {--target-port=8080}','create ClusterIP service from deployment','m')}
 ${tbl([
   ['ClusterIP',    'internal only — pod to pod — default'],
   ['NodePort',     'open port on every node — 30000-32767'],
@@ -714,20 +760,20 @@ ${sec('ingress','#a855f7',`
 ${cmd('kubectl get ingress {-A}','')}
 ${cmd('kubectl describe ingress [name] {-n [ns]}','show rules, TLS, backend services')}
 ${cmd('kubectl logs {-n kube-system} {-l app.kubernetes.io/name=traefik}','traefik logs — routing errors')}
-${cmd('kubectl port-forward service/traefik `9000:9000` {-n kube-system}','traefik dashboard at localhost:9000/dashboard/')}
+${cmd('kubectl port-forward service/traefik `9000:9000` {-n kube-system}','traefik dashboard at localhost:9000/dashboard/','m')}
 `)}
 
 ${sec('configmaps + secrets','#ff7a2f',`
 ${cmd('kubectl get configmaps {-n [ns]}','')}
 ${cmd('kubectl get configmap [name] {-n [ns]} {-o yaml}','see all data')}
-${cmd('kubectl create configmap [name] {--from-file=[path]}','from file — key = filename')}
-${cmd('kubectl create configmap [name] {--from-literal=key=val}','')}
+${cmd('kubectl create configmap [name] {--from-file=[path]}','from file — key = filename','m')}
+${cmd('kubectl create configmap [name] {--from-literal=key=val}','','m')}
 ${cmd('kubectl get secrets {-n [ns]}','')}
 ${cmd('kubectl get secret [name] {-n [ns]} {-o jsonpath="{.data.[key]}"} | base64 -d','decode a secret value',
   [{t:'c',text:'kubectl get secret db-creds -n demo -o jsonpath="{.data.password}" | base64 -d'},
    {t:'o',text:'s3cr3t-p@ssword'}])}
-${cmd('kubectl create secret generic [name] {--from-literal=key=val} {-n [ns]}','')}
-${cmd('kubectl create secret docker-registry regcred {--docker-server=[reg]} {--docker-username=[u]} {--docker-password=[p]}','registry auth secret')}
+${cmd('kubectl create secret generic [name] {--from-literal=key=val} {-n [ns]}','','m')}
+${cmd('kubectl create secret docker-registry regcred {--docker-server=[reg]} {--docker-username=[u]} {--docker-password=[p]}','registry auth secret','m')}
 `)}
 
 `},
@@ -745,7 +791,7 @@ ${cmd('kubectl get pv','cluster-scoped — not namespaced',
 ${cmd('kubectl get pvc {-n [ns]}','claims are namespaced')}
 ${cmd('kubectl describe pvc [name] {-n [ns]}','*check Events section if stuck in Pending*')}
 ${cmd('kubectl get storageclass','list classes — * = default')}
-${cmd('kubectl delete pvc [name] {-n [ns]}','!with Delete policy this destroys underlying storage')}
+${cmd('kubectl delete pvc [name] {-n [ns]}','!with Delete policy this destroys underlying storage','d')}
 ${tbl([
   ['Pending',   'waiting for a matching PV'],
   ['Bound',     'successfully bound — ready to use'],
@@ -775,7 +821,7 @@ ${tbl([
 ${sec('serviceaccounts + RBAC','#a855f7',`
 ${cmd('kubectl get serviceaccounts {-n [ns]}','')}
 ${cmd('kubectl create serviceaccount [name] {-n [ns]}','')}
-${cmd('kubectl patch sa default {-n [ns]} {-p} "{"imagePullSecrets":[{"name":"regcred"}]}"','attach pull secret to SA')}
+${cmd('kubectl patch sa default {-n [ns]} {-p} "{"imagePullSecrets":[{"name":"regcred"}]}"','attach pull secret to SA','m')}
 ${cmd('kubectl get roles {-n [ns]}','namespaced roles')}
 ${cmd('kubectl get clusterroles','cluster-wide roles')}
 ${cmd('kubectl describe role [name] {-n [ns]}','see rules — verbs + resources')}
@@ -788,14 +834,14 @@ ${cmd('kubectl create rolebinding [name] {--role=[role]} {--serviceaccount=[ns]:
 `)}
 
 ${sec('node operations','#00d4ff',`
-${cmd('kubectl cordon [node]','mark unschedulable — no new pods scheduled here')}
-${cmd('kubectl uncordon [node]','re-enable scheduling')}
+${cmd('kubectl cordon [node]','mark unschedulable — no new pods scheduled here','m')}
+${cmd('kubectl uncordon [node]','re-enable scheduling','m')}
 ${cmd('kubectl drain [node] {--ignore-daemonsets} {--delete-emptydir-data}','evict all pods — use before node maintenance',
   [{t:'m',text:'draining safely moves workloads off the node'},
-   {t:'c',text:'kubectl drain ersatz --ignore-daemonsets --delete-emptydir-data'}])}
-${cmd('kubectl taint node [node] [key]=[val]:NoSchedule','prevent pods without matching toleration')}
-${cmd('kubectl taint node [node] [key]-','remove taint — trailing minus')}
-${cmd('kubectl label node [node] [key]=[val]','add label for nodeSelector affinity')}
+   {t:'c',text:'kubectl drain ersatz --ignore-daemonsets --delete-emptydir-data'}],'d')}
+${cmd('kubectl taint node [node] [key]=[val]:NoSchedule','prevent pods without matching toleration','m')}
+${cmd('kubectl taint node [node] [key]-','remove taint — trailing minus','m')}
+${cmd('kubectl label node [node] [key]=[val]','add label for nodeSelector affinity','m')}
 `)}
 
 `},
@@ -810,24 +856,24 @@ ${cmd('docker build {-t} [image]:[tag] .','build from Dockerfile in current dire
   [{t:'c',text:'docker build -t my-app:2.0 .'},
    {t:'o',text:'[+] Building 4.2s (10/10) FINISHED'},
    {t:'o',text:'=> exporting to image'},
-   {t:'o',text:'=> naming to docker.io/library/my-app:2.0'}])}
-${cmd('docker build {-t} [image]:[tag] {-f} Dockerfile.prod .','alternate Dockerfile')}
-${cmd('docker build {-t} [image]:[tag] {--no-cache} .','force full rebuild — skip layer cache')}
-${cmd('docker build {-t} [image]:[tag] {--build-arg} KEY=val .','pass build-time argument')}
-${cmd('docker build {--platform linux/amd64} {-t} [image]:[tag] .','cross-compile for target arch')}
-${cmd('docker build {--progress=plain} {-t} [image]:[tag] .','verbose output with cache hit/miss')}
-${cmd('docker buildx build {--platform linux/amd64,linux/arm64} {-t} [image]:[tag] {--push} .','multi-arch build + push in one step')}
+   {t:'o',text:'=> naming to docker.io/library/my-app:2.0'}],'m')}
+${cmd('docker build {-t} [image]:[tag] {-f} Dockerfile.prod .','alternate Dockerfile','m')}
+${cmd('docker build {-t} [image]:[tag] {--no-cache} .','force full rebuild — skip layer cache','m')}
+${cmd('docker build {-t} [image]:[tag] {--build-arg} KEY=val .','pass build-time argument','m')}
+${cmd('docker build {--platform linux/amd64} {-t} [image]:[tag] .','cross-compile for target arch','m')}
+${cmd('docker build {--progress=plain} {-t} [image]:[tag] .','verbose output with cache hit/miss','m')}
+${cmd('docker buildx build {--platform linux/amd64,linux/arm64} {-t} [image]:[tag] {--push} .','multi-arch build + push in one step','m')}
 `)}
 
 ${sec('tag + push','#00ff88',`
 ${cmd('docker tag [image]:[tag] [registry]/[image]:[tag]','',
-  [{t:'c',text:'docker tag my-app:2.0 192.168.1.187:32000/my-app:2.0'}])}
-${cmd('docker tag [image]:[tag] `192.168.1.187:32000`/[image]:[tag]','tag for ersatz registry')}
+  [{t:'c',text:'docker tag my-app:2.0 192.168.1.187:32000/my-app:2.0'}],'m')}
+${cmd('docker tag [image]:[tag] `192.168.1.187:32000`/[image]:[tag]','tag for ersatz registry','m')}
 ${cmd('docker push `192.168.1.187:32000`/[image]:[tag]','push to ersatz',
   [{t:'c',text:'docker push 192.168.1.187:32000/my-app:2.0'},
-   {t:'o',text:'2.0: digest: sha256:abc123... size: 1847'}])}
-${cmd('docker pull [registry]/[image]:[tag]','')}
-${cmd('docker login [registry]','authenticate — prompts for username/password')}
+   {t:'o',text:'2.0: digest: sha256:abc123... size: 1847'}],'m')}
+${cmd('docker pull [registry]/[image]:[tag]','','m')}
+${cmd('docker login [registry]','authenticate — prompts for username/password','m')}
 `)}
 
 ${sec('images','#ffcc00',`
@@ -837,32 +883,32 @@ ${cmd('docker images','list local images',
    {t:'o',text:'my-app       2.0    a1b2c3d4e5f6   2 hours ago    48.2MB'}])}
 ${cmd('docker inspect [image]:[tag]','full metadata — layers, env, entrypoint')}
 ${cmd('docker history [image]:[tag]','show layers + sizes — spot bloat')}
-${cmd('docker rmi [image]:[tag]','remove image')}
-${cmd('docker image prune','remove dangling images (untagged)')}
-${cmd('docker image prune {-a}','remove all unused images')}
+${cmd('docker rmi [image]:[tag]','remove image','m')}
+${cmd('docker image prune','remove dangling images (untagged)','d')}
+${cmd('docker image prune {-a}','remove all unused images','d')}
 ${cmd('docker save [image]:[tag] {-o} [file.tar]','export to tar — for air-gapped transfer',
   [{t:'c',text:'docker save nginx:1.25 -o nginx-1.25.tar'},
    {t:'c',text:'scp nginx-1.25.tar user@airgapped-host:~/'},
-   {t:'c',text:'docker load -i nginx-1.25.tar'}])}
-${cmd('docker load {-i} [file.tar]','import from tar')}
-${cmd('docker system df','disk usage — images, containers, volumes, build cache')}
-${cmd('docker system prune {-a}','remove all unused resources — recovers disk space')}
+   {t:'c',text:'docker load -i nginx-1.25.tar'}],'m')}
+${cmd('docker load {-i} [file.tar]','import from tar','m')}
+${cmd('docker system df','disk usage — images, containers, volumes, build cache','m')}
+${cmd('docker system prune {-a}','remove all unused resources — recovers disk space','d')}
 `)}
 
 ${sec('run + exec','#00d4ff',`
 ${cmd('docker run {-d} {-p 8080:3000} {--name} [name] [image]:[tag]','detached, port mapped, named',
   [{t:'c',text:'docker run -d -p 8080:3000 --name api my-app:2.0'},
-   {t:'o',text:'7f3c2a1b9e4d...'}])}
-${cmd('docker run {-it} {--rm} [image]:[tag] /bin/sh','interactive + auto-delete on exit')}
-${cmd('docker run {-e} KEY=val {-e} KEY2=val2 [image]:[tag]','env vars')}
-${cmd('docker run {-v} /host/path:/container/path [image]:[tag]','bind mount')}
+   {t:'o',text:'7f3c2a1b9e4d...'}],'m')}
+${cmd('docker run {-it} {--rm} [image]:[tag] /bin/sh','interactive + auto-delete on exit','m')}
+${cmd('docker run {-e} KEY=val {-e} KEY2=val2 [image]:[tag]','env vars','m')}
+${cmd('docker run {-v} /host/path:/container/path [image]:[tag]','bind mount','m')}
 ${cmd('docker ps','running containers')}
 ${cmd('docker ps {-a}','all including stopped')}
 ${cmd('docker logs {-f} {--tail=100} [container]','follow last 100 lines')}
-${cmd('docker exec {-it} [container] /bin/sh','shell into running container')}
-${cmd('docker exec [container] [command]','run one command in container')}
+${cmd('docker exec {-it} [container] /bin/sh','shell into running container','m')}
+${cmd('docker exec [container] [command]','run one command in container','m')}
 ${cmd('docker stats','live CPU + memory for all containers')}
-${cmd('docker cp [container]:[path] [local-path]','copy file out of container')}
+${cmd('docker cp [container]:[path] [local-path]','copy file out of container','m')}
 `)}
 
 ${sec('registry query','#a855f7',`
@@ -873,8 +919,8 @@ ${cmd('curl http://[registry]/v2/[image]/tags/list','list tags for an image',
   [{t:'c',text:'curl http://192.168.1.187:32000/v2/my-app/tags/list'},
    {t:'o',text:'{"name":"my-app","tags":["1.0","2.0","latest"]}'}])}
 ${cmd('crictl images','list images in containerd — run on the node')}
-${cmd('crictl pull [image]:[tag]','pull directly via containerd — bypass Docker')}
-${cmd('crictl rmi [image]','remove from containerd image cache')}
+${cmd('crictl pull [image]:[tag]','pull directly via containerd — bypass Docker','m')}
+${cmd('crictl rmi [image]','remove from containerd image cache','m')}
 `)}
 
 `},
@@ -892,10 +938,10 @@ ${cmd('argocd login `192.168.1.187:32217` {--insecure}','ersatz — HTTP NodePor
   [{t:'c',text:'argocd login 192.168.1.187:32217 --insecure'},
    {t:'o',text:'Username: admin'},
    {t:'o',text:'Password: '},
-   {t:'o',text:'\'admin:login\' logged in successfully'}])}
-${cmd('argocd login [server] {--username} admin {--password} [pw]','non-interactive login')}
-${cmd('argocd account update-password','change admin password')}
-${cmd('argocd logout [server]','')}
+   {t:'o',text:'\'admin:login\' logged in successfully'}],'m')}
+${cmd('argocd login [server] {--username} admin {--password} [pw]','non-interactive login','m')}
+${cmd('argocd account update-password','change admin password','m')}
+${cmd('argocd logout [server]','','m')}
 `)}
 
 ${sec('apps','#a855f7',`
@@ -909,33 +955,33 @@ ${cmd('argocd app diff [app]','*show exactly what would change — check before 
 ${cmd('argocd app sync [app]','trigger sync against git',
   [{t:'c',text:'argocd app sync demo-app'},
    {t:'o',text:'TIMESTAMP    GROUP  KIND        NAMESPACE  NAME      STATUS   HEALTH'},
-   {t:'o',text:'...          apps   Deployment  demo       demo-app  Synced   Healthy'}])}
-${cmd('argocd app sync [app] {--force}','force re-apply even if already synced')}
-${cmd('argocd app sync [app] {--dry-run}','preview sync — no changes applied')}
-${cmd('argocd app sync [app] {--resource apps:Deployment:[name]}','sync only one resource')}
-${cmd('argocd app wait [app] {--sync} {--health} {--timeout 120}','wait for sync + health — use in scripts')}
+   {t:'o',text:'...          apps   Deployment  demo       demo-app  Synced   Healthy'}],'m')}
+${cmd('argocd app sync [app] {--force}','force re-apply even if already synced','d')}
+${cmd('argocd app sync [app] {--dry-run}','preview sync — no changes applied','m')}
+${cmd('argocd app sync [app] {--resource apps:Deployment:[name]}','sync only one resource','m')}
+${cmd('argocd app wait [app] {--sync} {--health} {--timeout 120}','wait for sync + health — use in scripts','m')}
 ${cmd('argocd app history [app]','deployment history with revision IDs')}
 ${cmd('argocd app rollback [app] [revision-id]','rollback to a previous deployment',
-  [{t:'c',text:'argocd app rollback demo-app 3'}])}
-${cmd('argocd app delete [app]','delete ArgoCD app — resources stay in cluster')}
-${cmd('argocd app delete [app] {--cascade}','delete app AND all its cluster resources')}
+  [{t:'c',text:'argocd app rollback demo-app 3'}],'d')}
+${cmd('argocd app delete [app]','delete ArgoCD app — resources stay in cluster','d')}
+${cmd('argocd app delete [app] {--cascade}','delete app AND all its cluster resources','d')}
 `)}
 
 ${sec('sync control','#00ff88',`
-${cmd('argocd app set [app] {--sync-policy} automated','enable auto-sync')}
-${cmd('argocd app set [app] {--self-heal}','auto-revert manual kubectl changes')}
-${cmd('argocd app set [app] {--auto-prune}','delete resources removed from git')}
-${cmd('argocd app set [app] {--sync-policy} none','disable auto-sync — manual only')}
+${cmd('argocd app set [app] {--sync-policy} automated','enable auto-sync','m')}
+${cmd('argocd app set [app] {--self-heal}','auto-revert manual kubectl changes','m')}
+${cmd('argocd app set [app] {--auto-prune}','delete resources removed from git','m')}
+${cmd('argocd app set [app] {--sync-policy} none','disable auto-sync — manual only','m')}
 ${cmd('argocd app set [app] {--self-heal=false}','*disable self-heal for manual edits during incident*',
-  [{t:'m',text:'re-enable after: argocd app set [app] --self-heal'}])}
+  [{t:'m',text:'re-enable after: argocd app set [app] --self-heal'}],'m')}
 `)}
 
 ${sec('repos','#ffcc00',`
 ${cmd('argocd repo list','list connected repositories')}
-${cmd('argocd repo add [url]','public repo')}
-${cmd('argocd repo add [url] {--username} [u] {--password} [token]','private HTTPS — use token not password')}
-${cmd('argocd repo add [url] {--ssh-private-key-path} ~/.ssh/id_rsa','SSH key auth')}
-${cmd('argocd repo rm [url]','')}
+${cmd('argocd repo add [url]','public repo','m')}
+${cmd('argocd repo add [url] {--username} [u] {--password} [token]','private HTTPS — use token not password','m')}
+${cmd('argocd repo add [url] {--ssh-private-key-path} ~/.ssh/id_rsa','SSH key auth','m')}
+${cmd('argocd repo rm [url]','','d')}
 `)}
 
 ${sec('create app (CLI)','#a855f7',`
@@ -944,8 +990,8 @@ ${cmd('argocd app create [name] {--repo} [url] {--path} [dir] {--dest-server} ht
    {t:'c',text:'  --repo https://github.com/myorg/k8s-config \\'},
    {t:'c',text:'  --path demo \\'},
    {t:'c',text:'  --dest-server https://kubernetes.default.svc \\'},
-   {t:'c',text:'  --dest-namespace demo'}])}
-${cmd('argocd app create [name] {--repo} [url] {--path} [dir] {--dest-namespace} [ns] {--sync-policy} automated {--auto-prune} {--self-heal}','full auto-sync setup')}
+   {t:'c',text:'  --dest-namespace demo'}],'m')}
+${cmd('argocd app create [name] {--repo} [url] {--path} [dir] {--dest-namespace} [ns] {--sync-policy} automated {--auto-prune} {--self-heal}','full auto-sync setup','m')}
 `)}
 
 ${sec('status reference','#ffcc00',`
@@ -974,7 +1020,7 @@ ${cmd('sudo systemctl status k3s','service status',
    {t:'o',text:'● k3s.service - Lightweight Kubernetes'},
    {t:'o',text:'     Loaded: loaded (/etc/systemd/system/k3s.service; enabled)'},
    {t:'o',text:'     Active: active (running) since ...'}])}
-${cmd('sudo systemctl restart k3s','restart cluster — brief outage')}
+${cmd('sudo systemctl restart k3s','restart cluster — brief outage','m')}
 ${cmd('sudo journalctl {-u} k3s {-f}','follow k3s logs')}
 ${cmd('sudo journalctl {-u} k3s {--since "10 min ago"}','last 10 minutes of logs')}
 ${cmd('cat /etc/rancher/k3s/k3s.yaml','kubeconfig location')}
@@ -991,31 +1037,14 @@ ${cmd('cat /etc/rancher/k3s/registries.yaml','view mirror + insecure registry co
    {t:'o',text:'  "docker.io":'},
    {t:'o',text:'    endpoint:'},
    {t:'o',text:'      - "http://192.168.1.100:5000"'}])}
-${cmd('sudo systemctl restart k3s','apply registry changes')}
-`)}
-
-${sec('helm','#ffcc00',`
-${cmd('helm repo add [name] [url]','add chart repository',
-  [{t:'c',text:'helm repo add stable https://charts.helm.sh/stable'}])}
-${cmd('helm repo update','fetch latest chart versions')}
-${cmd('helm search repo [keyword]','find charts')}
-${cmd('helm install [release] [chart] {-f values.yaml} {-n [ns]}','install with custom values')}
-${cmd('helm upgrade {--install} [release] [chart] {-n [ns]}','install or upgrade — idempotent')}
-${cmd('helm list {-A}','all releases all namespaces',
-  [{t:'c',text:'helm list -A'},
-   {t:'o',text:'NAME     NAMESPACE    REVISION   STATUS     CHART'},
-   {t:'o',text:'traefik  kube-system  1          deployed   traefik-25.0.0'}])}
-${cmd('helm get values [release] {-n [ns]}','see applied values')}
-${cmd('helm template [release] [chart] {-f values.yaml}','render manifests without installing')}
-${cmd('helm rollback [release] [revision] {-n [ns]}','rollback to previous revision')}
-${cmd('helm uninstall [release] {-n [ns]}','remove release')}
+${cmd('sudo systemctl restart k3s','apply registry changes','m')}
 `)}
 
 ${sec('kustomize','#00d4ff',`
 ${cmd('kubectl apply {-k} [directory/]','apply kustomization',
   [{t:'c',text:'kubectl apply -k overlays/staging/'}])}
 ${cmd('kubectl diff {-k} [directory/]','preview changes')}
-${cmd('kustomize build [directory/] | kubectl apply {-f} -','render + pipe to kubectl')}
+${cmd('kustomize build [directory/] | kubectl apply {-f} -','render + pipe to kubectl','m')}
 `)}
 
 ${sec('resource QoS classes','#ff4da6',`
@@ -1067,12 +1096,12 @@ ${cmd('kubectl top pod [pod] {-n [ns]} {--containers}','current memory usage vs 
 ${sec('ImagePullBackOff','#ff3c5a',`
 ${cmd('kubectl describe pod [pod] {-n [ns]}','Events will show the exact containerd error')}
 ${cmd('curl http://[registry]/v2/[image]/tags/list','does the tag exist in the registry?')}
-${cmd('crictl pull [image]:[tag]','test pull directly on the node')}
+${cmd('crictl pull [image]:[tag]','test pull directly on the node','m')}
 ${cmd('cat /etc/rancher/k3s/registries.yaml','check mirror config')}
 `)}
 
 ${sec('pod stuck Pending','#ffcc00',`
-${cmd('kubectl describe pod [pod] {-n [ns]}','Events explain why it cannot be scheduled')}
+${cmd('kubectl describe pod [pod] {-n [ns]}','Events explain why it cannot be scheduled','m')}
 ${tbl([
   ['Insufficient cpu/memory',  'reduce requests or add nodes'],
   ['No nodes match selector',  'check node labels — kubectl get nodes --show-labels'],
@@ -1089,7 +1118,7 @@ ${cmd('kubectl get endpoints [svc] {-n [ns]}','*if ADDRESS column is empty, sele
    {t:'o',text:'demo-app   <none>      3d    <- selector matches nothing'}])}
 ${cmd('kubectl describe service [svc] {-n [ns]}','check the Selector field')}
 ${cmd('kubectl get pods {-n [ns]} {--show-labels}','do pod labels match the selector?')}
-${cmd('kubectl run t {--image=busybox} {--rm} {-it} {--restart=Never} -- wget -qO- http://[svc].[ns]','test from inside cluster')}
+${cmd('kubectl run t {--image=busybox} {--rm} {-it} {--restart=Never} -- wget -qO- http://[svc].[ns]','test from inside cluster','m')}
 `)}
 
 ${sec('DNS not resolving','#ff3c5a',`
@@ -1097,7 +1126,7 @@ ${cmd('kubectl run dns {--image=busybox} {--rm} {-it} {--restart=Never} -- nsloo
   [{t:'c',text:'kubectl run dns --image=busybox --rm -it --restart=Never -- nslookup nginx.demo.svc.cluster.local'},
    {t:'o',text:'Server:    10.43.0.10'},
    {t:'o',text:'Name:      nginx.demo.svc.cluster.local'},
-   {t:'o',text:'Address:   10.43.112.72'}])}
+   {t:'o',text:'Address:   10.43.112.72'}],'m')}
 ${cmd('kubectl get pods {-n kube-system} {-l k8s-app=kube-dns}','is CoreDNS running?')}
 ${cmd('kubectl logs {-n kube-system} {-l k8s-app=kube-dns}','CoreDNS logs')}
 `)}
@@ -1134,7 +1163,7 @@ ${tbl([
 ])}
 ${cmd('kubectl describe node [node] | grep -A5 Conditions','')}
 ${cmd('kubectl get pods {-A} {--field-selector=status.phase=Failed}','evicted pods')}
-${cmd('kubectl delete pods {-A} {--field-selector=status.phase=Failed}','clean up evicted pods')}
+${cmd('kubectl delete pods {-A} {--field-selector=status.phase=Failed}','clean up evicted pods','d')}
 `)}
 
 `},
@@ -1157,7 +1186,7 @@ ${cmd('kubectl run dns {--image=busybox} {--rm} {-it} {--restart=Never} -- nsloo
   [{t:'c',text:'kubectl run dns --image=busybox --rm -it --restart=Never -- nslookup kubernetes.default'},
    {t:'o',text:'Server:    10.43.0.10'},
    {t:'o',text:'Name:      kubernetes.default.svc.cluster.local'},
-   {t:'o',text:'Address:   10.43.0.1'}])}
+   {t:'o',text:'Address:   10.43.0.1'}],'m')}
 `)}
 
 ${sec('port ranges','#ffcc00',`
@@ -1184,7 +1213,7 @@ ${tbl([
   ['from: []',             'deny all ingress (empty from)'],
   ['to: []',               'deny all egress (empty to)'],
 ])}
-${cmd('kubectl run sniff {--image=nicolaka/netshoot} {--rm} {-it} {--restart=Never} -- tcpdump {-i eth0}','capture traffic in a throwaway pod')}
+${cmd('kubectl run sniff {--image=nicolaka/netshoot} {--rm} {-it} {--restart=Never} -- tcpdump {-i eth0}','capture traffic in a throwaway pod','m')}
 `)}
 
 ${sec('curl service from pod','#00ff88',`
@@ -1192,13 +1221,13 @@ ${cmd('kubectl exec [pod] -- curl http://[svc].[ns].svc.cluster.local','',
   [{t:'c',text:'kubectl exec my-app-abc123 -- curl http://nginx.demo.svc.cluster.local'},
    {t:'o',text:'<!DOCTYPE html><html>...'}])}
 ${cmd('kubectl exec [pod] -- wget -qO- http://[svc]','within same namespace')}
-${cmd('kubectl run c {--image=curlimages/curl} {--rm} {-it} {--restart=Never} -- curl http://[svc].[ns]','from throwaway pod')}
+${cmd('kubectl run c {--image=curlimages/curl} {--rm} {-it} {--restart=Never} -- curl http://[svc].[ns]','from throwaway pod','m')}
 `)}
 
 ${sec('port forward + proxy','#4488ff',`
 ${cmd('kubectl port-forward service/[svc] [local]:[remote] {-n [ns]}','',
   [{t:'c',text:'kubectl port-forward service/argocd-server 8080:80 -n argocd'},
-   {t:'m',text:'then open http://localhost:8080'}])}
+   {t:'m',text:'then open http://localhost:8080'}],'m')}
 ${cmd('kubectl proxy','start proxy to API server at localhost:8001')}
 ${cmd('curl http://localhost:8001/api/v1/namespaces/[ns]/services/[svc]/proxy/','reach service via API proxy')}
 `)}
@@ -1242,10 +1271,10 @@ ${cmd('curl http://[registry]/v2/[image]/manifests/[tag]','fetch image manifest'
 
 ${sec('run a local registry','#ff8c42',`
 ${cmd('docker run {-d} {--name} registry {--restart} always {-p 5000:5000} registry:2','minimal — no auth, no TLS',
-  [{t:'c',text:'docker run -d --name registry --restart always -p 5000:5000 registry:2'}])}
-${cmd('docker run {-d} {-p 5000:5000} {-v} /data/registry:/var/lib/registry {--name} registry registry:2','with persistent storage on host')}
-${cmd('docker tag [image]:[tag] localhost:5000/[image]:[tag]','tag for local registry')}
-${cmd('docker push localhost:5000/[image]:[tag]','push to local registry')}
+  [{t:'c',text:'docker run -d --name registry --restart always -p 5000:5000 registry:2'}],'m')}
+${cmd('docker run {-d} {-p 5000:5000} {-v} /data/registry:/var/lib/registry {--name} registry registry:2','with persistent storage on host','m')}
+${cmd('docker tag [image]:[tag] localhost:5000/[image]:[tag]','tag for local registry','m')}
+${cmd('docker push localhost:5000/[image]:[tag]','push to local registry','m')}
 `)}
 
 ${sec('k3s containerd config','#ff7a2f',`
@@ -1259,8 +1288,8 @@ ${cmd('cat /etc/rancher/k3s/registries.yaml','view current config',
    {t:'o',text:'    endpoint:'},
    {t:'o',text:'      - "http://192.168.1.100:5000"'},
    {t:'o',text:'      - "https://registry-1.docker.io"  # fallback'}])}
-${cmd('sudo systemctl restart k3s','apply after editing registries.yaml')}
-${cmd('sudo crictl pull [image]:[tag]','test pull from node after config change')}
+${cmd('sudo systemctl restart k3s','apply after editing registries.yaml','m')}
+${cmd('sudo crictl pull [image]:[tag]','test pull from node after config change','m')}
 `)}
 
 ${sec('stub registry patterns','#ff3c5a',`
@@ -1280,15 +1309,15 @@ ${cmd('curl http://[stub]/v2/[image]/tags/list','check if image is in stub',
 ${sec('air-gapped image transfer','#ff8c42',`
 ${cmd('docker save [image]:[tag] {-o} [file.tar]','export image to tarball',
   [{t:'c',text:'docker save nginx:1.25 postgres:15 redis:7 -o images.tar'},
-   {t:'m',text:'multiple images can be saved to one tar'}])}
-${cmd('docker save [image]:[tag] | gzip > [file.tar.gz]','compressed export')}
+   {t:'m',text:'multiple images can be saved to one tar'}],'m')}
+${cmd('docker save [image]:[tag] | gzip > [file.tar.gz]','compressed export','m')}
 ${cmd('scp [file.tar] user@[host]:~/','transfer to air-gapped machine')}
 ${cmd('docker load {-i} [file.tar]','import on destination',
   [{t:'c',text:'docker load -i images.tar'},
    {t:'o',text:'Loaded image: nginx:1.25'},
-   {t:'o',text:'Loaded image: postgres:15'}])}
-${cmd('docker tag [image]:[tag] [registry]/[image]:[tag]','re-tag for internal registry')}
-${cmd('docker push [registry]/[image]:[tag]','push to internal registry after loading')}
+   {t:'o',text:'Loaded image: postgres:15'}],'m')}
+${cmd('docker tag [image]:[tag] [registry]/[image]:[tag]','re-tag for internal registry','m')}
+${cmd('docker push [registry]/[image]:[tag]','push to internal registry after loading','m')}
 ${cmd('crane copy [src] [dst]','copy image between registries without local pull — needs crane tool',
   [{t:'c',text:'crane copy docker.io/nginx:1.25 192.168.1.187:32000/nginx:1.25'}])}
 `)}
@@ -1298,9 +1327,9 @@ ${cmd('kubectl create secret docker-registry regcred {--docker-server=[reg]} {--
   [{t:'c',text:'kubectl create secret docker-registry regcred \\'},
    {t:'c',text:'  --docker-server=192.168.1.187:32000 \\'},
    {t:'c',text:'  --docker-username=admin \\'},
-   {t:'c',text:'  --docker-password=secret -n demo'}])}
+   {t:'c',text:'  --docker-password=secret -n demo'}],'m')}
 ${cmd('kubectl patch sa default {-n [ns]} {-p} `{"imagePullSecrets":[{"name":"regcred"}]}`','attach to default SA — all pods in ns inherit it',
-  [{t:'m',text:'alternative to adding imagePullSecrets to every deployment'}])}
+  [{t:'m',text:'alternative to adding imagePullSecrets to every deployment'}],'m')}
 ${cmd('kubectl get secret regcred {-n [ns]} {-o jsonpath=`{.data.\\.dockerconfigjson}`} | base64 -d','inspect pull secret contents')}
 `)}
 
@@ -1308,8 +1337,8 @@ ${sec('containerd crictl (on node)','#00d4ff',`
 ${cmd('sudo crictl images','list all images in containerd cache')}
 ${cmd('sudo crictl pull [image]:[tag]','pull directly via containerd — tests mirror config',
   [{t:'c',text:'sudo crictl pull 192.168.1.187:32000/my-app:2.0'},
-   {t:'o',text:'Image is up to date for sha256:abc123...'}])}
-${cmd('sudo crictl rmi [image]','remove image from containerd cache')}
+   {t:'o',text:'Image is up to date for sha256:abc123...'}],'m')}
+${cmd('sudo crictl rmi [image]','remove image from containerd cache','m')}
 ${cmd('sudo crictl info | grep -A5 registry','show containerd registry config')}
 ${cmd('sudo cat /var/lib/rancher/k3s/agent/etc/containerd/config.toml','k3s generated containerd config')}
 `)}
@@ -1327,6 +1356,162 @@ ${tbl([
 `)}
 
 `},
+
+// ══════════════════════════════════════════════════════════════════════════════
+{ id:'helm', label:'helm', color:'#00ffe9',
+  desc:'repos, install, upgrade, rollback, inspect, template, plugins',
+  content: () => `
+
+${sec('concepts','#00ffe9',`
+${tbl([
+  ['Chart',    'a package — templates + default values + metadata'],
+  ['Release',  'a deployed instance of a chart — one chart, many releases'],
+  ['Revision', 'every install/upgrade increments — rollback targets a revision'],
+  ['Values',   'the knobs — override defaults at install time with -f values.yaml'],
+  ['Repository','an HTTP index of charts — like apt/pip for k8s apps'],
+  ['Tiller',   'removed in Helm 3 — no server-side component anymore'],
+])}
+`)}
+
+${sec('repos','#00ffe9',`
+${cmd('helm repo add [name] [url]','add a chart repository',
+  [{t:'c',text:'helm repo add bitnami https://charts.bitnami.com/bitnami'},
+   {t:'c',text:'helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx'}],'m')}
+${cmd('helm repo update','pull latest index from all repos — run before search/install',
+  [{t:'c',text:'helm repo update'},
+   {t:'o',text:'Hang tight while we grab the latest from your chart repositories...'},
+   {t:'o',text:'...Successfully got an update from the "bitnami" chart repository'}],'m')}
+${cmd('helm repo list','show configured repos')}
+${cmd('helm repo remove [name]','remove a repo','d')}
+${cmd('helm repo index [dir]','generate an index.yaml from charts in a directory — for hosting your own repo','m')}
+${cmd('helm search repo [keyword]','search all repos for charts',
+  [{t:'c',text:'helm search repo postgres'},
+   {t:'o',text:'NAME                   CHART VERSION   APP VERSION   DESCRIPTION'},
+   {t:'o',text:'bitnami/postgresql     13.2.0          16.1.0        PostgreSQL...'}])}
+${cmd('helm search repo [keyword] {--versions}','all available versions')}
+${cmd('helm search hub [keyword]','search Artifact Hub — public index of all public charts')}
+`)}
+
+${sec('install','#00ffe9',`
+${cmd('helm install [release] [chart]','install with all defaults',
+  [{t:'c',text:'helm install my-nginx ingress-nginx/ingress-nginx -n ingress --create-namespace'}],'m')}
+${cmd('helm install [release] [chart] {-f values.yaml} {-n [ns]}','install with custom values file','m')}
+${cmd('helm install [release] [chart] {--set key=val} {-n [ns]}','override a single value inline',
+  [{t:'c',text:'helm install my-pg bitnami/postgresql --set auth.postgresPassword=secret -n demo'}],'m')}
+${cmd('helm install [release] [chart] {--set-string key=val}','force value as string — avoids type coercion','m')}
+${cmd('helm install [release] [chart] {--create-namespace} {-n [ns]}','create namespace if it does not exist','m')}
+${cmd('helm install [release] [chart] {--dry-run} {--debug}','render templates + simulate install, no changes',
+  [{t:'m',text:'shows exactly what would be applied — use before first install'}])}
+${cmd('helm install [release] [chart] {--version [ver]} {-n [ns]}','pin to a specific chart version','m')}
+${cmd('helm install [release] ./[local-chart-dir]','install from local chart directory','m')}
+`)}
+
+${sec('upgrade + rollback','#ffe900',`
+${cmd('helm upgrade [release] [chart] {-n [ns]}','upgrade to latest chart version','m')}
+${cmd('helm upgrade {--install} [release] [chart] {-f values.yaml} {-n [ns]}','install if not present, upgrade if it is — idempotent deploy pattern',
+  [{t:'m',text:'the standard CI/CD command — works whether release exists or not'},
+   {t:'c',text:'helm upgrade --install my-app ./chart -f values.prod.yaml -n prod'}],'m')}
+${cmd('helm upgrade [release] [chart] {--reuse-values} {-n [ns]}','keep existing values, only change chart version','m')}
+${cmd('helm upgrade [release] [chart] {--set key=val} {--reuse-values} {-n [ns]}','patch one value, keep the rest','m')}
+${cmd('helm upgrade [release] [chart] {--force} {-n [ns]}','force resource replacement — more disruptive than patch','d')}
+${cmd('helm upgrade [release] [chart] {--rollback-on-failure} {-n [ns]}','rollback automatically if upgrade fails (Helm 4+)','m')}
+${cmd('helm upgrade [release] [chart] {--atomic} {-n [ns]}','auto-rollback if upgrade fails — wait for health',
+  [{t:'m',text:'--atomic implies --wait; if any resource fails to become ready, helm rolls back automatically'}],'m')}
+${cmd('helm upgrade [release] [chart] {--timeout 5m} {-n [ns]}','set how long to wait for resources to become ready','m')}
+${cmd('helm rollback [release] [revision] {-n [ns]}','rollback to a specific revision',
+  [{t:'c',text:'helm rollback my-app 3 -n prod'},
+   {t:'o',text:'Rollback was a success! Happy Helming!'}],'m')}
+${cmd('helm rollback [release] 0 {-n [ns]}','rollback to the previous revision (0 = last)','m')}
+${cmd('helm rollback [release] [revision] {--cleanup-on-fail} {-n [ns]}','delete newly created resources if rollback fails','d')}
+`)}
+
+${sec('inspect releases','#00ffe9',`
+${cmd('helm list {-n [ns]}','releases in a namespace',
+  [{t:'c',text:'helm list -A'},
+   {t:'o',text:'NAME       NAMESPACE    REVISION   STATUS     CHART             APP VERSION'},
+   {t:'o',text:'traefik    kube-system  1          deployed   traefik-25.0.0    v2.10.4'},
+   {t:'o',text:'my-app     demo         4          deployed   my-app-1.3.0      2.0.1'}])}
+${cmd('helm list {-A}','all namespaces')}
+${cmd('helm list {--failed}','only failed releases')}
+${cmd('helm list {--pending}','only pending releases')}
+${cmd('helm list {--all}','all releases including superseded and uninstalled')}
+${cmd('helm list {--uninstalled}','only uninstalled (kept with --keep-history)','m')}
+${cmd('helm list {--superseded}','only superseded releases')}
+${cmd('helm list {--deployed}','only currently deployed')}
+${cmd('helm list {--date}','sort by release date')}
+${cmd('helm list {-o yaml}','output as yaml — also accepts json, table')}
+${cmd('helm status [release] {-n [ns]}','summary — status, resources deployed, notes',
+  [{t:'c',text:'helm status my-app -n demo'}])}
+${cmd('helm status [release] {--revision [n]}','status at a specific revision')}
+${cmd('helm history [release] {-n [ns]}','full revision history with status and description',
+  [{t:'c',text:'helm history my-app -n demo'},
+   {t:'o',text:'REVISION   UPDATED        STATUS       CHART          DESCRIPTION'},
+   {t:'o',text:'1          Mon Jan ...    superseded   my-app-1.2.0   Install complete'},
+   {t:'o',text:'2          Tue Jan ...    deployed     my-app-1.3.0   Upgrade complete'}])}
+${cmd('helm get all [release] {-n [ns]}','everything — manifest, values, hooks, notes')}
+${cmd('helm get values [release] {-n [ns]}','user-supplied values for this release',
+  [{t:'m',text:'add --all to also see default values'}])}
+${cmd('helm get values [release] {-n [ns]} {--all}','all values including defaults')}
+${cmd('helm get hooks [release] {-n [ns]}','download hooks — formatted as YAML separated by ---')}
+${cmd('helm get manifest [release] {-n [ns]}','rendered k8s manifests that were applied')}
+${cmd('helm get notes [release] {-n [ns]}','post-install notes (connection strings, next steps)')}
+`)}
+
+${sec('templates + dry-run','#00ffe9',`
+${cmd('helm template [release] [chart] {-f values.yaml}','render all templates locally — no cluster contact',
+  [{t:'m',text:'essential for debugging chart issues before installing'},
+   {t:'c',text:'helm template my-app ./chart -f values.yaml | kubectl apply --dry-run=server -f -'}])}
+${cmd('helm template [release] [chart] {--show-only templates/[file.yaml]}','render a single template file')}
+${cmd('helm install [release] [chart] {--dry-run} {--debug} {-f values.yaml}','full install simulation with debug output')}
+${cmd('helm lint [chart-dir]','check chart for errors and best practices',
+  [{t:'c',text:'helm lint ./my-chart'},
+   {t:'o',text:'==> Linting ./my-chart'},
+   {t:'o',text:'[INFO] Chart.yaml: icon is recommended'},
+   {t:'o',text:'1 chart(s) linted, 0 chart(s) failed'}])}
+`)}
+
+${sec('values workflow','#ffe900',`
+${cmd('helm show values [chart]','print all default values for a chart',
+  [{t:'c',text:'helm show values bitnami/postgresql | head -60'},
+   {t:'m',text:'pipe to a file to use as your base: helm show values chart > values.yaml'}])}
+${cmd('helm show values [chart] > values.yaml','dump defaults as a starting values file','m')}
+${cmd('helm show chart [chart]','show chart metadata — name, version, description, dependencies')}
+${cmd('helm show readme [chart]','show chart README')}
+`)}
+
+${sec('uninstall','#ff6b00',`
+${cmd('helm uninstall [release] {-n [ns]}','remove release — deletes all k8s resources it created',
+  [{t:'c',text:'helm uninstall my-app -n demo'},
+   {t:'o',text:'release "my-app" uninstalled'}],'d')}
+${cmd('helm uninstall [release] {--keep-history} {-n [ns]}','delete resources but keep release history for audit','d')}
+`)}
+
+${sec('packaging + local dev','#3a3a3a',`
+${cmd('helm pull [chart]','download chart tarball locally — inspect before installing',
+  [{t:'c',text:'helm pull bitnami/postgresql'},
+   {t:'o',text:'postgresql-13.2.0.tgz'}],'m')}
+${cmd('helm pull [chart] {--untar=true}','pull and immediately untar into a directory','m')}
+${cmd('helm pull [chart] {--version [ver]}','pull a specific chart version','m')}
+${cmd('helm pull [chart] {--verify}','verify the package signature before using','m')}
+${cmd('helm show all [chart]','inspect chart — chart.yaml, values, readme, crds')}
+${cmd('helm create [name]','scaffold a new chart with boilerplate',
+  [{t:'c',text:'helm create my-chart'},
+   {t:'o',text:'Creating my-chart'}],'m')}
+${cmd('helm package [chart-dir]','package chart into a .tgz tarball',
+  [{t:'c',text:'helm package ./my-chart'},
+   {t:'o',text:'Successfully packaged chart and saved it to: my-chart-0.1.0.tgz'}],'m')}
+${cmd('helm dependency update [chart-dir]','download chart dependencies listed in Chart.yaml','m')}
+${cmd('helm dependency list [chart-dir]','show dependency status')}
+${cmd('helm plugin install [url]','install a helm plugin','m')}
+${cmd('helm plugin list','list installed plugins')}
+${cmd('helm plugin update [plugin]','update an installed plugin','m')}
+${cmd('helm plugin uninstall [plugin]','remove a plugin','d')}
+${cmd('helm env','show helm environment variables and paths')}
+${cmd('helm version','client version')}
+`)}
+
+`},
+
 
 ];
 
@@ -1430,10 +1615,20 @@ function clearSearch() {
 function copyCmd(el) {
   const pre = el.querySelector('.cmd-pre');
   if (!pre) return;
-  const txt = pre.innerText.trim();
+  const isDanger = el.closest('.cmd') && el.closest('.cmd').classList.contains('danger');
+  const raw = pre.innerText.trim();
+  const txt = isDanger ? '# ' + raw : raw;
   navigator.clipboard.writeText(txt).catch(()=>{});
-  el.classList.add('copying');
-  setTimeout(()=>el.classList.remove('copying'), 200);
+
+  // show tiny "copied" badge
+  const existing = el.querySelector('.copy-badge');
+  if (existing) existing.remove();
+  const badge = document.createElement('span');
+  badge.className = 'copy-badge';
+  badge.textContent = 'copied';
+  el.style.position = 'relative';
+  el.appendChild(badge);
+  setTimeout(() => badge.remove(), 1200);
 }
 </script>
 </body>
