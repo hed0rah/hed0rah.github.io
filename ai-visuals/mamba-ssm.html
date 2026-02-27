@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mamba / State Space Models</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #0a0a0a;
+  --surface:   #111111;
+  --surface2:  #0d0d0d;
+  --border:    #1e1e1e;
+  --border2:   #2a2a2a;
+  --cyan:      #00ffe9;
+  --yellow:    #ffe900;
+  --magenta:   #e900ff;
+  --red:       #ff2d55;
+  --green:     #39ff14;
+  --orange:    #ff6b00;
+  --dim:       #3a3a3a;
+  --text:      #cccccc;
+  --bright:    #ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;font-size:11px;line-height:1.65;padding:36px 30px;max-width:980px;margin:0 auto;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:999;}
+
+.masthead{border-top:3px solid var(--yellow);padding:14px 0 10px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border);}
+.masthead h1{font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:4px;color:var(--bright);line-height:1;}
+.masthead h1 em{color:var(--yellow);font-style:normal;}
+.masthead-right{text-align:right;font-size:10px;color:#444;letter-spacing:2px;text-transform:uppercase;}
+.masthead-right strong{display:block;color:var(--cyan);font-size:11px;margin-bottom:2px;}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:2px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-bottom:2px;}
+.gfull{margin-bottom:2px;}
+
+.panel{background:var(--surface);border:1px solid var(--border);padding:18px;}
+.plabel{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:3px;color:#383838;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.ptitle{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--bright);margin-bottom:8px;line-height:1;}
+.ptitle.cy{color:var(--cyan);}.ptitle.rd{color:var(--red);}.ptitle.yl{color:var(--yellow);}.ptitle.pu{color:var(--magenta);}.ptitle.gr{color:var(--green);}.ptitle.or{color:var(--orange);}
+.bar{width:28px;height:2px;margin-bottom:10px;background:var(--yellow);}
+.bar.cy{background:var(--cyan);}.bar.rd{background:var(--red);}.bar.pu{background:var(--magenta);}.bar.gr{background:var(--green);}.bar.or{background:var(--orange);}
+
+p{font-size:11px;color:var(--text);margin-bottom:7px;line-height:1.65;}
+.hl{color:var(--cyan);font-weight:700;}.hl.yl{color:var(--yellow);}.hl.rd{color:var(--red);}.hl.gr{color:var(--green);}.hl.pu{color:var(--magenta);}.hl.or{color:var(--orange);}
+
+.math-block{background:#060606;border:1px solid var(--border);border-left:3px solid var(--yellow);padding:12px 14px;margin:10px 0;font-size:11px;}
+.math-block.cy{border-left-color:var(--cyan);}.math-block.rd{border-left-color:var(--red);}.math-block.gr{border-left-color:var(--green);}
+.eq{color:var(--yellow);}.eq.cy{color:var(--cyan);}.eq.gr{color:var(--green);}
+
+.org-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #111;font-size:10px;}
+.org-row:last-child{border-bottom:none;}
+.org-row-label{color:#333;text-transform:uppercase;letter-spacing:1px;font-size:9px;}
+.org-row-val{font-weight:700;}
+
+.tag{display:inline-block;border:1px solid var(--border);padding:1px 6px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#444;margin:2px 2px 2px 0;}
+.tag.cy{border-color:var(--cyan);color:var(--cyan);}.tag.rd{border-color:var(--red);color:var(--red);}.tag.yl{border-color:var(--yellow);color:var(--yellow);}.tag.gr{border-color:var(--green);color:var(--green);}.tag.pu{border-color:var(--magenta);color:var(--magenta);}
+
+.timeline-item{display:flex;gap:12px;margin-bottom:12px;padding-left:14px;position:relative;}
+.timeline-item::before{content:'';position:absolute;left:0;top:5px;width:6px;height:6px;border:1px solid var(--yellow);background:var(--bg);}
+.tl-year{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;color:var(--yellow);flex-shrink:0;width:50px;}
+.tl-content{font-size:10px;color:#555;}
+.tl-content strong{color:var(--bright);display:block;margin-bottom:1px;}
+
+.footer{border-top:1px solid var(--border);margin-top:14px;padding-top:10px;display:flex;justify-content:space-between;font-size:9px;color:#2a2a2a;letter-spacing:1px;}
+
+button{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:7px 12px;border:1px solid var(--border2);background:var(--surface2);color:var(--dim);cursor:pointer;transition:all 0.1s;}
+button:hover{background:var(--border2);color:var(--bright);}
+button.act{background:var(--yellow);color:var(--bg);border-color:var(--yellow);}
+
+canvas{display:block;}
+@media(max-width:700px){.g2,.g3{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>MAMBA / <em>SSM</em></h1>
+  <div class="masthead-right">
+    <strong>STATE SPACE MODELS // SELECTIVE SCAN</strong>
+    LINEAR RECURRENCE // HIPPO INIT // O(N) SEQUENCE MODELING<br>
+    GU + DAO 2023 // CHALLENGE TO TRANSFORMER DOMINANCE
+  </div>
+</div>
+
+<!-- 01 THE PROBLEM -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">01 // The Problem With Transformers</div>
+    <div class="ptitle yl">THE LEDGER THAT NEVER FORGETS (OR SCALES)</div>
+    <div class="bar"></div>
+    <div style="display:grid;grid-template-columns:3fr 1fr;gap:20px;">
+      <div>
+        <p>Transformers work by <span class="hl">re-reading the entire sequence</span> at every step. Every token attends to every other token. This is powerful — nothing gets lost, all context is available — but the cost is brutal. Attention is O(n²) in both time and memory. Double the context length, quadruple the compute.</p>
+        <p>At 4096 tokens that's manageable. At 100k tokens it becomes a serious engineering problem. At 1M tokens — the kind of context you'd need to reason over an entire codebase or a long book — it's essentially intractable without approximation tricks that tend to hurt quality.</p>
+        <p>The deeper issue is architectural: <span class="hl yl">the attention matrix grows with the sequence</span>. There's no compression. Every past token is stored at full resolution forever. This is unlike how biological memory or most real-world signal processing works — both operate on compressed state that evolves over time and naturally forgets irrelevant detail.</p>
+      </div>
+      <div style="display:grid;gap:4px;">
+        <div style="background:#060606;border:1px solid var(--border);padding:12px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--red);line-height:1;">O(n²)</div>
+          <div style="font-size:9px;color:#333;letter-spacing:1px;text-transform:uppercase;margin-top:4px;">attention<br>complexity</div>
+        </div>
+        <div style="background:#060606;border:1px solid var(--border);padding:12px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--yellow);line-height:1;">O(n)</div>
+          <div style="font-size:9px;color:#333;letter-spacing:1px;text-transform:uppercase;margin-top:4px;">SSM<br>complexity</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 02 WHAT IS AN SSM -->
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">02 // Core Concept</div>
+    <div class="ptitle yl">A LAYER THAT IS A DIFFERENTIAL EQUATION</div>
+    <div class="bar"></div>
+    <p>A State Space Model describes how a hidden state <span class="hl yl">h(t)</span> evolves over time in response to an input signal <span class="hl">x(t)</span>, and how that state produces an output <span class="hl gr">y(t)</span>. In continuous time:</p>
+    <div class="math-block">
+      <span class="eq">h'(t) = A·h(t) + B·x(t)</span><br>
+      <span class="eq gr">y(t)  = C·h(t) + D·x(t)</span><br>
+      <span style="color:#444;font-size:10px;margin-top:6px;display:block;">A: state transition matrix — how state evolves<br>B: input projection — how input enters state<br>C: output projection — how state becomes output<br>D: skip connection (often 0)</span>
+    </div>
+    <p>This is a <span class="hl yl">linear dynamical system</span> — the same equations used in control theory since the 1960s to model physical systems like aircraft autopilots, economic models, and signal filters. The insight of S4 and Mamba is that these can be neural network layers if A, B, C are learned parameters.</p>
+    <p>The state <span class="hl yl">h</span> is a fixed-size vector — maybe 64 or 256 dimensions — that compresses the entire history of the input seen so far. No matter how long the sequence, the state stays the same size.</p>
+  </div>
+  <div class="panel">
+    <div class="plabel">03 // Three Views of One Model</div>
+    <div class="ptitle">THE DUALITY TRICK</div>
+    <div class="bar"></div>
+    <p>The same SSM can be computed three different ways depending on what you need. This is the architectural sleight-of-hand that makes it practical:</p>
+    <div style="display:grid;gap:1px;background:var(--border);margin:10px 0;">
+      <div style="background:var(--surface2);padding:12px;">
+        <div style="font-size:9px;color:var(--yellow);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Recurrent // Inference</div>
+        <p style="font-size:10px;color:#555;margin:0;">Process one token at a time, update state h. O(1) per step, O(n) total. Fast autoregressive generation. Constant memory regardless of sequence length.</p>
+      </div>
+      <div style="background:var(--surface2);padding:12px;">
+        <div style="font-size:9px;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Convolutional // Training</div>
+        <p style="font-size:10px;color:#555;margin:0;">Unroll the recurrence into a convolution kernel. Parallelize over the entire sequence. Fast on GPU. The kernel is derived from A, B, C analytically.</p>
+      </div>
+      <div style="background:var(--surface2);padding:12px;">
+        <div style="font-size:9px;color:var(--green);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Continuous // Intuition</div>
+        <p style="font-size:10px;color:#555;margin:0;">The underlying math is a continuous-time ODE. Discretization (zero-order hold or bilinear) converts it to the recurrent form with timestep Δ.</p>
+      </div>
+    </div>
+    <p style="font-size:10px;color:#555;">Train as convolution (fast, parallelizable), deploy as RNN (fast, constant memory). You get the best of both worlds.</p>
+    <div style="margin-top:6px;"><span class="tag yl">train=conv</span><span class="tag cy">infer=rnn</span><span class="tag gr">math=ode</span></div>
+  </div>
+</div>
+
+<!-- 04 HIPPO -->
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">04 // HiPPO Initialization</div>
+    <div class="ptitle yl">THE MATRIX THAT REMEMBERS HISTORY</div>
+    <div class="bar"></div>
+    <p>The central problem with vanilla RNNs is that they can't reliably store information from many steps ago — gradients vanish and state gets corrupted. LSTMs hack around this with gates. SSMs solve it differently: <span class="hl yl">initialize A to a specific structured matrix</span> with provably good memory properties.</p>
+    <p>The HiPPO (High-order Polynomial Projection Operators) framework derives this matrix mathematically. The idea: at each timestep, the optimal state is the one that best reconstructs the entire history of the input as a <span class="hl">Legendre polynomial expansion</span>. The A matrix that achieves this has a closed-form solution.</p>
+    <div class="math-block">
+      <span class="eq">A_nk = -(2n+1)^½ · (2k+1)^½   if n > k</span><br>
+      <span class="eq">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = n+1                        if n = k</span><br>
+      <span class="eq">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = 0                          if n &lt; k</span><br>
+      <span style="color:#444;font-size:10px;margin-top:6px;display:block;">HiPPO-LegS matrix // "memorize measure" = Legendre<br>Each row n is a coefficient for the nth Legendre polynomial</span>
+    </div>
+    <p>The result: the hidden state continuously encodes a compressed polynomial approximation of the input history. Longer history = higher-degree polynomial = more coefficients needed. But crucially, <span class="hl yl">recent events are always represented accurately</span> while older events gracefully degrade — exactly like human working memory.</p>
+    <div style="margin-top:6px;"><span class="tag yl">HiPPO 2020</span><span class="tag">Gu et al.</span><span class="tag cy">Legendre basis</span></div>
+  </div>
+  <div class="panel">
+    <div class="plabel">05 // Discretization</div>
+    <div class="ptitle">FROM CONTINUOUS TO DISCRETE</div>
+    <div class="bar cy"></div>
+    <p>Neural networks process discrete tokens, not continuous signals. The continuous SSM (h' = Ah + Bx) must be converted to a discrete recurrence. This is done via the <span class="hl">Zero-Order Hold (ZOH)</span> method with a learned timestep parameter Δ:</p>
+    <div class="math-block cy">
+      <span class="eq cy">Ā = exp(Δ·A)</span><br>
+      <span class="eq cy">B̄ = (Δ·A)⁻¹(exp(Δ·A) - I)·Δ·B</span><br>
+      <span style="color:#444;font-size:10px;margin-top:6px;display:block;">Ā, B̄ = discretized matrices used in recurrence<br>Δ = timestep — how much time each token represents</span>
+    </div>
+    <p>The discrete recurrence is then just:</p>
+    <div class="math-block">
+      <span class="eq">h_t = Ā·h_{t-1} + B̄·x_t</span><br>
+      <span class="eq gr">y_t = C·h_t</span>
+    </div>
+    <p>The timestep Δ is a learned parameter. Large Δ = the model "zooms out," each token represents a long time span, old state decays faster. Small Δ = zoom in, state is preserved more carefully. This is one knob Mamba later makes input-dependent.</p>
+    <div style="margin-top:6px;"><span class="tag cy">ZOH discretization</span><span class="tag">learned Δ</span></div>
+  </div>
+</div>
+
+<!-- 05 INTERACTIVE STATE EVOLUTION -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">06 // Interactive // State Evolution</div>
+    <div class="ptitle yl">WATCH THE HIDDEN STATE COMPRESS HISTORY</div>
+    <div class="bar"></div>
+    <p>The visualization below shows a simplified SSM processing a token sequence. Each token updates the hidden state (visualized as a heatmap of state dimensions). Watch how information from early tokens persists — and how the state compresses rather than grows. Click <strong>Step</strong> to advance one token, or <strong>Play</strong> to run continuously.</p>
+    <div style="background:#060606;border:1px solid var(--border);margin-top:12px;">
+      <div style="background:var(--border);padding:5px 10px;font-size:9px;color:#333;letter-spacing:2px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;">
+        <span>SSM State Evolution // d_state = 16</span>
+        <span id="stepLabel" style="color:var(--yellow);">token 0 / 24</span>
+      </div>
+      <canvas id="stateCanvas" style="width:100%;height:280px;background:#060606;"></canvas>
+      <div style="padding:10px;display:flex;gap:6px;border-top:1px solid var(--border);flex-wrap:wrap;">
+        <button id="btnStep">Step &rarr;</button>
+        <button id="btnPlay">Play</button>
+        <button id="btnReset">Reset</button>
+        <span style="margin-left:auto;font-size:9px;color:#333;letter-spacing:1px;align-self:center;">STATE SIZE STAYS CONSTANT REGARDLESS OF SEQUENCE LENGTH</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 06 S4 TO MAMBA -->
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">07 // S4 — The First Big SSM</div>
+    <div class="ptitle">STRUCTURED STATE SPACES</div>
+    <div class="bar pu"></div>
+    <p>S4 (Structured State Space Sequence model, 2021) was the first SSM to match transformers on long-range benchmarks. The key innovation: parameterize A as a <span class="hl pu">diagonal plus low-rank (DPLR)</span> matrix. This makes the computation tractable — instead of full matrix exponentials, you get fast eigenvalue decompositions.</p>
+    <div class="math-block" style="border-left-color:var(--magenta);">
+      <span class="eq" style="color:var(--magenta);">A = Λ - PQ*</span><br>
+      <span style="color:#444;font-size:10px;margin-top:4px;display:block;">Λ = diagonal, P/Q = low-rank correction<br>Enables O(N log N) convolution via Cauchy kernel</span>
+    </div>
+    <p>S4 crushed the Long Range Arena benchmark — tasks requiring dependencies over thousands of tokens where transformers struggle. It proved that linear recurrence with the right initialization could be competitive with attention.</p>
+    <p>The limitation: A, B, C are <span class="hl rd">fixed per channel</span> — they don't change based on the input. The model processes every input the same way regardless of content. This makes it a great filter but a poor selector.</p>
+    <div style="margin-top:6px;"><span class="tag pu">S4 2021</span><span class="tag">LRA benchmark</span><span class="tag rd">time-invariant</span></div>
+  </div>
+  <div class="panel">
+    <div class="plabel">08 // The Mamba Insight</div>
+    <div class="ptitle yl">SELECTIVITY — MAKING THE STATE INPUT-DEPENDENT</div>
+    <div class="bar"></div>
+    <p>Gu and Dao's key observation: <span class="hl yl">language is selective</span>. When you read a sentence, some words matter a lot for understanding the next word, and others barely matter. A fixed filter can't know which is which — it has to treat all inputs the same.</p>
+    <p>The Mamba fix: make B, C, and Δ functions of the current input x_t. They're computed by small linear projections of the input at each step:</p>
+    <div class="math-block">
+      <span class="eq">B_t = Linear_B(x_t)</span><br>
+      <span class="eq">C_t = Linear_C(x_t)</span><br>
+      <span class="eq">Δ_t = softplus(Linear_Δ(x_t))</span><br>
+      <span style="color:#444;font-size:10px;margin-top:6px;display:block;">Now the state transition changes per token<br>Model decides what to remember and what to forget</span>
+    </div>
+    <p>This breaks the convolutional view — you can no longer precompute a fixed kernel because the kernel changes with each input. Instead, Mamba uses a <span class="hl yl">parallel scan</span> (prefix sum algorithm) that computes all steps simultaneously in O(n log n) operations. The key tradeoff: slightly more compute than S4's pure convolution, but now competitive with transformers on tasks requiring content-based recall.</p>
+    <div style="margin-top:6px;"><span class="tag yl">selective scan</span><span class="tag cy">parallel prefix</span><span class="tag">content-aware</span></div>
+  </div>
+</div>
+
+<!-- 07 SELECTIVE SCAN INTERACTIVE -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">09 // Interactive // Selectivity</div>
+    <div class="ptitle yl">INPUT-DEPENDENT MEMORY GATING</div>
+    <div class="bar"></div>
+    <p>In Mamba, the "forgetting rate" of the hidden state depends on the current token. The visualization shows how Δ_t (timestep / forget gate) varies per token. High Δ = fast decay, the model is choosing to <span class="hl rd">forget</span> old state and focus on the current token. Low Δ = slow decay, the model <span class="hl gr">preserves</span> the accumulated context.</p>
+    <div style="background:#060606;border:1px solid var(--border);margin-top:12px;">
+      <div style="background:var(--border);padding:5px 10px;font-size:9px;color:#333;letter-spacing:2px;text-transform:uppercase;">
+        Selective Scan // Δ_t gating per token
+      </div>
+      <canvas id="selectCanvas" style="width:100%;height:240px;background:#060606;"></canvas>
+    </div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">Compare: S4 would use a fixed Δ for all tokens (flat line). Mamba learns to spike Δ at "reset" boundaries — sentence ends, topic changes, paragraph breaks — and keep it low within coherent context windows. This is the mechanism that lets it do in-context learning.</p>
+  </div>
+</div>
+
+<!-- 08 HARDWARE + MAMBA2 -->
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">10 // Hardware-Aware Algorithm</div>
+    <div class="ptitle">BUILT FOR GPU MEMORY HIERARCHY</div>
+    <div class="bar cy"></div>
+    <p>The selective scan naively requires materializing intermediate states — expensive in high-bandwidth memory (HBM). Mamba's implementation uses a <span class="hl">kernel fusion</span> trick analogous to Flash Attention: keep intermediate states in fast SRAM, never write them to HBM.</p>
+    <div class="org-row"><span class="org-row-label">Naive scan</span><span class="org-row-val" style="color:var(--red);">O(n·d) HBM reads/writes</span></div>
+    <div class="org-row"><span class="org-row-label">Fused kernel</span><span class="org-row-val" style="color:var(--green);">States stay in SRAM</span></div>
+    <div class="org-row"><span class="org-row-label">Speedup</span><span class="org-row-val" style="color:var(--yellow);">3-5x vs naive on A100</span></div>
+    <div class="org-row"><span class="org-row-label">Memory</span><span class="org-row-val" style="color:var(--cyan);">O(1) state vs O(n²) KV cache</span></div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">The implication for inference is significant: a Mamba model generating a 100k-token sequence uses the same memory as generating a 100-token sequence. A transformer's KV cache grows linearly — at 100k tokens it becomes the dominant memory cost.</p>
+    <div style="margin-top:6px;"><span class="tag cy">kernel fusion</span><span class="tag gr">SRAM tiling</span><span class="tag yl">O(1) inference</span></div>
+  </div>
+  <div class="panel">
+    <div class="plabel">11 // Mamba-2 + State Space Duality</div>
+    <div class="ptitle yl">ATTENTION IS A SPECIAL CASE OF SSM</div>
+    <div class="bar"></div>
+    <p>Mamba-2 (2024) revealed something unexpected: <span class="hl yl">attention and SSMs are mathematically dual</span>. Under certain constraints, a selective SSM computes exactly the same thing as a linear attention mechanism. The state space is the "dual" representation of the key-value cache.</p>
+    <div class="math-block">
+      <span class="eq">SSM: h_t = Ā_t·h_{t-1} + B_t·x_t</span><br>
+      <span class="eq" style="color:var(--cyan);">Attn: o_t = Σ_s (q_t·k_s^T) v_s</span><br>
+      <span style="color:#444;font-size:10px;margin-top:6px;display:block;">State Space Duality: both compute the same<br>function when Ā_t is structured appropriately</span>
+    </div>
+    <p>This led to the <span class="hl yl">SSD (Structured State Space Duality)</span> layer — a unified formulation that can be computed either as an SSM recurrence or as a structured matrix multiplication, whichever is faster on the given hardware.</p>
+    <p>Mamba-2 is also easier to make work with tensor parallelism (splitting across multiple GPUs) — a practical advantage for training at scale. The architecture is now being integrated into hybrid models (Jamba, Zamba) that interleave attention and SSM layers.</p>
+    <div style="margin-top:6px;"><span class="tag yl">SSD layer</span><span class="tag cy">linear attn dual</span><span class="tag">Jamba hybrid</span></div>
+  </div>
+</div>
+
+<!-- 09 COMPARISON + TIMELINE -->
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">12 // vs Transformer</div>
+    <div class="ptitle">THE TRADEOFFS</div>
+    <div class="bar rd"></div>
+    <div class="org-row"><span class="org-row-label">Training complexity</span><span class="org-row-val">O(n log n) vs O(n²)</span></div>
+    <div class="org-row"><span class="org-row-label">Inference memory</span><span class="org-row-val" style="color:var(--green);">O(d_state) vs O(n·d)</span></div>
+    <div class="org-row"><span class="org-row-label">Recall (exact copy)</span><span class="org-row-val" style="color:var(--yellow);">weaker — state is lossy</span></div>
+    <div class="org-row"><span class="org-row-label">Long range</span><span class="org-row-val" style="color:var(--green);">stronger at 100k+</span></div>
+    <div class="org-row"><span class="org-row-label">In-context learning</span><span class="org-row-val">competitive, improving</span></div>
+    <div class="org-row"><span class="org-row-label">Interpretability</span><span class="org-row-val" style="color:var(--red);">harder — state is opaque</span></div>
+    <div class="org-row"><span class="org-row-label">Parallelism (training)</span><span class="org-row-val" style="color:var(--yellow);">good but more complex</span></div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">The lossy state is the fundamental weakness. Transformers can do exact key-value lookup (retrieve a specific token from position 3). Mamba compresses history — if that token got overwritten by later inputs, it's gone. For tasks requiring precise retrieval, transformers still win. For tasks requiring long coherent context, Mamba scales better.</p>
+  </div>
+  <div class="panel">
+    <div class="plabel">13 // Timeline</div>
+    <div class="ptitle">FROM CONTROL THEORY TO SOTA</div>
+    <div class="bar"></div>
+    <div class="timeline-item">
+      <div class="tl-year">1960</div>
+      <div class="tl-content"><strong>Kalman Filter</strong>State space model for optimal estimation. Same A,B,C,D equations. Used in Apollo navigation.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-year">2020</div>
+      <div class="tl-content"><strong>HiPPO</strong>Gu et al. derive optimal A matrix for online function approximation using polynomial projections.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-year">2021</div>
+      <div class="tl-content"><strong>S4</strong>DPLR parameterization makes SSMs computationally feasible. Beats transformers on Long Range Arena.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-year">2022</div>
+      <div class="tl-content"><strong>S4D / DSS</strong>Further simplifications — diagonal A matrices work almost as well. Theory catches up to practice.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-year">2023</div>
+      <div class="tl-content"><strong>Mamba</strong>Selective scan + hardware-aware kernel. First SSM competitive with transformers on language modeling.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-year">2024</div>
+      <div class="tl-content"><strong>Mamba-2 / Jamba</strong>State space duality revealed. Hybrid architectures emerge. Active research frontier.</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>GU ET AL. 2020-2024 // DAO + GU 2023 // KALMAN 1960 // S4 NeurIPS 2022</span>
+  <span>BRUTALIST TERMINAL v2 // MAMBA / SSM</span>
+</div>
+
+<script>
+// ================================================================
+// STATE EVOLUTION CANVAS
+// ================================================================
+(function(){
+  const canvas = document.getElementById('stateCanvas');
+  const ctx = canvas.getContext('2d');
+  const stepLabel = document.getElementById('stepLabel');
+  const D_STATE = 16;
+  const SEQ_LEN = 24;
+
+  // Fake tokens with semantic character
+  const tokens = [
+    'the','cat','sat','on','the','mat',
+    '[SEP]','music','flows','like','water','and',
+    'light','bends','through','glass','[SEP]','time',
+    'heals','but','memory','fades','slowly','away'
+  ];
+  const tokenColors = [
+    '#00ffe9','#00ffe9','#00ffe9','#00ffe9','#00ffe9','#00ffe9',
+    '#ffe900','#e900ff','#e900ff','#e900ff','#e900ff','#e900ff',
+    '#ff6b00','#ff6b00','#ff6b00','#ff6b00','#ffe900','#39ff14',
+    '#39ff14','#39ff14','#39ff14','#39ff14','#39ff14','#39ff14'
+  ];
+
+  // Initialize state and A matrix (simplified diagonal)
+  let state = new Array(D_STATE).fill(0);
+  let currentStep = 0;
+  let history = [state.slice()]; // store state at each step
+  let playing = false;
+  let playTimer = null;
+
+  // Simple diagonal A (decay) and random B,C
+  const A_diag = Array.from({length: D_STATE}, (_, i) => 0.85 + (i/D_STATE)*0.12);
+  function seededRand(s) { const x = Math.sin(s)*10000; return x - Math.floor(x); }
+  const B = Array.from({length: D_STATE}, (_, i) => (seededRand(i*7.3+1)*2-1)*0.8);
+  const C = Array.from({length: D_STATE}, (_, i) => (seededRand(i*5.1+2)*2-1)*0.6);
+
+  function tokenVal(tok) {
+    // deterministic hash of token string to a scalar
+    let v = 0;
+    for(let i=0;i<tok.length;i++) v = (v*31 + tok.charCodeAt(i)) & 0xFFFF;
+    return (v/0xFFFF)*2-1;
+  }
+
+  function stepForward() {
+    if(currentStep >= SEQ_LEN) return;
+    const x = tokenVal(tokens[currentStep]);
+    // h_t = A * h_{t-1} + B * x_t (element-wise for diagonal A)
+    state = state.map((h, i) => A_diag[i]*h + B[i]*x);
+    currentStep++;
+    history.push(state.slice());
+    stepLabel.textContent = `token ${currentStep} / ${SEQ_LEN}`;
+    draw();
+  }
+
+  function reset() {
+    state = new Array(D_STATE).fill(0);
+    currentStep = 0;
+    history = [state.slice()];
+    stepLabel.textContent = `token 0 / ${SEQ_LEN}`;
+    stopPlay();
+    draw();
+  }
+
+  function stopPlay() {
+    playing = false;
+    clearInterval(playTimer);
+    document.getElementById('btnPlay').textContent = 'Play';
+    document.getElementById('btnPlay').classList.remove('act');
+  }
+
+  document.getElementById('btnStep').addEventListener('click', () => { stopPlay(); stepForward(); });
+  document.getElementById('btnReset').addEventListener('click', reset);
+  document.getElementById('btnPlay').addEventListener('click', () => {
+    if(playing) { stopPlay(); return; }
+    if(currentStep >= SEQ_LEN) reset();
+    playing = true;
+    document.getElementById('btnPlay').textContent = 'Pause';
+    document.getElementById('btnPlay').classList.add('act');
+    playTimer = setInterval(() => {
+      if(currentStep >= SEQ_LEN) { stopPlay(); return; }
+      stepForward();
+    }, 320);
+  });
+
+  function draw() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = 280 * dpr;
+    ctx.scale(dpr, dpr);
+    const W = rect.width, H = 280;
+    ctx.fillStyle = '#060606'; ctx.fillRect(0,0,W,H);
+
+    const padL = 40, padT = 40, padR = 20, padB = 50;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    // grid
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 1;
+    for(let i=0;i<=SEQ_LEN;i++) {
+      const x = padL + (i/SEQ_LEN)*plotW;
+      ctx.beginPath(); ctx.moveTo(x,padT); ctx.lineTo(x,padT+plotH); ctx.stroke();
+    }
+
+    // Draw history heatmap — each column = one timestep, each row = one state dim
+    const cellW = plotW / SEQ_LEN;
+    const cellH = plotH / D_STATE;
+
+    for(let t=0; t<history.length; t++) {
+      for(let d=0; d<D_STATE; d++) {
+        const v = history[t][d];
+        const norm = Math.max(-1, Math.min(1, v));
+        const x = padL + t*cellW;
+        const y = padT + d*cellH;
+        let r,g,b;
+        if(norm > 0) { r=0;g=Math.floor(255*norm*0.8+40);b=Math.floor(233*norm*0.6); }
+        else { r=Math.floor(255*(-norm)*0.7+20);g=0;b=Math.floor(85*(-norm)); }
+        ctx.fillStyle = `rgba(${r},${g},${b},${0.15+Math.abs(norm)*0.8})`;
+        ctx.fillRect(x+1, y+1, cellW-1, cellH-1);
+      }
+    }
+
+    // Current step marker
+    if(currentStep > 0) {
+      ctx.strokeStyle = 'rgba(255,233,0,0.6)'; ctx.lineWidth = 2;
+      const x = padL + currentStep*cellW;
+      ctx.beginPath(); ctx.moveTo(x,padT-4); ctx.lineTo(x,padT+plotH+4); ctx.stroke();
+    }
+
+    // Token labels along bottom
+    ctx.font = "8px 'Space Mono'"; ctx.textAlign = 'center';
+    for(let t=0; t<Math.min(currentStep, SEQ_LEN); t++) {
+      ctx.fillStyle = tokenColors[t] + '99';
+      ctx.save(); ctx.translate(padL + (t+0.5)*cellW, padT+plotH+12); ctx.rotate(-Math.PI/4);
+      ctx.fillText(tokens[t], 0, 0); ctx.restore();
+    }
+
+    // Y axis labels
+    ctx.textAlign = 'right'; ctx.font = "8px 'Space Mono'"; ctx.fillStyle = '#333';
+    ctx.fillText('h[0]', padL-4, padT+4);
+    ctx.fillText(`h[${D_STATE-1}]`, padL-4, padT+plotH);
+
+    // legend
+    ctx.textAlign = 'left'; ctx.font = "9px 'Space Mono'";
+    ctx.fillStyle = '#00ffe9'; ctx.fillText('positive activation', padL, padT+plotH+44);
+    ctx.fillStyle = '#ff2d55'; ctx.fillText('negative', padL+160, padT+plotH+44);
+    ctx.fillStyle = '#333'; ctx.fillText(`state size: ${D_STATE} dims  (fixed regardless of seq length)`, W-320, padT+plotH+44);
+
+    ctx.textAlign = 'left';
+  }
+
+  window.addEventListener('resize', draw);
+  draw();
+})();
+
+// ================================================================
+// SELECTIVE SCAN / DELTA VISUALIZATION
+// ================================================================
+(function(){
+  const canvas = document.getElementById('selectCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Simulated sentence with semantic boundaries
+  const tokens2 = [
+    'the','quick','brown','fox','jumped','[.]',
+    'over','the','lazy','dog','[.]',
+    'but','the','dog','remembered','everything','[.]',
+    'and','the','fox','forgot','[END]'
+  ];
+
+  // Delta values — high at boundaries, low within coherent spans
+  const deltas = [
+    0.12,0.08,0.09,0.10,0.11,0.85,
+    0.13,0.07,0.08,0.12,0.82,
+    0.72,0.10,0.09,0.11,0.13,0.79,
+    0.68,0.09,0.11,0.14,0.90
+  ];
+
+  // S4 would use a fixed delta
+  const fixedDelta = 0.35;
+
+  function draw() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = 240 * dpr;
+    ctx.scale(dpr, dpr);
+    const W = rect.width, H = 240;
+    ctx.fillStyle = '#060606'; ctx.fillRect(0,0,W,H);
+
+    const N = tokens2.length;
+    const padL = 12, padT = 20, padR = 12, padB = 60;
+    const plotW = W - padL - padR;
+    const plotH = (H - padT - padB) / 2 - 8;
+    const barW = plotW / N;
+
+    // Draw grid
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 1;
+    [0, 0.25, 0.5, 0.75, 1.0].forEach(v => {
+      const y1 = padT + plotH*(1-v);
+      const y2 = padT + plotH + 16 + plotH*(1-v);
+      ctx.beginPath(); ctx.moveTo(padL, y1); ctx.lineTo(padL+plotW, y1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(padL, y2); ctx.lineTo(padL+plotW, y2); ctx.stroke();
+    });
+
+    // Row 1: Mamba (input-dependent delta)
+    ctx.fillStyle = '#333'; ctx.font = "9px 'Space Mono'"; ctx.textAlign = 'left';
+    ctx.fillText('MAMBA — Δ_t (input-dependent)', padL, padT-6);
+    deltas.forEach((d, i) => {
+      const x = padL + i*barW + 1;
+      const bh = d * plotH;
+      const y = padT + plotH - bh;
+      const isBoundary = d > 0.6;
+      const color = isBoundary ? '#ff2d55' : '#39ff14';
+      ctx.fillStyle = color + 'aa';
+      ctx.fillRect(x, y, barW-2, bh);
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, barW-2, 2);
+      if(isBoundary) {
+        ctx.shadowColor = '#ff2d55'; ctx.shadowBlur = 8;
+        ctx.fillStyle = '#ff2d55';
+        ctx.fillRect(x, y, barW-2, bh);
+        ctx.shadowBlur = 0;
+      }
+    });
+
+    // Boundary labels
+    deltas.forEach((d, i) => {
+      if(d > 0.6) {
+        const x = padL + i*barW + barW/2;
+        ctx.fillStyle = '#ff2d5588'; ctx.font = "8px 'Space Mono'"; ctx.textAlign = 'center';
+        ctx.fillText('RESET', x, padT - 6 + 2);
+      }
+    });
+
+    // Row 2: S4 (fixed delta)
+    const row2Y = padT + plotH + 16;
+    ctx.fillStyle = '#333'; ctx.font = "9px 'Space Mono'"; ctx.textAlign = 'left';
+    ctx.fillText('S4 — Δ (fixed, time-invariant)', padL, row2Y-6);
+    for(let i=0; i<N; i++) {
+      const x = padL + i*barW + 1;
+      const bh = fixedDelta * plotH;
+      const y = row2Y + plotH - bh;
+      ctx.fillStyle = '#3a3a3a';
+      ctx.fillRect(x, y, barW-2, bh);
+    }
+    ctx.strokeStyle = '#ffe90040'; ctx.lineWidth = 1.5; ctx.setLineDash([4,4]);
+    const fixedY = row2Y + plotH*(1-fixedDelta);
+    ctx.beginPath(); ctx.moveTo(padL, fixedY); ctx.lineTo(padL+plotW, fixedY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ffe90060'; ctx.font = "9px 'Space Mono'"; ctx.textAlign = 'right';
+    ctx.fillText('fixed Δ = 0.35', padL+plotW, fixedY-4);
+
+    // Token labels
+    ctx.textAlign = 'center'; ctx.font = "8px 'Space Mono'";
+    tokens2.forEach((tok, i) => {
+      const x = padL + (i+0.5)*barW;
+      const isBoundary = deltas[i] > 0.6;
+      ctx.fillStyle = isBoundary ? '#ff2d5588' : '#2a2a2a';
+      ctx.save(); ctx.translate(x, H-padB+8+48); ctx.rotate(-Math.PI/3);
+      ctx.fillText(tok, 0, 0); ctx.restore();
+    });
+
+    // Legend
+    ctx.textAlign = 'left'; ctx.font = "9px 'Space Mono'";
+    ctx.fillStyle = '#ff2d55'; ctx.fillRect(padL, H-12, 8, 8);
+    ctx.fillStyle = '#ff2d55'; ctx.fillText('high Δ = forget / reset', padL+12, H-5);
+    ctx.fillStyle = '#39ff14'; ctx.fillRect(padL+180, H-12, 8, 8);
+    ctx.fillStyle = '#39ff14'; ctx.fillText('low Δ = preserve context', padL+192, H-5);
+
+    ctx.textAlign = 'left';
+  }
+
+  window.addEventListener('resize', draw);
+  draw();
+})();
+</script>
+</body>
+</html>
