@@ -5,58 +5,240 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Geometry of Thought</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
-:root {
-  --bg:        #0a0a0a;
-  --surface:   #111111;
-  --surface2:  #0d0d0d;
-  --border:    #1e1e1e;
-  --border2:   #2a2a2a;
-  --cyan:      #00ffe9;
-  --yellow:    #ffe900;
-  --magenta:   #e900ff;
-  --red:       #ff2d55;
-  --green:     #39ff14;
-  --orange:    #ff6b00;
-  --dim:       #3a3a3a;
-  --text:      #cccccc;
-  --bright:    #ffffff;
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;overflow-x:hidden;cursor:crosshair;}
-body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:999;}
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
 
-/* masthead */
-.masthead{border-top:3px solid var(--cyan);padding:48px 60px 36px;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
-.masthead::after{content:'LATENT';position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-family:'Bebas Neue',sans-serif;font-size:200px;color:rgba(255,255,255,0.02);letter-spacing:8px;pointer-events:none;line-height:1;}
-.masthead-label{font-size:10px;letter-spacing:4px;color:var(--cyan);text-transform:uppercase;margin-bottom:14px;}
-.masthead h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(60px,10vw,120px);line-height:0.9;letter-spacing:2px;color:var(--bright);margin-bottom:16px;}
-.masthead h1 em{color:var(--cyan);font-style:normal;}
-.masthead-sub{font-size:12px;color:var(--dim);max-width:480px;line-height:1.7;font-style:italic;}
+  :root {
+    --bg:      #0a0a0a;
+    --border:  #1e1e1e;
+    --cyan:    #00ffe9;
+    --red:     #ff2d55;
+    --yellow:  #ffe900;
+    --green:   #39ff14;
+    --orange:  #ff6b00;
+    --dim:     #3a3a3a;
+    --text:    #cccccc;
+    --bright:  #ffffff;
+  }
 
-/* scroll sections */
-.section{display:grid;grid-template-columns:1fr 1fr;min-height:480px;border-bottom:1px solid var(--border);opacity:0;transform:translateY(24px);transition:opacity 0.7s ease,transform 0.7s ease;}
-.section.visible{opacity:1;transform:translateY(0);}
-.section:nth-child(even){direction:rtl;}
-.section:nth-child(even)>*{direction:ltr;}
-.section-text{padding:52px 60px;display:flex;flex-direction:column;justify-content:center;border-right:1px solid var(--border);position:relative;}
-.section:nth-child(even) .section-text{border-right:none;border-left:1px solid var(--border);}
-.section-num{font-family:'Bebas Neue',sans-serif;font-size:120px;color:rgba(255,255,255,0.02);position:absolute;top:10px;left:40px;line-height:1;pointer-events:none;}
-.section-tag{font-size:9px;letter-spacing:4px;color:var(--red);text-transform:uppercase;margin-bottom:10px;}
-h2{font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--bright);letter-spacing:2px;line-height:1;margin-bottom:16px;}
-p{font-size:11px;line-height:1.75;color:var(--text);margin-bottom:10px;}
-.hl{color:var(--cyan);font-weight:700;}
-.formula{background:#060606;border:1px solid var(--border);border-left:3px solid var(--cyan);padding:14px 18px;font-size:11px;color:var(--cyan);margin:16px 0;}
-.canvas-wrap{position:relative;overflow:hidden;background:#050505;}
-canvas{width:100%;height:100%;display:block;}
-.canvas-label{position:absolute;bottom:16px;left:16px;font-size:9px;letter-spacing:3px;color:var(--dim);text-transform:uppercase;}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-footer{padding:40px 60px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#2a2a2a;letter-spacing:1px;}
-@media(max-width:768px){
-  .section{grid-template-columns:1fr;}.section:nth-child(even){direction:ltr;}
-  .canvas-wrap{min-height:300px;}.section-text{padding:36px 24px;}
-  .masthead{padding:36px 24px;} footer{padding:24px;flex-direction:column;gap:10px;}
-}
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  .masthead {
+    border-top: 3px solid var(--cyan);
+    padding: 48px 60px 36px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .masthead::after {
+    content: 'LATENT SPACE';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%) rotate(90deg);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 120px;
+    color: rgba(255,255,255,0.02);
+    letter-spacing: 8px;
+    pointer-events: none;
+  }
+
+  .masthead-label {
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--cyan);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(60px, 10vw, 120px);
+    line-height: 0.9;
+    letter-spacing: 2px;
+    color: var(--bright);
+    margin-bottom: 16px;
+  }
+
+  h1 em {
+    color: var(--cyan);
+    font-style: normal;
+  }
+
+  .masthead-sub {
+    font-size: 12px;
+    color: var(--dim);
+    max-width: 480px;
+    line-height: 1.7;
+    font-style: italic;
+  }
+
+  .sections {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 500px;
+    border-bottom: 1px solid var(--border);
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .section.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .section:nth-child(even) {
+    direction: rtl;
+  }
+
+  .section:nth-child(even) > * {
+    direction: ltr;
+  }
+
+  .section-text {
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-right: 1px solid var(--border);
+    position: relative;
+  }
+
+  .section:nth-child(even) .section-text {
+    border-right: none;
+    border-left: 1px solid var(--border);
+  }
+
+  .section-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 120px;
+    color: #ffffff04;
+    position: absolute;
+    top: 20px;
+    left: 40px;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .section-tag {
+    font-size: 9px;
+    letter-spacing: 4px;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    color: var(--bright);
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+
+  p {
+    font-size: 11px;
+    line-height: 1.75;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .hl {
+    color: var(--cyan);
+    font-weight: 700;
+  }
+
+  .formula {
+    background: #060606;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--cyan);
+    padding: 14px 18px;
+    font-size: 11px;
+    color: var(--cyan);
+    margin: 16px 0;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .canvas-wrap {
+    position: relative;
+    overflow: hidden;
+    background: #060606;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .canvas-label {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 32px 60px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+
+  .footer-text {
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+
+  .footer-tag {
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--cyan);
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 768px) {
+    .section { grid-template-columns: 1fr; }
+    .section:nth-child(even) { direction: ltr; }
+    .canvas-wrap { min-height: 300px; }
+    header { padding: 40px 30px; }
+    .section-text { padding: 40px 30px; }
+    footer { padding: 40px 30px; flex-direction: column; gap: 20px; }
+    h1 { font-size: 60px; }
+  }
 </style>
 </head>
 <body>
@@ -67,426 +249,1213 @@ footer{padding:40px 60px;border-top:1px solid var(--border);display:flex;justify
   <div class="masthead-sub">How language models encode meaning as shapes in high-dimensional space</div>
 </div>
 
-<div class="section" id="s0a">
-  <div class="section-text">
-    <div class="section-num">01</div>
-    <div class="section-tag">Foundations // What is a Vector</div>
-    <h2>A LIST OF NUMBERS THAT MEANS SOMETHING</h2>
-    <p>A vector is just a list of numbers. In 2D space, two numbers place a point on a grid. In 3D, three numbers. A language model works with vectors that have <span class="hl">hundreds or thousands of numbers</span> — but the idea is the same.</p>
-    <p>Each number is a <span class="hl">dimension</span>. Think of each dimension as a dial, and the combination of all the dial settings together describes a unique position in space. That position <em>is</em> the concept.</p>
-    <p>Vectors also have <span class="hl">direction and magnitude</span>. The direction carries meaning. Two vectors pointing the same way represent similar things. Pointing opposite: opposites. This isn't metaphor — it's geometry.</p>
-    <div class="formula">// a 4D vector for "dog"<br>dog = [0.82, -0.31, 0.55, 0.14, ...]<br>cat = [0.79, -0.28, 0.51, 0.18, ...]<br>car = [-0.12, 0.88, -0.42, 0.67, ...]<br><br>// dog and cat are close. car is far away.</div>
-  </div>
-  <div class="canvas-wrap">
-    <canvas id="c0a"></canvas>
-    <div class="canvas-label">Vector space // 2D projection of concept distances</div>
-  </div>
-</div>
+<div class="sections">
 
-<div class="section" id="s0b">
-  <div class="section-text">
-    <div class="section-num">02</div>
-    <div class="section-tag">Tokenization + Embedding</div>
-    <h2>FROM WORDS TO COORDINATES</h2>
-    <p>The process has two steps. First, text gets <span class="hl">tokenized</span> — chopped into chunks. Each token gets a unique integer ID. Nothing semantic yet, just an index.</p>
-    <p>Then each token ID gets looked up in an <span class="hl">embedding table</span> — a giant matrix where each row is a learned vector. Row 4291 might be the vector for "king". That vector was learned during training by adjusting those numbers until the model got good at predicting text.</p>
-    <p>The genius is that this training process <span class="hl">forces geometry to emerge</span>. The model never gets told "make 'dog' and 'cat' close together." It just learns to predict text, and the most efficient way to do that turns out to encode semantic relationships as spatial proximity.</p>
-    <div class="formula">"The cat sat" → [464, 3797, 3332]<br><br>3797 → embedding_table[3797]<br>&nbsp;&nbsp;&nbsp;&nbsp; → [0.79, -0.28, 0.51, 0.18, ...]<br><br>// 50,000 tokens × 4,096 dims = the map</div>
+  <!-- SECTION 0: What is a vector -->
+  <div class="section" id="s0a">
+    <div class="section-text">
+      <div class="section-num">01</div>
+      <div class="section-tag">Foundations // What is a Vector</div>
+      <h2>A LIST OF NUMBERS THAT MEANS SOMETHING</h2>
+      <p>A vector is just a list of numbers. That's it. In 2D space, two numbers place a point on a grid. In 3D, three numbers. A language model works with vectors that have <span class="hl">hundreds or thousands of numbers</span> -- but the idea is the same.</p>
+      <p>Each number is a <span class="hl">dimension</span>. You can think of each dimension as a dial, and the combination of all the dial settings together describes a unique position in space. That position <em>is</em> the concept.</p>
+      <p>Vectors also have <span class="hl">direction and magnitude</span>. The direction (the angle it points) carries meaning. The length tells you how strongly something is expressed. Two vectors pointing the same direction represent similar things. Pointing opposite? Opposites.</p>
+      <div class="formula">
+        // a 4D vector for "dog"<br>
+        dog = [0.82, -0.31, 0.55, 0.14, ...]<br>
+        cat = [0.79, -0.28, 0.51, 0.18, ...]<br>
+        car = [-0.12, 0.88, -0.42, 0.67, ...]<br>
+        <br>
+        // dog and cat are close. car is far away.
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="c0a"></canvas>
+      <div class="canvas-label">Vector space // 2D projection of concept distances</div>
+    </div>
   </div>
-  <div class="canvas-wrap">
-    <canvas id="c0b"></canvas>
-    <div class="canvas-label">Tokenization pipeline // text to vectors</div>
-  </div>
-</div>
 
-<div class="section" id="s1">
-  <div class="section-text">
-    <div class="section-num">03</div>
-    <div class="section-tag">Linear Representation Hypothesis</div>
-    <h2>WORDS AS VECTORS</h2>
-    <p>When a language model learns from text, it encodes concepts as <span class="hl">directions in space</span>. Not metaphorically — literally. Each word or concept gets a vector: a list of thousands of numbers that places it at a specific point in high-dimensional space.</p>
-    <p>The wild part: the <span class="hl">relationships between concepts</span> are preserved as geometric relationships. Gender isn't stored as a rule. It's just a direction. A consistent arrow you can add or subtract.</p>
-    <div class="formula">king - man + woman = queen<br>Paris - France + Italy = Rome<br><br>// concepts separated by the same vector<br>// represent the same relationship</div>
-    <p>This is the Linear Representation Hypothesis — the idea that semantic relationships map cleanly to vector arithmetic. It mostly works. But it's probably just the surface of something deeper.</p>
+  <!-- SECTION 0b: How encoding works -->
+  <div class="section" id="s0b">
+    <div class="section-text">
+      <div class="section-num">02</div>
+      <div class="section-tag">Tokenization & Embedding</div>
+      <h2>FROM WORDS TO COORDINATES</h2>
+      <p>The process has two steps. First, text gets <span class="hl">tokenized</span> -- chopped into chunks (tokens). These might be whole words, parts of words, or single characters. Each token gets a unique integer ID. Nothing semantic yet, just an index.</p>
+      <p>Then each token ID gets looked up in an <span class="hl">embedding table</span> -- a giant matrix where each row is a learned vector. Row 4291 might be the vector for "king". That vector was learned during training by adjusting those numbers until the model got good at predicting text.</p>
+      <p>The genius is that this training process <span class="hl">forces geometry to emerge</span>. The model never gets told "make 'dog' and 'cat' close together." It just learns to predict text, and the most efficient way to do that turns out to encode semantic relationships as spatial proximity. The structure is an emergent side effect of compression under pressure.</p>
+      <div class="formula">
+        "The cat sat" → [464, 3797, 3332]<br>
+        <br>
+        3797 → embedding_table[3797]<br>
+             → [0.79, -0.28, 0.51, 0.18, ...]<br>
+        <br>
+        // 50,000 tokens × 4,096 dims = the map
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="c0b"></canvas>
+      <div class="canvas-label">Tokenization pipeline // text to vectors</div>
+    </div>
   </div>
-  <div class="canvas-wrap">
-    <canvas id="c1"></canvas>
-    <div class="canvas-label">Interactive // hover to explore</div>
-  </div>
-</div>
 
-<div class="section" id="s2">
-  <div class="section-text">
-    <div class="section-num">04</div>
-    <div class="section-tag">Superposition Hypothesis</div>
-    <h2>MORE FEATURES THAN DIMENSIONS</h2>
-    <p>A model with 4096 dimensions can only have 4096 truly orthogonal (non-interfering) directions. But language has millions of concepts. How does it fit?</p>
-    <p>The answer is <span class="hl">superposition</span> — features get packed at angles that are <em>almost</em> orthogonal, like cramming too many vectors into a space where they slightly overlap. The geometry that emerges looks like <span class="hl">polytopes and sphere-packing</span>.</p>
-    <p>For small numbers of features, the optimal packing isn't random — it produces pentagons, tetrahedra, icosahedra. Structures whose angles are determined by the golden ratio φ. The model discovers these configurations automatically because they minimize cross-feature interference.</p>
-    <div class="formula">φ = (1 + √5) / 2 ≈ 1.618<br><br>// icosahedron vertices contain φ explicitly<br>// (0, ±1, ±φ) and permutations<br>// optimal sphere packing in 3D</div>
+  <!-- SECTION 1: Linear Vectors -->
+  <div class="section" id="s1">
+    <div class="section-text">
+      <div class="section-num">03</div>
+      <div class="section-tag">Linear Representation Hypothesis</div>
+      <h2>WORDS AS VECTORS</h2>
+      <p>When a language model learns from text, it encodes concepts as <span class="hl">directions in space</span>. Not metaphorically -- literally. Each word or concept gets a vector: a list of thousands of numbers that places it at a specific point in a high-dimensional space.</p>
+      <p>The wild part: the <span class="hl">relationships between concepts</span> are preserved as geometric relationships. Gender isn't stored as a rule. It's just a direction. A consistent arrow you can add or subtract.</p>
+      <div class="formula">
+        king - man + woman = queen<br>
+        Paris - France + Italy = Rome<br>
+        <br>
+        // concepts separated by the same vector
+        // represent the same relationship
+      </div>
+      <p>This is the Linear Representation Hypothesis -- the idea that semantic relationships map cleanly to vector arithmetic. It mostly works. But it's probably just the surface of something deeper.</p>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="c1"></canvas>
+      <div class="canvas-label">Interactive // hover to explore</div>
+    </div>
   </div>
-  <div class="canvas-wrap">
-    <canvas id="c2"></canvas>
-    <div class="canvas-label">Rotating icosahedron // feature packing geometry</div>
-  </div>
-</div>
 
-<div class="section" id="s3">
-  <div class="section-text">
-    <div class="section-num">05</div>
-    <div class="section-tag">Manifold Topology</div>
-    <h2>CONCEPTS THAT LOOP</h2>
-    <p>Not every concept is linear. Some things <span class="hl">wrap around</span>. The days of the week form a cycle. Musical pitch repeats at the octave. The months loop back. Hue circles around the color wheel.</p>
-    <p>For these, the model can't use a line — it uses a <span class="hl">ring</span>. Topologically S¹. Researchers have found evidence that models actually do this: temporal and periodic concepts cluster on circular manifolds embedded in the high-dimensional space.</p>
-    <p>For music specifically: the chromatic scale seems to form a <span class="hl">helix</span>, where pitch increases along the axis and octave equivalence creates the wrap. The same note in different octaves is "close" in a way that a flat line can't capture.</p>
-    <div class="formula">// days of week: S¹ (circle)<br>// pitch + octave: S¹ × R (helix)<br>// color: S¹ (hue ring)<br>// not lines — loops</div>
+  <!-- SECTION 2: Superposition -->
+  <div class="section" id="s2">
+    <div class="section-text">
+      <div class="section-num">04</div>
+      <div class="section-tag">Superposition Hypothesis</div>
+      <h2>MORE FEATURES THAN DIMENSIONS</h2>
+      <p>Here's the problem: a model with 4096 dimensions can only have 4096 truly orthogonal (non-interfering) directions. But language has millions of concepts. How does it fit?</p>
+      <p>The answer is <span class="hl">superposition</span> -- features get packed at angles that are <em>almost</em> orthogonal, like cramming too many vectors into a space where they slightly overlap. The geometry that emerges looks like <span class="hl">polytopes and sphere-packing</span>.</p>
+      <p>For small numbers of features, the optimal packing isn't random -- it produces pentagons, tetrahedra, icosahedra. Structures whose angles are determined by the golden ratio φ. The model discovers these configurations automatically because they minimize cross-feature interference.</p>
+      <div class="formula">
+        φ = (1 + √5) / 2 ≈ 1.618<br>
+        <br>
+        // icosahedron vertices contain φ explicitly<br>
+        // (0, ±1, ±φ) and permutations<br>
+        // optimal sphere packing in 3D
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="c2"></canvas>
+      <div class="canvas-label">Rotating icosahedron // feature packing geometry</div>
+    </div>
   </div>
-  <div class="canvas-wrap">
-    <canvas id="c3"></canvas>
-    <div class="canvas-label">Chromatic helix // pitch in embedding space</div>
-  </div>
-</div>
 
-<div class="section" id="s4">
-  <div class="section-text">
-    <div class="section-num">06</div>
-    <div class="section-tag">Persistent Homology</div>
-    <h2>HUNTING HOLES IN HIGH DIMENSIONS</h2>
-    <p>Topological Data Analysis (TDA) lets you ask a brutal question about a cloud of points in high-dimensional space: <span class="hl">how many holes does it have?</span> Not visually — mathematically. Loops, voids, tunnels.</p>
-    <p>A loop is a "1-cycle" — you can draw a closed path through the data that can't be shrunk to a point without leaving the data cloud. Researchers have found these in embedding spaces, corresponding to <span class="hl">cyclic relationships</span>.</p>
-    <p>A void is a "2-cycle" — an empty interior surrounded by the data, like a bubble. These might correspond to conceptual boundaries, category edges, or things the model refuses to interpolate through.</p>
-    <div class="formula">β₀ = connected components<br>β₁ = loops / 1-cycles<br>β₂ = voids / 2-cycles<br><br>// Betti numbers // the algebra of shape</div>
+  <!-- SECTION 3: Circular Manifolds -->
+  <div class="section" id="s3">
+    <div class="section-text">
+      <div class="section-num">05</div>
+      <div class="section-tag">Manifold Topology</div>
+      <h2>CONCEPTS THAT LOOP</h2>
+      <p>Not every concept is linear. Some things <span class="hl">wrap around</span>. The days of the week form a cycle. Musical pitch repeats at the octave. The months loop back. Hue circles around the color wheel.</p>
+      <p>For these, the model can't use a line -- it uses a <span class="hl">ring</span>. Topologically S¹. Researchers have found evidence that models actually do this: temporal and periodic concepts cluster on circular manifolds embedded in the high-dimensional space.</p>
+      <p>For music specifically: the chromatic scale seems to form a <span class="hl">helix</span>, where pitch increases along the axis and octave equivalence creates the wrap. The same note in different octaves is "close" in a way that a flat line can't capture.</p>
+      <div class="formula">
+        // days of week: S¹ (circle)<br>
+        // pitch + octave: S¹ × R (helix)<br>
+        // color: S¹ (hue ring)<br>
+        // not lines -- loops
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="c3"></canvas>
+      <div class="canvas-label">Chromatic helix // pitch in embedding space</div>
+    </div>
   </div>
-  <div class="canvas-wrap">
-    <canvas id="c4"></canvas>
-    <div class="canvas-label">Persistent homology // birth and death of topology</div>
-  </div>
-</div>
 
-<div class="section" id="s5">
-  <div class="section-text">
-    <div class="section-num">07</div>
-    <div class="section-tag">Sparse Autoencoders</div>
-    <h2>FINDING CLEAN FEATURES</h2>
-    <p>Raw activation space is messy because of superposition. Sparse Autoencoders (SAEs) are a technique for <span class="hl">disentangling it</span> — expanding the compressed representation into a much larger space where features are forced to be sparse: only a few active at a time.</p>
-    <p>The result is a cleaner feature space where individual directions correspond to <span class="hl">interpretable concepts</span>. This is where interpretability research is concentrated right now — hunting for structure in the expanded space that was invisible in the compressed one.</p>
-    <p>Whether <span class="hl">golden ratio structures, higher-genus surfaces, or other exotic geometry</span> emerge in SAE feature space at scale is genuinely open. The geometry of thought at that resolution is still unmapped territory.</p>
-    <div class="formula">// compress: R^n → R^d (model internals)<br>// SAE expand: R^d → R^D where D &gt;&gt; d<br>// enforce: ||features||₀ is small<br>// result: sparse, interpretable geometry</div>
+  <!-- SECTION 4: Topology -->
+  <div class="section" id="s4">
+    <div class="section-text">
+      <div class="section-num">06</div>
+      <div class="section-tag">Persistent Homology</div>
+      <h2>HUNTING HOLES IN HIGH DIMENSIONS</h2>
+      <p>Topological Data Analysis (TDA) lets you ask a brutal question about a cloud of points in high-dimensional space: <span class="hl">how many holes does it have?</span> Not visually -- mathematically. Loops, voids, tunnels.</p>
+      <p>A loop is a "1-cycle" -- you can draw a closed path through the data that can't be shrunk to a point without leaving the data cloud. Researchers have found these in embedding spaces. They correspond to <span class="hl">cyclic relationships</span> -- exactly the periodic concepts above.</p>
+      <p>A void is a "2-cycle" -- an empty interior surrounded by the data, like a bubble. These might correspond to conceptual boundaries, category edges, or things the model refuses to interpolate through.</p>
+      <div class="formula">
+        β₀ = connected components<br>
+        β₁ = loops / 1-cycles<br>
+        β₂ = voids / 2-cycles<br>
+        <br>
+        // Betti numbers // the algebra of shape
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="c4"></canvas>
+      <div class="canvas-label">Persistent homology // birth and death of topology</div>
+    </div>
   </div>
-  <div class="canvas-wrap">
-    <canvas id="c5"></canvas>
-    <div class="canvas-label">SAE feature space // sparse activation geometry</div>
+
+  <!-- SECTION 5: SAE -->
+  <div class="section" id="s5">
+    <div class="section-text">
+      <div class="section-num">07</div>
+      <div class="section-tag">Sparse Autoencoders</div>
+      <h2>FINDING CLEAN FEATURES</h2>
+      <p>Raw activation space is messy because of superposition. Sparse Autoencoders (SAEs) are a technique for <span class="hl">disentangling it</span> -- expanding the compressed representation into a much larger space where features are forced to be sparse: only a few active at a time.</p>
+      <p>The result is a cleaner feature space where individual directions correspond to <span class="hl">interpretable concepts</span>. The geometry of this expanded space is what researchers are now studying for complex structure -- looking for the polytopes, rings, and topological features described above, but in a cleaner signal.</p>
+      <p>This is where the real work is happening right now. The question of whether <span class="hl">golden ratio structures, higher-genus surfaces, or other exotic geometry</span> emerge in SAE feature space at scale is genuinely open.</p>
+      <div class="formula">
+        // compress: R^n → R^d (model internals)<br>
+        // SAE expand: R^d → R^D where D >> d<br>
+        // enforce: ||features||₀ is small<br>
+        // result: sparse, interpretable geometry
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="c5"></canvas>
+      <div class="canvas-label">SAE feature space // sparse activation geometry</div>
+    </div>
   </div>
+
 </div>
 
 <footer>
-  <span>MIKOLOV ET AL. 2013 // ELY + OLSHAUSEN 2022 // ANTHROPIC INTERPRETABILITY 2023-24</span>
-  <span>BRUTALIST TERMINAL v2 // EMBEDDING GEOMETRY</span>
+  <span class="footer-text">MIKOLOV ET AL. 2013 // ELY + OLSHAUSEN 2022 // ANTHROPIC INTERPRETABILITY 2023-24</span>
+  <span class="footer-tag">BRUTALIST TERMINAL v2 // EMBEDDING GEOMETRY</span>
 </footer>
 
 <script>
 // ============================================================
-// CANVAS 0a: concept space
+// CANVAS 0a: What is a vector -- 2D concept space
 // ============================================================
-(function(){
-  const canvas=document.getElementById('c0a');
-  const parent=canvas.parentElement;
-  let W,H,mouse={x:-1,y:-1};
-  function resize(){W=canvas.width=parent.offsetWidth;H=canvas.height=parent.offsetHeight;}
-  resize();window.addEventListener('resize',resize);
-  parent.addEventListener('mousemove',e=>{const r=parent.getBoundingClientRect();mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;});
-  parent.addEventListener('mouseleave',()=>{mouse.x=-1;});
-  const concepts=[
-    {label:'dog',x:0.22,y:0.28,color:'#39ff14',cluster:'animals'},
-    {label:'cat',x:0.28,y:0.22,color:'#39ff14',cluster:'animals'},
-    {label:'wolf',x:0.16,y:0.35,color:'#39ff14',cluster:'animals'},
-    {label:'lion',x:0.33,y:0.38,color:'#39ff14',cluster:'animals'},
-    {label:'fish',x:0.20,y:0.45,color:'#39ff14',cluster:'animals'},
-    {label:'car',x:0.70,y:0.72,color:'#ff2d55',cluster:'vehicles'},
-    {label:'truck',x:0.76,y:0.66,color:'#ff2d55',cluster:'vehicles'},
-    {label:'bus',x:0.64,y:0.78,color:'#ff2d55',cluster:'vehicles'},
-    {label:'bike',x:0.72,y:0.82,color:'#ff2d55',cluster:'vehicles'},
-    {label:'king',x:0.55,y:0.25,color:'#ffe900',cluster:'royalty'},
-    {label:'queen',x:0.62,y:0.20,color:'#ffe900',cluster:'royalty'},
-    {label:'prince',x:0.50,y:0.32,color:'#ffe900',cluster:'royalty'},
-    {label:'rain',x:0.30,y:0.72,color:'#00ffe9',cluster:'weather'},
-    {label:'snow',x:0.22,y:0.78,color:'#00ffe9',cluster:'weather'},
-    {label:'storm',x:0.36,y:0.80,color:'#00ffe9',cluster:'weather'},
+(function() {
+  const canvas = document.getElementById('c0a');
+  const parent = canvas.parentElement;
+  let W, H, mouse = {x: -1, y: -1};
+
+  function resize() {
+    W = canvas.width = parent.offsetWidth;
+    H = canvas.height = parent.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  parent.addEventListener('mousemove', e => {
+    const r = parent.getBoundingClientRect();
+    mouse.x = e.clientX - r.left;
+    mouse.y = e.clientY - r.top;
+  });
+  parent.addEventListener('mouseleave', () => { mouse.x = -1; });
+
+  const concepts = [
+    // animals cluster
+    {label: 'dog',      x: 0.22, y: 0.28, color: '#00ff88', cluster: 'animals'},
+    {label: 'cat',      x: 0.28, y: 0.22, color: '#00ff88', cluster: 'animals'},
+    {label: 'wolf',     x: 0.16, y: 0.35, color: '#00ff88', cluster: 'animals'},
+    {label: 'lion',     x: 0.33, y: 0.38, color: '#00ff88', cluster: 'animals'},
+    {label: 'fish',     x: 0.20, y: 0.45, color: '#00cc66', cluster: 'animals'},
+    // vehicles cluster
+    {label: 'car',      x: 0.70, y: 0.72, color: '#ff3366', cluster: 'vehicles'},
+    {label: 'truck',    x: 0.76, y: 0.66, color: '#ff3366', cluster: 'vehicles'},
+    {label: 'bus',      x: 0.64, y: 0.78, color: '#ff3366', cluster: 'vehicles'},
+    {label: 'bike',     x: 0.72, y: 0.82, color: '#ff6688', cluster: 'vehicles'},
+    // royalty cluster
+    {label: 'king',     x: 0.55, y: 0.25, color: '#ffcc00', cluster: 'royalty'},
+    {label: 'queen',    x: 0.62, y: 0.20, color: '#ffcc00', cluster: 'royalty'},
+    {label: 'prince',   x: 0.50, y: 0.32, color: '#ffcc00', cluster: 'royalty'},
+    // weather
+    {label: 'rain',     x: 0.30, y: 0.72, color: '#3366ff', cluster: 'weather'},
+    {label: 'snow',     x: 0.22, y: 0.78, color: '#3366ff', cluster: 'weather'},
+    {label: 'storm',    x: 0.36, y: 0.80, color: '#3366ff', cluster: 'weather'},
   ];
-  let t=0;
-  function draw(){
-    const ctx=canvas.getContext('2d');
-    ctx.clearRect(0,0,W,H);t+=0.008;
-    ctx.strokeStyle='#111';ctx.lineWidth=1;
-    for(let x=0;x<W;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-    for(let y=0;y<H;y+=50){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-    ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.moveTo(40,H/2);ctx.lineTo(W-20,H/2);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(W/2,20);ctx.lineTo(W/2,H-20);ctx.stroke();
-    const clusters={};
-    concepts.forEach(c=>{if(!clusters[c.cluster])clusters[c.cluster]=[];clusters[c.cluster].push(c);});
-    Object.entries(clusters).forEach(([name,pts])=>{
-      const color=pts[0].color;
-      const cx=pts.reduce((s,p)=>s+p.x*W,0)/pts.length;
-      const cy=pts.reduce((s,p)=>s+p.y*H,0)/pts.length;
-      const maxR=Math.max(...pts.map(p=>Math.hypot(p.x*W-cx,p.y*H-cy)))+30;
-      ctx.beginPath();ctx.arc(cx+Math.sin(t*0.3)*3,cy+Math.cos(t*0.2)*3,maxR,0,Math.PI*2);
-      ctx.fillStyle=color+'08';ctx.fill();ctx.strokeStyle=color+'20';ctx.lineWidth=1;
-      ctx.setLineDash([4,8]);ctx.stroke();ctx.setLineDash([]);
-      ctx.fillStyle=color+'40';ctx.font="9px 'Space Mono'";ctx.fillText(name.toUpperCase(),cx-20,cy+maxR+14);
-    });
-    let hoveredIdx=-1;
-    if(mouse.x>=0){concepts.forEach((c,i)=>{const px=c.x*W,py=c.y*H;if(Math.hypot(mouse.x-px,mouse.y-py)<30)hoveredIdx=i;});}
-    if(hoveredIdx>=0){
-      const hc=concepts[hoveredIdx];const px=hc.x*W,py=hc.y*H;
-      ctx.strokeStyle=hc.color+'cc';ctx.lineWidth=2;ctx.setLineDash([6,4]);
-      ctx.beginPath();ctx.moveTo(W/2,H/2);ctx.lineTo(px,py);ctx.stroke();ctx.setLineDash([]);
-      const angle=Math.atan2(py-H/2,px-W/2);
-      ctx.fillStyle=hc.color;ctx.beginPath();ctx.moveTo(px,py);
-      ctx.lineTo(px-14*Math.cos(angle-0.4),py-14*Math.sin(angle-0.4));
-      ctx.lineTo(px-14*Math.cos(angle+0.4),py-14*Math.sin(angle+0.4));ctx.closePath();ctx.fill();
-      const dims=[hc.x*2-1,-(hc.y*2-1)];
-      ctx.fillStyle=hc.color+'cc';ctx.font="11px 'Space Mono'";
-      ctx.fillText(`[${dims[0].toFixed(2)}, ${dims[1].toFixed(2)}, ...]`,px+14,py-10);
-      ctx.fillText(`"${hc.label}"`,px+14,py+6);
-    }
-    concepts.forEach((c,i)=>{
-      const px=c.x*W+Math.sin(t+i)*1.5,py=c.y*H+Math.cos(t*0.7+i)*1.5;
-      const isHov=i===hoveredIdx,r=isHov?9:5;
-      if(isHov){const grd=ctx.createRadialGradient(px,py,0,px,py,30);grd.addColorStop(0,c.color+'80');grd.addColorStop(1,c.color+'00');ctx.fillStyle=grd;ctx.beginPath();ctx.arc(px,py,30,0,Math.PI*2);ctx.fill();}
-      ctx.shadowColor=c.color;ctx.shadowBlur=isHov?20:6;ctx.fillStyle=c.color;ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
-      ctx.fillStyle=isHov?'#fff':c.color+'bb';ctx.font=`${isHov?12:10}px 'Space Mono'`;ctx.fillText(c.label,px+r+4,py+4);
-    });
-    requestAnimationFrame(draw);
-  }
-  draw();
-})();
 
-// ============================================================
-// CANVAS 0b: tokenization
-// ============================================================
-(function(){
-  const canvas=document.getElementById('c0b');
-  const parent=canvas.parentElement;
-  let W,H;
-  function resize(){W=canvas.width=parent.offsetWidth;H=canvas.height=parent.offsetHeight;}
-  resize();window.addEventListener('resize',resize);
-  const sentences=[['The','cat','sat','on','a','mat'],['Music','flows','like','water'],['The','king','rules','the','land']];
-  const tokenColors=['#ff2d55','#ffe900','#39ff14','#00ffe9','#ff6b00','#e900ff','#00ffe9'];
-  let sentIdx=0,phase=0,phaseT=0,t=0;
-  function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
-  function draw(){
-    const ctx=canvas.getContext('2d');ctx.clearRect(0,0,W,H);t+=0.016;phaseT+=0.016;
-    if(phaseT>3.5){phaseT=0;phase=(phase+1)%4;if(phase===0)sentIdx=(sentIdx+1)%sentences.length;}
-    const words=sentences[sentIdx];const cx=W/2;
-    const phases=['RAW TEXT','TOKENIZE','EMBED','VECTOR SPACE'];
-    phases.forEach((label,i)=>{
-      const x=(i+0.5)/phases.length*W;const isActive=i===phase;
-      ctx.fillStyle=isActive?'#00ffe9':'rgba(255,255,255,0.15)';
-      ctx.font=`${isActive?'bold':''} 9px 'Space Mono'`;ctx.textAlign='center';ctx.fillText(label,x,24);
-      if(i<phases.length-1){ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo((i+1)/phases.length*W,10);ctx.lineTo((i+1)/phases.length*W,34);ctx.stroke();}
-    });
-    ctx.textAlign='left';const centerY=H/2;
-    if(phase===0){
-      ctx.fillStyle='#f0f0ff';ctx.font="bold 22px 'Bebas Neue'";ctx.textAlign='center';
-      ctx.globalAlpha=Math.min(1,phaseT/0.5);ctx.fillText(`"${words.join(' ')}"`,cx,centerY+8);ctx.globalAlpha=1;ctx.textAlign='left';
-    } else if(phase===1){
-      const totalW=words.length*80-10;const startX=cx-totalW/2;
-      words.forEach((word,i)=>{
-        const x=startX+i*80;const alpha=Math.min(1,(phaseT-i*0.12)/0.4);if(alpha<=0)return;ctx.globalAlpha=Math.max(0,alpha);
-        const color=tokenColors[i%tokenColors.length];ctx.fillStyle=color+'20';ctx.strokeStyle=color+'80';ctx.lineWidth=1;
-        roundRect(ctx,x,centerY-19,66,38,4);ctx.fill();ctx.stroke();
-        ctx.fillStyle=color;ctx.font="bold 13px 'Space Mono'";ctx.textAlign='center';ctx.fillText(word,x+33,centerY+5);
-        const tid=Math.floor(Math.sin(i*127.4+sentIdx*31)*25000+25000);
-        ctx.fillStyle=color+'80';ctx.font="9px 'Space Mono'";ctx.fillText(`#${tid}`,x+33,centerY+28);ctx.textAlign='left';ctx.globalAlpha=1;
+  let t = 0;
+  let hoveredIdx = -1;
+
+  function draw() {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    t += 0.008;
+
+    // subtle grid
+    ctx.strokeStyle = '#0d0d25';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 50) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 50) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+    // axis
+    ctx.strokeStyle = '#ffffff10';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(40, H/2); ctx.lineTo(W-20, H/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W/2, 20); ctx.lineTo(W/2, H-20); ctx.stroke();
+
+    // axis labels
+    ctx.fillStyle = '#ffffff15';
+    ctx.font = "10px 'Space Mono'";
+    ctx.fillText('dim 1', W - 55, H/2 - 8);
+    ctx.fillText('dim 2', W/2 + 8, 30);
+
+    // find hovered
+    hoveredIdx = -1;
+    if (mouse.x >= 0) {
+      concepts.forEach((c, i) => {
+        const px = c.x * W, py = c.y * H;
+        if (Math.hypot(mouse.x - px, mouse.y - py) < 30) hoveredIdx = i;
       });
-    } else if(phase===2){
-      const tableX=30,tableY=60,rows=8,rowH=(H-100)/rows,colW=12;
-      for(let r=0;r<rows;r++){for(let c=0;c<18;c++){const val=Math.sin(r*13.7+c*5.3+sentIdx*2.1);ctx.fillStyle=`rgba(0,255,233,${0.1+Math.abs(val)*0.15})`;ctx.fillRect(tableX+c*(colW+2),tableY+r*rowH,colW,rowH-2);}}
-      ctx.fillStyle='#00ffe960';ctx.font="9px 'Space Mono'";ctx.fillText('EMBEDDING TABLE',tableX,tableY-10);
-      const hRow=Math.floor(phaseT/3.5*rows)%rows;
-      ctx.strokeStyle='#ffe90080';ctx.lineWidth=1.5;ctx.strokeRect(tableX-1,tableY+hRow*rowH-1,18*(colW+2),rowH);
-      const prog=Math.min(1,phaseT/1.5);if(prog>0.3){
-        ctx.globalAlpha=Math.min(1,(prog-0.3)/0.4);ctx.strokeStyle='#ffe900';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(tableX+18*(colW+2)+10,tableY+hRow*rowH+rowH/2);ctx.lineTo(W-80,centerY);ctx.stroke();ctx.setLineDash([]);
-        for(let d=0;d<6;d++){const val=Math.sin(hRow*7.3+d*3.1);const barW=val*40;ctx.fillStyle=barW>0?'#39ff14aa':'#ff2d55aa';ctx.fillRect(W-75,centerY-40+d*14,barW,11);}
-        ctx.globalAlpha=1;
+    }
+
+    // draw cluster hulls
+    const clusters = {};
+    concepts.forEach(c => {
+      if (!clusters[c.cluster]) clusters[c.cluster] = [];
+      clusters[c.cluster].push(c);
+    });
+
+    Object.entries(clusters).forEach(([name, pts]) => {
+      const color = pts[0].color;
+      const cx = pts.reduce((s,p) => s + p.x * W, 0) / pts.length;
+      const cy = pts.reduce((s,p) => s + p.y * H, 0) / pts.length;
+      const maxR = Math.max(...pts.map(p => Math.hypot(p.x*W - cx, p.y*H - cy))) + 30;
+
+      ctx.beginPath();
+      ctx.arc(cx + Math.sin(t * 0.3) * 3, cy + Math.cos(t * 0.2) * 3, maxR, 0, Math.PI*2);
+      ctx.fillStyle = color + '08';
+      ctx.fill();
+      ctx.strokeStyle = color + '20';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 8]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = color + '40';
+      ctx.font = "9px 'Space Mono'";
+      ctx.fillText(name.toUpperCase(), cx - 20, cy + maxR + 14);
+    });
+
+    // if something hovered, draw vector arrow from origin to it
+    if (hoveredIdx >= 0) {
+      const hc = concepts[hoveredIdx];
+      const px = hc.x * W, py = hc.y * H;
+      const ox = W/2, oy = H/2;
+
+      ctx.strokeStyle = hc.color + 'cc';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6,4]);
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.lineTo(px, py);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // arrowhead
+      const angle = Math.atan2(py-oy, px-ox);
+      ctx.fillStyle = hc.color;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px - 14*Math.cos(angle-0.4), py - 14*Math.sin(angle-0.4));
+      ctx.lineTo(px - 14*Math.cos(angle+0.4), py - 14*Math.sin(angle+0.4));
+      ctx.closePath();
+      ctx.fill();
+
+      // dimension readout
+      const dims = [hc.x*2-1, -(hc.y*2-1)];
+      ctx.fillStyle = hc.color + 'cc';
+      ctx.font = "11px 'Space Mono'";
+      ctx.fillText(`[${dims[0].toFixed(2)}, ${dims[1].toFixed(2)}, ...]`, px + 14, py - 10);
+      ctx.fillText(`"${hc.label}"`, px + 14, py + 6);
+    }
+
+    // draw concept points
+    concepts.forEach((c, i) => {
+      const px = c.x * W + Math.sin(t + i) * 1.5;
+      const py = c.y * H + Math.cos(t * 0.7 + i) * 1.5;
+      const isHov = i === hoveredIdx;
+      const r = isHov ? 9 : 5;
+
+      if (isHov) {
+        const grd = ctx.createRadialGradient(px, py, 0, px, py, 30);
+        grd.addColorStop(0, c.color + '80');
+        grd.addColorStop(1, c.color + '00');
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(px, py, 30, 0, Math.PI*2);
+        ctx.fill();
       }
-    } else if(phase===3){
-      const wps=words.map((w,i)=>({word:w,x:0.15+(Math.sin(i*127.4+sentIdx*9.1)*0.5+0.5)*0.7,y:0.15+(Math.cos(i*89.3+sentIdx*7.4)*0.5+0.5)*0.7,color:tokenColors[i%tokenColors.length]}));
-      wps.forEach((wp,i)=>{
-        const px=50+wp.x*(W-100),py=50+wp.y*(H-100);const alpha=Math.min(1,(phaseT-i*0.1)/0.5);if(alpha<=0)return;ctx.globalAlpha=alpha;
-        const grd=ctx.createRadialGradient(px,py,0,px,py,20);grd.addColorStop(0,wp.color+'60');grd.addColorStop(1,wp.color+'00');ctx.fillStyle=grd;ctx.beginPath();ctx.arc(px,py,20,0,Math.PI*2);ctx.fill();
-        ctx.shadowColor=wp.color;ctx.shadowBlur=12;ctx.fillStyle=wp.color;ctx.beginPath();ctx.arc(px,py,7,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
-        ctx.fillStyle='#fff';ctx.font="11px 'Space Mono'";ctx.fillText(wp.word,px+12,py+4);ctx.globalAlpha=1;
+
+      ctx.shadowColor = c.color;
+      ctx.shadowBlur = isHov ? 20 : 6;
+      ctx.fillStyle = c.color;
+      ctx.beginPath();
+      ctx.arc(px, py, r, 0, Math.PI*2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      ctx.fillStyle = isHov ? '#fff' : c.color + 'bb';
+      ctx.font = `${isHov ? 12 : 10}px 'Space Mono'`;
+      ctx.fillText(c.label, px + r + 4, py + 4);
+    });
+
+    ctx.fillStyle = '#ffffff20';
+    ctx.font = "10px 'Space Mono'";
+    ctx.fillText('hover a point to see its vector', 16, H - 16);
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ============================================================
+// CANVAS 0b: Tokenization pipeline animation
+// ============================================================
+(function() {
+  const canvas = document.getElementById('c0b');
+  const parent = canvas.parentElement;
+  let W, H;
+
+  function resize() {
+    W = canvas.width = parent.offsetWidth;
+    H = canvas.height = parent.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const sentences = [
+    ['The', 'cat', 'sat', 'on', 'a', 'mat'],
+    ['Music', 'flows', 'like', 'water'],
+    ['The', 'king', 'rules', 'the', 'land'],
+  ];
+
+  const tokenColors = ['#ff3366','#ffcc00','#00ff88','#3366ff','#ff6600','#cc00ff','#00ccff'];
+
+  let sentIdx = 0;
+  let phase = 0; // 0=show text, 1=tokenize, 2=embed, 3=vector
+  let phaseT = 0;
+  let t = 0;
+
+  function draw() {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    t += 0.016;
+    phaseT += 0.016;
+
+    if (phaseT > 3.5) {
+      phaseT = 0;
+      phase = (phase + 1) % 4;
+      if (phase === 0) sentIdx = (sentIdx + 1) % sentences.length;
+    }
+
+    const words = sentences[sentIdx];
+    const cx = W / 2;
+
+    // PHASE LABELS
+    const phases = ['RAW TEXT', 'TOKENIZE', 'EMBED', 'VECTOR SPACE'];
+    phases.forEach((label, i) => {
+      const x = (i + 0.5) / phases.length * W;
+      const isActive = i === phase;
+      ctx.fillStyle = isActive ? '#00ff88' : '#ffffff15';
+      ctx.font = `${isActive ? 'bold' : ''} 9px 'Space Mono'`;
+      ctx.textAlign = 'center';
+      ctx.fillText(label, x, 24);
+
+      if (i < phases.length - 1) {
+        ctx.strokeStyle = '#ffffff10';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo((i+1) / phases.length * W, 10);
+        ctx.lineTo((i+1) / phases.length * W, 34);
+        ctx.stroke();
+      }
+    });
+    ctx.textAlign = 'left';
+
+    const centerY = H / 2;
+
+    if (phase === 0) {
+      // raw sentence
+      const fullText = words.join(' ');
+      ctx.fillStyle = '#f0f0ff';
+      ctx.font = "bold 22px 'Bebas Neue'";
+      ctx.textAlign = 'center';
+      const alpha = Math.min(1, phaseT / 0.5);
+      ctx.globalAlpha = alpha;
+      ctx.fillText(`"${fullText}"`, cx, centerY + 8);
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'left';
+    }
+
+    else if (phase === 1) {
+      // tokenized
+      const totalW = words.length * 80 - 10;
+      const startX = cx - totalW / 2;
+      words.forEach((word, i) => {
+        const x = startX + i * 80;
+        const alpha = Math.min(1, (phaseT - i * 0.12) / 0.4);
+        if (alpha <= 0) return;
+        ctx.globalAlpha = Math.max(0, alpha);
+
+        const color = tokenColors[i % tokenColors.length];
+        ctx.fillStyle = color + '20';
+        ctx.strokeStyle = color + '80';
+        ctx.lineWidth = 1;
+        const bw = 66, bh = 38;
+        roundRect(ctx, x, centerY - bh/2, bw, bh, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = color;
+        ctx.font = "bold 13px 'Space Mono'";
+        ctx.textAlign = 'center';
+        ctx.fillText(word, x + bw/2, centerY + 5);
+
+        // token id below
+        const tid = Math.floor(Math.sin(i * 127.4 + sentIdx * 31) * 25000 + 25000);
+        ctx.fillStyle = color + '80';
+        ctx.font = "9px 'Space Mono'";
+        ctx.fillText(`#${tid}`, x + bw/2, centerY + bh/2 + 16);
+        ctx.textAlign = 'left';
+        ctx.globalAlpha = 1;
       });
     }
+
+    else if (phase === 2) {
+      // embedding table lookup
+      const tableX = 30, tableY = 60;
+      const rows = 8, rowH = (H - 100) / rows;
+      const colW = 12;
+
+      // draw table
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < 18; c++) {
+          const val = Math.sin(r * 13.7 + c * 5.3 + sentIdx * 2.1);
+          const alpha = 0.15 + Math.abs(val) * 0.2;
+          ctx.fillStyle = `rgba(51, 102, 255, ${alpha})`;
+          ctx.fillRect(tableX + c * (colW + 2), tableY + r * rowH, colW, rowH - 2);
+        }
+      }
+
+      ctx.fillStyle = '#3366ff60';
+      ctx.font = "9px 'Space Mono'";
+      ctx.fillText('EMBEDDING TABLE', tableX, tableY - 10);
+      ctx.fillText(`50,000 tokens × N dims`, tableX, H - 30);
+
+      // highlight one row
+      const highlightRow = Math.floor(phaseT / 3.5 * rows) % rows;
+      const progress = Math.min(1, phaseT / 1.5);
+      ctx.strokeStyle = '#ffcc0080';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(tableX - 1, tableY + highlightRow * rowH - 1, 18 * (colW+2), rowH);
+
+      // arrow to vector
+      if (progress > 0.3) {
+        const arrAlpha = Math.min(1, (progress - 0.3) / 0.4);
+        ctx.globalAlpha = arrAlpha;
+        ctx.strokeStyle = '#ffcc00';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6,4]);
+        ctx.beginPath();
+        ctx.moveTo(tableX + 18*(colW+2) + 10, tableY + highlightRow * rowH + rowH/2);
+        ctx.lineTo(W - 80, centerY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // vector display
+        const dims = 6;
+        ctx.font = "11px 'Space Mono'";
+        for (let d = 0; d < dims; d++) {
+          const val = Math.sin(highlightRow * 7.3 + d * 3.1);
+          const barW = val * 40;
+          ctx.fillStyle = barW > 0 ? '#00ff88aa' : '#ff3366aa';
+          ctx.fillRect(W - 75, centerY - 40 + d*14, barW, 11);
+          ctx.fillStyle = '#ffffff60';
+          ctx.fillText(val.toFixed(2), W - 75 + Math.abs(barW) + 4, centerY - 32 + d*14);
+        }
+        ctx.fillStyle = '#ffcc0060';
+        ctx.fillText('...', W - 75, centerY - 40 + dims*14 + 6);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    else if (phase === 3) {
+      // mini 2d scatter of word positions
+      const wordPositions = words.map((w, i) => ({
+        word: w,
+        x: 0.15 + (Math.sin(i * 127.4 + sentIdx * 9.1) * 0.5 + 0.5) * 0.7,
+        y: 0.15 + (Math.cos(i * 89.3 + sentIdx * 7.4) * 0.5 + 0.5) * 0.7,
+        color: tokenColors[i % tokenColors.length]
+      }));
+
+      wordPositions.forEach((wp, i) => {
+        const px = 50 + wp.x * (W - 100);
+        const py = 50 + wp.y * (H - 100);
+        const alpha = Math.min(1, (phaseT - i * 0.1) / 0.5);
+        if (alpha <= 0) return;
+        ctx.globalAlpha = alpha;
+
+        const grd = ctx.createRadialGradient(px, py, 0, px, py, 20);
+        grd.addColorStop(0, wp.color + '60');
+        grd.addColorStop(1, wp.color + '00');
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(px, py, 20, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.shadowColor = wp.color;
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = wp.color;
+        ctx.beginPath();
+        ctx.arc(px, py, 7, 0, Math.PI*2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = '#fff';
+        ctx.font = "11px 'Space Mono'";
+        ctx.fillText(wp.word, px + 12, py + 4);
+        ctx.globalAlpha = 1;
+      });
+
+      ctx.fillStyle = '#ffffff15';
+      ctx.font = "10px 'Space Mono'";
+      ctx.fillText('projected to 2D // real space has thousands of dims', 16, H - 16);
+    }
+
     requestAnimationFrame(draw);
   }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h);
+    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r);
+    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+  }
+
   draw();
 })();
 
 // ============================================================
-// CANVAS 1: linear vector relationships
+// CANVAS 1: Linear vector relationships
 // ============================================================
-(function(){
-  const canvas=document.getElementById('c1');const parent=canvas.parentElement;let W,H,mouse={x:-1,y:-1};
-  function resize(){W=canvas.width=parent.offsetWidth;H=canvas.height=parent.offsetHeight;}
-  resize();window.addEventListener('resize',resize);
-  parent.addEventListener('mousemove',e=>{const r=parent.getBoundingClientRect();mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;});
-  parent.addEventListener('mouseleave',()=>{mouse.x=-1;});
-  const words=[{label:'king',x:0.25,y:0.35,color:'#ffe900'},{label:'queen',x:0.65,y:0.35,color:'#ff2d55'},{label:'man',x:0.25,y:0.65,color:'#00ffe9'},{label:'woman',x:0.65,y:0.65,color:'#39ff14'},{label:'prince',x:0.18,y:0.2,color:'#ffe900',small:true},{label:'princess',x:0.72,y:0.2,color:'#ff2d55',small:true},{label:'boy',x:0.18,y:0.8,color:'#00ffe9',small:true},{label:'girl',x:0.72,y:0.8,color:'#39ff14',small:true}];
-  let t=0;
-  function drawArrow(ctx,x1,y1,x2,y2,color,w,label){
-    ctx.strokeStyle=color;ctx.lineWidth=w;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
-    const angle=Math.atan2(y2-y1,x2-x1);ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-12*Math.cos(angle-0.4),y2-12*Math.sin(angle-0.4));ctx.lineTo(x2-12*Math.cos(angle+0.4),y2-12*Math.sin(angle+0.4));ctx.closePath();ctx.fill();
-    if(label){const mx=(x1+x2)/2,my=(y1+y2)/2;ctx.fillStyle=color;ctx.font="9px 'Space Mono'";ctx.fillText(label,mx+8,my-6);}
+(function() {
+  const canvas = document.getElementById('c1');
+  const parent = canvas.parentElement;
+  let W, H, mouse = {x: -1, y: -1};
+
+  function resize() {
+    W = canvas.width = parent.offsetWidth;
+    H = canvas.height = parent.offsetHeight;
   }
-  function draw(){
-    const ctx=canvas.getContext('2d');ctx.clearRect(0,0,W,H);t+=0.01;
-    ctx.strokeStyle='#111';ctx.lineWidth=1;
-    for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-    for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-    drawArrow(ctx,words[2].x*W,words[2].y*H+Math.sin(t)*3,words[3].x*W,words[3].y*H+Math.sin(t)*3,'#39ff1440',2,'GENDER');
-    drawArrow(ctx,words[0].x*W,words[0].y*H+Math.sin(t)*3,words[1].x*W,words[1].y*H+Math.sin(t)*3,'#39ff1440',2,'');
-    drawArrow(ctx,words[0].x*W+Math.sin(t+1)*3,words[0].y*H,words[2].x*W+Math.sin(t+1)*3,words[2].y*H,'#00ffe940',2,'ROYALTY');
-    drawArrow(ctx,words[1].x*W+Math.sin(t+1)*3,words[1].y*H,words[3].x*W+Math.sin(t+1)*3,words[3].y*H,'#00ffe940',2,'');
-    [[4,0],[5,1],[6,2],[7,3]].forEach(([a,b])=>{ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=1;ctx.setLineDash([4,8]);ctx.beginPath();ctx.moveTo(words[a].x*W,words[a].y*H);ctx.lineTo(words[b].x*W,words[b].y*H);ctx.stroke();ctx.setLineDash([]);});
-    words.forEach((w,i)=>{
-      const px=w.x*W,py=w.y*H+Math.sin(t+i*0.5)*3,r=w.small?5:9;
-      const hover=mouse.x>=0&&Math.hypot(mouse.x-px,mouse.y-py)<40;
-      const grd=ctx.createRadialGradient(px,py,0,px,py,hover?40:20);grd.addColorStop(0,w.color+'60');grd.addColorStop(1,w.color+'00');ctx.fillStyle=grd;ctx.beginPath();ctx.arc(px,py,hover?40:20,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle=w.color;ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle=hover?'#fff':w.color;ctx.font=`${w.small?10:13}px 'Space Mono'`;ctx.fillText(w.label,px+14,py+5);
+  resize();
+  window.addEventListener('resize', resize);
+  parent.addEventListener('mousemove', e => {
+    const r = parent.getBoundingClientRect();
+    mouse.x = e.clientX - r.left;
+    mouse.y = e.clientY - r.top;
+  });
+  parent.addEventListener('mouseleave', () => { mouse.x = -1; });
+
+  const words = [
+    {label: 'king', x: 0.25, y: 0.35, color: '#ffcc00'},
+    {label: 'queen', x: 0.65, y: 0.35, color: '#ff3366'},
+    {label: 'man', x: 0.25, y: 0.65, color: '#3366ff'},
+    {label: 'woman', x: 0.65, y: 0.65, color: '#00ff88'},
+    {label: 'prince', x: 0.18, y: 0.2, color: '#ffcc00', small: true},
+    {label: 'princess', x: 0.72, y: 0.2, color: '#ff3366', small: true},
+    {label: 'boy', x: 0.18, y: 0.8, color: '#3366ff', small: true},
+    {label: 'girl', x: 0.72, y: 0.8, color: '#00ff88', small: true},
+  ];
+
+  let t = 0;
+
+  function draw() {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+
+    // grid
+    ctx.strokeStyle = '#0d0d25';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 40) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = 0; y < H; y += 40) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+
+    t += 0.01;
+
+    // draw gender arrow (horizontal)
+    const gx1 = words[2].x * W, gy1 = words[2].y * H + Math.sin(t) * 3;
+    const gx2 = words[3].x * W, gy2 = words[3].y * H + Math.sin(t) * 3;
+    drawArrow(ctx, gx1, gy1, gx2, gy2, '#00ff8840', 2, 'GENDER');
+
+    const gx3 = words[0].x * W, gy3 = words[0].y * H + Math.sin(t) * 3;
+    const gx4 = words[1].x * W, gy4 = words[1].y * H + Math.sin(t) * 3;
+    drawArrow(ctx, gx3, gy3, gx4, gy4, '#00ff8840', 2, '');
+
+    // draw royalty arrow (vertical)
+    const ry1 = words[0].x * W + Math.sin(t+1) * 3, ry2 = words[0].y * H;
+    const ry3 = words[2].x * W + Math.sin(t+1) * 3, ry4 = words[2].y * H;
+    drawArrow(ctx, ry1, ry2, ry3, ry4, '#3366ff40', 2, 'ROYALTY');
+
+    const ry5 = words[1].x * W + Math.sin(t+1) * 3, ry6 = words[1].y * H;
+    const ry7 = words[3].x * W + Math.sin(t+1) * 3, ry8 = words[3].y * H;
+    drawArrow(ctx, ry5, ry6, ry7, ry8, '#3366ff40', 2, '');
+
+    // draw small word connections
+    [[4,0],[5,1],[6,2],[7,3]].forEach(([a,b]) => {
+      ctx.strokeStyle = '#ffffff08';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4,8]);
+      ctx.beginPath();
+      ctx.moveTo(words[a].x * W, words[a].y * H);
+      ctx.lineTo(words[b].x * W, words[b].y * H);
+      ctx.stroke();
+      ctx.setLineDash([]);
     });
-    requestAnimationFrame(draw);
-  }
-  draw();
-})();
 
-// ============================================================
-// CANVAS 2: rotating icosahedron
-// ============================================================
-(function(){
-  const canvas=document.getElementById('c2');const parent=canvas.parentElement;let W,H;
-  function resize(){W=canvas.width=parent.offsetWidth;H=canvas.height=parent.offsetHeight;}
-  resize();window.addEventListener('resize',resize);
-  const phi=(1+Math.sqrt(5))/2;
-  const verts=[[0,1,phi],[0,-1,phi],[0,1,-phi],[0,-1,-phi],[1,phi,0],[-1,phi,0],[1,-phi,0],[-1,-phi,0],[phi,0,1],[-phi,0,1],[phi,0,-1],[-phi,0,-1]].map(v=>{const l=Math.hypot(...v);return v.map(x=>x/l);});
-  const edges=[];
-  for(let i=0;i<verts.length;i++)for(let j=i+1;j<verts.length;j++){const d=Math.hypot(...verts[i].map((v,k)=>v-verts[j][k]));if(d<0.76)edges.push([i,j]);}
-  let t=0;
-  function rot3(v,rx,ry){let[x,y,z]=v;let y2=y*Math.cos(rx)-z*Math.sin(rx);let z2=y*Math.sin(rx)+z*Math.cos(rx);let x3=x*Math.cos(ry)+z2*Math.sin(ry);let z3=-x*Math.sin(ry)+z2*Math.cos(ry);return[x3,y2,z3];}
-  function project(v,w,h,scale){const[x,y,z]=v;const fov=3.5;const s=scale/(fov-z);return[w/2+x*s,h/2-y*s];}
-  function draw(){
-    const ctx=canvas.getContext('2d');ctx.clearRect(0,0,W,H);t+=0.008;
-    const scale=Math.min(W,H)*0.28;
-    const rotV=verts.map(v=>rot3(v,t*0.7,t));const projV=rotV.map(v=>project(v,W,H,scale));
-    const edgesD=edges.map(([i,j])=>({i,j,depth:(rotV[i][2]+rotV[j][2])/2}));
-    edgesD.sort((a,b)=>a.depth-b.depth);
-    edgesD.forEach(({i,j,depth})=>{
-      const br=(depth+1)/2;ctx.strokeStyle=`rgba(0,255,233,${br*0.6})`;ctx.lineWidth=1+br;
-      ctx.shadowColor='#00ffe9';ctx.shadowBlur=br*8;ctx.beginPath();ctx.moveTo(projV[i][0],projV[i][1]);ctx.lineTo(projV[j][0],projV[j][1]);ctx.stroke();ctx.shadowBlur=0;
+    // draw word points
+    words.forEach((w, i) => {
+      const px = w.x * W;
+      const py = w.y * H + Math.sin(t + i * 0.5) * 3;
+      const r = w.small ? 5 : 9;
+
+      const dist = mouse.x >= 0 ? Math.hypot(mouse.x - px, mouse.y - py) : 999;
+      const hover = dist < 40;
+
+      // glow
+      const grd = ctx.createRadialGradient(px, py, 0, px, py, hover ? 40 : 20);
+      grd.addColorStop(0, w.color + '60');
+      grd.addColorStop(1, w.color + '00');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(px, py, hover ? 40 : 20, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = w.color;
+      ctx.beginPath();
+      ctx.arc(px, py, r, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = hover ? '#fff' : w.color;
+      ctx.font = `${w.small ? 10 : 13}px 'Space Mono'`;
+      ctx.fillText(w.label, px + 14, py + 5);
     });
-    rotV.forEach((rv,i)=>{
-      const[px,py]=projV[i];const depth=(rv[2]+1)/2;
-      ctx.fillStyle=`rgba(255,233,0,${depth})`;ctx.shadowColor='#ffe900';ctx.shadowBlur=depth*15;ctx.beginPath();ctx.arc(px,py,3+depth*4,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+
+    requestAnimationFrame(draw);
+  }
+
+  function drawArrow(ctx, x1, y1, x2, y2, color, width, label) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // arrowhead
+    const angle = Math.atan2(y2-y1, x2-x1);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - 12*Math.cos(angle-0.4), y2 - 12*Math.sin(angle-0.4));
+    ctx.lineTo(x2 - 12*Math.cos(angle+0.4), y2 - 12*Math.sin(angle+0.4));
+    ctx.closePath();
+    ctx.fill();
+
+    if (label) {
+      const mx = (x1+x2)/2, my = (y1+y2)/2;
+      ctx.fillStyle = color;
+      ctx.font = "9px 'Space Mono'";
+      ctx.fillText(label, mx + 8, my - 6);
+    }
+  }
+
+  draw();
+})();
+
+// ============================================================
+// CANVAS 2: Rotating icosahedron
+// ============================================================
+(function() {
+  const canvas = document.getElementById('c2');
+  const parent = canvas.parentElement;
+  let W, H;
+
+  function resize() {
+    W = canvas.width = parent.offsetWidth;
+    H = canvas.height = parent.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const phi = (1 + Math.sqrt(5)) / 2;
+
+  // icosahedron vertices
+  const verts = [
+    [0, 1, phi], [0, -1, phi], [0, 1, -phi], [0, -1, -phi],
+    [1, phi, 0], [-1, phi, 0], [1, -phi, 0], [-1, -phi, 0],
+    [phi, 0, 1], [-phi, 0, 1], [phi, 0, -1], [-phi, 0, -1],
+  ].map(v => { const l = Math.hypot(...v); return v.map(x => x/l); });
+
+  // edges
+  const edges = [];
+  for (let i = 0; i < verts.length; i++) {
+    for (let j = i+1; j < verts.length; j++) {
+      const d = Math.hypot(...verts[i].map((v,k) => v - verts[j][k]));
+      if (d < 0.76) edges.push([i,j]);
+    }
+  }
+
+  let rotX = 0, rotY = 0, t = 0;
+
+  function rot3(v, rx, ry) {
+    let [x, y, z] = v;
+    let y2 = y * Math.cos(rx) - z * Math.sin(rx);
+    let z2 = y * Math.sin(rx) + z * Math.cos(rx);
+    let x3 = x * Math.cos(ry) + z2 * Math.sin(ry);
+    let z3 = -x * Math.sin(ry) + z2 * Math.cos(ry);
+    return [x3, y2, z3];
+  }
+
+  function project(v, w, h, scale) {
+    const [x, y, z] = v;
+    const fov = 3.5;
+    const s = scale / (fov - z);
+    return [w/2 + x * s, h/2 - y * s];
+  }
+
+  function draw() {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+
+    t += 0.008;
+    rotX = t * 0.7;
+    rotY = t;
+
+    const scale = Math.min(W, H) * 0.28;
+    const rotVerts = verts.map(v => rot3(v, rotX, rotY));
+    const projVerts = rotVerts.map(v => project(v, W, H, scale));
+
+    // sort edges by depth
+    const edgesWithDepth = edges.map(([i,j]) => ({
+      i, j, depth: (rotVerts[i][2] + rotVerts[j][2]) / 2
+    }));
+    edgesWithDepth.sort((a,b) => a.depth - b.depth);
+
+    edgesWithDepth.forEach(({i, j, depth}) => {
+      const brightness = (depth + 1) / 2;
+      ctx.strokeStyle = `rgba(0, 255, 136, ${brightness * 0.6})`;
+      ctx.lineWidth = 1 + brightness;
+      ctx.shadowColor = '#00ff88';
+      ctx.shadowBlur = brightness * 8;
+      ctx.beginPath();
+      ctx.moveTo(projVerts[i][0], projVerts[i][1]);
+      ctx.lineTo(projVerts[j][0], projVerts[j][1]);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
     });
-    ctx.fillStyle='rgba(255,255,255,0.04)';ctx.font="bold 100px 'Bebas Neue'";ctx.textAlign='right';ctx.fillText('φ',W-20,H-20);ctx.textAlign='left';
-    requestAnimationFrame(draw);
-  }
-  draw();
-})();
 
-// ============================================================
-// CANVAS 3: chromatic helix
-// ============================================================
-(function(){
-  const canvas=document.getElementById('c3');const parent=canvas.parentElement;let W,H;
-  function resize(){W=canvas.width=parent.offsetWidth;H=canvas.height=parent.offsetHeight;}
-  resize();window.addEventListener('resize',resize);
-  const notes=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-  const colors=['#ff2d55','#ff6b00','#ffaa00','#ffe900','#aaff00','#39ff14','#00ffe9','#0088ff','#3344ff','#8833ff','#e900ff','#ff0088'];
-  let t=0;
-  function rot3(v,rx,ry){let[x,y,z]=v;let y2=y*Math.cos(rx)-z*Math.sin(rx);let z2=y*Math.sin(rx)+z*Math.cos(rx);let x3=x*Math.cos(ry)+z2*Math.sin(ry);return[x3,y2,z3];}
-  function draw(){
-    const ctx=canvas.getContext('2d');ctx.clearRect(0,0,W,H);t+=0.01;
-    const octaves=3;const points=[];
-    for(let oct=0;oct<octaves;oct++)for(let n=0;n<12;n++){const idx=oct*12+n;const total=octaves*12;const angle=(n/12)*Math.PI*2;const yCen=((idx/total)-0.5)*2;const r=0.5;points.push({x:Math.cos(angle)*r,y:yCen,z:Math.sin(angle)*r,note:notes[n],oct,color:colors[n]});}
-    const scale=Math.min(W,H)*0.32;
-    const projected=points.map(p=>{const rv=rot3([p.x,p.y,p.z],t*0.3,t);const fov=3;const s=scale/(fov-rv[2]);return{px:W/2+rv[0]*s,py:H/2-rv[1]*s,depth:rv[2],note:p.note,oct:p.oct,color:p.color,origZ:rv[2]};});
-    for(let i=0;i<points.length-1;i++){const a=points[i],b=points[i+1];const ra=rot3([a.x,a.y,a.z],t*0.3,t);const rb=rot3([b.x,b.y,b.z],t*0.3,t);const fov=3;const sa=scale/(fov-ra[2]),sb=scale/(fov-rb[2]);const brightness=(ra[2]+rb[2])/2;ctx.strokeStyle=`rgba(255,255,255,${(brightness+1)/2*0.4})`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(W/2+ra[0]*sa,H/2-ra[1]*sa);ctx.lineTo(W/2+rb[0]*sb,H/2-rb[1]*sb);ctx.stroke();}
-    projected.sort((a,b)=>a.depth-b.depth);
-    projected.forEach(p=>{
-      const br=(p.depth+1)/2;const r=5+br*5;
-      const grd=ctx.createRadialGradient(p.px,p.py,0,p.px,p.py,r*3);grd.addColorStop(0,p.color+'aa');grd.addColorStop(1,p.color+'00');ctx.fillStyle=grd;ctx.beginPath();ctx.arc(p.px,p.py,r*3,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=10*br;ctx.beginPath();ctx.arc(p.px,p.py,r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
-      if(br>0.5&&p.oct===1){ctx.fillStyle=`rgba(255,255,255,${br})`;ctx.font="10px 'Space Mono'";ctx.fillText(p.note,p.px+r+3,p.py+4);}
+    rotVerts.forEach((rv, i) => {
+      const [px, py] = projVerts[i];
+      const depth = (rv[2] + 1) / 2;
+      const r = 3 + depth * 4;
+
+      ctx.fillStyle = `rgba(255, 204, 0, ${depth})`;
+      ctx.shadowColor = '#ffcc00';
+      ctx.shadowBlur = depth * 15;
+      ctx.beginPath();
+      ctx.arc(px, py, r, 0, Math.PI*2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
     });
+
+    // phi label
+    ctx.fillStyle = '#ffffff08';
+    ctx.font = "bold 100px 'Bebas Neue'";
+    ctx.textAlign = 'right';
+    ctx.fillText('φ', W - 20, H - 20);
+    ctx.textAlign = 'left';
+
     requestAnimationFrame(draw);
   }
+
   draw();
 })();
 
 // ============================================================
-// CANVAS 4: persistent homology / torus
+// CANVAS 3: Chromatic helix
 // ============================================================
-(function(){
-  const canvas=document.getElementById('c4');const parent=canvas.parentElement;let W,H;
-  function resize(){W=canvas.width=parent.offsetWidth;H=canvas.height=parent.offsetHeight;}
-  resize();window.addEventListener('resize',resize);
-  let t=0;
-  function generatePoints(time){const pts=[];const N=80;for(let i=0;i<N;i++){const u=(i/N)*Math.PI*2;const noise=Math.sin(time*0.5+i*0.3)*0.06;const R=0.35,r=0.15;const v=(i*7.3%(Math.PI*2));pts.push({x:(R+r*Math.cos(v))*Math.cos(u)+noise,y:(R+r*Math.cos(v))*Math.sin(u)+noise*0.5,z:r*Math.sin(v)});}return pts;}
-  function rot3(v,rx,ry){let[x,y,z]=v;let y2=y*Math.cos(rx)-z*Math.sin(rx);let z2=y*Math.sin(rx)+z*Math.cos(rx);let x3=x*Math.cos(ry)+z2*Math.sin(ry);return[x3,y2,z3];}
-  function draw(){
-    const ctx=canvas.getContext('2d');ctx.clearRect(0,0,W,H);t+=0.008;
-    const pts=generatePoints(t);const scale=Math.min(W,H)*0.38;
-    const projected=pts.map(p=>{const rv=rot3([p.x,p.y,p.z],t*0.4,t*0.7);const fov=3;const s=scale/(fov-rv[2]);return{px:W/2+rv[0]*s,py:H/2-rv[1]*s,depth:rv[2]};});
-    for(let i=0;i<projected.length;i++)for(let j=i+1;j<projected.length;j++){const d=Math.hypot(projected[i].px-projected[j].px,projected[i].py-projected[j].py);if(d<60){ctx.strokeStyle=`rgba(0,255,233,${(1-d/60)*0.25})`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(projected[i].px,projected[i].py);ctx.lineTo(projected[j].px,projected[j].py);ctx.stroke();}}
-    projected.sort((a,b)=>a.depth-b.depth);
-    projected.forEach(p=>{const br=(p.depth+1)/2;ctx.fillStyle=`rgba(0,255,233,${0.4+br*0.6})`;ctx.shadowColor='#00ffe9';ctx.shadowBlur=br*8;ctx.beginPath();ctx.arc(p.px,p.py,3+br*2,0,Math.PI*2);ctx.fill();});
-    ctx.shadowBlur=0;
-    ctx.fillStyle='rgba(0,255,233,0.4)';ctx.font="11px 'Space Mono'";
-    ctx.fillText('β₁ = 2  (torus has 2 independent loops)',20,H-40);
-    ctx.fillText('β₀ = 1  (one connected component)',20,H-20);
-    requestAnimationFrame(draw);
-  }
-  draw();
-})();
+(function() {
+  const canvas = document.getElementById('c3');
+  const parent = canvas.parentElement;
+  let W, H;
 
-// ============================================================
-// CANVAS 5: SAE sparse activations
-// ============================================================
-(function(){
-  const canvas=document.getElementById('c5');const parent=canvas.parentElement;let W,H;
-  function resize(){W=canvas.width=parent.offsetWidth;H=canvas.height=parent.offsetHeight;}
-  resize();window.addEventListener('resize',resize);
-  let t=0;
-  const features=[];const N=60;
-  function sr(s){const x=Math.sin(s)*10000;return x-Math.floor(x);}
-  for(let i=0;i<N;i++)features.push({x:sr(i*7+1),y:sr(i*13+2),category:Math.floor(sr(i*3+5)*6),phase:sr(i*5+3)*Math.PI*2});
-  const catColors=['#00ffe9','#ff2d55','#00ffe9','#ffe900','#ff6b00','#e900ff'];
-  const catNames=['syntax','semantics','world-model','relations','style','meta'];
-  function draw(){
-    const ctx=canvas.getContext('2d');ctx.clearRect(0,0,W,H);t+=0.015;
-    const active=features.filter(f=>Math.sin(t+f.phase)>0.6);
-    const pad=40;
-    features.forEach(f=>{
-      const px=pad+f.x*(W-pad*2),py=pad+f.y*(H-pad*2);const isAct=active.includes(f);const color=catColors[f.category];
-      if(isAct){
-        const grd=ctx.createRadialGradient(px,py,0,px,py,25);grd.addColorStop(0,color+'80');grd.addColorStop(1,color+'00');ctx.fillStyle=grd;ctx.beginPath();ctx.arc(px,py,25,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=15;ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
-        active.forEach(f2=>{if(f2===f)return;const px2=pad+f2.x*(W-pad*2),py2=pad+f2.y*(H-pad*2);const d=Math.hypot(px-px2,py-py2);if(d<200){ctx.strokeStyle=`rgba(255,255,255,${0.06*(1-d/200)})`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px2,py2);ctx.stroke();}});
-      } else {ctx.fillStyle=color+'25';ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fill();}
+  function resize() {
+    W = canvas.width = parent.offsetWidth;
+    H = canvas.height = parent.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const notes = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const colors = [
+    '#ff3333','#ff6633','#ffaa00','#ffdd00','#aaff00','#33ff88',
+    '#00ffcc','#0088ff','#3344ff','#8833ff','#dd00ff','#ff0088'
+  ];
+
+  let t = 0;
+
+  function rot3(v, rx, ry) {
+    let [x, y, z] = v;
+    let y2 = y * Math.cos(rx) - z * Math.sin(rx);
+    let z2 = y * Math.sin(rx) + z * Math.cos(rx);
+    let x3 = x * Math.cos(ry) + z2 * Math.sin(ry);
+    let z3 = -x * Math.sin(ry) + z2 * Math.cos(ry);
+    return [x3, y2, z3];
+  }
+
+  function draw() {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    t += 0.01;
+
+    const octaves = 3;
+    const points = [];
+
+    for (let oct = 0; oct < octaves; oct++) {
+      for (let n = 0; n < 12; n++) {
+        const idx = oct * 12 + n;
+        const total = octaves * 12;
+        const angle = (n / 12) * Math.PI * 2;
+        const yCen = ((idx / total) - 0.5) * 2;
+        const radius = 0.5;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        points.push({x, y: yCen, z, note: notes[n], oct, color: colors[n]});
+      }
+    }
+
+    const scale = Math.min(W, H) * 0.32;
+    const projected = points.map(p => {
+      const rv = rot3([p.x, p.y, p.z], t * 0.3, t);
+      const fov = 3;
+      const s = scale / (fov - rv[2]);
+      return {
+        px: W/2 + rv[0] * s,
+        py: H/2 - rv[1] * s,
+        depth: rv[2],
+        note: p.note,
+        oct: p.oct,
+        color: p.color,
+        origX: rv[0], origY: rv[1], origZ: rv[2]
+      };
     });
-    catColors.forEach((c,i)=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(16,20+i*22,5,0,Math.PI*2);ctx.fill();ctx.fillStyle=c+'aa';ctx.font="10px 'Space Mono'";ctx.fillText(catNames[i],30,24+i*22);});
-    ctx.fillStyle='rgba(255,255,255,0.2)';ctx.font="11px 'Space Mono'";ctx.fillText(`active: ${active.length} / ${N}  (${((active.length/N)*100).toFixed(0)}% sparse)`,16,H-16);
+
+    projected.sort((a,b) => a.depth - b.depth);
+
+    // draw helix lines
+    for (let i = 0; i < projected.length - 1; i++) {
+      const a = projected[i], b = projected[i+1];
+      // only connect same path order (adjacent in original array)
+      // just connect consecutive
+    }
+
+    // draw connecting line through helix
+    const sorted_orig = points.map((p, i) => ({...p, proj: projected.find(pr => pr.note === p.note && pr.oct === p.oct)}));
+
+    // draw the helix curve
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = points[i];
+      const b = points[i+1];
+      const ra = rot3([a.x, a.y, a.z], t*0.3, t);
+      const rb = rot3([b.x, b.y, b.z], t*0.3, t);
+      const fov = 3;
+      const sa = scale / (fov - ra[2]);
+      const sb = scale / (fov - rb[2]);
+      const pax = W/2 + ra[0]*sa, pay = H/2 - ra[1]*sa;
+      const pbx = W/2 + rb[0]*sb, pby = H/2 - rb[1]*sb;
+
+      const brightness = (ra[2] + rb[2]) / 2;
+      const alpha = (brightness + 1) / 2 * 0.5;
+      ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pax, pay);
+      ctx.lineTo(pbx, pby);
+      ctx.stroke();
+    }
+
+    projected.forEach(p => {
+      const brightness = (p.depth + 1) / 2;
+      const r = 5 + brightness * 5;
+
+      const grd = ctx.createRadialGradient(p.px, p.py, 0, p.px, p.py, r * 3);
+      grd.addColorStop(0, p.color + 'aa');
+      grd.addColorStop(1, p.color + '00');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(p.px, p.py, r * 3, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 10 * brightness;
+      ctx.beginPath();
+      ctx.arc(p.px, p.py, r, 0, Math.PI*2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      if (brightness > 0.5 && p.oct === 1) {
+        ctx.fillStyle = `rgba(255,255,255,${brightness})`;
+        ctx.font = "10px 'Space Mono'";
+        ctx.fillText(p.note, p.px + r + 3, p.py + 4);
+      }
+    });
+
     requestAnimationFrame(draw);
   }
+
   draw();
 })();
 
-const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});},{threshold:0.1});
-document.querySelectorAll('.section').forEach(s=>observer.observe(s));
+// ============================================================
+// CANVAS 4: Persistent homology / topology viz
+// ============================================================
+(function() {
+  const canvas = document.getElementById('c4');
+  const parent = canvas.parentElement;
+  let W, H;
+
+  function resize() {
+    W = canvas.width = parent.offsetWidth;
+    H = canvas.height = parent.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let t = 0;
+
+  // Generate a point cloud with interesting topology (torus-like cluster)
+  function generatePoints(time) {
+    const pts = [];
+    const N = 80;
+    for (let i = 0; i < N; i++) {
+      const u = (i / N) * Math.PI * 2;
+      const noise = Math.sin(time * 0.5 + i * 0.3) * 0.06;
+      const R = 0.35, r = 0.15;
+      const v = (i * 7.3 % (Math.PI * 2));
+      const x = (R + r * Math.cos(v)) * Math.cos(u) + noise;
+      const y = (R + r * Math.cos(v)) * Math.sin(u) + noise * 0.5;
+      const z = r * Math.sin(v);
+      pts.push({x, y, z});
+    }
+    return pts;
+  }
+
+  function rot3(v, rx, ry) {
+    let [x, y, z] = v;
+    let y2 = y * Math.cos(rx) - z * Math.sin(rx);
+    let z2 = y * Math.sin(rx) + z * Math.cos(rx);
+    let x3 = x * Math.cos(ry) + z2 * Math.sin(ry);
+    let z3 = -x * Math.sin(ry) + z2 * Math.cos(ry);
+    return [x3, y2, z3];
+  }
+
+  function draw() {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    t += 0.008;
+
+    const pts = generatePoints(t);
+    const scale = Math.min(W, H) * 0.38;
+
+    const projected = pts.map(p => {
+      const rv = rot3([p.x, p.y, p.z], t * 0.4, t * 0.7);
+      const fov = 3;
+      const s = scale / (fov - rv[2]);
+      return {
+        px: W/2 + rv[0]*s,
+        py: H/2 - rv[1]*s,
+        depth: rv[2],
+        z: rv[2]
+      };
+    });
+
+    // draw connections within threshold
+    const threshold = 60;
+    for (let i = 0; i < projected.length; i++) {
+      for (let j = i+1; j < projected.length; j++) {
+        const d = Math.hypot(projected[i].px - projected[j].px, projected[i].py - projected[j].py);
+        if (d < threshold) {
+          const alpha = (1 - d/threshold) * 0.3;
+          ctx.strokeStyle = `rgba(51, 102, 255, ${alpha})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(projected[i].px, projected[i].py);
+          ctx.lineTo(projected[j].px, projected[j].py);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // draw points
+    projected.sort((a,b) => a.depth - b.depth);
+    projected.forEach(p => {
+      const brightness = (p.depth + 1) / 2;
+      ctx.fillStyle = `rgba(51, 102, 255, ${0.4 + brightness * 0.6})`;
+      ctx.shadowColor = '#3366ff';
+      ctx.shadowBlur = brightness * 8;
+      ctx.beginPath();
+      ctx.arc(p.px, p.py, 3 + brightness * 2, 0, Math.PI*2);
+      ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+
+    // Labels
+    ctx.fillStyle = '#3366ff66';
+    ctx.font = "11px 'Space Mono'";
+    ctx.fillText('β₁ = 2  (torus has 2 independent loops)', 20, H - 40);
+    ctx.fillText('β₀ = 1  (one connected component)', 20, H - 20);
+
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+})();
+
+// ============================================================
+// CANVAS 5: SAE sparse activation
+// ============================================================
+(function() {
+  const canvas = document.getElementById('c5');
+  const parent = canvas.parentElement;
+  let W, H;
+
+  function resize() {
+    W = canvas.width = parent.offsetWidth;
+    H = canvas.height = parent.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let t = 0;
+  const features = [];
+  const N_FEATURES = 60;
+  const seed = 42;
+
+  function seededRand(s) {
+    const x = Math.sin(s) * 10000;
+    return x - Math.floor(x);
+  }
+
+  for (let i = 0; i < N_FEATURES; i++) {
+    features.push({
+      x: seededRand(i * 7 + 1),
+      y: seededRand(i * 13 + 2),
+      label: `f${i.toString().padStart(3,'0')}`,
+      category: Math.floor(seededRand(i * 3 + 5) * 6),
+      phase: seededRand(i * 5 + 3) * Math.PI * 2,
+    });
+  }
+
+  const catColors = ['#00ff88','#ff3366','#3366ff','#ffcc00','#ff6600','#cc00ff'];
+  const catNames = ['syntax','semantics','world-model','relations','style','meta'];
+
+  function draw() {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    t += 0.015;
+
+    // concept token being encoded (simulated)
+    const activeFeatures = features.filter((f,i) => {
+      const wave = Math.sin(t + f.phase);
+      return wave > 0.6;
+    });
+
+    const pad = 40;
+
+    features.forEach((f, i) => {
+      const px = pad + f.x * (W - pad*2);
+      const py = pad + f.y * (H - pad*2);
+      const isActive = activeFeatures.includes(f);
+      const color = catColors[f.category];
+
+      if (isActive) {
+        // glow
+        const grd = ctx.createRadialGradient(px, py, 0, px, py, 25);
+        grd.addColorStop(0, color + '80');
+        grd.addColorStop(1, color + '00');
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(px, py, 25, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, Math.PI*2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // draw connections between co-active features
+        activeFeatures.forEach(f2 => {
+          if (f2 === f) return;
+          const px2 = pad + f2.x * (W - pad*2);
+          const py2 = pad + f2.y * (H - pad*2);
+          const d = Math.hypot(px-px2, py-py2);
+          if (d < 200) {
+            ctx.strokeStyle = `rgba(255,255,255,${0.08 * (1 - d/200)})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px2, py2);
+            ctx.stroke();
+          }
+        });
+      } else {
+        ctx.fillStyle = color + '25';
+        ctx.beginPath();
+        ctx.arc(px, py, 3, 0, Math.PI*2);
+        ctx.fill();
+      }
+    });
+
+    // legend
+    catColors.forEach((c, i) => {
+      const lx = 16, ly = 20 + i * 22;
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.arc(lx, ly, 5, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = c + 'aa';
+      ctx.font = "10px 'Space Mono'";
+      ctx.fillText(catNames[i], lx + 12, ly + 4);
+    });
+
+    const actCount = activeFeatures.length;
+    ctx.fillStyle = '#ffffff30';
+    ctx.font = "11px 'Space Mono'";
+    ctx.fillText(`active: ${actCount} / ${N_FEATURES}  (${((actCount/N_FEATURES)*100).toFixed(0)}% sparse)`, 16, H - 16);
+
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+})();
+
+// ============================================================
+// Intersection Observer for section fade-in
+// ============================================================
+const sections = document.querySelectorAll('.section');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) e.target.classList.add('visible');
+  });
+}, {threshold: 0.1});
+
+sections.forEach(s => observer.observe(s));
 </script>
 </body>
 </html>
