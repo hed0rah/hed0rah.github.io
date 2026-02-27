@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Engineering</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #0a0a0a;
+  --surface:   #111111;
+  --surface2:  #0d0d0d;
+  --border:    #1e1e1e;
+  --border2:   #2a2a2a;
+  --cyan:      #00ffe9;
+  --yellow:    #ffe900;
+  --magenta:   #e900ff;
+  --red:       #ff2d55;
+  --green:     #39ff14;
+  --orange:    #ff6b00;
+  --dim:       #3a3a3a;
+  --text:      #cccccc;
+  --bright:    #ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;font-size:11px;line-height:1.65;padding:36px 30px;max-width:980px;margin:0 auto;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:999;}
+
+.masthead{border-top:3px solid var(--orange);padding:14px 0 10px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border);}
+.masthead h1{font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:4px;color:var(--bright);line-height:1;}
+.masthead h1 em{color:var(--orange);font-style:normal;}
+.masthead-right{text-align:right;font-size:10px;color:#444;letter-spacing:2px;text-transform:uppercase;}
+.masthead-right strong{display:block;color:var(--cyan);font-size:11px;margin-bottom:2px;}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:2px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-bottom:2px;}
+.gfull{margin-bottom:2px;}
+
+.panel{background:var(--surface);border:1px solid var(--border);padding:18px;}
+.plabel{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:3px;color:#383838;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.ptitle{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--bright);margin-bottom:8px;line-height:1;}
+.ptitle.cy{color:var(--cyan);}.ptitle.rd{color:var(--red);}.ptitle.yl{color:var(--yellow);}.ptitle.or{color:var(--orange);}.ptitle.gr{color:var(--green);}
+.bar{width:28px;height:2px;margin-bottom:10px;background:var(--orange);}
+.bar.cy{background:var(--cyan);}.bar.rd{background:var(--red);}.bar.yl{background:var(--yellow);}.bar.gr{background:var(--green);}
+
+p{font-size:11px;color:var(--text);margin-bottom:7px;line-height:1.65;}
+.hl{color:var(--cyan);font-weight:700;}.hl.rd{color:var(--red);}.hl.yl{color:var(--yellow);}.hl.or{color:var(--orange);}.hl.gr{color:var(--green);}
+
+.math-block{background:#060606;border:1px solid var(--border);border-left:3px solid var(--orange);padding:12px 14px;margin:10px 0;font-size:11px;}
+.math-block.cy{border-left-color:var(--cyan);}.math-block.rd{border-left-color:var(--red);}
+.eq{color:var(--orange);font-style:italic;}
+
+.org-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #111;font-size:10px;}
+.org-row:last-child{border-bottom:none;}
+.org-row-label{color:#333;text-transform:uppercase;letter-spacing:1px;font-size:9px;}
+.org-row-val{font-weight:700;}
+
+.tag{display:inline-block;border:1px solid var(--border);padding:1px 6px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#444;margin:2px 2px 2px 0;}
+.tag.cy{border-color:var(--cyan);color:var(--cyan);}.tag.rd{border-color:var(--red);color:var(--red);}.tag.yl{border-color:var(--yellow);color:var(--yellow);}.tag.or{border-color:var(--orange);color:var(--orange);}
+
+.timeline-item{display:flex;gap:12px;margin-bottom:12px;padding-left:14px;position:relative;}
+.timeline-item::before{content:'';position:absolute;left:0;top:5px;width:6px;height:6px;border:1px solid var(--orange);background:var(--bg);}
+.tl-year{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;color:var(--orange);flex-shrink:0;width:80px;}
+.tl-content{font-size:10px;color:#555;}
+.tl-content strong{color:var(--bright);display:block;margin-bottom:1px;}
+
+.footer{border-top:1px solid var(--border);margin-top:14px;padding-top:10px;display:flex;justify-content:space-between;font-size:9px;color:#2a2a2a;letter-spacing:1px;}
+
+canvas{display:block;}
+@media(max-width:700px){.g2,.g3{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>PROMPT<br><em>ENGINEERING</em></h1>
+  <div class="masthead-right">
+    <strong>ADVANCED NATURAL LANGUAGE INTERACTION</strong>
+    ASKING NICELY // SAYING PLEASE // TRYING AGAIN<br>
+    LINKEDIN 2023-PRESENT // PEER-REVIEWED: NO
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">00 // Field Overview</div>
+    <div class="ptitle or">THE ART AND SCIENCE OF TYPING WORDS INTO A BOX</div>
+    <div class="bar"></div>
+    <div style="display:grid;grid-template-columns:3fr 1fr;gap:20px;">
+      <div>
+        <p>Prompt engineering is the emerging discipline of communicating with large language models using the written word — a technology humans have been using for roughly <span class="hl yl">5,400 years</span>. Practitioners leverage deep expertise in syntax, vocabulary, and the advanced technique of explaining what you want clearly.</p>
+        <p>The field emerged around 2022 when it was discovered that <span class="hl">adding the phrase "think step by step"</span> to a query improved model outputs, launching a thousand LinkedIn posts, twelve Udemy courses, and at least one $335,000/yr job listing at a Fortune 500 company that was quietly removed six months later.</p>
+        <p>Prompt engineering sits at the intersection of <span class="hl or">human-computer interaction</span>, <span class="hl">linguistics</span>, and <span class="hl rd">vibes</span>. It requires no mathematics, no programming background, and no formal training — a fact that its practitioners have complicated feelings about.</p>
+      </div>
+      <div style="display:grid;gap:4px;">
+        <div style="background:#060606;border:1px solid var(--border);padding:12px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--orange);line-height:1;">O(1)</div>
+          <div style="font-size:9px;color:#333;letter-spacing:1px;text-transform:uppercase;margin-top:4px;">learning<br>complexity</div>
+        </div>
+        <div style="background:#060606;border:1px solid var(--border);padding:12px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--yellow);line-height:1;">∞</div>
+          <div style="font-size:9px;color:#333;letter-spacing:1px;text-transform:uppercase;margin-top:4px;">LinkedIn<br>posts</div>
+        </div>
+        <div style="background:#060606;border:1px solid var(--border);padding:12px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--red);line-height:1;">~0</div>
+          <div style="font-size:9px;color:#333;letter-spacing:1px;text-transform:uppercase;margin-top:4px;">patents<br>filed</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- THEORETICAL FOUNDATIONS -->
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">01 // Theoretical Foundations</div>
+    <div class="ptitle">THE CORE ALGORITHM</div>
+    <div class="bar cy"></div>
+    <p>The fundamental prompt engineering loop, formalized:</p>
+    <div class="math-block cy">
+      <span class="eq" style="color:var(--cyan);">1. Type thing you want</span><br>
+      <span class="eq" style="color:var(--cyan);">2. Read output</span><br>
+      <span class="eq" style="color:var(--cyan);">3. If bad: goto 1 but differently</span><br>
+      <span class="eq" style="color:var(--cyan);">4. If good: screenshot for Twitter</span><br>
+      <span style="color:#444;font-size:10px;margin-top:6px;display:block;">Time complexity: O(frustration)<br>Space complexity: O(chat history)</span>
+    </div>
+    <p>Advanced practitioners augment this base algorithm with techniques including: <span class="hl">adding "please"</span>, <span class="hl or">threatening the model</span> ("your job depends on this"), <span class="hl yl">flattery</span> ("you are an expert world-class genius at..."), and the nuclear option: <span class="hl rd">starting a new chat</span>.</p>
+    <p style="font-size:10px;color:#555;">Note: research suggests that threatening the model does slightly improve outputs. Nobody has a satisfying explanation for this.</p>
+    <div style="margin-top:6px;"><span class="tag cy">please</span><span class="tag or">intimidation</span><span class="tag yl">flattery</span><span class="tag rd">new chat</span></div>
+  </div>
+  <div class="panel">
+    <div class="plabel">02 // Key Techniques</div>
+    <div class="ptitle or">THE CANONICAL METHODS</div>
+    <div class="bar"></div>
+    <div class="org-row"><span class="org-row-label">Zero-shot</span><span class="org-row-val">just asking</span></div>
+    <div class="org-row"><span class="org-row-label">Few-shot</span><span class="org-row-val">asking with examples</span></div>
+    <div class="org-row"><span class="org-row-label">Chain-of-thought</span><span class="org-row-val" style="color:var(--yellow);">"think step by step"</span></div>
+    <div class="org-row"><span class="org-row-label">Role prompting</span><span class="org-row-val">"you are an expert..."</span></div>
+    <div class="org-row"><span class="org-row-label">Emotional appeal</span><span class="org-row-val" style="color:var(--orange);">"this is very important"</span></div>
+    <div class="org-row"><span class="org-row-label">Self-consistency</span><span class="org-row-val">ask multiple times, average</span></div>
+    <div class="org-row"><span class="org-row-label">Tree of thought</span><span class="org-row-val">chain-of-thought but a tree</span></div>
+    <div class="org-row"><span class="org-row-label">DAN / jailbreak</span><span class="org-row-val" style="color:var(--red);">hoping it forgot its values</span></div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">Chain-of-thought is genuinely useful and has solid empirical backing. The others exist on a spectrum from "somewhat useful in specific contexts" to "cargo cult ritual that someone got a paper accepted for."</p>
+  </div>
+</div>
+
+<!-- INTERACTIVE: PROMPT QUALITY ANALYZER -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">03 // Interactive // Prompt Quality Analyzer</div>
+    <div class="ptitle or">ENTERPRISE-GRADE PROMPT EVALUATION ENGINE</div>
+    <div class="bar"></div>
+    <p>Enter a prompt below. Our proprietary <span class="hl or">PromptScore&trade;</span> algorithm — trained on thousands of LinkedIn posts and one academic paper — will evaluate its quality across six critical dimensions.</p>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin:12px 0 8px;">
+      <textarea id="promptInput" placeholder="Enter your prompt here..." style="background:#060606;border:1px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:11px;padding:10px;resize:vertical;min-height:80px;outline:none;line-height:1.65;"></textarea>
+      <button id="analyzeBtn" style="align-self:start;background:var(--orange);color:var(--bg);border-color:var(--orange);font-weight:700;">ANALYZE</button>
+    </div>
+    <canvas id="radarCanvas" style="width:100%;height:280px;background:#060606;border:1px solid var(--border);display:none;"></canvas>
+    <div id="scoreOutput" style="display:none;margin-top:2px;"></div>
+  </div>
+</div>
+
+<!-- CAREER + COMPENSATION -->
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">04 // Career Trajectory</div>
+    <div class="ptitle">THE PROFESSIONAL LADDER</div>
+    <div class="bar yl"></div>
+    <div class="timeline-item">
+      <div class="tl-year">Day 1</div>
+      <div class="tl-content"><strong>Prompt Engineer I</strong>Discovered ChatGPT. Asked it to write an email. It was fine.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-year">Week 1</div>
+      <div class="tl-content"><strong>Prompt Engineer II</strong>Added "act as a senior developer" to the prompt. Updated LinkedIn headline.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-year">Month 1</div>
+      <div class="tl-content"><strong>Sr. Prompt Engineer</strong>Wrote a Twitter thread: "10 ChatGPT prompts that will change your life." 847 retweets.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-year">Month 3</div>
+      <div class="tl-content"><strong>AI Whisperer</strong>Charging $500/hr consulting. Clients are other people who also just figured out ChatGPT.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-year">Month 6</div>
+      <div class="tl-content"><strong>Head of AI</strong>Started a course. "No coding required." Has 12,000 students. The model was updated and half the prompts no longer work.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-year">2025</div>
+      <div class="tl-content"><strong>Retraining</strong>Models got better at understanding plain language. Elaborate prompt rituals quietly deprecated. LinkedIn headline now says "AI Strategy."</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">05 // The Literature</div>
+    <div class="ptitle rd">PEER-REVIEWED CONTRIBUTIONS</div>
+    <div class="bar rd"></div>
+    <p>Prompt engineering has produced a genuine body of academic literature, which exists on a spectrum:</p>
+    <div class="math-block rd">
+      <span class="eq" style="color:var(--red);">"Large Language Models are Zero-Shot</span><br>
+      <span class="eq" style="color:var(--red);">&nbsp;Reasoners"</span><br>
+      <span style="color:#555;font-size:10px;">— Kojima et al. 2022. "think step by step."<br>This one is real and important. 5000+ citations.</span>
+    </div>
+    <div class="math-block" style="border-left-color:var(--dim);">
+      <span class="eq" style="color:var(--dim);">"Unleashing the Emergent Cognitive</span><br>
+      <span class="eq" style="color:var(--dim);">&nbsp;Synergies of GPT-4..."</span><br>
+      <span style="color:#444;font-size:10px;">— Various preprints. "We added the word 'carefully'<br>to the system prompt and accuracy improved 3%."</span>
+    </div>
+    <div class="math-block" style="border-left-color:var(--orange);">
+      <span class="eq" style="color:var(--orange);">"Emotional Stimuli Improve LLM</span><br>
+      <span class="eq" style="color:var(--orange);">&nbsp;Performance"</span><br>
+      <span style="color:#555;font-size:10px;">— Cheng et al. 2023. "This is very important to my career."<br>This one is also real. Nobody is comfortable about it.</span>
+    </div>
+    <p style="margin-top:8px;font-size:10px;color:#555;">The field is genuinely interesting as behavioral science — these models have emergent response patterns that reward certain linguistic framings. It's just not "engineering" in any meaningful sense of the word.</p>
+    <div style="margin-top:6px;"><span class="tag rd">real (CoT)</span><span class="tag or">weird but real (emotions)</span><span class="tag">cope</span></div>
+  </div>
+</div>
+
+<!-- THE HONEST SECTION -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">06 // In Fairness</div>
+    <div class="ptitle cy">THE STUFF THAT ACTUALLY WORKS</div>
+    <div class="bar cy"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-top:4px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);padding:14px;">
+        <div style="font-size:9px;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">System Prompts</div>
+        <p style="font-size:10px;color:#555;margin:0;">Establishing context, persona, output format, and constraints at the system level genuinely shapes model behavior in useful ways. This is closer to software configuration than magic.</p>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);padding:14px;">
+        <div style="font-size:9px;color:var(--yellow);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Few-Shot Examples</div>
+        <p style="font-size:10px;color:#555;margin:0;">Showing the model examples of what you want — especially for format, tone, and domain-specific output — works reliably. This is just in-context learning. Solid technique.</p>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);padding:14px;">
+        <div style="font-size:9px;color:var(--green);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Structured Output</div>
+        <p style="font-size:10px;color:#555;margin:0;">Asking for JSON, XML, specific schema, step-by-step breakdown — constraining the output format improves reliability for downstream parsing. Good practice for production systems.</p>
+      </div>
+    </div>
+    <p style="margin-top:12px;font-size:10px;color:#555;">The irony is that as models improve at understanding natural language intent, most elaborate prompting rituals become unnecessary. The best prompts are increasingly just... clear descriptions of what you want. Which was always the answer.</p>
+  </div>
+</div>
+
+<div class="footer">
+  <span>KOJIMA ET AL. 2022 // BROWN ET AL. 2020 // CHENG ET AL. 2023 // LINKEDIN THOUGHT LEADERS 2023-PRESENT</span>
+  <span>BRUTALIST TERMINAL v2 // PROMPT ENGINEERING</span>
+</div>
+
+<script>
+// ================================================================
+// PROMPT QUALITY ANALYZER (deliberately absurd scoring)
+// ================================================================
+(function(){
+  const btn = document.getElementById('analyzeBtn');
+  const input = document.getElementById('promptInput');
+  const canvas = document.getElementById('radarCanvas');
+  const output = document.getElementById('scoreOutput');
+  const ctx = canvas.getContext('2d');
+
+  const dimensions = [
+    'Buzzword Density',
+    'Please Count',
+    'Flattery Index',
+    'Specificity',
+    'Vibes',
+    'Role Assignment'
+  ];
+
+  const dimensionColors = [
+    '#ff6b00','#ffe900','#e900ff','#00ffe9','#39ff14','#ff2d55'
+  ];
+
+  function scorePrompt(text) {
+    const t = text.toLowerCase();
+    const words = t.split(/\s+/).filter(Boolean);
+    const wc = words.length;
+    if(wc === 0) return null;
+
+    const buzzwords = ['leverage','synergy','optimize','holistic','paradigm','innovative',
+      'cutting-edge','world-class','best-in-class','comprehensive','robust','scalable',
+      'transformative','disruptive','bleeding-edge','state-of-the-art','revolutionary'];
+    const roleWords = ['act as','you are a','pretend you','imagine you','as an expert',
+      'as a senior','as a world-class','as a professional','as a brilliant'];
+    const flatterWords = ['brilliant','genius','expert','best','incredible','amazing',
+      'exceptional','outstanding','superior','elite','master'];
+
+    const buzzCount = buzzwords.filter(b => t.includes(b)).length;
+    const pleaseCount = (t.match(/\bplease\b/g)||[]).length;
+    const roleCount = roleWords.filter(r => t.includes(r)).length;
+    const flatterCount = flatterWords.filter(f => t.includes(f)).length;
+    const hasChainOfThought = t.includes('step by step') || t.includes('think through') || t.includes('let\'s think');
+    const questionMarks = (text.match(/\?/g)||[]).length;
+    const exclamations = (text.match(/!/g)||[]).length;
+
+    // Deliberately absurd scoring
+    return [
+      Math.min(1, (buzzCount * 0.3) + (exclamations * 0.1)),       // buzzword density
+      Math.min(1, pleaseCount * 0.6 + (t.includes('thank') ? 0.4 : 0)), // please count
+      Math.min(1, flatterCount * 0.25 + (roleCount > 0 ? 0.3 : 0)),  // flattery
+      Math.min(1, Math.max(0.1, (wc/80) * (questionMarks > 0 ? 1.2 : 0.8) * (hasChainOfThought ? 1.4 : 1.0))), // specificity
+      Math.random() * 0.4 + 0.3 + (exclamations > 0 ? 0.2 : 0),    // vibes (random)
+      Math.min(1, roleCount * 0.55 + (t.includes('you are') ? 0.3 : 0)), // role assignment
+    ];
+  }
+
+  function getVerdict(scores) {
+    const avg = scores.reduce((a,b)=>a+b,0)/scores.length;
+    const flatter = scores[2];
+    const role = scores[5];
+    const buzz = scores[0];
+    const please = scores[1];
+
+    if(avg < 0.15) return { text: "MINIMAL PROMPT DETECTED. Just a normal person asking for a thing. Deplorable. Where is the synergy? Where are the role assignments? Your prompt has no LinkedIn energy whatsoever. It will probably work fine.", color: '#39ff14' };
+    if(please > 0.7) return { text: "EXCESSIVE POLITENESS DETECTED. You said please multiple times. The model does not have feelings. It also does not have them when you say please twice. Somehow this might actually help a little. Nobody knows why.", color: '#ffe900' };
+    if(role > 0.6 && flatter > 0.5) return { text: "MAXIMUM ROLE FLATTERY ACHIEVED. 'You are a world-class expert genius master.' The model has been sufficiently butter'd up. It will now produce the same output it would have produced anyway, but you feel better about it.", color: '#e900ff' };
+    if(buzz > 0.6) return { text: "HIGH BUZZWORD CONCENTRATION DETECTED. Your prompt contains more buzzwords than actual instructions. Perfect for enterprise deployments where nobody will read the output anyway.", color: '#ff6b00' };
+    if(avg > 0.6) return { text: "ENTERPRISE GRADE PROMPT. This prompt is ready for a deck. It has role assignment, flattery, buzzwords, and several pleases. It could have been 8 words. It is 47. Congratulations.", color: '#ff2d55' };
+    return { text: "ADEQUATE PROMPT. Contains a reasonable mix of actual instruction and unnecessary ritual. The model will parse the intent and ignore the rest. Viable.", color: '#00ffe9' };
+  }
+
+  btn.addEventListener('click', () => {
+    const scores = scorePrompt(input.value);
+    if(!scores) return;
+
+    canvas.style.display = 'block';
+    output.style.display = 'block';
+
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = 280 * dpr;
+    ctx.scale(dpr, dpr);
+    const W = rect.width, H = 280;
+    ctx.fillStyle = '#060606'; ctx.fillRect(0,0,W,H);
+
+    const cx = W/2, cy = H/2 + 10;
+    const maxR = Math.min(W,H)*0.35;
+    const N = dimensions.length;
+
+    // grid rings
+    [0.25,0.5,0.75,1.0].forEach(r => {
+      ctx.strokeStyle = `rgba(255,255,255,${r===1?0.08:0.04})`; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for(let i=0;i<N;i++){
+        const angle = (i/N)*Math.PI*2 - Math.PI/2;
+        const x = cx + Math.cos(angle)*maxR*r;
+        const y = cy + Math.sin(angle)*maxR*r;
+        i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+      }
+      ctx.closePath(); ctx.stroke();
+    });
+
+    // spoke lines
+    for(let i=0;i<N;i++){
+      const angle = (i/N)*Math.PI*2 - Math.PI/2;
+      ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx,cy);
+      ctx.lineTo(cx+Math.cos(angle)*maxR, cy+Math.sin(angle)*maxR);
+      ctx.stroke();
+    }
+
+    // data polygon
+    ctx.beginPath();
+    scores.forEach((s,i) => {
+      const angle = (i/N)*Math.PI*2 - Math.PI/2;
+      const x = cx + Math.cos(angle)*maxR*s;
+      const y = cy + Math.sin(angle)*maxR*s;
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,107,0,0.12)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(255,107,0,0.7)'; ctx.lineWidth = 2; ctx.stroke();
+
+    // data points + labels
+    scores.forEach((s,i) => {
+      const angle = (i/N)*Math.PI*2 - Math.PI/2;
+      const x = cx + Math.cos(angle)*maxR*s;
+      const y = cy + Math.sin(angle)*maxR*s;
+      const lx = cx + Math.cos(angle)*(maxR+24);
+      const ly = cy + Math.sin(angle)*(maxR+24);
+
+      ctx.fillStyle = dimensionColors[i];
+      ctx.shadowColor = dimensionColors[i]; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+
+      ctx.fillStyle = '#444'; ctx.font = "9px 'Space Mono'";
+      ctx.textAlign = Math.cos(angle) > 0.1 ? 'left' : Math.cos(angle) < -0.1 ? 'right' : 'center';
+      ctx.fillText(dimensions[i], lx, ly + (Math.sin(angle) > 0 ? 4 : -4));
+      ctx.fillStyle = dimensionColors[i];
+      ctx.fillText((s*100).toFixed(0)+'%', lx, ly + (Math.sin(angle) > 0 ? 14 : -14));
+    });
+
+    const verdict = getVerdict(scores);
+    output.innerHTML = `<div style="background:#060606;border:1px solid var(--border);border-left:3px solid ${verdict.color};padding:12px 14px;font-size:10px;color:${verdict.color};line-height:1.7;">${verdict.text}</div>`;
+  });
+
+  // allow Enter in textarea with shift
+  input.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); btn.click(); }});
+})();
+</script>
+</body>
+</html>
