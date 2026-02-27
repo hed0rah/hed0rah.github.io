@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML EXPLAINERS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0A0A;
+    --cyan: #00FFE9;
+    --red: #FF2233;
+    --dim: #1a1a1a;
+    --border: #222;
+    --text: #c8c8c8;
+    --mono: 'Space Mono', monospace;
+    --display: 'Bebas Neue', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 48px 64px 32px;
+    position: relative;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: var(--cyan);
+    opacity: 0.3;
+  }
+
+  .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    opacity: 0.7;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(56px, 8vw, 120px);
+    color: #fff;
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+  }
+
+  h1 span {
+    color: var(--cyan);
+  }
+
+  .subtitle {
+    margin-top: 16px;
+    color: #555;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  .count {
+    display: inline-block;
+    background: var(--red);
+    color: #fff;
+    font-family: var(--display);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 2px 8px;
+    margin-left: 12px;
+    vertical-align: middle;
+  }
+
+  main {
+    padding: 48px 64px;
+    max-width: 1200px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .card {
+    background: var(--bg);
+    padding: 24px 28px;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: background 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--cyan);
+    transform: scaleY(0);
+    transition: transform 0.15s ease;
+    transform-origin: bottom;
+  }
+
+  .card:hover {
+    background: var(--dim);
+  }
+
+  .card:hover::before {
+    transform: scaleY(1);
+  }
+
+  .card:hover .card-title {
+    color: var(--cyan);
+  }
+
+  .card-index {
+    font-size: 10px;
+    color: #333;
+    letter-spacing: 0.15em;
+    font-family: var(--mono);
+  }
+
+  .card-title {
+    font-family: var(--display);
+    font-size: 22px;
+    color: #eee;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    transition: color 0.1s;
+  }
+
+  .card-tag {
+    font-size: 10px;
+    color: #444;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .card-arrow {
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #222;
+    font-size: 18px;
+    transition: color 0.1s, right 0.15s;
+  }
+
+  .card:hover .card-arrow {
+    color: var(--cyan);
+    right: 18px;
+  }
+
+  footer {
+    padding: 32px 64px;
+    border-top: 1px solid var(--border);
+    color: #2a2a2a;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 600px) {
+    header, main, footer { padding-left: 24px; padding-right: 24px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="label">// neural architecture explainers</div>
+  <h1>ML <span>INDEX</span></h1>
+  <div class="subtitle">
+    interactive visualizations + technical deep dives
+    <span class="count">14 files</span>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+
+    <a class="card" href="activation-functions.html">
+      <div class="card-index">01</div>
+      <div class="card-title">Activation Functions</div>
+      <div class="card-tag">fundamentals / nonlinearity</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card" href="attention-mechanism.html">
+      <div class="card-index">02</div>
+      <div class="card-title">Attention Mechanism</div>
+      <div class="card-tag">transformers / query-key-value</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card" href="attention-mechanism2.html">
+      <div class="card-index">03</div>
+      <div class="card-title">Attention Mechanism II</div>
+      <div class="card-tag">transformers / extended</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card" href="backprop-vs-stdp.html">
+      <div class="card-index">04</div>
+      <div class="card-title">Backprop vs STDP</div>
+      <div class="card-tag">learning rules / bio-plausibility</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card" href="backprop.html">
+      <div class="card-index">05</div>
+      <div class="card-title">Backpropagation</div>
+      <div class="card-tag">gradient descent / chain rule</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card" href="connectome.html">
+      <div class="card-index">06</div>
+      <div class="card-title">Connectome</div>
+      <div class="card-tag">network topology / graph</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card" href="embedding-geometry.html">
+      <div class="card-index">07</div>
+      <div class="card-title">Embedding Geometry</div>
+      <div class="card-tag">vector space / representations</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card" href="embeddings-vector-space.html">
+      <div class="card-index">08</div>
+      <div class="card-title">Embeddings + Vector Space</div>
+      <div class="card-tag">semantic geometry / dimensionality</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card" href="lora-explainer.html">
+      <div class="card-index">09</div>
+      <div class="card-title">LoRA Explainer</div>
+      <div class="card-tag">fine-tuning / low-rank adaptation</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card" href="neuron-comparison.html">
+      <div class="card-index">10</div>
+      <div class="card-title">Neuron Comparison</div>
+      <div class="card-tag">bio vs artificial / morphology</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card" href="perceptron_code_walkthrough.html">
+      <div class="card-index">11</div>
+      <div class="card-title">Perceptron Walkthrough</div>
+      <div class="card-tag">code / step-by-step</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card" href="perceptron_viz.html">
+      <div class="card-index">12</div>
+      <div class="card-title">Perceptron Viz</div>
+      <div class="card-tag">interactive / weights + bias</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+    <a class="card" href="reservoir-computing.html">
+      <div class="card-index">13</div>
+      <div class="card-title">Reservoir Computing</div>
+      <div class="card-tag">echo state networks / dynamics</div>
+      <div class="card-arrow">&#8594;</div>
+    </a>
+
+  </div>
+</main>
+
+<footer>
+  // drop index.html into repo root &mdash; all paths are relative
+</footer>
+
+</body>
+</html>
