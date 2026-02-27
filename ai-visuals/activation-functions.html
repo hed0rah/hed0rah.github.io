@@ -5,702 +5,385 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Activation Functions</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
-
-  :root {
-    --bg: #0a0a0f;
-    --panel: #0f0f1a;
-    --border: #1e1e3a;
-    --sig: #00e5ff;
-    --relu: #ff3d71;
-    --grad-sig: #7c4dff;
-    --grad-relu: #ff9100;
-    --text: #c8c8e0;
-    --dim: #555570;
-    --white: #eeeeff;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Space Mono', monospace;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  .noise {
-    position: fixed;
-    inset: 0;
-    opacity: 0.03;
-    pointer-events: none;
-    z-index: 1000;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  }
-
-  header {
-    padding: 3rem 2rem 1.5rem;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: flex-end;
-    gap: 2rem;
-    flex-wrap: wrap;
-  }
-
-  h1 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(3rem, 8vw, 7rem);
-    line-height: 0.9;
-    letter-spacing: 0.02em;
-    color: var(--white);
-  }
-
-  h1 span.sig { color: var(--sig); }
-  h1 span.relu { color: var(--relu); }
-
-  .subtitle {
-    font-size: 0.7rem;
-    color: var(--dim);
-    line-height: 1.6;
-    max-width: 320px;
-    padding-bottom: 0.5rem;
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    background: var(--border);
-    margin: 1px;
-  }
-
-  .panel {
-    background: var(--panel);
-    padding: 2rem;
-    position: relative;
-  }
-
-  .panel-label {
-    font-size: 0.6rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--dim);
-    margin-bottom: 0.5rem;
-  }
-
-  .fn-name {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.5rem;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.25rem;
-  }
-
-  .fn-name.sig { color: var(--sig); }
-  .fn-name.relu { color: var(--relu); }
-
-  .formula {
-    font-size: 0.75rem;
-    color: var(--dim);
-    margin-bottom: 1.5rem;
-    border-left: 2px solid var(--border);
-    padding-left: 0.75rem;
-  }
-
-  canvas.fn-canvas {
-    width: 100%;
-    height: 200px;
-    display: block;
-    border: 1px solid var(--border);
-  }
-
-  .stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    margin-top: 1px;
-    background: var(--border);
-  }
-
-  .stat {
-    background: var(--panel);
-    padding: 0.75rem 1rem;
-  }
-
-  .stat-key {
-    font-size: 0.55rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--dim);
-    margin-bottom: 0.2rem;
-  }
-
-  .stat-val {
-    font-size: 0.85rem;
-    color: var(--white);
-    line-height: 1.4;
-  }
-
-  .stat-val.good { color: #69ff6e; }
-  .stat-val.bad { color: var(--relu); }
-
-  .full-width {
-    grid-column: 1 / -1;
-    background: var(--panel);
-    padding: 2rem;
-  }
-
-  .section-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.8rem;
-    color: var(--white);
-    letter-spacing: 0.05em;
-    margin-bottom: 1.5rem;
-  }
-
-  .gradient-demo {
-    position: relative;
-  }
-
-  .layer-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .layer-label {
-    font-size: 0.6rem;
-    color: var(--dim);
-    width: 60px;
-    text-align: right;
-    flex-shrink: 0;
-  }
-
-  .gradient-bar {
-    height: 28px;
-    border-radius: 2px;
-    position: relative;
-    transition: width 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    display: flex;
-    align-items: center;
-    padding-left: 0.5rem;
-  }
-
-  .gradient-bar span {
-    font-size: 0.6rem;
-    color: rgba(0,0,0,0.8);
-    font-weight: 700;
-    white-space: nowrap;
-  }
-
-  .bar-sig { background: var(--sig); opacity: 0.9; }
-  .bar-relu { background: var(--relu); opacity: 0.9; }
-
-  .bar-track {
-    flex: 1;
-    height: 28px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .compare-cols {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    background: var(--border);
-  }
-
-  .compare-col {
-    background: var(--panel);
-    padding: 1.5rem;
-  }
-
-  .compare-col h3 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.4rem;
-    margin-bottom: 1rem;
-    letter-spacing: 0.05em;
-  }
-
-  .compare-col.sig h3 { color: var(--sig); }
-  .compare-col.relu h3 { color: var(--relu); }
-
-  .trait {
-    margin-bottom: 0.75rem;
-    font-size: 0.7rem;
-    line-height: 1.6;
-    color: var(--text);
-    padding-left: 1rem;
-    border-left: 2px solid var(--border);
-    position: relative;
-  }
-
-  .trait::before {
-    content: attr(data-mark);
-    position: absolute;
-    left: -1rem;
-    color: var(--dim);
-    font-size: 0.5rem;
-  }
-
-  .trait.pro { border-left-color: #69ff6e; }
-  .trait.con { border-left-color: var(--relu); }
-  .trait.pro::before { content: '+'; color: #69ff6e; font-size: 0.8rem; }
-  .trait.con::before { content: '-'; color: var(--relu); font-size: 0.8rem; }
-
-  .neuron-demo {
-    margin-top: 1rem;
-  }
-
-  .neuron-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .neuron {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 2px solid;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.55rem;
-    font-weight: 700;
-    flex-shrink: 0;
-    transition: all 0.3s;
-  }
-
-  .arrow {
-    flex: 1;
-    height: 2px;
-    position: relative;
-    transition: background 0.3s;
-  }
-
-  .arrow::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: -3px;
-    width: 0;
-    height: 0;
-    border-left: 6px solid;
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
-  }
-
-  .input-val {
-    font-size: 0.6rem;
-    color: var(--dim);
-    width: 50px;
-    text-align: center;
-    flex-shrink: 0;
-  }
-
-  .controls {
-    background: var(--panel);
-    padding: 1.5rem 2rem;
-    border-top: 1px solid var(--border);
-    display: flex;
-    gap: 2rem;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .control-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-  }
-
-  .control-group label {
-    font-size: 0.6rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--dim);
-  }
-
-  input[type=range] {
-    -webkit-appearance: none;
-    width: 180px;
-    height: 2px;
-    background: var(--border);
-    border-radius: 1px;
-    outline: none;
-  }
-
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
-    background: var(--white);
-    border-radius: 50%;
-    cursor: pointer;
-  }
-
-  .val-display {
-    font-size: 0.75rem;
-    color: var(--white);
-    min-width: 3rem;
-  }
-
-  footer {
-    padding: 1.5rem 2rem;
-    border-top: 1px solid var(--border);
-    font-size: 0.6rem;
-    color: var(--dim);
-    letter-spacing: 0.05em;
-  }
-
-  @media (max-width: 700px) {
-    .grid, .compare-cols { grid-template-columns: 1fr; }
-    .full-width { grid-column: 1; }
-  }
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #0a0a0a;
+  --surface:   #111111;
+  --surface2:  #0d0d0d;
+  --border:    #1e1e1e;
+  --border2:   #2a2a2a;
+  --cyan:      #00ffe9;
+  --yellow:    #ffe900;
+  --magenta:   #e900ff;
+  --red:       #ff2d55;
+  --green:     #39ff14;
+  --orange:    #ff6b00;
+  --dim:       #3a3a3a;
+  --text:      #cccccc;
+  --bright:    #ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;font-size:11px;line-height:1.65;padding:36px 30px;max-width:980px;margin:0 auto;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:999;}
+.masthead{border-top:3px solid var(--cyan);padding:14px 0 10px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border);}
+.masthead h1{font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:4px;color:var(--bright);line-height:1;}
+.masthead h1 em{color:var(--cyan);font-style:normal;}
+.masthead-right{text-align:right;font-size:10px;color:#444;letter-spacing:2px;text-transform:uppercase;}
+.masthead-right strong{display:block;color:var(--cyan);font-size:11px;margin-bottom:2px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:2px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-bottom:2px;}
+.gfull{margin-bottom:2px;}
+.panel{background:var(--surface);border:1px solid var(--border);padding:18px;}
+.plabel{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:3px;color:#383838;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.ptitle{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--bright);margin-bottom:8px;line-height:1;}
+.ptitle.cy{color:var(--cyan);}.ptitle.rd{color:var(--red);}.ptitle.yl{color:var(--yellow);}.ptitle.pu{color:var(--magenta);}.ptitle.or{color:var(--orange);}.ptitle.gr{color:var(--green);}
+.bar{width:28px;height:2px;margin-bottom:10px;background:var(--cyan);}
+.bar.rd{background:var(--red);}.bar.yl{background:var(--yellow);}.bar.pu{background:var(--magenta);}.bar.or{background:var(--orange);}
+p{font-size:11px;color:var(--text);margin-bottom:7px;line-height:1.65;}
+.hl{color:var(--cyan);font-weight:700;}.hl.rd{color:var(--red);}.hl.yl{color:var(--yellow);}.hl.pu{color:var(--magenta);}.hl.or{color:var(--orange);}.hl.gr{color:var(--green);}
+.math-block{background:#060606;border:1px solid var(--border);border-left:3px solid var(--yellow);padding:12px 14px;margin:10px 0;font-size:11px;}
+.math-block.cy{border-left-color:var(--cyan);}.math-block.rd{border-left-color:var(--red);}
+.eq{color:var(--yellow);}.eq.cy{color:var(--cyan);}.eq.rd{color:var(--red);}
+.org-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #111;font-size:10px;}
+.org-row:last-child{border-bottom:none;}
+.org-row-label{color:#333;text-transform:uppercase;letter-spacing:1px;font-size:9px;}
+.org-row-val{font-weight:700;}
+.tag{display:inline-block;border:1px solid var(--border);padding:1px 6px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#444;margin:2px 2px 2px 0;}
+.tag.cy{border-color:var(--cyan);color:var(--cyan);}.tag.rd{border-color:var(--red);color:var(--red);}.tag.yl{border-color:var(--yellow);color:var(--yellow);}.tag.gr{border-color:var(--green);color:var(--green);}
+.footer{border-top:1px solid var(--border);margin-top:14px;padding-top:10px;display:flex;justify-content:space-between;font-size:9px;color:#2a2a2a;letter-spacing:1px;}
+canvas{display:block;background:#060606;}
+button{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:8px 14px;border:1px solid var(--border2);background:var(--surface2);color:var(--dim);cursor:pointer;transition:all 0.1s;}
+button:hover{background:var(--border2);color:var(--bright);}
+button.act{background:var(--cyan);color:var(--bg);border-color:var(--cyan);}
+input[type=range]{-webkit-appearance:none;width:100%;height:2px;background:var(--border2);border-radius:1px;outline:none;margin:6px 0;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:var(--bright);border-radius:50%;cursor:pointer;}
+@media(max-width:700px){.g2,.g3{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
-<div class="noise"></div>
 
-<header>
-  <h1><span class="sig">SIGMOID</span><br>vs<br><span class="relu">RELU</span></h1>
-  <p class="subtitle">Activation functions define how neurons decide to fire. The choice shapes whether deep networks can learn at all — or slowly suffocate under vanishing gradients.</p>
-</header>
+<div class="masthead">
+  <h1>ACTIV<em>ATION</em><br>FUNCTIONS</h1>
+  <div class="masthead-right">
+    <strong>THE NONLINEARITY THAT MAKES NETWORKS WORK</strong>
+    SIGMOID // TANH // RELU // GELU<br>
+    VANISHING GRADIENTS // DYING NEURONS
+  </div>
+</div>
 
-<div class="grid">
-  <!-- Sigmoid Panel -->
+<div class="gfull">
   <div class="panel">
-    <div class="panel-label">activation / 01</div>
-    <div class="fn-name sig">SIGMOID</div>
-    <div class="formula">f(x) = 1 / (1 + e^(-x)) &nbsp;&nbsp; f'(x) = f(x)(1 - f(x))</div>
-    <canvas class="fn-canvas" id="sigCanvas"></canvas>
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-key">Output Range</div>
-        <div class="stat-val">(0, 1) exclusive</div>
+    <div class="plabel">01 // What They Are</div>
+    <div class="ptitle cy">WHY NONLINEARITY EXISTS</div>
+    <div class="bar"></div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+      <div>
+        <p>Without an activation function, stacking linear layers is mathematically equivalent to a single linear transformation. No matter how deep the network, it can only learn linear mappings — useless for anything interesting. Activation functions introduce nonlinearity at each neuron, allowing the network to approximate arbitrarily complex functions.</p>
+        <p>The activation function is applied element-wise to the pre-activation value <span class="hl">z = Wx + b</span>. Its output becomes the neuron's activation — what flows to the next layer. The choice of function determines gradient behavior across layers, which in turn determines whether training works at all in deep architectures.</p>
+        <p>The history of deep learning is partly the history of finding better activations. Sigmoid dominated until ~2010. ReLU unlocked deep networks. GELU now dominates transformers. The ideal function is nonlinear, computationally cheap, and keeps gradients alive through many layers.</p>
       </div>
-      <div class="stat">
-        <div class="stat-key">Max Gradient</div>
-        <div class="stat-val bad">0.25 at x=0</div>
-      </div>
-      <div class="stat">
-        <div class="stat-key">Differentiable</div>
-        <div class="stat-val good">everywhere</div>
-      </div>
-      <div class="stat">
-        <div class="stat-key">Era</div>
-        <div class="stat-val">1980s - 2010s</div>
+      <div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;">
+          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--cyan);line-height:1;">1943</div><div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">McCulloch-Pitts<br>step function</div></div>
+          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--yellow);line-height:1;">1986</div><div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">Sigmoid + backprop<br>paper</div></div>
+          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--red);line-height:1;">2010</div><div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">ReLU proven<br>in deep nets</div></div>
+          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--magenta);line-height:1;">2016</div><div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">GELU introduced<br>for transformers</div></div>
+        </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ReLU Panel -->
+<div class="g2">
   <div class="panel">
-    <div class="panel-label">activation / 02</div>
-    <div class="fn-name relu">RELU</div>
-    <div class="formula">f(x) = max(0, x) &nbsp;&nbsp; f'(x) = 0 if x&lt;0, else 1</div>
-    <canvas class="fn-canvas" id="reluCanvas"></canvas>
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-key">Output Range</div>
-        <div class="stat-val">[0, +inf)</div>
-      </div>
-      <div class="stat">
-        <div class="stat-key">Max Gradient</div>
-        <div class="stat-val good">1 (no decay)</div>
-      </div>
-      <div class="stat">
-        <div class="stat-key">Differentiable</div>
-        <div class="stat-val bad">not at x=0</div>
-      </div>
-      <div class="stat">
-        <div class="stat-key">Era</div>
-        <div class="stat-val">2010s - present</div>
-      </div>
-    </div>
+    <div class="plabel">02 // Sigmoid</div>
+    <div class="ptitle cy">SIGMOID</div>
+    <div class="bar"></div>
+    <div class="math-block cy"><span class="eq cy">f(x) = 1 / (1 + e^(-x))</span><br><span style="color:#444;font-size:10px;">derivative: f'(x) = f(x)(1 - f(x)) &nbsp; max: 0.25</span></div>
+    <canvas id="cvSig" width="400" height="160" style="width:100%;height:160px;margin-bottom:10px;"></canvas>
+    <div class="org-row"><span class="org-row-label">Output range</span><span class="org-row-val">(0, 1)</span></div>
+    <div class="org-row"><span class="org-row-label">Max gradient</span><span class="org-row-val" style="color:var(--red);">0.25 at x=0</span></div>
+    <div class="org-row"><span class="org-row-label">Differentiable</span><span class="org-row-val" style="color:var(--green);">everywhere</span></div>
+    <div class="org-row"><span class="org-row-label">Zero-centered</span><span class="org-row-val" style="color:var(--red);">no</span></div>
+    <div class="org-row"><span class="org-row-label">Era</span><span class="org-row-val">1980s - ~2012</span></div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">Classic S-curve. Saturates hard at both extremes — gradient approaches zero outside [-4, 4]. In a 10-layer network, sigmoid gradient attenuates to 0.25^10 ≈ 9.5×10^-7 at the first layer. Training becomes impossible. This is the vanishing gradient problem.</p>
+    <div style="margin-top:6px;"><span class="tag cy">smooth</span><span class="tag rd">vanishing grad</span><span class="tag">output layer only</span></div>
   </div>
 
-  <!-- Gradient Flow Section -->
-  <div class="full-width">
-    <div class="section-title">Gradient Flow Through Layers</div>
-    <p style="font-size:0.7rem; color:var(--dim); margin-bottom:1.5rem; max-width:600px;">
-      During backpropagation, gradients multiply through every layer. Sigmoid's max gradient of 0.25 means each layer shrinks the signal by at least 75%. Stack 10 layers and the gradient reaching layer 1 is less than 0.25^10 — effectively zero. ReLU passes gradients unchanged on the positive side.
-    </p>
-
-    <div id="gradientBars"></div>
-
-    <div style="margin-top:1rem; display:flex; gap:1.5rem; flex-wrap:wrap;">
-      <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.6rem; color:var(--dim);">
-        <div style="width:12px; height:12px; background:var(--sig); border-radius:2px;"></div>
-        Sigmoid gradient magnitude
-      </div>
-      <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.6rem; color:var(--dim);">
-        <div style="width:12px; height:12px; background:var(--relu); border-radius:2px;"></div>
-        ReLU gradient magnitude
-      </div>
-    </div>
-  </div>
-
-  <!-- Interactive Demo -->
-  <div class="full-width" style="padding-bottom:0;">
-    <div class="section-title">Live Output Comparison</div>
-    <p style="font-size:0.7rem; color:var(--dim); margin-bottom:1.5rem;">
-      Drag the slider to see how each function responds to the same input. Note the saturation zones for sigmoid where the curve flattens — identical gradients for very different inputs.
-    </p>
+  <div class="panel">
+    <div class="plabel">03 // ReLU</div>
+    <div class="ptitle rd">RELU</div>
+    <div class="bar rd"></div>
+    <div class="math-block rd"><span class="eq rd">f(x) = max(0, x)</span><br><span style="color:#444;font-size:10px;">derivative: f'(x) = 0 if x &lt; 0, else 1</span></div>
+    <canvas id="cvRelu" width="400" height="160" style="width:100%;height:160px;margin-bottom:10px;"></canvas>
+    <div class="org-row"><span class="org-row-label">Output range</span><span class="org-row-val">[0, +inf)</span></div>
+    <div class="org-row"><span class="org-row-label">Max gradient</span><span class="org-row-val" style="color:var(--green);">1 (no decay)</span></div>
+    <div class="org-row"><span class="org-row-label">Differentiable</span><span class="org-row-val" style="color:var(--red);">not at x=0</span></div>
+    <div class="org-row"><span class="org-row-label">Zero-centered</span><span class="org-row-val" style="color:var(--red);">no</span></div>
+    <div class="org-row"><span class="org-row-label">Era</span><span class="org-row-val">2010s - present</span></div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">Rectified Linear Unit. AlexNet (2012) used it to win ImageNet by a large margin — the paper that reset the field. Gradient is 1 on the positive side so it passes through layers unchanged. Creates sparse activations: ~50% of neurons output zero at any time, which turns out to be efficient and regularizing.</p>
+    <div style="margin-top:6px;"><span class="tag rd">dying neurons</span><span class="tag gr">fast</span><span class="tag gr">no vanishing</span></div>
   </div>
 </div>
 
-<div class="controls">
-  <div class="control-group">
-    <label>Input x</label>
-    <div style="display:flex; align-items:center; gap:0.75rem;">
-      <input type="range" id="xSlider" min="-6" max="6" step="0.01" value="0">
-      <span class="val-display" id="xDisplay">0.00</span>
-    </div>
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">04 // Tanh</div>
+    <div class="ptitle yl">TANH</div>
+    <div class="bar yl"></div>
+    <div class="math-block"><span class="eq">f(x) = (e^x - e^-x) / (e^x + e^-x)</span><br><span style="color:#444;font-size:10px;">derivative: f'(x) = 1 - tanh²(x) &nbsp; max: 1.0</span></div>
+    <canvas id="cvTanh" width="400" height="140" style="width:100%;height:140px;margin-bottom:10px;"></canvas>
+    <div class="org-row"><span class="org-row-label">Output range</span><span class="org-row-val">(-1, 1)</span></div>
+    <div class="org-row"><span class="org-row-label">Max gradient</span><span class="org-row-val" style="color:var(--yellow);">1.0 at x=0</span></div>
+    <div class="org-row"><span class="org-row-label">Zero-centered</span><span class="org-row-val" style="color:var(--green);">yes</span></div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">Rescaled sigmoid centered at zero. Being zero-centered helps gradient updates point in consistent directions — sigmoid's positive-only output causes zig-zagging optimization. Still saturates, still vanishes in deep nets, but better than sigmoid for hidden layers. Common in RNNs.</p>
+    <div style="margin-top:6px;"><span class="tag yl">zero-centered</span><span class="tag rd">saturates</span><span class="tag">RNN staple</span></div>
   </div>
-  <div style="display:flex; gap:2rem; flex-wrap:wrap;">
-    <div>
-      <div style="font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--dim); margin-bottom:0.3rem;">Sigmoid f(x)</div>
-      <div id="sigOutput" style="font-family:'Bebas Neue'; font-size:2rem; color:var(--sig);">0.5000</div>
-    </div>
-    <div>
-      <div style="font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--dim); margin-bottom:0.3rem;">Sigmoid f'(x)</div>
-      <div id="sigGrad" style="font-family:'Bebas Neue'; font-size:2rem; color:var(--grad-sig);">0.2500</div>
-    </div>
-    <div>
-      <div style="font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--dim); margin-bottom:0.3rem;">ReLU f(x)</div>
-      <div id="reluOutput" style="font-family:'Bebas Neue'; font-size:2rem; color:var(--relu);">0.0000</div>
-    </div>
-    <div>
-      <div style="font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--dim); margin-bottom:0.3rem;">ReLU f'(x)</div>
-      <div id="reluGrad" style="font-family:'Bebas Neue'; font-size:2rem; color:var(--grad-relu);">0.0000</div>
-    </div>
+
+  <div class="panel">
+    <div class="plabel">05 // GELU</div>
+    <div class="ptitle pu">GELU</div>
+    <div class="bar pu"></div>
+    <div class="math-block" style="border-left-color:var(--magenta);"><span class="eq" style="color:var(--magenta);">f(x) = x · Φ(x)</span><br><span style="color:#444;font-size:10px;">where Φ(x) is the Gaussian CDF — smooth stochastic gating</span></div>
+    <canvas id="cvGelu" width="400" height="140" style="width:100%;height:140px;margin-bottom:10px;"></canvas>
+    <div class="org-row"><span class="org-row-label">Output range</span><span class="org-row-val">(-0.17, +inf)</span></div>
+    <div class="org-row"><span class="org-row-label">Zero crossing</span><span class="org-row-val" style="color:var(--magenta);">smooth, not hard</span></div>
+    <div class="org-row"><span class="org-row-label">Used in</span><span class="org-row-val">BERT, GPT, all modern</span></div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">Gaussian Error Linear Unit (Hendrycks &amp; Gimpel, 2016). Instead of hard gating negative values to zero like ReLU, GELU weights inputs by their probability under a Gaussian — a soft stochastic gate. The small negative dip around x=-0.1 provides richer gradient signal. GPT-2 onward uses it exclusively.</p>
+    <div style="margin-top:6px;"><span class="tag pu">transformers</span><span class="tag pu">BERT/GPT</span><span class="tag">smooth gate</span></div>
   </div>
 </div>
 
-<div class="grid" style="margin-top:1px;">
-  <div class="compare-cols" style="grid-column:1/-1;">
-    <div class="compare-col sig">
-      <h3>Sigmoid</h3>
-      <div class="trait pro">Smooth, continuous, and differentiable at every point — nice theoretical properties.</div>
-      <div class="trait pro">Output interpretable as a probability for binary classification output layers.</div>
-      <div class="trait pro">Both positive and negative outputs (via tanh variant) handle negative correlations.</div>
-      <div class="trait con">Vanishing gradient: saturates at both extremes, gradient approaches zero. Kills learning in deep nets.</div>
-      <div class="trait con">Not zero-centered — outputs always positive, causes zig-zagging gradient updates.</div>
-      <div class="trait con">Exponential in the denominator: computationally slower than ReLU.</div>
-      <div class="trait con">Was the default until ~2012. Then AlexNet used ReLU and changed everything.</div>
-    </div>
-    <div class="compare-col relu">
-      <h3>ReLU</h3>
-      <div class="trait pro">Gradient is exactly 1 for all positive inputs — no decay across layers.</div>
-      <div class="trait pro">Computationally trivial: just a max() operation, no exponentials.</div>
-      <div class="trait pro">Sparse activation — roughly half the neurons output zero, creating efficient representations.</div>
-      <div class="trait pro">Enabled training of networks 10+ layers deep. VGG, ResNet, everything after 2012.</div>
-      <div class="trait con">Dying ReLU: neurons stuck outputting zero for all inputs never recover. Gradient is exactly 0 there.</div>
-      <div class="trait con">Unbounded output can cause exploding activations without proper weight init or normalization.</div>
-      <div class="trait con">Not differentiable at x=0, though in practice this is handled by convention (set to 0 or 1).</div>
-      <div class="trait con">Variants (Leaky ReLU, ELU, GELU) address dying neuron problem at some compute cost.</div>
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">06 // Interactive // Vanishing Gradient Demo</div>
+    <div class="ptitle rd">GRADIENT DECAY THROUGH LAYERS</div>
+    <div class="bar rd"></div>
+    <p>During backpropagation, each layer multiplies the incoming gradient by the local derivative of its activation function. With sigmoid, the max derivative is 0.25 — meaning at best 75% of gradient signal is destroyed at every layer. Stack 10 layers and the gradient reaching layer 1 is a ghost.</p>
+    <div style="display:grid;grid-template-columns:1fr 200px;gap:20px;margin-top:14px;">
+      <div id="gradBars"></div>
+      <div>
+        <div style="font-size:10px;color:#555;margin-bottom:10px;">Select activation:</div>
+        <div style="display:flex;flex-direction:column;gap:4px;" id="actBtns">
+          <button class="act" data-fn="sigmoid">Sigmoid</button>
+          <button data-fn="relu">ReLU</button>
+          <button data-fn="tanh">Tanh</button>
+          <button data-fn="leaky">Leaky ReLU</button>
+        </div>
+        <div style="margin-top:16px;font-size:10px;color:#333;">Layers: <span id="layerCount" style="color:var(--bright);">10</span></div>
+        <input type="range" id="layerSlider" min="3" max="20" value="10">
+        <div style="margin-top:12px;padding:10px;background:#060606;border:1px solid var(--border);">
+          <div style="font-size:9px;color:#333;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Gradient at layer 1</div>
+          <div id="finalGrad" style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--red);">—</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<footer>
-  ACTIVATION FUNCTIONS — THE NONLINEARITY THAT MAKES NEURAL NETWORKS NEURAL &nbsp;/&nbsp; WITHOUT THESE, YOU JUST HAVE LINEAR ALGEBRA STACKED ON LINEAR ALGEBRA &nbsp;/&nbsp; DEEP LEARNING EXPLAINER
-</footer>
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">07 // Interactive // Live Output</div>
+    <div class="ptitle cy">INPUT X RESPONSE</div>
+    <div class="bar"></div>
+    <p>Drag the slider to probe each function at a given input. Watch how sigmoid and tanh saturate in the extremes, flattening their gradients to near-zero. ReLU and GELU stay alive.</p>
+    <div style="margin-top:10px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <span style="font-size:10px;color:#555;width:50px;">x =</span>
+        <input type="range" id="xSlider" min="-6" max="6" step="0.05" value="0" style="flex:1;">
+        <span id="xVal" style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--bright);width:60px;">0.00</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:2px;">
+        <div style="background:#060606;border:1px solid var(--border);padding:12px;text-align:center;">
+          <div style="font-size:9px;color:#333;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Sigmoid</div>
+          <div id="outSig" style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--cyan);">0.5000</div>
+          <div style="font-size:9px;color:#333;margin-top:2px;">grad: <span id="gradSig" style="color:var(--yellow);">0.2500</span></div>
+        </div>
+        <div style="background:#060606;border:1px solid var(--border);padding:12px;text-align:center;">
+          <div style="font-size:9px;color:#333;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">ReLU</div>
+          <div id="outRelu" style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--red);">0.0000</div>
+          <div style="font-size:9px;color:#333;margin-top:2px;">grad: <span id="gradRelu" style="color:var(--yellow);">0.0000</span></div>
+        </div>
+        <div style="background:#060606;border:1px solid var(--border);padding:12px;text-align:center;">
+          <div style="font-size:9px;color:#333;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Tanh</div>
+          <div id="outTanh" style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--yellow);">0.0000</div>
+          <div style="font-size:9px;color:#333;margin-top:2px;">grad: <span id="gradTanh" style="color:var(--yellow);">1.0000</span></div>
+        </div>
+        <div style="background:#060606;border:1px solid var(--border);padding:12px;text-align:center;">
+          <div style="font-size:9px;color:#333;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">GELU</div>
+          <div id="outGelu" style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--magenta);">0.0000</div>
+          <div style="font-size:9px;color:#333;margin-top:2px;">grad: <span id="gradGelu" style="color:var(--yellow);">0.5000</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="g3">
+  <div class="panel">
+    <div class="plabel">08 // Variants</div>
+    <div class="ptitle">LEAKY RELU</div>
+    <div class="bar or"></div>
+    <div class="math-block" style="border-left-color:var(--orange);"><span class="eq" style="color:var(--orange);">f(x) = x if x &gt; 0, else 0.01x</span></div>
+    <p style="font-size:10px;color:#555;">Fixes dying ReLU by allowing a small negative slope (0.01). Neurons can never fully die — they still receive small gradients. Parametric ReLU (PReLU) learns this slope. Neither dominates ReLU in practice unless dead neuron rate is a measured problem.</p>
+    <div style="margin-top:6px;"><span class="tag or">no dead neurons</span></div>
+  </div>
+  <div class="panel">
+    <div class="plabel">09 // Variants</div>
+    <div class="ptitle">SWISH / SILU</div>
+    <div class="bar yl"></div>
+    <div class="math-block"><span class="eq">f(x) = x · sigmoid(x)</span></div>
+    <p style="font-size:10px;color:#555;">Self-gated activation discovered by neural architecture search (Ramachandran et al., 2017). Smooth, non-monotonic, unbounded above and bounded below. Outperforms ReLU on deep networks. Used in EfficientNet. SiLU is the same function — the name used in PyTorch.</p>
+    <div style="margin-top:6px;"><span class="tag yl">NAS-discovered</span></div>
+  </div>
+  <div class="panel">
+    <div class="plabel">10 // Variants</div>
+    <div class="ptitle">ELU / SELU</div>
+    <div class="bar pu"></div>
+    <div class="math-block" style="border-left-color:var(--magenta);"><span class="eq" style="color:var(--magenta);">f(x) = x if x&gt;0, else α(e^x - 1)</span></div>
+    <p style="font-size:10px;color:#555;">Exponential Linear Unit. Negative saturation is smooth rather than hard zero — mean activations can be pushed toward zero. SELU (Scaled ELU) adds a scale factor that induces self-normalizing behavior: activations remain near unit variance without batch normalization.</p>
+    <div style="margin-top:6px;"><span class="tag pu">self-normalizing</span></div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>RUMELHART ET AL. 1986 // NAIR &amp; HINTON 2010 // HENDRYCKS &amp; GIMPEL 2016</span>
+  <span>BRUTALIST TERMINAL v2 // ACTIVATION FUNCTIONS</span>
+</div>
 
 <script>
-function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
-function sigmoidDeriv(x) { const s = sigmoid(x); return s * (1 - s); }
-function relu(x) { return Math.max(0, x); }
-function reluDeriv(x) { return x > 0 ? 1 : 0; }
+function sigmoid(x){ return 1/(1+Math.exp(-x)); }
+function sigmoidD(x){ const s=sigmoid(x); return s*(1-s); }
+function relu(x){ return Math.max(0,x); }
+function reluD(x){ return x>0?1:0; }
+function tanhF(x){ return Math.tanh(x); }
+function tanhD(x){ return 1-Math.tanh(x)**2; }
+function gelu(x){
+  return 0.5*x*(1+Math.tanh(Math.sqrt(2/Math.PI)*(x+0.044715*x*x*x)));
+}
+function geluD(x){
+  const c=Math.sqrt(2/Math.PI);
+  const t=Math.tanh(c*(x+0.044715*x*x*x));
+  return 0.5*(1+t)+0.5*x*(1-t*t)*c*(1+3*0.044715*x*x);
+}
 
-function drawGraph(canvasId, fns, opts) {
-  const canvas = document.getElementById(canvasId);
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-
-  const W = rect.width, H = rect.height;
-  const pad = 30;
-
-  ctx.fillStyle = '#0a0a0f';
-  ctx.fillRect(0, 0, W, H);
-
-  const xMin = opts.xMin || -6, xMax = opts.xMax || 6;
-  const yMin = opts.yMin || -0.2, yMax = opts.yMax || 1.2;
-
-  function toScreen(x, y) {
-    return {
-      sx: pad + (x - xMin) / (xMax - xMin) * (W - 2*pad),
-      sy: H - pad - (y - yMin) / (yMax - yMin) * (H - 2*pad)
-    };
+function drawFn(id, fns, yMin, yMax){
+  const cv=document.getElementById(id);
+  const dpr=window.devicePixelRatio||1;
+  const rect=cv.getBoundingClientRect();
+  cv.width=rect.width*dpr; cv.height=rect.height*dpr;
+  const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+  const W=rect.width, H=rect.height;
+  const pad=24;
+  ctx.fillStyle='#060606'; ctx.fillRect(0,0,W,H);
+  const xMin=-5, xMax=5;
+  const toSx=x=>pad+(x-xMin)/(xMax-xMin)*(W-2*pad);
+  const toSy=y=>H-pad-(y-yMin)/(yMax-yMin)*(H-2*pad);
+  // grid
+  ctx.strokeStyle='#1a1a1a'; ctx.lineWidth=1;
+  for(let gx=-4;gx<=4;gx+=2){
+    ctx.beginPath();ctx.moveTo(toSx(gx),pad);ctx.lineTo(toSx(gx),H-pad);ctx.stroke();
   }
-
-  // Grid
-  ctx.strokeStyle = '#1a1a2e';
-  ctx.lineWidth = 1;
-  for (let gx = Math.ceil(xMin); gx <= xMax; gx++) {
-    const {sx} = toScreen(gx, 0);
-    ctx.beginPath(); ctx.moveTo(sx, pad); ctx.lineTo(sx, H-pad); ctx.stroke();
+  for(let gy=yMin;gy<=yMax;gy+=0.5){
+    ctx.beginPath();ctx.moveTo(pad,toSy(gy));ctx.lineTo(W-pad,toSy(gy));ctx.stroke();
   }
-  for (let gy = -1; gy <= 2; gy += 0.5) {
-    const {sy} = toScreen(0, gy);
-    ctx.beginPath(); ctx.moveTo(pad, sy); ctx.lineTo(W-pad, sy); ctx.stroke();
-  }
-
-  // Axes
-  ctx.strokeStyle = '#2a2a4a';
-  ctx.lineWidth = 1.5;
-  const origin = toScreen(0, 0);
-  ctx.beginPath(); ctx.moveTo(pad, origin.sy); ctx.lineTo(W-pad, origin.sy); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(origin.sx, pad); ctx.lineTo(origin.sx, H-pad); ctx.stroke();
-
-  // Axis labels
-  ctx.fillStyle = '#444466';
-  ctx.font = '9px Space Mono';
-  ctx.textAlign = 'center';
-  for (let gx = xMin+1; gx <= xMax-1; gx += 2) {
-    const {sx, sy} = toScreen(gx, 0);
-    ctx.fillText(gx, sx, sy + 14);
-  }
-
-  // Functions
-  fns.forEach(fn => {
-    ctx.beginPath();
-    ctx.strokeStyle = fn.color;
-    ctx.lineWidth = fn.width || 2;
-    let first = true;
-    for (let px = 0; px <= W - 2*pad; px++) {
-      const x = xMin + px / (W - 2*pad) * (xMax - xMin);
-      const y = fn.f(x);
-      const {sx, sy} = toScreen(x, y);
-      if (first) { ctx.moveTo(sx, sy); first = false; }
-      else ctx.lineTo(sx, sy);
+  // axes
+  ctx.strokeStyle='#2a2a2a'; ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(pad,toSy(0));ctx.lineTo(W-pad,toSy(0));ctx.stroke();
+  ctx.beginPath();ctx.moveTo(toSx(0),pad);ctx.lineTo(toSx(0),H-pad);ctx.stroke();
+  // functions
+  fns.forEach(fn=>{
+    ctx.beginPath();ctx.strokeStyle=fn.color;ctx.lineWidth=fn.w||2;
+    for(let px=0;px<=W-2*pad;px++){
+      const x=xMin+px/(W-2*pad)*(xMax-xMin);
+      const y=fn.f(x);
+      const sy=toSy(Math.max(yMin,Math.min(yMax,y)));
+      px===0?ctx.moveTo(toSx(x),sy):ctx.lineTo(toSx(x),sy);
     }
     ctx.stroke();
   });
-
-  // Draw indicator for current x if provided
-  if (opts.markerX !== undefined) {
-    const x = opts.markerX;
-    const {sx} = toScreen(x, 0);
-    ctx.strokeStyle = '#ffffff33';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.moveTo(sx, pad); ctx.lineTo(sx, H-pad); ctx.stroke();
-    ctx.setLineDash([]);
-
-    fns.forEach(fn => {
-      const y = fn.f(x);
-      const {sx: fx, sy: fy} = toScreen(x, y);
-      ctx.fillStyle = fn.color;
-      ctx.beginPath(); ctx.arc(fx, fy, 5, 0, Math.PI*2); ctx.fill();
-    });
-  }
 }
 
-let currentX = 0;
-
-function renderAll() {
-  drawGraph('sigCanvas', [
-    { f: sigmoid, color: '#00e5ff', width: 2.5 },
-    { f: sigmoidDeriv, color: '#7c4dff', width: 1.5 }
-  ], { xMin: -6, xMax: 6, yMin: -0.2, yMax: 1.2, markerX: currentX });
-
-  drawGraph('reluCanvas', [
-    { f: relu, color: '#ff3d71', width: 2.5 },
-    { f: reluDeriv, color: '#ff9100', width: 1.5 }
-  ], { xMin: -6, xMax: 6, yMin: -0.5, yMax: 4, markerX: currentX });
+function drawAll(){
+  drawFn('cvSig',[{f:sigmoid,color:'#00ffe9',w:2},{f:sigmoidD,color:'#ffe900',w:1.5}],-0.2,1.3);
+  drawFn('cvRelu',[{f:relu,color:'#ff2d55',w:2},{f:reluD,color:'#ffe900',w:1.5}],-0.3,3);
+  drawFn('cvTanh',[{f:tanhF,color:'#ffe900',w:2},{f:tanhD,color:'#00ffe9',w:1.5}],-1.3,1.3);
+  drawFn('cvGelu',[{f:gelu,color:'#e900ff',w:2},{f:geluD,color:'#ffe900',w:1.5}],-0.5,3);
 }
+window.addEventListener('load',drawAll);
+window.addEventListener('resize',drawAll);
 
-function buildGradientBars() {
-  const container = document.getElementById('gradientBars');
-  const layers = 8;
-  let sigGrad = 1.0;
-  let reluGrad = 1.0;
+// gradient decay bars
+const gradFns = {
+  sigmoid: x=>sigmoidD(x),
+  relu: x=>reluD(x),
+  tanh: x=>tanhD(x),
+  leaky: x=>x>0?1:0.01
+};
+// approximate per-layer multiplier for different activations
+const gradMultiplier = {
+  sigmoid: 0.25,
+  relu: 0.9,      // ~90% survive (some dead neurons)
+  tanh: 0.7,
+  leaky: 0.95
+};
+const gradColor = {
+  sigmoid:'#00ffe9', relu:'#ff2d55', tanh:'#ffe900', leaky:'#ff6b00'
+};
 
-  for (let i = 0; i < layers; i++) {
-    sigGrad *= 0.25;
-    // ReLU: assume about 50% active neurons, gradient stays 1 on those
-    // so on average ~0.5-1.0 depending on sparsity. Simplified: 0.85
-    reluGrad *= 0.85;
+let activeFn='sigmoid';
 
-    const sigPct = Math.min(100, sigGrad * 200);
-    const reluPct = Math.min(100, reluGrad * 100);
-
-    const row = document.createElement('div');
-    row.className = 'layer-row';
-    row.innerHTML = `
-      <span class="layer-label">layer ${i+1}</span>
-      <div class="bar-track">
-        <div class="gradient-bar bar-sig" style="width:${reluPct}%; position:absolute; top:0; left:0; height:100%; border-radius:0;">
-        </div>
-        <div class="gradient-bar bar-sig" style="width:${sigPct}%; position:absolute; top:0; left:0; height:100%; border-radius:0; background:var(--sig);">
-        </div>
+function buildBars(fn, layers){
+  const container=document.getElementById('gradBars');
+  container.innerHTML='';
+  let g=1.0;
+  const mult=gradMultiplier[fn];
+  for(let i=0;i<layers;i++){
+    g*=mult;
+    const pct=Math.min(100,g*100);
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:4px;';
+    row.innerHTML=`
+      <span style="font-size:9px;color:#333;width:50px;text-align:right;flex-shrink:0;">layer ${i+1}</span>
+      <div style="flex:1;height:14px;background:#0a0a0a;border:1px solid #161616;position:relative;">
+        <div style="position:absolute;top:0;left:0;height:100%;width:${pct}%;background:${gradColor[fn]};opacity:0.8;"></div>
       </div>
+      <span style="font-size:9px;width:70px;color:${g<0.001?'var(--red)':'#555'};">${g<0.0001?g.toExponential(2):g.toFixed(4)}</span>
     `;
-
-    // re-do properly
-    row.innerHTML = '';
-    const label = document.createElement('span');
-    label.className = 'layer-label';
-    label.textContent = `layer ${i+1}`;
-    row.appendChild(label);
-
-    const track = document.createElement('div');
-    track.className = 'bar-track';
-
-    const reluBar = document.createElement('div');
-    reluBar.style.cssText = `position:absolute; top:0; left:0; height:100%; width:${reluPct}%; background:var(--relu); opacity:0.7; border-radius:2px;`;
-    track.appendChild(reluBar);
-
-    const sigBar = document.createElement('div');
-    sigBar.style.cssText = `position:absolute; top:0; left:0; height:100%; width:${sigPct}%; background:var(--sig); opacity:0.7; border-radius:2px;`;
-    track.appendChild(sigBar);
-
-    const sigLabel = document.createElement('span');
-    sigLabel.style.cssText = `position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:0.6rem; color:var(--dim);`;
-    sigLabel.textContent = `sig: ${sigGrad.toExponential(2)}  relu: ${reluGrad.toFixed(3)}`;
-    track.appendChild(sigLabel);
-
-    row.appendChild(track);
     container.appendChild(row);
   }
+  document.getElementById('finalGrad').textContent=g<0.0001?g.toExponential(2):g.toFixed(6);
+  document.getElementById('finalGrad').style.color=g<0.01?'var(--red)':g<0.1?'var(--yellow)':'var(--green)';
 }
 
-const slider = document.getElementById('xSlider');
-slider.addEventListener('input', () => {
-  currentX = parseFloat(slider.value);
-  document.getElementById('xDisplay').textContent = currentX.toFixed(2);
-
-  const so = sigmoid(currentX);
-  const sd = sigmoidDeriv(currentX);
-  const ro = relu(currentX);
-  const rd = reluDeriv(currentX);
-
-  document.getElementById('sigOutput').textContent = so.toFixed(4);
-  document.getElementById('sigGrad').textContent = sd.toFixed(4);
-  document.getElementById('reluOutput').textContent = ro.toFixed(4);
-  document.getElementById('reluGrad').textContent = rd.toFixed(1);
-
-  renderAll();
+document.querySelectorAll('#actBtns button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('#actBtns button').forEach(b=>b.classList.remove('act'));
+    btn.classList.add('act');
+    activeFn=btn.dataset.fn;
+    buildBars(activeFn,parseInt(document.getElementById('layerSlider').value));
+  });
+});
+document.getElementById('layerSlider').addEventListener('input',e=>{
+  document.getElementById('layerCount').textContent=e.target.value;
+  buildBars(activeFn,parseInt(e.target.value));
 });
 
-// Initial render
-window.addEventListener('load', () => {
-  renderAll();
-  buildGradientBars();
+// live output slider
+document.getElementById('xSlider').addEventListener('input',e=>{
+  const x=parseFloat(e.target.value);
+  document.getElementById('xVal').textContent=x.toFixed(2);
+  document.getElementById('outSig').textContent=sigmoid(x).toFixed(4);
+  document.getElementById('gradSig').textContent=sigmoidD(x).toFixed(4);
+  document.getElementById('outRelu').textContent=relu(x).toFixed(4);
+  document.getElementById('gradRelu').textContent=reluD(x).toFixed(1);
+  document.getElementById('outTanh').textContent=tanhF(x).toFixed(4);
+  document.getElementById('gradTanh').textContent=tanhD(x).toFixed(4);
+  document.getElementById('outGelu').textContent=gelu(x).toFixed(4);
+  document.getElementById('gradGelu').textContent=geluD(x).toFixed(4);
 });
 
-window.addEventListener('resize', renderAll);
+window.addEventListener('load',()=>buildBars('sigmoid',10));
 </script>
 </body>
 </html>

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diffusion Models</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #0a0a0a;
+  --surface:   #111111;
+  --surface2:  #0d0d0d;
+  --border:    #1e1e1e;
+  --border2:   #2a2a2a;
+  --cyan:      #00ffe9;
+  --yellow:    #ffe900;
+  --magenta:   #e900ff;
+  --red:       #ff2d55;
+  --green:     #39ff14;
+  --orange:    #ff6b00;
+  --dim:       #3a3a3a;
+  --text:      #cccccc;
+  --bright:    #ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;font-size:11px;line-height:1.65;padding:36px 30px;max-width:980px;margin:0 auto;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:999;}
+.masthead{border-top:3px solid var(--magenta);padding:14px 0 10px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border);}
+.masthead h1{font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:4px;color:var(--bright);line-height:1;}
+.masthead h1 em{color:var(--magenta);font-style:normal;}
+.masthead-right{text-align:right;font-size:10px;color:#444;letter-spacing:2px;text-transform:uppercase;}
+.masthead-right strong{display:block;color:var(--cyan);font-size:11px;margin-bottom:2px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:2px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-bottom:2px;}
+.gfull{margin-bottom:2px;}
+.panel{background:var(--surface);border:1px solid var(--border);padding:18px;}
+.plabel{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:3px;color:#383838;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.ptitle{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--bright);margin-bottom:8px;line-height:1;}
+.ptitle.cy{color:var(--cyan);}.ptitle.rd{color:var(--red);}.ptitle.yl{color:var(--yellow);}.ptitle.pu{color:var(--magenta);}.ptitle.or{color:var(--orange);}.ptitle.gr{color:var(--green);}
+.bar{width:28px;height:2px;margin-bottom:10px;background:var(--magenta);}
+.bar.cy{background:var(--cyan);}.bar.rd{background:var(--red);}.bar.yl{background:var(--yellow);}.bar.or{background:var(--orange);}.bar.gr{background:var(--green);}
+p{font-size:11px;color:var(--text);margin-bottom:7px;line-height:1.65;}
+.hl{color:var(--magenta);font-weight:700;}.hl.cy{color:var(--cyan);}.hl.rd{color:var(--red);}.hl.yl{color:var(--yellow);}.hl.or{color:var(--orange);}.hl.gr{color:var(--green);}
+.math-block{background:#060606;border:1px solid var(--border);border-left:3px solid var(--magenta);padding:12px 14px;margin:10px 0;font-size:11px;}
+.math-block.cy{border-left-color:var(--cyan);}.math-block.yl{border-left-color:var(--yellow);}.math-block.rd{border-left-color:var(--red);}
+.eq{color:var(--magenta);}.eq.cy{color:var(--cyan);}.eq.yl{color:var(--yellow);}
+.org-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #111;font-size:10px;}
+.org-row:last-child{border-bottom:none;}
+.org-row-label{color:#333;text-transform:uppercase;letter-spacing:1px;font-size:9px;}
+.org-row-val{font-weight:700;}
+.tag{display:inline-block;border:1px solid var(--border);padding:1px 6px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#444;margin:2px 2px 2px 0;}
+.tag.cy{border-color:var(--cyan);color:var(--cyan);}.tag.rd{border-color:var(--red);color:var(--red);}.tag.yl{border-color:var(--yellow);color:var(--yellow);}.tag.pu{border-color:var(--magenta);color:var(--magenta);}.tag.or{border-color:var(--orange);color:var(--orange);}.tag.gr{border-color:var(--green);color:var(--green);}
+.timeline-item{display:flex;gap:12px;margin-bottom:12px;padding-left:14px;position:relative;}
+.timeline-item::before{content:'';position:absolute;left:0;top:5px;width:6px;height:6px;border:1px solid var(--magenta);background:var(--bg);}
+.tl-year{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;color:var(--magenta);flex-shrink:0;width:50px;}
+.tl-content{font-size:10px;color:#555;}
+.tl-content strong{color:var(--bright);display:block;margin-bottom:1px;}
+.footer{border-top:1px solid var(--border);margin-top:14px;padding-top:10px;display:flex;justify-content:space-between;font-size:9px;color:#2a2a2a;letter-spacing:1px;}
+button{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:7px 12px;border:1px solid var(--border2);background:var(--surface2);color:var(--dim);cursor:pointer;transition:all 0.1s;}
+button:hover{background:var(--border2);color:var(--bright);}
+button.act{background:var(--magenta);color:var(--bg);border-color:var(--magenta);}
+canvas{display:block;}
+@media(max-width:700px){.g2,.g3{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>DIFF<em>USION</em><br>MODELS</h1>
+  <div class="masthead-right">
+    <strong>GENERATIVE MODELS VIA LEARNED DENOISING</strong>
+    DDPM // SCORE MATCHING // LANGEVIN DYNAMICS<br>
+    FORWARD PROCESS // REVERSE PROCESS // CFG
+  </div>
+</div>
+
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">01 // Core Idea</div>
+    <div class="ptitle pu">DESTROY THEN REBUILD</div>
+    <div class="bar"></div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+      <div>
+        <p>Diffusion models learn to generate data by learning the reverse of a destruction process. The <span class="hl">forward process</span> is fixed and simple: gradually add Gaussian noise to a real data sample over T steps until it becomes pure noise — indistinguishable from a standard normal distribution. This is not learned; it's a predefined Markov chain.</p>
+        <p>The <span class="hl">reverse process</span> is what gets learned: a neural network (usually a U-Net) trained to predict the noise added at each timestep. Given a noisy image x_t and the timestep t, it predicts the noise ε that was added to get there. Subtracting that prediction gives a slightly cleaner x_{t-1}. Repeat T times starting from pure noise and you generate a new sample.</p>
+        <p>The connection to physics is literal — this is Brownian motion and its time-reversal. The connection to thermodynamics: the forward process is entropy increase (order → disorder), and the reverse is entropy decrease guided by learned information. The model learns the <span class="hl">score function</span> ∇_x log p(x) — the gradient of the log data density — which points toward more probable data configurations.</p>
+      </div>
+      <div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;">
+          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--magenta);line-height:1;">1000</div><div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">Typical T<br>timesteps</div></div>
+          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--cyan);line-height:1;">~1B</div><div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">U-Net<br>parameters</div></div>
+          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--yellow);line-height:1;">2020</div><div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">DDPM<br>paper</div></div>
+          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--green);line-height:1;">50x</div><div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;">DDIM<br>speedup</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">02 // Interactive // Forward + Reverse Process</div>
+    <div class="ptitle pu">NOISE TRAJECTORY</div>
+    <div class="bar"></div>
+    <p>The forward process adds noise according to a fixed variance schedule β_t. Watch a 2D point distribution evolve from structured data to pure Gaussian noise — then watch the reverse process reconstruct it. The model learns every step of the reverse arrow.</p>
+    <div style="display:grid;grid-template-columns:1fr 220px;gap:12px;margin-top:10px;">
+      <canvas id="cvDiffusion" width="600" height="260" style="width:100%;height:260px;background:#060606;border:1px solid var(--border);"></canvas>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="background:#060606;border:1px solid var(--border);padding:10px;">
+          <div style="font-size:9px;color:#444;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">Timestep t</div>
+          <div id="tDisplay" style="font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--magenta);line-height:1;">0</div>
+          <div style="font-size:9px;color:#333;margin-top:2px;">of T=100</div>
+        </div>
+        <div style="background:#060606;border:1px solid var(--border);padding:10px;">
+          <div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Noise level α̅_t</div>
+          <div id="alphaDisplay" style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--cyan);">1.000</div>
+          <div style="font-size:9px;color:#333;margin-top:2px;">signal retained</div>
+        </div>
+        <div style="background:#060606;border:1px solid var(--border);padding:10px;">
+          <div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Mode</div>
+          <div id="modeDisplay" style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--yellow);">CLEAN DATA</div>
+        </div>
+        <button id="btnForward" class="act">Forward</button>
+        <button id="btnReverse">Reverse</button>
+        <button id="btnResetDiff">Reset</button>
+      </div>
+    </div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:9px;color:#444;">t =</span>
+      <input type="range" id="tSlider" min="0" max="100" value="0" style="-webkit-appearance:none;flex:1;height:2px;background:var(--border2);outline:none;">
+      <span style="font-size:9px;color:#444;">100</span>
+    </div>
+  </div>
+</div>
+
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">03 // Forward Process</div>
+    <div class="ptitle pu">q(x_t | x_{t-1})</div>
+    <div class="bar"></div>
+    <p>The forward process is a fixed Markov chain that adds Gaussian noise at each step. The variance schedule β_1, ..., β_T controls how quickly the signal is destroyed.</p>
+    <div class="math-block"><span class="eq">q(x_t | x_{t-1}) = N(x_t; √(1-β_t)·x_{t-1}, β_t·I)</span></div>
+    <p>Using the reparametrization trick, we can sample x_t at any timestep directly from x_0 without running all T steps:</p>
+    <div class="math-block"><span class="eq">x_t = √ᾱ_t · x_0 + √(1-ᾱ_t) · ε</span><br><span style="color:#444;font-size:10px;">where ᾱ_t = Π_{s=1}^{t}(1-β_s) and ε ~ N(0,I)</span></div>
+    <p style="font-size:10px;color:#555;">This closed-form expression is what makes DDPM tractable: training doesn't require simulating the full chain. Sample a random t, corrupt x_0 directly to get x_t, and train the network to predict ε.</p>
+    <div style="margin-top:6px;"><span class="tag pu">Markov chain</span><span class="tag pu">Gaussian noise</span><span class="tag">closed form</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">04 // Reverse Process</div>
+    <div class="ptitle cy">p_θ(x_{t-1} | x_t)</div>
+    <div class="bar cy"></div>
+    <p>The reverse process is what the model learns — predicting the true posterior q(x_{t-1}|x_t, x_0) using a neural network parameterized by θ.</p>
+    <div class="math-block cy"><span class="eq cy">p_θ(x_{t-1}|x_t) = N(x_{t-1}; μ_θ(x_t,t), Σ_θ(x_t,t))</span></div>
+    <p>Ho et al. (2020) showed that predicting the noise ε_θ(x_t, t) is equivalent to and more stable than predicting x_0 directly. The predicted mean is then:</p>
+    <div class="math-block cy"><span class="eq cy">μ_θ = (1/√α_t)(x_t - β_t/√(1-ᾱ_t) · ε_θ(x_t,t))</span></div>
+    <p style="font-size:10px;color:#555;">The training objective simplifies to: minimize E[||ε - ε_θ(√ᾱ_t x_0 + √(1-ᾱ_t)ε, t)||²]. Just predict the noise. That's it.</p>
+    <div style="margin-top:6px;"><span class="tag cy">noise prediction</span><span class="tag cy">U-Net</span><span class="tag">DDPM 2020</span></div>
+  </div>
+</div>
+
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">05 // Score Function // The Deep Connection</div>
+    <div class="ptitle yl">SCORE MATCHING + LANGEVIN</div>
+    <div class="bar yl"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div>
+        <p>Song and Ermon (2019) showed that predicting noise is equivalent to learning the <span class="hl yl">score function</span> — the gradient of the log probability density:</p>
+        <div class="math-block yl"><span class="eq yl">s_θ(x,t) ≈ ∇_x log p_t(x)</span><br><span style="color:#444;font-size:10px;">score = direction toward higher probability</span></div>
+        <p style="font-size:10px;color:#555;">The score function points uphill on the probability landscape. Starting from noise and following the score with Langevin dynamics:</p>
+        <div class="math-block yl"><span class="eq yl">x_{i+1} = x_i + δ·s_θ(x_i) + √(2δ)·ε</span><br><span style="color:#444;font-size:10px;">Langevin MCMC — converges to samples from p(x)</span></div>
+      </div>
+      <div>
+        <p style="font-size:10px;color:#555;">This unified view — DDPM noise prediction = score matching — connects diffusion models to a rich body of statistical physics and stochastic differential equation theory.</p>
+        <p style="font-size:10px;color:#555;">Song et al. (2021) generalized this to continuous-time SDEs: the forward process is a stochastic differential equation, and the reverse is also an SDE with a drift term involving the score function.</p>
+        <div class="math-block" style="border-left-color:var(--cyan);">
+          <span class="eq cy">Forward SDE: dx = f(x,t)dt + g(t)dW</span><br>
+          <span class="eq cy">Reverse SDE: dx = [f - g²·∇logp_t(x)]dt + g·dW̄</span><br>
+          <span style="color:#444;font-size:10px;">Anderson 1982 // Song et al. 2021</span>
+        </div>
+        <div style="margin-top:6px;"><span class="tag yl">score matching</span><span class="tag yl">Langevin</span><span class="tag">SDE</span><span class="tag">Song 2021</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">06 // Sampling Speed</div>
+    <div class="ptitle or">DDIM + FAST SAMPLERS</div>
+    <div class="bar or"></div>
+    <p>Original DDPM requires T=1000 denoising steps at inference — slow. DDIM (Song et al., 2020) showed you can skip most timesteps by reformulating the reverse process as a <span class="hl or">non-Markovian</span> deterministic process.</p>
+    <div class="math-block" style="border-left-color:var(--orange);"><span class="eq" style="color:var(--orange);">DDPM: 1000 steps (stochastic)</span><br><span class="eq" style="color:var(--orange);">DDIM: 50 steps (deterministic)</span><br><span style="color:#444;font-size:10px;">same quality, ~20x faster</span></div>
+    <p style="font-size:10px;color:#555;">Later samplers (DPM-Solver, DEIS, UniPC) achieve comparable quality in 10-20 steps by treating diffusion as an ODE and using higher-order numerical solvers. Modern image generation uses these exclusively. Consistency Models (Song et al. 2023) can generate in a single step.</p>
+    <div style="margin-top:6px;"><span class="tag or">DDIM</span><span class="tag or">DPM-Solver</span><span class="tag">1-step possible</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">07 // Conditioning</div>
+    <div class="ptitle rd">CLASSIFIER-FREE GUIDANCE</div>
+    <div class="bar rd"></div>
+    <p>Conditioning a diffusion model on text (or class labels) requires teaching it to sample from p(x|c) instead of p(x). Classifier guidance uses a separately trained classifier. <span class="hl rd">Classifier-Free Guidance</span> (Ho &amp; Salimans, 2021) is cleaner: train a single model on both conditioned and unconditional objectives.</p>
+    <div class="math-block rd"><span class="eq rd">ε̂ = ε_uncond + w · (ε_cond - ε_uncond)</span><br><span style="color:#444;font-size:10px;">w = guidance scale. higher w = more faithful to prompt, less diversity</span></div>
+    <p style="font-size:10px;color:#555;">During training, randomly drop the condition (set to null) with probability p_uncond ~0.1. The model learns both. At inference, extrapolate between conditioned and unconditioned predictions. This is the core technique behind Stable Diffusion, DALL-E 2, Imagen — all of them.</p>
+    <div style="margin-top:6px;"><span class="tag rd">CFG</span><span class="tag rd">guidance scale</span><span class="tag">SD / DALL-E 2</span></div>
+  </div>
+</div>
+
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">08 // Latent Diffusion</div>
+    <div class="ptitle pu">STABLE DIFFUSION ARCHITECTURE</div>
+    <div class="bar"></div>
+    <p>Running diffusion directly in pixel space is expensive: a 512x512 RGB image has 786,432 dimensions, and every denoising step runs a full U-Net pass through that space. Latent Diffusion Models (Rombach et al., 2022) compress the image first.</p>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:2px;margin-top:12px;align-items:center;">
+      <div style="background:#060606;border:1px solid var(--border);padding:12px;text-align:center;">
+        <div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Input</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--bright);">512x512<br>RGB</div>
+        <div style="font-size:9px;color:#333;margin-top:4px;">786K dims</div>
+      </div>
+      <div style="text-align:center;font-size:18px;color:var(--dim);">→</div>
+      <div style="background:rgba(233,0,255,0.06);border:1px solid var(--magenta);padding:12px;text-align:center;">
+        <div style="font-size:9px;color:var(--magenta);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">VAE Encoder</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--magenta);">64x64<br>x4ch</div>
+        <div style="font-size:9px;color:#444;margin-top:4px;">16K dims // 48x smaller</div>
+      </div>
+      <div style="text-align:center;font-size:18px;color:var(--dim);">→</div>
+      <div style="background:#060606;border:1px solid var(--border);padding:12px;text-align:center;">
+        <div style="font-size:9px;color:#444;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Diffusion<br>in latent space</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--cyan);">U-Net<br>+<br>Attention</div>
+        <div style="font-size:9px;color:#333;margin-top:4px;">text conditioning</div>
+      </div>
+    </div>
+    <p style="margin-top:12px;font-size:10px;color:#555;">The VAE is trained separately to compress images into a lower-dimensional latent space that still preserves perceptual detail. Diffusion happens entirely in this compressed space. The VAE decoder reconstructs pixels at the end. This is why Stable Diffusion can run on consumer GPUs: the denoising U-Net operates on 64x64x4 tensors, not 512x512x3.</p>
+    <div style="margin-top:6px;"><span class="tag pu">LDM</span><span class="tag pu">VAE</span><span class="tag cy">U-Net</span><span class="tag">Rombach 2022</span><span class="tag">48x compression</span></div>
+  </div>
+</div>
+
+<div class="g3">
+  <div class="panel">
+    <div class="plabel">09 // Variants</div>
+    <div class="ptitle">FLOW MATCHING</div>
+    <div class="bar cy"></div>
+    <div class="math-block cy"><span class="eq cy">dx/dt = v_θ(x,t)</span><br><span style="color:#444;font-size:10px;">learn a vector field, not noise</span></div>
+    <p style="font-size:10px;color:#555;">Lipman et al. (2022). Instead of predicting noise, predict the velocity field that transports noise to data. Straighter trajectories than DDPM → fewer sampling steps needed. Rectified Flow, FLUX, SD3 use this. Theoretically cleaner than DDPM; practically at least as good.</p>
+    <div style="margin-top:6px;"><span class="tag cy">SD3</span><span class="tag cy">FLUX</span><span class="tag">ODE-based</span></div>
+  </div>
+  <div class="panel">
+    <div class="plabel">10 // Variants</div>
+    <div class="ptitle">CONSISTENCY MODELS</div>
+    <div class="bar yl"></div>
+    <div class="math-block yl"><span class="eq yl">f_θ(x_t, t) = f_θ(x_t', t')</span><br><span style="color:#444;font-size:10px;">same trajectory point, any t</span></div>
+    <p style="font-size:10px;color:#555;">Song et al. (2023). Train a model that maps any noisy x_t on a trajectory directly to the clean x_0. The consistency condition enforces that all points on the same reverse diffusion path map to the same output. Achieves single-step generation with competitive quality. LCM (Latent Consistency Models) applies this to Stable Diffusion.</p>
+    <div style="margin-top:6px;"><span class="tag yl">1-step</span><span class="tag yl">LCM</span><span class="tag">Song 2023</span></div>
+  </div>
+  <div class="panel">
+    <div class="plabel">11 // Beyond Images</div>
+    <div class="ptitle">AUDIO + 3D + PROTEIN</div>
+    <div class="bar or"></div>
+    <p style="font-size:10px;color:#555;">Diffusion is a general framework that works on any continuous data. WaveGrad / DiffWave apply it to raw audio waveforms. Point-E and Shap-E generate 3D objects. RFDiffusion (Baker Lab) generates protein backbone structures — used to design novel proteins with no natural analogue. Sora's video model is a diffusion transformer operating on spacetime patches.</p>
+    <div style="margin-top:6px;"><span class="tag or">WaveGrad</span><span class="tag or">RFDiffusion</span><span class="tag">Sora</span></div>
+  </div>
+</div>
+
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">12 // Timeline</div>
+    <div class="ptitle">HISTORY</div>
+    <div class="bar pu"></div>
+    <div class="timeline-item">
+      <div class="tl-year">2015</div>
+      <div class="tl-content"><strong>Sohl-Dickstein et al.</strong>Deep Unsupervised Learning using Nonequilibrium Thermodynamics. The original diffusion model paper — borrowed directly from statistical mechanics. Ignored for 5 years.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-year">2019</div>
+      <div class="tl-content"><strong>Song + Ermon — Score Matching</strong>Generative Modeling by Estimating Gradients of the Data Distribution. Langevin dynamics sampling. Connected diffusion to score functions. Set the theoretical stage.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="tl-year">2020</div>
+      <div class="tl-content"><strong>Ho et al. — DDPM</strong>Denoising Diffusion Probabilistic Models. Simplified training objective (predict noise), beat GANs on image quality. The breakthrough that made everyone pay attention.</div>
+    </div>
+    <div class="timeline-item" style="margin-bottom:0;">
+      <div class="tl-year">2022</div>
+      <div class="tl-content"><strong>Rombach et al. — LDM</strong>High-Resolution Image Synthesis with Latent Diffusion Models. Stable Diffusion. Made it fast enough to run on consumer hardware. The model that changed the internet.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">13 // vs. GANs + VAEs</div>
+    <div class="ptitle">GENERATIVE MODEL LANDSCAPE</div>
+    <div class="bar cy"></div>
+    <div class="org-row"><span class="org-row-label">Training stability</span><span class="org-row-val" style="color:var(--green);">Diffusion: excellent</span></div>
+    <div class="org-row"><span class="org-row-label">Sample quality</span><span class="org-row-val" style="color:var(--green);">Diffusion: best</span></div>
+    <div class="org-row"><span class="org-row-label">Sample speed</span><span class="org-row-val" style="color:var(--red);">Diffusion: slow</span></div>
+    <div class="org-row"><span class="org-row-label">Diversity</span><span class="org-row-val" style="color:var(--green);">Diffusion: high</span></div>
+    <div class="org-row"><span class="org-row-label">Mode coverage</span><span class="org-row-val">GAN: mode collapse risk</span></div>
+    <div class="org-row"><span class="org-row-label">Latent space</span><span class="org-row-val">VAE: cleanest</span></div>
+    <div class="org-row"><span class="org-row-label">Conditioning</span><span class="org-row-val" style="color:var(--magenta);">Diffusion: CFG</span></div>
+    <p style="margin-top:10px;font-size:10px;color:#555;">GANs dominated 2014-2020: fast inference, sharp images, but training instability and mode collapse. VAEs: stable, interpretable latent space, but blurry. Diffusion: slow inference, but no adversarial training, no mode collapse, and quality that surpassed both. Now dominant for image, video, audio generation.</p>
+    <div style="margin-top:6px;"><span class="tag pu">replaced GANs</span><span class="tag">2022 onward</span></div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>SOHL-DICKSTEIN 2015 // HO ET AL. 2020 // SONG ET AL. 2021 // ROMBACH ET AL. 2022</span>
+  <span>BRUTALIST TERMINAL v2 // DIFFUSION MODELS</span>
+</div>
+
+<script>
+// ============================================================
+// Diffusion process visualization
+// ============================================================
+const cv = document.getElementById('cvDiffusion');
+const ctx = cv.getContext('2d');
+
+const T = 100;
+const N_PARTICLES = 80;
+
+// Generate initial structured data — two clusters
+function initParticles() {
+  const pts = [];
+  for (let i = 0; i < N_PARTICLES; i++) {
+    const cluster = i < N_PARTICLES / 2 ? 0 : 1;
+    const cx = cluster === 0 ? -1.2 : 1.2;
+    const cy = cluster === 0 ? -0.5 : 0.5;
+    pts.push({
+      x0: cx + (Math.random() - 0.5) * 0.8,
+      y0: cy + (Math.random() - 0.5) * 0.8,
+      cluster
+    });
+  }
+  return pts;
+}
+
+let particles = initParticles();
+let currentT = 0;
+let direction = 'forward';
+let animInterval = null;
+
+// Beta schedule (linear)
+function getBeta(t) { return 0.0001 + (0.02 - 0.0001) * (t / T); }
+
+function getAlphaBar(t) {
+  let ab = 1.0;
+  for (let i = 1; i <= t; i++) ab *= (1 - getBeta(i));
+  return ab;
+}
+
+// Precompute alpha bars
+const alphaBars = [1.0];
+for (let t = 1; t <= T; t++) alphaBars.push(alphaBars[t-1] * (1 - getBeta(t)));
+
+function getXt(p, t) {
+  const ab = alphaBars[t];
+  const noise_scale = Math.sqrt(1 - ab);
+  const sig_scale = Math.sqrt(ab);
+  // Use seeded-ish noise based on particle index
+  const nx = p.noise_x !== undefined ? p.noise_x : (Math.random() * 2 - 1);
+  const ny = p.noise_y !== undefined ? p.noise_y : (Math.random() * 2 - 1);
+  p.noise_x = nx; p.noise_y = ny;
+  return {
+    x: sig_scale * p.x0 + noise_scale * nx,
+    y: sig_scale * p.y0 + noise_scale * ny
+  };
+}
+
+// Assign noise per particle at init
+particles.forEach(p => { p.noise_x = (Math.random()*2-1)*1.2; p.noise_y = (Math.random()*2-1)*1.2; });
+
+function toScreen(x, y, W, H) {
+  return {
+    sx: W/2 + x * W/6,
+    sy: H/2 - y * H/4
+  };
+}
+
+function drawDiffusion(t) {
+  const W = cv.offsetWidth; const H = 260;
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = W * dpr; cv.height = H * dpr;
+  ctx.scale(dpr, dpr);
+
+  ctx.fillStyle = '#060606'; ctx.fillRect(0, 0, W, H);
+
+  // grid
+  ctx.strokeStyle = '#111'; ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  // draw forward process strip at top: show t=0 ... t=T in miniature
+  const stripH = 30;
+  const steps = 11;
+  for (let si = 0; si <= steps; si++) {
+    const st = Math.round(si / steps * T);
+    const ab = alphaBars[st];
+    const alpha = ab;
+    const x = (si / steps) * (W - 80) + 40;
+    // small circle representing noise level
+    const r = 10;
+    ctx.beginPath(); ctx.arc(x, stripH/2, r, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(233,0,255,${0.1 + alpha * 0.5})`;
+    ctx.fill();
+    ctx.strokeStyle = st === t ? '#e900ff' : '#2a2a2a';
+    ctx.lineWidth = st === t ? 2 : 1;
+    ctx.stroke();
+    if (si < steps) {
+      ctx.strokeStyle = '#1e1e1e'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x+r, stripH/2); ctx.lineTo(x+(W-80)/steps-r, stripH/2); ctx.stroke();
+    }
+  }
+  ctx.fillStyle = '#444'; ctx.font = "9px Space Mono"; ctx.textAlign = 'left';
+  ctx.fillText('t=0 clean', 40, stripH + 12);
+  ctx.textAlign = 'right';
+  ctx.fillText('t=T noise', W-40, stripH + 12);
+
+  // draw particles at current t
+  const mainY = stripH + 30;
+  const mainH = H - mainY - 10;
+
+  particles.forEach((p, i) => {
+    const pos = getXt(p, t);
+    const { sx, sy } = toScreen(pos.x, pos.y, W, mainH);
+    const sy2 = sy + mainY;
+
+    const noiseAmount = 1 - alphaBars[t];
+    const clusterColor = p.cluster === 0 ? '#e900ff' : '#00ffe9';
+    const mixR = parseInt(clusterColor.slice(1,3), 16);
+    const mixG = parseInt(clusterColor.slice(3,5), 16);
+    const mixB = parseInt(clusterColor.slice(5,7), 16);
+    const grayMix = noiseAmount;
+    const r = Math.round(mixR * (1-grayMix) + 150*grayMix);
+    const g = Math.round(mixG * (1-grayMix) + 150*grayMix);
+    const b = Math.round(mixB * (1-grayMix) + 150*grayMix);
+
+    ctx.fillStyle = `rgba(${r},${g},${b},0.7)`;
+    ctx.beginPath(); ctx.arc(sx, sy2, 4, 0, Math.PI*2); ctx.fill();
+  });
+
+  // label
+  ctx.fillStyle = alphaBars[t] > 0.5 ? '#e900ff' : '#555';
+  ctx.font = "bold 10px Space Mono"; ctx.textAlign = 'left';
+  ctx.fillText(alphaBars[t] > 0.8 ? 'STRUCTURED DATA' : alphaBars[t] > 0.3 ? 'PARTIALLY NOISED' : 'NEAR-PURE NOISE', 40, H - 10);
+
+  // update displays
+  document.getElementById('tDisplay').textContent = t;
+  document.getElementById('alphaDisplay').textContent = alphaBars[t].toFixed(3);
+  document.getElementById('modeDisplay').textContent =
+    t === 0 ? 'CLEAN DATA' :
+    t < 30 ? 'LIGHT NOISE' :
+    t < 70 ? 'HEAVY NOISE' :
+    t < 95 ? 'MOSTLY NOISE' : 'PURE GAUSSIAN';
+}
+
+document.getElementById('btnForward').addEventListener('click', () => {
+  if (animInterval) { clearInterval(animInterval); animInterval = null; }
+  direction = 'forward';
+  document.getElementById('btnForward').classList.add('act');
+  document.getElementById('btnReverse').classList.remove('act');
+  animInterval = setInterval(() => {
+    if (currentT >= T) { clearInterval(animInterval); animInterval = null; return; }
+    currentT++;
+    document.getElementById('tSlider').value = currentT;
+    drawDiffusion(currentT);
+  }, 40);
+});
+
+document.getElementById('btnReverse').addEventListener('click', () => {
+  if (animInterval) { clearInterval(animInterval); animInterval = null; }
+  direction = 'reverse';
+  document.getElementById('btnReverse').classList.add('act');
+  document.getElementById('btnForward').classList.remove('act');
+  animInterval = setInterval(() => {
+    if (currentT <= 0) { clearInterval(animInterval); animInterval = null; return; }
+    currentT--;
+    document.getElementById('tSlider').value = currentT;
+    drawDiffusion(currentT);
+  }, 40);
+});
+
+document.getElementById('btnResetDiff').addEventListener('click', () => {
+  if (animInterval) { clearInterval(animInterval); animInterval = null; }
+  particles = initParticles();
+  particles.forEach(p => { p.noise_x = (Math.random()*2-1)*1.2; p.noise_y = (Math.random()*2-1)*1.2; });
+  currentT = 0;
+  document.getElementById('tSlider').value = 0;
+  document.getElementById('btnForward').classList.add('act');
+  document.getElementById('btnReverse').classList.remove('act');
+  drawDiffusion(0);
+});
+
+document.getElementById('tSlider').addEventListener('input', e => {
+  if (animInterval) { clearInterval(animInterval); animInterval = null; }
+  currentT = parseInt(e.target.value);
+  drawDiffusion(currentT);
+});
+
+window.addEventListener('load', () => drawDiffusion(0));
+window.addEventListener('resize', () => drawDiffusion(currentT));
+
+// Style the range input
+const slider = document.getElementById('tSlider');
+slider.style.cssText += ';-webkit-appearance:none;height:2px;background:var(--border2);outline:none;border:none;';
+</script>
+</body>
+</html>
