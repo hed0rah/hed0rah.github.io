@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BACKPROP vs STDP</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+  :root {
+  --bg:         #0a0a0a;
+  --surface:    #111111;
+  --surface2:   #0d0d0d;
+  --border:     #1e1e1e;
+  --border2:    #2a2a2a;
+  --cyan:       #00ffe9;
+  --yellow:     #ffe900;
+  --magenta:    #e900ff;
+  --red:        #ff2d55;
+  --green:      #39ff14;
+  --orange:     #ff6b00;
+  --dim:        #3a3a3a;
+  --text:       #cccccc;
+  --bright:     #ffffff;
+  --hi-cyan:    rgba(0,255,233,0.07);
+  --hi-red:     rgba(255,45,85,0.08);
+  --hi-yellow:  rgba(255,233,0,0.07);
+}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;font-size:11px;line-height:1.65;padding:36px 30px;max-width:980px;margin:0 auto;}
+  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:999;}
+  .masthead{border-top:3px solid var(--magenta);padding:14px 0 10px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border);}
+  .masthead h1{font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:4px;color:var(--bright);line-height:1;}
+  .masthead h1 em{color:var(--magenta);font-style:normal;}
+  .masthead-right{text-align:right;font-size:10px;color:#444;letter-spacing:2px;text-transform:uppercase;}
+  .masthead-right strong{display:block;color:var(--cyan);font-size:11px;margin-bottom:2px;}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:2px;}
+  .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-bottom:2px;}
+  .gfull{margin-bottom:2px;}
+  .panel{background:var(--surface);border:1px solid var(--border);padding:18px;}
+  .plabel{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:3px;color:#383838;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .ptitle{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--bright);margin-bottom:8px;line-height:1;}
+  .ptitle.cy{color:var(--cyan);}.ptitle.rd{color:var(--red);}.ptitle.yl{color:var(--yellow);}.ptitle.pu{color:var(--magenta);}.ptitle.or{color:var(--orange);}
+  .bar{width:28px;height:2px;margin-bottom:10px;background:var(--cyan);}
+  .bar.rd{background:var(--red);}.bar.yl{background:var(--yellow);}.bar.pu{background:var(--magenta);}.bar.or{background:var(--orange);}
+  p{font-size:11px;color:var(--text);margin-bottom:7px;line-height:1.65;}
+  .hl{color:var(--cyan);font-weight:700;}.hl.rd{color:var(--red);}.hl.yl{color:var(--yellow);}.hl.pu{color:var(--magenta);}.hl.or{color:var(--orange);}
+  .math-block{background:#060606;border:1px solid var(--border);border-left:3px solid var(--yellow);padding:12px 14px;margin:10px 0;font-size:11px;}
+  .math-block .eq{color:var(--yellow);margin-bottom:4px;}
+  .math-block .note{font-size:9px;color:#444;margin-top:6px;}
+  .math-block.pu{border-left-color:var(--magenta);}
+  .math-block.pu .eq{color:var(--magenta);}
+  .math-block.rd{border-left-color:var(--red);}
+  .math-block.rd .eq{color:var(--red);}
+  .phase-list{margin:8px 0;}
+  .phase{display:flex;gap:10px;margin-bottom:10px;padding-left:14px;position:relative;}
+  .phase::before{content:'';position:absolute;left:0;top:5px;width:6px;height:6px;border:1px solid var(--magenta);background:var(--bg);}
+  .phase-n{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:var(--magenta);flex-shrink:0;width:80px;}
+  .phase p{margin:0;font-size:10px;color:#555;}
+  .phase.cy::before{border-color:var(--cyan);}
+  .phase.cy .phase-n{color:var(--cyan);}
+  .stdp-chart{background:#050505;border:1px solid var(--border);padding:14px;margin:10px 0;position:relative;}
+  .stdp-axis{display:flex;align-items:center;justify-content:center;position:relative;height:120px;}
+  .stdp-label{font-size:9px;color:#333;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+  .compare-row{display:grid;grid-template-columns:1fr 2px 1fr;gap:0;margin:4px 0;}
+  .compare-cell{padding:8px;font-size:10px;}
+  .compare-cell.left{text-align:right;color:#555;}
+  .compare-cell.right{color:#555;}
+  .compare-divider{background:var(--border);}
+  .compare-header{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:2px;padding:8px;border-bottom:1px solid var(--border);}
+  .compare-header.pu{color:var(--magenta);}
+  .compare-header.cy{color:var(--cyan);}
+  .tag{display:inline-block;border:1px solid var(--border);padding:1px 6px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#444;margin:2px 2px 2px 0;}
+  .tag.cy{border-color:var(--cyan);color:var(--cyan);}
+  .tag.rd{border-color:var(--red);color:var(--red);}
+  .tag.pu{border-color:var(--magenta);color:var(--magenta);}
+  .tag.yl{border-color:var(--yellow);color:var(--yellow);}
+  .footer{border-top:1px solid var(--border);margin-top:14px;padding-top:10px;display:flex;justify-content:space-between;font-size:9px;color:#2a2a2a;letter-spacing:1px;}
+  .big-num{font-family:'Bebas Neue',sans-serif;font-size:42px;line-height:1;letter-spacing:2px;}
+  .big-sub{font-size:9px;color:#444;text-transform:uppercase;letter-spacing:2px;margin-top:2px;}
+  .flow-step{background:#0a0a0a;border:1px solid var(--border);padding:10px 12px;margin-bottom:2px;display:flex;align-items:flex-start;gap:10px;}
+  .flow-num{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#222;flex-shrink:0;line-height:1;margin-top:2px;}
+  .flow-num.pu{color:var(--magenta);}
+  .flow-num.cy{color:var(--cyan);}
+  .flow-content{font-size:10px;color:#555;}
+  .flow-title{font-size:11px;color:var(--bright);margin-bottom:2px;}
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>BACK<em>PROP</em> vs STDP</h1>
+  <div class="masthead-right">
+    <strong>HOW LEARNING ACTUALLY HAPPENS</strong>
+    GRADIENT DESCENT // HEBBIAN PLASTICITY<br>
+    MACHINE vs BIOLOGICAL SYNAPTIC LEARNING
+  </div>
+</div>
+
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">01 // Artificial Learning</div>
+    <div class="ptitle yl">BACKPROPAGATION</div>
+    <div class="bar yl"></div>
+    <p>Backpropagation is the engine behind virtually all modern deep learning. It works by computing how much each weight contributed to the final error, then nudging every weight in the direction that reduces that error. The process requires a <span class="hl yl">global error signal</span> propagated backward through the entire network.</p>
+    <p>Proposed by Rumelhart, Hinton & Williams in 1986, though the chain rule mathematics goes back to Leibniz. It requires the network to be differentiable end-to-end - every operation needs a computable gradient.</p>
+    <div class="math-block">
+      <div class="eq">L = loss(ŷ, y) // compute scalar error</div>
+      <div class="eq">∂L/∂w = ∂L/∂ŷ · ∂ŷ/∂z · ∂z/∂w</div>
+      <div class="eq">w ← w - η · ∂L/∂w</div>
+      <div class="note">// chain rule applied recursively from output back to input. η = learning rate. requires storing all intermediate activations.</div>
+    </div>
+
+    <div class="phase-list">
+      <div class="phase cy">
+        <div class="phase-n" style="color:var(--cyan)">FORWARD</div>
+        <p>Input passes through all layers. Activations computed and cached at every layer. Final output compared to target. Scalar loss computed.</p>
+      </div>
+      <div class="phase cy">
+        <div class="phase-n" style="color:var(--yellow)">BACKWARD</div>
+        <p>Loss gradient flows backward. Chain rule decomposes gradient layer by layer. Each weight receives its exact contribution to error.</p>
+      </div>
+      <div class="phase cy">
+        <div class="phase-n" style="color:var(--cyan)">UPDATE</div>
+        <p>Optimizer (SGD, Adam, etc.) applies gradient to weights. Learning rate scales the step. All weights updated simultaneously.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">02 // Biological Learning</div>
+    <div class="ptitle pu">STDP</div>
+    <div class="bar pu"></div>
+    <p><span class="hl pu">Spike-Timing Dependent Plasticity</span> is the biological mechanism by which synapses strengthen or weaken based on the precise relative timing of pre- and post-synaptic spikes. No global error signal. No backward pass. Just local temporal correlation.</p>
+    <p>If the presynaptic neuron fires just before the postsynaptic neuron - causality implied - the synapse <span class="hl pu">potentiates</span> (LTP, long-term potentiation). If the order reverses, the synapse <span class="hl rd">depresses</span> (LTD). The window is ~20ms.</p>
+
+    <div class="math-block pu">
+      <div class="eq">Δt = t_post - t_pre</div>
+      <div class="eq">ΔW = A₊ · e^(-Δt/τ₊)  if Δt > 0 (LTP)</div>
+      <div class="eq">ΔW = -A₋ · e^(Δt/τ₋)   if Δt &lt; 0 (LTD)</div>
+      <div class="note">// A± = amplitude constants. τ± = time constants (~20ms). entirely local - no knowledge of global error.</div>
+    </div>
+
+    <div class="stdp-chart">
+      <div class="stdp-label">STDP LEARNING WINDOW // ΔW vs Δt</div>
+      <svg viewBox="0 0 320 110" width="100%" height="110">
+        <!-- Axes -->
+        <line x1="160" y1="10" x2="160" y2="100" stroke="#222" stroke-width="1"/>
+        <line x1="20" y1="55" x2="300" y2="55" stroke="#222" stroke-width="1"/>
+        <!-- Zero labels -->
+        <text x="155" y="108" font-family="Space Mono" font-size="7" fill="#333">0</text>
+        <text x="5" y="58" font-family="Space Mono" font-size="7" fill="#333">0</text>
+        <!-- Axis labels -->
+        <text x="270" y="68" font-family="Space Mono" font-size="7" fill="#333">Δt (ms)</text>
+        <text x="162" y="18" font-family="Space Mono" font-size="7" fill="#333">ΔW</text>
+        <!-- LTP curve (pre before post, Δt > 0) -->
+        <path d="M 162 55 C 175 20, 210 15, 300 50" stroke="#e900ff" stroke-width="2" fill="none"/>
+        <!-- LTD curve (pre after post, Δt < 0) -->
+        <path d="M 158 55 C 145 75, 110 88, 20 62" stroke="#ff2d55" stroke-width="2" fill="none"/>
+        <!-- Labels -->
+        <text x="200" y="28" font-family="Space Mono" font-size="8" fill="#e900ff">LTP</text>
+        <text x="70" y="88" font-family="Space Mono" font-size="8" fill="#ff2d55">LTD</text>
+        <text x="170" y="35" font-family="Space Mono" font-size="7" fill="#444">pre→post</text>
+        <text x="60" y="48" font-family="Space Mono" font-size="7" fill="#444">post→pre</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">03 // The Backprop Problem</div>
+    <div class="ptitle rd">BIOLOGICAL IMPLAUSIBILITY</div>
+    <div class="bar rd"></div>
+    <p>Backpropagation has several properties that make neuroscientists deeply skeptical it operates in the brain:</p>
+
+    <div class="flow-step">
+      <div class="flow-num rd">01</div>
+      <div class="flow-content">
+        <div class="flow-title">Weight Transport Problem</div>
+        Backprop requires the feedback pathway to use the exact same weights as the forward pathway, transposed. The brain has no known mechanism for this. Feedback connections are anatomically different from feedforward ones.
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num rd">02</div>
+      <div class="flow-content">
+        <div class="flow-title">Temporal Non-locality</div>
+        Backprop requires storing all intermediate activations during the forward pass to compute gradients. Neurons would need to "remember" their activation values until the error signal arrives - biologically implausible on the required timescale.
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num rd">03</div>
+      <div class="flow-content">
+        <div class="flow-title">Global Error Signal</div>
+        Every weight in a deep network receives a gradient computed from a global loss function. There is no known global error broadcast in the brain. Learning appears to be local.
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num rd">04</div>
+      <div class="flow-content">
+        <div class="flow-title">Vanishing Gradients</div>
+        In very deep networks, gradients shrink exponentially as they propagate backward. The brain has no obvious analogue to batch normalization or residual connections that solve this in ANNs.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">04 // Contenders &amp; Hybrids</div>
+    <div class="ptitle cy">BIOPLAUSIBLE ALTERNATIVES</div>
+    <div class="bar"></div>
+    <p>Active research area - can we find learning rules that are both effective and biologically plausible?</p>
+
+    <div class="flow-step">
+      <div class="flow-num cy">01</div>
+      <div class="flow-content">
+        <div class="flow-title" style="color:var(--cyan)">Feedback Alignment (Lillicrap 2016)</div>
+        Replace transposed weights in backward pass with fixed random matrices. Surprisingly still works - the forward weights align to the random feedback over time. Removes weight transport requirement.
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num cy">02</div>
+      <div class="flow-content">
+        <div class="flow-title" style="color:var(--cyan)">Predictive Coding</div>
+        Each layer predicts the activity of the layer below. Error = prediction - actual. Errors propagate locally. Maps loosely to cortical hierarchies. Karl Friston's Free Energy Principle extends this framework.
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num cy">03</div>
+      <div class="flow-content">
+        <div class="flow-title" style="color:var(--cyan)">Contrastive Hebbian Learning</div>
+        Run network in two phases: clamped (target provided) and free (no target). Synapses update based on difference in correlations between phases. Biologically plausible, maps to sleep/wake cycles.
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num cy">04</div>
+      <div class="flow-content">
+        <div class="flow-title" style="color:var(--cyan)">Neuromodulation as Error Signal</div>
+        Dopamine, acetylcholine, and norepinephrine may carry something like a global reward prediction error. Not identical to backprop loss but functionally analogous. Reinforcement learning connection.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">05 // Side by Side</div>
+    <div class="ptitle">DIRECT COMPARISON</div>
+    <div class="bar pu"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;">
+      <div>
+        <div style="background:#0a0a0a;border:1px solid var(--border);padding:2px;">
+          <div class="compare-header pu">STDP // BIOLOGICAL</div>
+          <div style="padding:0 8px;">
+            <div class="compare-row"><div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #111;font-size:10px;"><span style="color:#333;width:100px;flex-shrink:0;">Signal scope</span><span style="color:#555;">Purely local. Synapse only knows about its own pre/post spike times. No network-wide information.</span></div></div>
+            <div class="compare-row"><div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #111;font-size:10px;"><span style="color:#333;width:100px;flex-shrink:0;">Timing</span><span style="color:#555;">Online, continuous. Happens in real time as spikes occur. No separate forward/backward phases.</span></div></div>
+            <div class="compare-row"><div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #111;font-size:10px;"><span style="color:#333;width:100px;flex-shrink:0;">Error source</span><span style="color:#555;">None explicitly. Correlation as proxy for causality. Reward signals modulate via neuromodulators.</span></div></div>
+            <div class="compare-row"><div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #111;font-size:10px;"><span style="color:#333;width:100px;flex-shrink:0;">Memory req.</span><span style="color:#555;">Eligibility traces - synapse maintains short-term memory of recent spike times (~seconds).</span></div></div>
+            <div class="compare-row"><div style="display:flex;gap:8px;padding:7px 0;font-size:10px;"><span style="color:#333;width:100px;flex-shrink:0;">Result</span><span style="color:var(--magenta);">Unsupervised structure learning. Temporal sequence learning. Works without labeled data.</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="background:#0a0a0a;border:1px solid var(--border);padding:2px;">
+          <div class="compare-header cy">BACKPROP // ARTIFICIAL</div>
+          <div style="padding:0 8px;">
+            <div class="compare-row"><div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #111;font-size:10px;"><span style="color:#333;width:100px;flex-shrink:0;">Signal scope</span><span style="color:#555;">Global. Every weight receives gradient derived from the network-wide scalar loss function.</span></div></div>
+            <div class="compare-row"><div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #111;font-size:10px;"><span style="color:#333;width:100px;flex-shrink:0;">Timing</span><span style="color:#555;">Two-phase. Forward pass caches activations. Backward pass computes and applies gradients.</span></div></div>
+            <div class="compare-row"><div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #111;font-size:10px;"><span style="color:#333;width:100px;flex-shrink:0;">Error source</span><span style="color:#555;">Explicit labeled targets required. Loss function compares output to ground truth.</span></div></div>
+            <div class="compare-row"><div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #111;font-size:10px;"><span style="color:#333;width:100px;flex-shrink:0;">Memory req.</span><span style="color:#555;">Full activation cache for all layers. Scales linearly with network depth and batch size.</span></div></div>
+            <div class="compare-row"><div style="display:flex;gap:8px;padding:7px 0;font-size:10px;"><span style="color:#333;width:100px;flex-shrink:0;">Result</span><span style="color:var(--cyan);">Highly effective supervised learning. State of art across most benchmarks. Biologically implausible.</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>BACKPROP // RUMELHART HINTON WILLIAMS 1986 // STDP // BI & POO 1998 // FEEDBACK ALIGNMENT // LILLICRAP 2016</span>
+  <span>BRUTALIST TERMINAL v2 // LEARNING MECHANISMS</span>
+</div>
+
+</body>
+</html>

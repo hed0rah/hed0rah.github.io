@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATTENTION MECHANISM</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+  :root {
+  --bg:         #0a0a0a;
+  --surface:    #111111;
+  --surface2:   #0d0d0d;
+  --border:     #1e1e1e;
+  --border2:    #2a2a2a;
+  --cyan:       #00ffe9;
+  --yellow:     #ffe900;
+  --magenta:    #e900ff;
+  --red:        #ff2d55;
+  --green:      #39ff14;
+  --orange:     #ff6b00;
+  --dim:        #3a3a3a;
+  --text:       #cccccc;
+  --bright:     #ffffff;
+  --hi-cyan:    rgba(0,255,233,0.07);
+  --hi-red:     rgba(255,45,85,0.08);
+  --hi-yellow:  rgba(255,233,0,0.07);
+}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;font-size:11px;line-height:1.65;padding:36px 30px;max-width:980px;margin:0 auto;}
+  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:999;}
+  .masthead{border-top:3px solid var(--yellow);padding:14px 0 10px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border);}
+  .masthead h1{font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:4px;color:var(--bright);line-height:1;}
+  .masthead h1 em{color:var(--yellow);font-style:normal;}
+  .masthead-right{text-align:right;font-size:10px;color:#444;letter-spacing:2px;text-transform:uppercase;}
+  .masthead-right strong{display:block;color:var(--cyan);font-size:11px;margin-bottom:2px;}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:2px;}
+  .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-bottom:2px;}
+  .gfull{margin-bottom:2px;}
+  .panel{background:var(--surface);border:1px solid var(--border);padding:18px;}
+  .plabel{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:3px;color:#383838;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .ptitle{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--bright);margin-bottom:8px;line-height:1;}
+  .ptitle.cy{color:var(--cyan);}.ptitle.rd{color:var(--red);}.ptitle.yl{color:var(--yellow);}.ptitle.pu{color:var(--magenta);}
+  .bar{width:28px;height:2px;margin-bottom:10px;background:var(--cyan);}
+  .bar.rd{background:var(--red);}.bar.yl{background:var(--yellow);}.bar.pu{background:var(--magenta);}
+  p{font-size:11px;color:var(--text);margin-bottom:7px;line-height:1.65;}
+  .hl{color:var(--cyan);font-weight:700;}.hl.rd{color:var(--red);}.hl.yl{color:var(--yellow);}.hl.pu{color:var(--magenta);}
+  .math-block{background:#060606;border:1px solid var(--border);border-left:3px solid var(--yellow);padding:12px 14px;margin:10px 0;font-size:11px;}
+  .math-block .eq{color:var(--yellow);margin-bottom:4px;font-size:12px;}
+  .math-block .note{font-size:9px;color:#444;margin-top:6px;}
+  .footer{border-top:1px solid var(--border);margin-top:14px;padding-top:10px;display:flex;justify-content:space-between;font-size:9px;color:#2a2a2a;letter-spacing:1px;}
+  .tag{display:inline-block;border:1px solid var(--border);padding:1px 6px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#444;margin:2px 2px 2px 0;}
+  .tag.cy{border-color:var(--cyan);color:var(--cyan);}.tag.rd{border-color:var(--red);color:var(--red);}.tag.yl{border-color:var(--yellow);color:var(--yellow);}.tag.pu{border-color:var(--magenta);color:var(--magenta);}
+
+  /* Attention heatmap */
+  .attn-grid{display:grid;gap:2px;margin:10px 0;}
+  .attn-cell{height:28px;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'Space Mono',monospace;}
+
+  /* QKV boxes */
+  .qkv-row{display:flex;gap:4px;margin:10px 0;}
+  .qkv-box{flex:1;padding:10px 8px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;border:1px solid;}
+  .qkv-box.q{background:#001a17;border-color:var(--cyan);color:var(--cyan);}
+  .qkv-box.k{background:#1a1200;border-color:var(--yellow);color:var(--yellow);}
+  .qkv-box.v{background:#1a0007;border-color:var(--red);color:var(--red);}
+  .qkv-sub{font-family:'Space Mono',monospace;font-size:8px;display:block;margin-top:3px;opacity:0.6;text-transform:lowercase;letter-spacing:0;}
+
+  /* Head grid */
+  .head-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin:10px 0;}
+  .head-box{background:#0a0a0a;border:1px solid var(--border);padding:8px;text-align:center;}
+  .head-box .hn{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;color:#333;}
+  .head-box .hs{font-size:8px;color:#2a2a2a;margin-top:2px;}
+
+  /* Softmax viz */
+  .softmax-row{display:flex;gap:2px;align-items:flex-end;height:60px;margin:8px 0;}
+  .sm-bar{flex:1;background:var(--cyan);opacity:0.15;position:relative;transition:all 0.3s;}
+  .sm-val{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:8px;color:#444;white-space:nowrap;}
+  .sm-tok{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:8px;white-space:nowrap;}
+
+  .flow-step{background:#0a0a0a;border:1px solid var(--border);padding:10px 12px;margin-bottom:2px;display:flex;align-items:flex-start;gap:10px;}
+  .flow-num{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#222;flex-shrink:0;line-height:1;margin-top:2px;}
+  .flow-num.yl{color:var(--yellow);}
+  .flow-content{font-size:10px;color:#555;}
+  .flow-title{font-size:11px;color:var(--bright);margin-bottom:2px;}
+
+  .attn-example{margin:10px 0;}
+  .ae-row{display:flex;gap:4px;margin-bottom:4px;align-items:center;}
+  .ae-token{font-size:10px;color:#444;width:70px;text-align:right;flex-shrink:0;}
+  .ae-bars{display:flex;gap:2px;flex:1;}
+  .ae-bar{height:16px;border:1px solid transparent;}
+
+  .big-num{font-family:'Bebas Neue',sans-serif;font-size:38px;line-height:1;letter-spacing:2px;}
+  .big-sub{font-size:9px;color:#444;text-transform:uppercase;letter-spacing:2px;margin-top:2px;}
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>AT<em>TENTION</em></h1>
+  <div class="masthead-right">
+    <strong>THE MECHANISM UNDERNEATH EVERYTHING</strong>
+    QUERY // KEY // VALUE // SCALED DOT-PRODUCT<br>
+    TRANSFORMER ARCHITECTURE // VASWANI ET AL. 2017
+  </div>
+</div>
+
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">01 // Core Concept</div>
+    <div class="ptitle yl">WHAT ATTENTION DOES</div>
+    <div class="bar yl"></div>
+    <p>Attention is a mechanism for every token in a sequence to <span class="hl yl">dynamically weight how much it should care about every other token</span>. Rather than compressing context into a fixed-size vector (the old RNN problem), attention lets the model maintain direct connections to all positions simultaneously.</p>
+    <p>The "Attention Is All You Need" paper (Vaswani et al. 2017) replaced recurrence entirely. The key insight: you don't need sequential processing if you can compute all pairwise relationships at once.</p>
+    <p>Think of it as a <span class="hl">soft, differentiable lookup table</span>. You have a query (what you're looking for), a set of keys (what's available), and values (the actual content). Attention computes similarity between your query and all keys, turns those similarities into weights via softmax, then returns a weighted sum of values.</p>
+
+    <div class="math-block">
+      <div class="eq">Attention(Q,K,V) = softmax(QKᵀ / √dₖ) · V</div>
+      <div class="note">// Q=queries, K=keys, V=values. dₖ=key dimension. √dₖ scaling prevents dot products from growing too large, which would push softmax into regions with tiny gradients.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">02 // Q, K, V Projections</div>
+    <div class="ptitle cy">QUERY // KEY // VALUE</div>
+    <div class="bar"></div>
+    <p>Each token's embedding gets projected into three different spaces by learned weight matrices W_Q, W_K, W_V. These are not the same - they serve different roles:</p>
+
+    <div class="qkv-row">
+      <div class="qkv-box q">Q<span class="qkv-sub">what am i looking for?<br>W_Q · x</span></div>
+      <div class="qkv-box k">K<span class="qkv-sub">what do i contain?<br>W_K · x</span></div>
+      <div class="qkv-box v">V<span class="qkv-sub">what do i communicate?<br>W_V · x</span></div>
+    </div>
+
+    <p>The dot product <span class="hl">Q · Kᵀ</span> produces a score matrix of shape (seq_len × seq_len). Every query attends to every key. Score = geometric similarity in the projected space. High dot product means the query and key are "compatible".</p>
+    <p>Softmax converts raw scores to a probability distribution over positions. The output is a weighted sum of values - each output token is a blend of all input values, weighted by attention.</p>
+    <p style="font-size:10px;color:#444;">The separation of K and V is important: the key determines relevance while the value determines what actually gets communicated. A token can be "findable" (high key activation) without dominating the output (low value magnitude).</p>
+  </div>
+</div>
+
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">03 // Attention Heatmap // "The animal didn't cross the street because it was too tired"</div>
+    <div class="ptitle">WHAT ATTENDS TO WHAT</div>
+    <div class="bar pu"></div>
+    <p style="font-size:10px;color:#555;margin-bottom:12px;">Each row = query token. Each column = key token. Color intensity = attention weight. This is how the model resolves "it" → "animal".</p>
+
+    <svg viewBox="0 0 860 200" width="100%" height="200">
+      <!-- Column headers -->
+      <text x="110" y="18" font-family="Space Mono" font-size="9" fill="#333" text-anchor="middle">The</text>
+      <text x="185" y="18" font-family="Space Mono" font-size="9" fill="#333" text-anchor="middle">animal</text>
+      <text x="260" y="18" font-family="Space Mono" font-size="9" fill="#333" text-anchor="middle">didn't</text>
+      <text x="335" y="18" font-family="Space Mono" font-size="9" fill="#333" text-anchor="middle">cross</text>
+      <text x="410" y="18" font-family="Space Mono" font-size="9" fill="#333" text-anchor="middle">the</text>
+      <text x="485" y="18" font-family="Space Mono" font-size="9" fill="#333" text-anchor="middle">street</text>
+      <text x="560" y="18" font-family="Space Mono" font-size="9" fill="#333" text-anchor="middle">because</text>
+      <text x="635" y="18" font-family="Space Mono" font-size="9" fill="#444" fill-opacity="1" font-weight="bold">it</text>
+      <text x="710" y="18" font-family="Space Mono" font-size="9" fill="#333" text-anchor="middle">was</text>
+      <text x="785" y="18" font-family="Space Mono" font-size="9" fill="#333" text-anchor="middle">tired</text>
+
+      <!-- Row: "it" attending to everything - the key row -->
+      <text x="75" y="110" font-family="Space Mono" font-size="9" fill="#00ffe9" text-anchor="end">it →</text>
+
+      <!-- Attention cells for "it" row - high on "animal", medium on "street", low others -->
+      <rect x="85" y="92" width="55" height="28" fill="#00ffe9" fill-opacity="0.08" rx="1"/>
+      <text x="112" y="110" font-family="Space Mono" font-size="8" fill="#333" text-anchor="middle">0.04</text>
+
+      <rect x="160" y="92" width="55" height="28" fill="#00ffe9" fill-opacity="0.62" rx="1"/>
+      <text x="187" y="110" font-family="Space Mono" font-size="8" fill="#00ffe9" text-anchor="middle">0.61</text>
+
+      <rect x="235" y="92" width="55" height="28" fill="#00ffe9" fill-opacity="0.05" rx="1"/>
+      <text x="262" y="110" font-family="Space Mono" font-size="8" fill="#333" text-anchor="middle">0.03</text>
+
+      <rect x="310" y="92" width="55" height="28" fill="#00ffe9" fill-opacity="0.07" rx="1"/>
+      <text x="337" y="110" font-family="Space Mono" font-size="8" fill="#333" text-anchor="middle">0.04</text>
+
+      <rect x="385" y="92" width="55" height="28" fill="#00ffe9" fill-opacity="0.04" rx="1"/>
+      <text x="412" y="110" font-family="Space Mono" font-size="8" fill="#333" text-anchor="middle">0.02</text>
+
+      <rect x="460" y="92" width="55" height="28" fill="#00ffe9" fill-opacity="0.18" rx="1"/>
+      <text x="487" y="110" font-family="Space Mono" font-size="8" fill="#555" text-anchor="middle">0.17</text>
+
+      <rect x="535" y="92" width="55" height="28" fill="#00ffe9" fill-opacity="0.06" rx="1"/>
+      <text x="562" y="110" font-family="Space Mono" font-size="8" fill="#333" text-anchor="middle">0.04</text>
+
+      <rect x="610" y="92" width="55" height="28" fill="#ffe900" fill-opacity="0.12" rx="1" stroke="#ffe900" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="637" y="110" font-family="Space Mono" font-size="8" fill="#ffe900" text-anchor="middle">it</text>
+
+      <rect x="685" y="92" width="55" height="28" fill="#00ffe9" fill-opacity="0.04" rx="1"/>
+      <text x="712" y="110" font-family="Space Mono" font-size="8" fill="#333" text-anchor="middle">0.03</text>
+
+      <rect x="760" y="92" width="55" height="28" fill="#00ffe9" fill-opacity="0.06" rx="1"/>
+      <text x="787" y="110" font-family="Space Mono" font-size="8" fill="#333" text-anchor="middle">0.05</text>
+
+      <!-- Arrow from "it" to "animal" -->
+      <line x1="637" y1="92" x2="190" y2="52" stroke="#00ffe9" stroke-width="1" stroke-dasharray="4,3" stroke-opacity="0.4"/>
+      <text x="370" y="68" font-family="Space Mono" font-size="8" fill="#00ffe9" fill-opacity="0.6">coreference resolved</text>
+
+      <!-- Legend -->
+      <rect x="85" y="160" width="16" height="10" fill="#00ffe9" fill-opacity="0.1" rx="1"/>
+      <text x="106" y="169" font-family="Space Mono" font-size="8" fill="#333">low attention</text>
+      <rect x="230" y="160" width="16" height="10" fill="#00ffe9" fill-opacity="0.4" rx="1"/>
+      <text x="250" y="169" font-family="Space Mono" font-size="8" fill="#555">medium</text>
+      <rect x="340" y="160" width="16" height="10" fill="#00ffe9" fill-opacity="0.7" rx="1"/>
+      <text x="360" y="169" font-family="Space Mono" font-size="8" fill="#00ffe9">high attention</text>
+    </svg>
+  </div>
+</div>
+
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">04 // Multi-Head Attention</div>
+    <div class="ptitle pu">MULTIPLE HEADS</div>
+    <div class="bar pu"></div>
+    <p>A single attention head can only learn one type of relationship at a time. <span class="hl pu">Multi-head attention</span> runs H parallel attention operations with different learned projections, then concatenates the results.</p>
+
+    <div class="head-grid">
+      <div class="head-box" style="border-color:var(--cyan);background:#001a17;">
+        <div class="hn" style="color:var(--cyan)">HEAD 1</div>
+        <div class="hs" style="color:#00604a">syntactic deps</div>
+      </div>
+      <div class="head-box" style="border-color:var(--magenta);background:#12001a;">
+        <div class="hn" style="color:var(--magenta)">HEAD 2</div>
+        <div class="hs" style="color:#5a006a">coreference</div>
+      </div>
+      <div class="head-box" style="border-color:var(--yellow);background:#1a1200;">
+        <div class="hn" style="color:var(--yellow)">HEAD 3</div>
+        <div class="hs" style="color:#6a5000">positional</div>
+      </div>
+      <div class="head-box" style="border-color:var(--red);background:#1a0007;">
+        <div class="hn" style="color:var(--red)">HEAD 4</div>
+        <div class="hs" style="color:#6a0022">semantic sim</div>
+      </div>
+      <div class="head-box"><div class="hn">HEAD 5</div><div class="hs">rare tokens</div></div>
+      <div class="head-box"><div class="hn">HEAD 6</div><div class="hs">verb-object</div></div>
+      <div class="head-box"><div class="hn">HEAD 7</div><div class="hs">long range</div></div>
+      <div class="head-box"><div class="hn">HEAD 8</div><div class="hs">local window</div></div>
+    </div>
+
+    <div class="math-block" style="border-left-color:var(--magenta);">
+      <div class="eq" style="color:var(--magenta);">MultiHead(Q,K,V) = Concat(head₁,...,headₕ) · W_O</div>
+      <div style="color:#555;font-size:10px;margin-top:4px;">where headᵢ = Attention(QWᵢQ, KWᵢK, VWᵢV)</div>
+      <div class="note">// GPT-3: 96 heads, dmodel=12288. Each head operates on dmodel/H=128 dimensional subspace. W_O projects concatenated output back to model dimension.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">05 // Complexity &amp; Variants</div>
+    <div class="ptitle rd">THE QUADRATIC PROBLEM</div>
+    <div class="bar rd"></div>
+    <p>Standard attention is <span class="hl rd">O(n²)</span> in both compute and memory with respect to sequence length. A 1M token context computes 1 trillion attention scores. This is why long contexts are expensive and why alternatives exist.</p>
+
+    <div style="margin:10px 0;">
+      <div style="background:#0a0a0a;border:1px solid var(--border);padding:10px;margin-bottom:2px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:#555;margin-bottom:4px;">FLASH ATTENTION</div>
+        <p style="margin:0;font-size:10px;color:#444;">Reorders computation to be IO-aware. Tiles Q,K,V matrices to fit in SRAM. Same output, ~3x faster, 10x less memory. Still O(n²) FLOPs but dramatically fewer HBM reads/writes. The engineering solution.</p>
+      </div>
+      <div style="background:#0a0a0a;border:1px solid var(--border);padding:10px;margin-bottom:2px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:#555;margin-bottom:4px;">SPARSE ATTENTION</div>
+        <p style="margin:0;font-size:10px;color:#444;">Only compute attention for a subset of token pairs. Local windows + strided global tokens. Longformer, BigBird. O(n) complexity. Miss some cross-range interactions.</p>
+      </div>
+      <div style="background:#0a0a0a;border:1px solid var(--border);padding:10px;margin-bottom:2px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:#555;margin-bottom:4px;">LINEAR ATTENTION</div>
+        <p style="margin:0;font-size:10px;color:#444;">Kernel trick to approximate softmax(QKᵀ) without materializing the full matrix. φ(Q)(φ(K)ᵀV) instead. True O(n) but quality tradeoffs. Ongoing research.</p>
+      </div>
+      <div style="background:#0a0a0a;border:1px solid var(--border);padding:10px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--cyan);margin-bottom:4px;">GQA / MQA</div>
+        <p style="margin:0;font-size:10px;color:#444;">Grouped Query Attention - multiple query heads share key/value heads. Llama 3 uses GQA. Reduces KV cache size significantly. Critical for inference efficiency at scale.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="g3">
+  <div class="panel">
+    <div class="plabel">06 // Causal Masking</div>
+    <div class="ptitle">DECODER MASK</div>
+    <div class="bar rd"></div>
+    <p>In autoregressive generation, future tokens must not influence past tokens. A causal mask zeros out the upper triangle of the attention matrix - token i can only attend to positions ≤ i.</p>
+    <svg viewBox="0 0 180 130" width="100%" height="130">
+      <!-- Grid -->
+      <text x="5" y="35" font-family="Space Mono" font-size="8" fill="#555">tok1</text>
+      <text x="5" y="60" font-family="Space Mono" font-size="8" fill="#555">tok2</text>
+      <text x="5" y="85" font-family="Space Mono" font-size="8" fill="#555">tok3</text>
+      <text x="5" y="110" font-family="Space Mono" font-size="8" fill="#555">tok4</text>
+      <text x="52" y="15" font-family="Space Mono" font-size="8" fill="#555">t1</text>
+      <text x="77" y="15" font-family="Space Mono" font-size="8" fill="#555">t2</text>
+      <text x="102" y="15" font-family="Space Mono" font-size="8" fill="#555">t3</text>
+      <text x="127" y="15" font-family="Space Mono" font-size="8" fill="#555">t4</text>
+      <!-- Allowed (lower triangle) -->
+      <rect x="47" y="22" width="22" height="22" fill="#00ffe9" fill-opacity="0.3" rx="1"/>
+      <rect x="47" y="47" width="22" height="22" fill="#00ffe9" fill-opacity="0.3" rx="1"/>
+      <rect x="72" y="47" width="22" height="22" fill="#00ffe9" fill-opacity="0.3" rx="1"/>
+      <rect x="47" y="72" width="22" height="22" fill="#00ffe9" fill-opacity="0.3" rx="1"/>
+      <rect x="72" y="72" width="22" height="22" fill="#00ffe9" fill-opacity="0.3" rx="1"/>
+      <rect x="97" y="72" width="22" height="22" fill="#00ffe9" fill-opacity="0.3" rx="1"/>
+      <rect x="47" y="97" width="22" height="22" fill="#00ffe9" fill-opacity="0.3" rx="1"/>
+      <rect x="72" y="97" width="22" height="22" fill="#00ffe9" fill-opacity="0.3" rx="1"/>
+      <rect x="97" y="97" width="22" height="22" fill="#00ffe9" fill-opacity="0.3" rx="1"/>
+      <rect x="122" y="97" width="22" height="22" fill="#00ffe9" fill-opacity="0.3" rx="1"/>
+      <!-- Masked (upper triangle) -->
+      <rect x="72" y="22" width="22" height="22" fill="#1a0007" rx="1"/>
+      <text x="80" y="37" font-family="Space Mono" font-size="9" fill="#330011">-∞</text>
+      <rect x="97" y="22" width="22" height="22" fill="#1a0007" rx="1"/>
+      <text x="105" y="37" font-family="Space Mono" font-size="9" fill="#330011">-∞</text>
+      <rect x="122" y="22" width="22" height="22" fill="#1a0007" rx="1"/>
+      <text x="130" y="37" font-family="Space Mono" font-size="9" fill="#330011">-∞</text>
+      <rect x="97" y="47" width="22" height="22" fill="#1a0007" rx="1"/>
+      <text x="105" y="62" font-family="Space Mono" font-size="9" fill="#330011">-∞</text>
+      <rect x="122" y="47" width="22" height="22" fill="#1a0007" rx="1"/>
+      <text x="130" y="62" font-family="Space Mono" font-size="9" fill="#330011">-∞</text>
+      <rect x="122" y="72" width="22" height="22" fill="#1a0007" rx="1"/>
+      <text x="130" y="87" font-family="Space Mono" font-size="9" fill="#330011">-∞</text>
+    </svg>
+    <p style="font-size:10px;color:#444;">-∞ before softmax → 0 after softmax. Causality enforced without any explicit rule.</p>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">07 // Positional Encoding</div>
+    <div class="ptitle cy">ROPE &amp; SINUSOIDAL</div>
+    <div class="bar"></div>
+    <p>Attention has no inherent sense of position - "cat sat mat" and "mat sat cat" produce identical attention scores without positional information injected.</p>
+    <p><span class="hl">Sinusoidal PE</span> (original paper): Add fixed sine/cosine patterns of different frequencies to token embeddings. Position encoded as a unique superposition of waves.</p>
+    <p><span class="hl">RoPE</span> (Rotary Position Embedding, used in Llama, Gemma, Mistral): Rotate Q and K vectors by an angle proportional to position before computing dot products. The dot product then naturally encodes relative distance. Generalizes better to sequences longer than training length.</p>
+    <div style="margin-top:8px;background:#060606;border:1px solid var(--border);padding:10px;">
+      <div style="font-size:9px;color:#333;margin-bottom:6px;letter-spacing:1px;">ROPE // ROTATION IN EMBEDDING SPACE</div>
+      <svg viewBox="0 0 200 80" width="100%" height="80">
+        <circle cx="100" cy="40" r="30" fill="none" stroke="#222" stroke-width="1"/>
+        <line x1="100" y1="40" x2="125" y2="18" stroke="#00ffe9" stroke-width="1.5"/>
+        <line x1="100" y1="40" x2="128" y2="32" stroke="#ffe900" stroke-width="1.5"/>
+        <line x1="100" y1="40" x2="122" y2="50" stroke="#ff2d55" stroke-width="1.5"/>
+        <circle cx="125" cy="18" r="3" fill="#00ffe9"/>
+        <circle cx="128" cy="32" r="3" fill="#ffe900"/>
+        <circle cx="122" cy="50" r="3" fill="#ff2d55"/>
+        <text x="130" y="20" font-family="Space Mono" font-size="8" fill="#00ffe9">pos=1</text>
+        <text x="133" y="35" font-family="Space Mono" font-size="8" fill="#ffe900">pos=2</text>
+        <text x="127" y="53" font-family="Space Mono" font-size="8" fill="#ff2d55">pos=3</text>
+        <text x="10" y="25" font-family="Space Mono" font-size="7" fill="#333">same vector,</text>
+        <text x="10" y="36" font-family="Space Mono" font-size="7" fill="#333">different angle</text>
+        <text x="10" y="47" font-family="Space Mono" font-size="7" fill="#333">per position</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">08 // KV Cache</div>
+    <div class="ptitle yl">INFERENCE TRICK</div>
+    <div class="bar yl"></div>
+    <p>During autoregressive generation, each new token needs to attend to all previous tokens. Recomputing K and V for the entire context at each step would be catastrophically slow.</p>
+    <p>The <span class="hl yl">KV cache</span> stores the computed key and value tensors for all previous tokens. Each new token only needs to compute its own Q, K, V and attend to cached K/V from prior positions.</p>
+    <p>The cost: memory. A single 70B model serving long contexts needs gigabytes of KV cache per active session. At scale (many parallel sessions) this dominates memory usage, not the model weights themselves.</p>
+    <div style="margin-top:8px;background:#0a0a0a;border:1px solid var(--border);border-left:3px solid var(--yellow);padding:10px;">
+      <div style="font-size:10px;color:#555;">KV cache size = 2 · n_layers · n_heads · d_head · seq_len · bytes_per_param</div>
+      <div style="font-size:10px;color:var(--yellow);margin-top:4px;">Llama 3 70B, 128k ctx: ~35GB KV cache alone</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>ATTENTION IS ALL YOU NEED // VASWANI ET AL. 2017 // FLASHATTENTION // DAO ET AL. 2022 // ROPE // SU ET AL. 2021</span>
+  <span>BRUTALIST TERMINAL v2 // TRANSFORMER INTERNALS</span>
+</div>
+
+</body>
+</html>

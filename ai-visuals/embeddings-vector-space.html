@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMBEDDINGS // VECTOR SPACE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+  :root {
+  --bg:         #0a0a0a;
+  --surface:    #111111;
+  --surface2:   #0d0d0d;
+  --border:     #1e1e1e;
+  --border2:    #2a2a2a;
+  --cyan:       #00ffe9;
+  --yellow:     #ffe900;
+  --magenta:    #e900ff;
+  --red:        #ff2d55;
+  --green:      #39ff14;
+  --orange:     #ff6b00;
+  --dim:        #3a3a3a;
+  --text:       #cccccc;
+  --bright:     #ffffff;
+  --hi-cyan:    rgba(0,255,233,0.07);
+  --hi-red:     rgba(255,45,85,0.08);
+  --hi-yellow:  rgba(255,233,0,0.07);
+}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;font-size:11px;line-height:1.65;padding:36px 30px;max-width:980px;margin:0 auto;}
+  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:999;}
+  .masthead{border-top:3px solid var(--orange);padding:14px 0 10px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--border);}
+  .masthead h1{font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:4px;color:var(--bright);line-height:1;}
+  .masthead h1 em{color:var(--orange);font-style:normal;}
+  .masthead-right{text-align:right;font-size:10px;color:#444;letter-spacing:2px;text-transform:uppercase;}
+  .masthead-right strong{display:block;color:var(--cyan);font-size:11px;margin-bottom:2px;}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:2px;}
+  .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-bottom:2px;}
+  .gfull{margin-bottom:2px;}
+  .panel{background:var(--surface);border:1px solid var(--border);padding:18px;}
+  .plabel{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:3px;color:#383838;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .ptitle{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--bright);margin-bottom:8px;line-height:1;}
+  .ptitle.cy{color:var(--cyan);}.ptitle.rd{color:var(--red);}.ptitle.yl{color:var(--yellow);}.ptitle.pu{color:var(--magenta);}.ptitle.or{color:var(--orange);}
+  .bar{width:28px;height:2px;margin-bottom:10px;background:var(--cyan);}
+  .bar.rd{background:var(--red);}.bar.yl{background:var(--yellow);}.bar.pu{background:var(--magenta);}.bar.or{background:var(--orange);}
+  p{font-size:11px;color:var(--text);margin-bottom:7px;line-height:1.65;}
+  .hl{color:var(--cyan);font-weight:700;}.hl.rd{color:var(--red);}.hl.yl{color:var(--yellow);}.hl.pu{color:var(--magenta);}.hl.or{color:var(--orange);}
+  .math-block{background:#060606;border:1px solid var(--border);border-left:3px solid var(--orange);padding:12px 14px;margin:10px 0;font-size:11px;}
+  .math-block .eq{color:var(--orange);margin-bottom:4px;font-size:12px;}
+  .math-block .note{font-size:9px;color:#444;margin-top:6px;}
+  .math-block.cy{border-left-color:var(--cyan);}.math-block.cy .eq{color:var(--cyan);}
+  .math-block.pu{border-left-color:var(--magenta);}.math-block.pu .eq{color:var(--magenta);}
+  .footer{border-top:1px solid var(--border);margin-top:14px;padding-top:10px;display:flex;justify-content:space-between;font-size:9px;color:#2a2a2a;letter-spacing:1px;}
+  .tag{display:inline-block;border:1px solid var(--border);padding:1px 6px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#444;margin:2px 2px 2px 0;}
+  .tag.cy{border-color:var(--cyan);color:var(--cyan);}.tag.rd{border-color:var(--red);color:var(--red);}.tag.yl{border-color:var(--yellow);color:var(--yellow);}.tag.pu{border-color:var(--magenta);color:var(--magenta);}.tag.or{border-color:var(--orange);color:var(--orange);}
+  .big-num{font-family:'Bebas Neue',sans-serif;font-size:38px;line-height:1;letter-spacing:2px;}
+  .big-sub{font-size:9px;color:#444;text-transform:uppercase;letter-spacing:2px;margin-top:2px;}
+  .vec-display{font-family:'Space Mono',monospace;font-size:10px;color:#444;margin:8px 0;background:#060606;border:1px solid var(--border);padding:10px;}
+  .vec-display .tok{color:var(--orange);margin-bottom:4px;}
+  .vec-display .nums{color:#2a2a2a;}
+  .sim-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .sim-label{font-size:10px;color:#555;width:140px;flex-shrink:0;}
+  .sim-track{flex:1;background:#0a0a0a;border:1px solid #161616;height:14px;position:relative;}
+  .sim-fill{height:100%;position:absolute;left:0;top:0;}
+  .sim-val{font-size:10px;font-weight:700;width:40px;text-align:right;flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>EM<em>BEDDINGS</em></h1>
+  <div class="masthead-right">
+    <strong>MEANING AS GEOMETRY // WORDS AS VECTORS</strong>
+    SEMANTIC SPACE // COSINE SIMILARITY // WORD2VEC<br>
+    HIGH-DIMENSIONAL REPRESENTATION LEARNING
+  </div>
+</div>
+
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">01 // The Core Idea</div>
+    <div class="ptitle or">WORDS AS POINTS IN SPACE</div>
+    <div class="bar or"></div>
+    <p>An embedding is a learned mapping from a discrete token (a word, a subword piece, an image patch) into a continuous high-dimensional vector. The vectors are not hand-crafted - they emerge from training on massive corpora. The model discovers that <span class="hl or">meaning can be encoded as geometry</span>.</p>
+    <p>The key emergent property: semantically similar tokens end up close in vector space. Tokens that share syntactic roles cluster together. Relationships between concepts become directions in space. Arithmetic on vectors corresponds to arithmetic on meaning.</p>
+    <p>The famous example - <span class="hl">king - man + woman ≈ queen</span> - is not programmed. It emerges from the statistical structure of language alone. The "royalty" dimension and the "gender" dimension are discovered independently and happen to compose linearly.</p>
+
+    <div class="math-block">
+      <div class="eq">v(king) - v(man) + v(woman) ≈ v(queen)</div>
+      <div class="eq" style="color:var(--cyan);">v(Paris) - v(France) + v(Italy) ≈ v(Rome)</div>
+      <div class="note">// these are not identities. they're nearest-neighbor approximations in a 300-12288 dimensional space. the fact they hold at all is remarkable.</div>
+    </div>
+
+    <div class="vec-display">
+      <div class="tok">"cat" → embedding vector (truncated):</div>
+      <div class="nums">[ 0.312, -0.841, 0.093, 0.774, -0.201,<br>&nbsp;&nbsp;0.558, -0.119, 0.930, -0.447, 0.663,<br>&nbsp;&nbsp;... 4086 more dimensions ... ]</div>
+    </div>
+    <p style="font-size:10px;color:#444;">Each number is a weight across a learned axis of meaning. No single dimension corresponds to a human-interpretable concept - it's a superposition across thousands of features.</p>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">02 // Geometry of Meaning</div>
+    <div class="ptitle cy">COSINE SIMILARITY</div>
+    <div class="bar"></div>
+    <p>Distance in embedding space is typically measured with <span class="hl">cosine similarity</span> - the angle between two vectors, not their magnitude. This normalizes for token frequency (common words have large magnitude vectors) and focuses purely on directional similarity.</p>
+
+    <div class="math-block cy">
+      <div class="eq">cos(θ) = (A · B) / (|A| · |B|)</div>
+      <div class="eq">= Σᵢ(Aᵢ·Bᵢ) / (√ΣAᵢ² · √ΣBᵢ²)</div>
+      <div class="note">// range [-1, 1]. 1 = identical direction. 0 = orthogonal (unrelated). -1 = opposite. euclidean distance captures both direction and magnitude.</div>
+    </div>
+
+    <p style="margin-top:8px;">Similarity scores for <span style="color:var(--orange);">"dog"</span> compared to:</p>
+    <div style="margin:10px 0;">
+      <div class="sim-bar-row">
+        <div class="sim-label">wolf</div>
+        <div class="sim-track"><div class="sim-fill" style="width:82%;background:var(--cyan);opacity:0.6;"></div></div>
+        <div class="sim-val" style="color:var(--cyan);">0.82</div>
+      </div>
+      <div class="sim-bar-row">
+        <div class="sim-label">puppy</div>
+        <div class="sim-track"><div class="sim-fill" style="width:79%;background:var(--cyan);opacity:0.6;"></div></div>
+        <div class="sim-val" style="color:var(--cyan);">0.79</div>
+      </div>
+      <div class="sim-bar-row">
+        <div class="sim-label">cat</div>
+        <div class="sim-track"><div class="sim-fill" style="width:68%;background:var(--yellow);opacity:0.6;"></div></div>
+        <div class="sim-val" style="color:var(--yellow);">0.68</div>
+      </div>
+      <div class="sim-bar-row">
+        <div class="sim-label">animal</div>
+        <div class="sim-track"><div class="sim-fill" style="width:61%;background:var(--yellow);opacity:0.5;"></div></div>
+        <div class="sim-val" style="color:var(--yellow);">0.61</div>
+      </div>
+      <div class="sim-bar-row">
+        <div class="sim-label">house</div>
+        <div class="sim-track"><div class="sim-fill" style="width:28%;background:#333;"></div></div>
+        <div class="sim-val" style="color:#444;">0.28</div>
+      </div>
+      <div class="sim-bar-row">
+        <div class="sim-label">democracy</div>
+        <div class="sim-track"><div class="sim-fill" style="width:6%;background:#222;"></div></div>
+        <div class="sim-val" style="color:#333;">0.06</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">03 // Vector Space Visualization // 2D Projection (t-SNE/UMAP collapse from ~4096D)</div>
+    <div class="ptitle">SEMANTIC CLUSTERING</div>
+    <div class="bar pu"></div>
+    <svg viewBox="0 0 900 220" width="100%" height="220">
+      <!-- Background grid -->
+      <defs>
+        <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+          <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#111" stroke-width="0.5"/>
+        </pattern>
+      </defs>
+      <rect width="900" height="220" fill="url(#grid)"/>
+
+      <!-- Animals cluster -->
+      <ellipse cx="150" cy="80" rx="80" ry="50" fill="none" stroke="#00ffe9" stroke-width="0.5" stroke-dasharray="4,3" stroke-opacity="0.3"/>
+      <text x="100" y="25" font-family="Space Mono" font-size="8" fill="#00ffe9" fill-opacity="0.4">ANIMALS</text>
+      <circle cx="145" cy="72" r="3" fill="#00ffe9" fill-opacity="0.7"/>
+      <text x="152" y="75" font-family="Space Mono" font-size="9" fill="#00ffe9" fill-opacity="0.8">dog</text>
+      <circle cx="125" cy="88" r="3" fill="#00ffe9" fill-opacity="0.7"/>
+      <text x="132" y="91" font-family="Space Mono" font-size="9" fill="#00ffe9" fill-opacity="0.8">cat</text>
+      <circle cx="168" cy="95" r="3" fill="#00ffe9" fill-opacity="0.6"/>
+      <text x="175" y="98" font-family="Space Mono" font-size="9" fill="#00ffe9" fill-opacity="0.7">wolf</text>
+      <circle cx="138" cy="105" r="2.5" fill="#00ffe9" fill-opacity="0.5"/>
+      <text x="145" y="108" font-family="Space Mono" font-size="8" fill="#00ffe9" fill-opacity="0.5">fox</text>
+      <circle cx="165" cy="68" r="2.5" fill="#00ffe9" fill-opacity="0.5"/>
+      <text x="172" y="71" font-family="Space Mono" font-size="8" fill="#00ffe9" fill-opacity="0.5">bear</text>
+
+      <!-- Royalty cluster -->
+      <ellipse cx="450" cy="70" rx="85" ry="48" fill="none" stroke="#e900ff" stroke-width="0.5" stroke-dasharray="4,3" stroke-opacity="0.3"/>
+      <text x="400" y="22" font-family="Space Mono" font-size="8" fill="#e900ff" fill-opacity="0.4">ROYALTY</text>
+      <circle cx="440" cy="62" r="3" fill="#e900ff" fill-opacity="0.7"/>
+      <text x="447" y="65" font-family="Space Mono" font-size="9" fill="#e900ff" fill-opacity="0.8">king</text>
+      <circle cx="480" cy="55" r="3" fill="#e900ff" fill-opacity="0.7"/>
+      <text x="487" y="58" font-family="Space Mono" font-size="9" fill="#e900ff" fill-opacity="0.8">queen</text>
+      <circle cx="420" cy="78" r="2.5" fill="#e900ff" fill-opacity="0.6"/>
+      <text x="427" y="81" font-family="Space Mono" font-size="9" fill="#e900ff" fill-opacity="0.7">prince</text>
+      <circle cx="465" cy="82" r="2.5" fill="#e900ff" fill-opacity="0.6"/>
+      <text x="472" y="85" font-family="Space Mono" font-size="9" fill="#e900ff" fill-opacity="0.7">throne</text>
+      <circle cx="445" cy="92" r="2" fill="#e900ff" fill-opacity="0.4"/>
+      <text x="452" y="95" font-family="Space Mono" font-size="8" fill="#e900ff" fill-opacity="0.4">crown</text>
+
+      <!-- Countries cluster -->
+      <ellipse cx="730" cy="80" rx="80" ry="50" fill="none" stroke="#ffe900" stroke-width="0.5" stroke-dasharray="4,3" stroke-opacity="0.3"/>
+      <text x="680" y="25" font-family="Space Mono" font-size="8" fill="#ffe900" fill-opacity="0.4">GEOGRAPHY</text>
+      <circle cx="720" cy="70" r="3" fill="#ffe900" fill-opacity="0.7"/>
+      <text x="727" y="73" font-family="Space Mono" font-size="9" fill="#ffe900" fill-opacity="0.8">France</text>
+      <circle cx="755" cy="62" r="3" fill="#ffe900" fill-opacity="0.7"/>
+      <text x="762" y="65" font-family="Space Mono" font-size="9" fill="#ffe900" fill-opacity="0.8">Paris</text>
+      <circle cx="710" cy="88" r="2.5" fill="#ffe900" fill-opacity="0.6"/>
+      <text x="717" y="91" font-family="Space Mono" font-size="9" fill="#ffe900" fill-opacity="0.6">Italy</text>
+      <circle cx="748" cy="88" r="2.5" fill="#ffe900" fill-opacity="0.6"/>
+      <text x="755" y="91" font-family="Space Mono" font-size="9" fill="#ffe900" fill-opacity="0.6">Rome</text>
+      <circle cx="730" cy="100" r="2" fill="#ffe900" fill-opacity="0.4"/>
+      <text x="737" y="103" font-family="Space Mono" font-size="8" fill="#ffe900" fill-opacity="0.4">Berlin</text>
+
+      <!-- Tech cluster -->
+      <ellipse cx="300" cy="165" rx="90" ry="38" fill="none" stroke="#ff6b00" stroke-width="0.5" stroke-dasharray="4,3" stroke-opacity="0.3"/>
+      <text x="240" y="122" font-family="Space Mono" font-size="8" fill="#ff6b00" fill-opacity="0.4">TECHNOLOGY</text>
+      <circle cx="280" cy="165" r="3" fill="#ff6b00" fill-opacity="0.7"/>
+      <text x="287" y="168" font-family="Space Mono" font-size="9" fill="#ff6b00" fill-opacity="0.8">computer</text>
+      <circle cx="315" cy="155" r="2.5" fill="#ff6b00" fill-opacity="0.6"/>
+      <text x="322" y="158" font-family="Space Mono" font-size="9" fill="#ff6b00" fill-opacity="0.7">network</text>
+      <circle cx="260" cy="175" r="2.5" fill="#ff6b00" fill-opacity="0.6"/>
+      <text x="267" y="178" font-family="Space Mono" font-size="9" fill="#ff6b00" fill-opacity="0.6">router</text>
+      <circle cx="345" cy="168" r="2" fill="#ff6b00" fill-opacity="0.4"/>
+      <text x="352" y="171" font-family="Space Mono" font-size="8" fill="#ff6b00" fill-opacity="0.4">BGP</text>
+
+      <!-- Music cluster -->
+      <ellipse cx="600" cy="170" rx="75" ry="35" fill="none" stroke="#ff2d55" stroke-width="0.5" stroke-dasharray="4,3" stroke-opacity="0.3"/>
+      <text x="550" y="130" font-family="Space Mono" font-size="8" fill="#ff2d55" fill-opacity="0.4">MUSIC</text>
+      <circle cx="580" cy="168" r="3" fill="#ff2d55" fill-opacity="0.7"/>
+      <text x="587" y="171" font-family="Space Mono" font-size="9" fill="#ff2d55" fill-opacity="0.8">synth</text>
+      <circle cx="615" cy="160" r="2.5" fill="#ff2d55" fill-opacity="0.6"/>
+      <text x="622" y="163" font-family="Space Mono" font-size="9" fill="#ff2d55" fill-opacity="0.6">chord</text>
+      <circle cx="568" cy="178" r="2" fill="#ff2d55" fill-opacity="0.5"/>
+      <text x="575" y="181" font-family="Space Mono" font-size="8" fill="#ff2d55" fill-opacity="0.5">modular</text>
+      <circle cx="640" cy="172" r="2" fill="#ff2d55" fill-opacity="0.4"/>
+      <text x="647" y="175" font-family="Space Mono" font-size="8" fill="#ff2d55" fill-opacity="0.4">oscillator</text>
+
+      <!-- Gender vector arrow -->
+      <line x1="440" y1="62" x2="480" y2="55" stroke="#555" stroke-width="1" stroke-dasharray="3,2"/>
+      <text x="452" y="50" font-family="Space Mono" font-size="7" fill="#333">gender dim →</text>
+
+      <!-- Man point (separate from royalty) -->
+      <circle cx="390" cy="130" r="3" fill="#555"/>
+      <text x="396" y="133" font-family="Space Mono" font-size="9" fill="#555">man</text>
+      <circle cx="428" cy="122" r="3" fill="#555"/>
+      <text x="434" y="125" font-family="Space Mono" font-size="9" fill="#555">woman</text>
+      <line x1="390" y1="130" x2="440" y2="62" stroke="#333" stroke-width="0.5" stroke-dasharray="2,3"/>
+      <line x1="428" y1="122" x2="480" y2="55" stroke="#333" stroke-width="0.5" stroke-dasharray="2,3"/>
+
+      <!-- Dimension label -->
+      <text x="820" y="210" font-family="Space Mono" font-size="8" fill="#222">2D PROJECTION // ACTUAL SPACE: 4096D+</text>
+    </svg>
+  </div>
+</div>
+
+<div class="g3">
+  <div class="panel">
+    <div class="plabel">04 // Word2Vec // Origin</div>
+    <div class="ptitle">HOW THEY'RE LEARNED</div>
+    <div class="bar or"></div>
+    <p>Word2Vec (Mikolov et al. 2013) popularized the approach. Two architectures:</p>
+    <p><span class="hl or">CBOW</span> (Continuous Bag of Words): predict center word from surrounding context. Fast, good for frequent words.</p>
+    <p><span class="hl or">Skip-gram</span>: predict surrounding context from center word. Slower but better for rare words and fine-grained semantics. The choice for most quality embeddings.</p>
+    <div style="background:#0a0a0a;border:1px solid var(--border);padding:10px;margin:8px 0;font-size:10px;color:#444;">
+      <div style="color:#555;margin-bottom:4px;">SKIP-GRAM OBJECTIVE:</div>
+      <div style="color:var(--orange);">maximize Σ log P(context | word)</div>
+      <div style="margin-top:6px;">Train a shallow network to predict neighbors. Throw away the network. Keep the learned weight matrix. That matrix is your embeddings.</div>
+    </div>
+    <p style="font-size:10px;color:#444;">Negative sampling: for each positive context pair, sample k random "negative" pairs. Model must discriminate real context from noise. More efficient than softmax over full vocabulary.</p>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">05 // Tokenization</div>
+    <div class="ptitle cy">BEFORE EMBEDDING</div>
+    <div class="bar"></div>
+    <p>Modern LLMs don't embed whole words - they use <span class="hl">subword tokenization</span>. BPE (Byte Pair Encoding) or SentencePiece merge frequent character pairs iteratively until vocabulary size is reached (~32k-100k tokens).</p>
+    <div style="background:#0a0a0a;border:1px solid var(--border);padding:10px;margin:8px 0;">
+      <div style="font-size:9px;color:#333;margin-bottom:6px;letter-spacing:1px;">TOKENIZATION EXAMPLE // GPT-4</div>
+      <div style="font-size:11px;margin-bottom:4px;">
+        <span style="background:#001a17;border:1px solid #005544;padding:1px 4px;color:#00ffe9;margin-right:2px;">un</span>
+        <span style="background:#1a0007;border:1px solid #550022;padding:1px 4px;color:#ff2d55;margin-right:2px;">believ</span>
+        <span style="background:#1a1200;border:1px solid #554400;padding:1px 4px;color:#ffe900;margin-right:2px;">able</span>
+      </div>
+      <div style="font-size:11px;margin-bottom:4px;">
+        <span style="background:#001a17;border:1px solid #005544;padding:1px 4px;color:#00ffe9;margin-right:2px;">BGP</span>
+        <span style="background:#1a0007;border:1px solid #550022;padding:1px 4px;color:#ff2d55;margin-right:2px;">route</span>
+        <span style="background:#1a1200;border:1px solid #554400;padding:1px 4px;color:#ffe900;margin-right:2px;">reflect</span>
+        <span style="background:#120022;border:1px solid #440066;padding:1px 4px;color:#e900ff;margin-right:2px;">or</span>
+      </div>
+      <div style="font-size:9px;color:#333;margin-top:6px;">each colored block = 1 token = 1 embedding lookup</div>
+    </div>
+    <p style="font-size:10px;color:#444;">Rare words get split into subwords. Common words may be single tokens. "BGP" might be one token in a code-heavy model but split in a general one. Tokenization shapes what the model can "see" efficiently.</p>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">06 // Contextual Embeddings</div>
+    <div class="ptitle pu">STATIC vs DYNAMIC</div>
+    <div class="bar pu"></div>
+    <p>Word2Vec produces <span class="hl rd">static embeddings</span> - "bank" always maps to the same vector regardless of context. This fails for polysemy.</p>
+    <p>Transformer models produce <span class="hl pu">contextual embeddings</span> - the representation of each token is computed by attending to the entire context. "bank" in "river bank" and "bank account" produce different vectors because the surrounding tokens reshape the representation through attention.</p>
+    <div style="margin:8px 0;background:#0a0a0a;border:1px solid var(--border);padding:10px;">
+      <div style="font-size:9px;color:#333;margin-bottom:6px;letter-spacing:1px;">"BANK" IN CONTEXT</div>
+      <div style="font-size:10px;color:#555;margin-bottom:4px;">static:&nbsp;&nbsp;<span style="color:#ff2d55;">always → [0.31, -0.44, 0.82, ...]</span></div>
+      <div style="font-size:10px;color:#555;margin-bottom:2px;">contextual (river):&nbsp;&nbsp;<span style="color:#00ffe9;">[0.12, 0.71, -0.23, ...]</span></div>
+      <div style="font-size:10px;color:#555;">contextual (money):&nbsp;&nbsp;<span style="color:#e900ff;">[0.88, -0.15, 0.49, ...]</span></div>
+    </div>
+    <p style="font-size:10px;color:#444;">ELMo (2018) was first to demonstrate this at scale. BERT (2018) made it the dominant paradigm. Every modern LLM produces contextual representations - static embeddings are now only used for retrieval/RAG efficiency.</p>
+    <div style="margin-top:8px;">
+      <span class="tag pu">polysemy</span>
+      <span class="tag cy">BERT</span>
+      <span class="tag">ELMo</span>
+      <span class="tag or">RAG</span>
+    </div>
+  </div>
+</div>
+
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">07 // Superposition Hypothesis</div>
+    <div class="ptitle rd">MORE FEATURES THAN DIMENSIONS</div>
+    <div class="bar rd"></div>
+    <p>A surprising finding from mechanistic interpretability research: transformer models appear to store <span class="hl rd">far more features than they have dimensions</span>. A 4096-dimensional model shouldn't be able to represent more than 4096 orthogonal concepts - but empirically they seem to represent millions.</p>
+    <p>The proposed explanation is <span class="hl">superposition</span>: features are encoded as nearly-orthogonal directions in high-dimensional space, slightly interfering with each other. Sparse activation means most features are off at any time, limiting interference.</p>
+    <p>This is related to why monosemantic neurons (neurons that respond to exactly one concept) are rare. Most neurons are polysemantic - they participate in encoding many different features depending on context. Anthropic's mechanistic interpretability research is actively trying to decompose these superposed representations using sparse autoencoders.</p>
+    <div style="margin-top:8px;"><span class="tag rd">superposition</span><span class="tag">sparse coding</span><span class="tag cy">mech interp</span><span class="tag pu">SAE</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="plabel">08 // Applications</div>
+    <div class="ptitle yl">WHAT EMBEDDINGS POWER</div>
+    <div class="bar yl"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;">
+      <div style="background:#0a0a0a;border:1px solid var(--border);padding:10px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--yellow);margin-bottom:4px;">RAG</div>
+        <p style="margin:0;font-size:10px;color:#444;">Embed documents and queries. Retrieve by cosine similarity. Feed relevant docs to LLM. Long-term memory without fine-tuning.</p>
+      </div>
+      <div style="background:#0a0a0a;border:1px solid var(--border);padding:10px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--cyan);margin-bottom:4px;">SEMANTIC SEARCH</div>
+        <p style="margin:0;font-size:10px;color:#444;">Query "fast database" finds "high-performance PostgreSQL" without keyword overlap. Meaning, not string matching.</p>
+      </div>
+      <div style="background:#0a0a0a;border:1px solid var(--border);padding:10px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--magenta);margin-bottom:4px;">CLUSTERING</div>
+        <p style="margin:0;font-size:10px;color:#444;">k-means on embedding space groups semantically related documents. Topic modeling without explicit labels.</p>
+      </div>
+      <div style="background:#0a0a0a;border:1px solid var(--border);padding:10px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--orange);margin-bottom:4px;">ANOMALY DETECT</div>
+        <p style="margin:0;font-size:10px;color:#444;">Log lines, alerts, events embedded and clustered. Outliers in vector space = unusual behavior. Your SRE use case.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:10px;background:#060606;border:1px solid var(--border);border-left:3px solid var(--yellow);padding:10px;font-size:10px;">
+      <span style="color:var(--yellow);">Vector databases</span><span style="color:#555;"> (Pinecone, Weaviate, pgvector) store millions of embeddings and serve approximate nearest-neighbor queries in milliseconds. The infrastructure layer underneath most production RAG systems.</span>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>WORD2VEC // MIKOLOV ET AL. 2013 // GLOVE // PENNINGTON 2014 // BERT // DEVLIN 2018 // SUPERPOSITION // ELHAGE ET AL. 2022</span>
+  <span>BRUTALIST TERMINAL v2 // VECTOR SEMANTICS</span>
+</div>
+
+</body>
+</html>

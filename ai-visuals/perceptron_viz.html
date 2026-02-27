@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PERCEPTRON // AND GATE</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --panel: #111111;
+    --border: #1e1e1e;
+    --cyan: #00ffe1;
+    --red: #ff2d55;
+    --yellow: #ffd600;
+    --dim: #333;
+    --text: #ccc;
+    --bright: #fff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    padding: 24px;
+    overflow-x: hidden;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    letter-spacing: 0.15em;
+    color: var(--cyan);
+    border-bottom: 1px solid var(--dim);
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 0.65rem;
+    color: #555;
+    letter-spacing: 0.2em;
+    margin-bottom: 28px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 20px;
+  }
+
+  .panel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.15em;
+    color: var(--yellow);
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--dim);
+    padding-bottom: 6px;
+  }
+
+  /* INPUT TOGGLES */
+  .inputs-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+
+  .toggle-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toggle-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: #555;
+  }
+
+  .toggle {
+    width: 56px;
+    height: 56px;
+    border: 2px solid var(--dim);
+    background: #0a0a0a;
+    color: #333;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    cursor: pointer;
+    transition: all 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .toggle.on {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: #001a17;
+    box-shadow: 0 0 12px rgba(0,255,225,0.2);
+  }
+
+  .arrow {
+    font-size: 1.4rem;
+    color: var(--dim);
+    align-self: center;
+    margin-top: 20px;
+  }
+
+  /* NEURON DIAGRAM */
+  .neuron-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 20px;
+  }
+
+  .input-nodes {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .node {
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    transition: all 0.15s;
+  }
+
+  .node.active {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: #001a17;
+  }
+
+  .wires {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 8px;
+  }
+
+  .wire-label {
+    font-size: 0.6rem;
+    color: #555;
+    text-align: center;
+    width: 60px;
+    transition: color 0.2s;
+  }
+
+  .wire-label.active { color: var(--cyan); }
+
+  .neuron-body {
+    width: 64px;
+    height: 64px;
+    border: 2px solid var(--red);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: #1a0005;
+    position: relative;
+  }
+
+  .neuron-body .sum-val {
+    font-size: 0.65rem;
+    color: var(--red);
+    line-height: 1.1;
+    text-align: center;
+  }
+
+  .neuron-body.firing {
+    border-color: var(--yellow);
+    background: #1a1400;
+    box-shadow: 0 0 16px rgba(255,214,0,0.3);
+  }
+
+  .neuron-body.firing .sum-val { color: var(--yellow); }
+
+  .output-wire {
+    width: 40px;
+    height: 2px;
+    background: var(--dim);
+    margin: 0 8px;
+    transition: background 0.2s;
+  }
+
+  .output-wire.active { background: var(--yellow); }
+
+  .output-node {
+    width: 56px;
+    height: 56px;
+    border: 2px solid var(--dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    transition: all 0.15s;
+  }
+
+  .output-node.on {
+    border-color: var(--yellow);
+    color: var(--yellow);
+    background: #1a1400;
+    box-shadow: 0 0 16px rgba(255,214,0,0.3);
+  }
+
+  /* MATH BREAKDOWN */
+  .math-line {
+    font-size: 0.72rem;
+    color: #555;
+    margin-bottom: 6px;
+    line-height: 1.6;
+    transition: color 0.2s;
+  }
+
+  .math-line.highlight { color: var(--cyan); }
+  .math-line span.val { color: var(--bright); }
+  .math-line span.result { color: var(--yellow); }
+
+  /* WEIGHTS PANEL */
+  .weight-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .weight-name {
+    font-size: 0.65rem;
+    color: #555;
+    width: 60px;
+    letter-spacing: 0.1em;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 120px;
+    height: 2px;
+    background: var(--dim);
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--cyan);
+    cursor: pointer;
+  }
+
+  .weight-val {
+    font-size: 0.75rem;
+    color: var(--cyan);
+    width: 52px;
+    text-align: right;
+    font-weight: 700;
+  }
+
+  /* TRUTH TABLE */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.7rem;
+  }
+
+  th {
+    color: #444;
+    letter-spacing: 0.15em;
+    font-size: 0.6rem;
+    padding: 6px 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 8px 10px;
+    text-align: center;
+    border-bottom: 1px solid #0f0f0f;
+    transition: background 0.15s;
+  }
+
+  tr.active-row td { background: #151515; }
+
+  .correct { color: var(--cyan); }
+  .wrong { color: var(--red); }
+  .neutral { color: #444; }
+
+  /* TRAIN BUTTON */
+  .train-btn {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 1px solid var(--red);
+    color: var(--red);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 4px;
+  }
+
+  .train-btn:hover {
+    background: var(--red);
+    color: #000;
+  }
+
+  .epoch-display {
+    font-size: 0.65rem;
+    color: #444;
+    text-align: center;
+    margin-top: 8px;
+    letter-spacing: 0.1em;
+  }
+
+  .reset-btn {
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid var(--dim);
+    color: #444;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: all 0.15s;
+  }
+
+  .reset-btn:hover { border-color: #555; color: #888; }
+
+  /* LOSS BAR */
+  .loss-wrap {
+    margin-top: 12px;
+  }
+
+  .loss-label {
+    font-size: 0.6rem;
+    color: #444;
+    letter-spacing: 0.15em;
+    margin-bottom: 4px;
+  }
+
+  .loss-bar-bg {
+    height: 4px;
+    background: var(--dim);
+    width: 100%;
+  }
+
+  .loss-bar-fill {
+    height: 4px;
+    background: var(--red);
+    transition: width 0.3s;
+  }
+
+  .loss-val {
+    font-size: 0.65rem;
+    color: var(--red);
+    margin-top: 4px;
+  }
+
+  .mode-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .mode-btn {
+    flex: 1;
+    padding: 7px;
+    background: transparent;
+    border: 1px solid var(--dim);
+    color: #444;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .mode-btn.active {
+    border-color: var(--yellow);
+    color: var(--yellow);
+    background: #0f0d00;
+  }
+
+  .xor-warning {
+    font-size: 0.62rem;
+    color: var(--red);
+    letter-spacing: 0.05em;
+    margin-top: 8px;
+    min-height: 16px;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<h1>PERCEPTRON // SINGLE NEURON</h1>
+<p class="subtitle">WEIGHTED SUM &rarr; STEP FUNCTION &rarr; BINARY OUTPUT</p>
+
+<div class="grid">
+
+  <!-- LEFT: LIVE DIAGRAM -->
+  <div class="panel">
+    <div class="panel-title">LIVE INFERENCE</div>
+
+    <div class="inputs-row">
+      <div class="toggle-wrap">
+        <div class="toggle-label">INPUT A</div>
+        <button class="toggle" id="btnA" onclick="toggleInput(0)">0</button>
+      </div>
+      <div class="toggle-wrap">
+        <div class="toggle-label">INPUT B</div>
+        <button class="toggle" id="btnB" onclick="toggleInput(1)">0</button>
+      </div>
+      <div class="arrow">&#8594;</div>
+      <div class="toggle-wrap">
+        <div class="toggle-label">OUTPUT</div>
+        <div class="output-node" id="outputNode">0</div>
+      </div>
+    </div>
+
+    <!-- NEURON DIAGRAM -->
+    <div class="neuron-wrap">
+      <div class="input-nodes">
+        <div class="node" id="nodeA">0</div>
+        <div class="node" id="nodeB">0</div>
+      </div>
+      <div class="wires">
+        <div class="wire-label" id="wlA">w0=0.00</div>
+        <div class="wire-label" id="wlB">w1=0.00</div>
+      </div>
+      <div class="neuron-body" id="neuronBody">
+        <div class="sum-val" id="sumVal">&#8721;=0.00</div>
+      </div>
+      <div class="output-wire" id="outputWire"></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+        <div style="font-size:0.55rem;color:#444;letter-spacing:0.1em">STEP</div>
+        <div class="output-node" id="outputNode2">0</div>
+      </div>
+    </div>
+
+    <!-- MATH -->
+    <div class="math-line" id="mathLine1">sum = (A &times; w0) + (B &times; w1) + bias</div>
+    <div class="math-line highlight" id="mathLine2">sum = (<span id="mA">0</span>&times;<span id="mW0">0.00</span>) + (<span id="mB">0</span>&times;<span id="mW1">0.00</span>) + (<span id="mBias">0.00</span>)</div>
+    <div class="math-line" id="mathLine3">sum = <span id="mSum" class="val">0.00</span> &nbsp;&nbsp; output = <span id="mOut" class="result">0</span></div>
+  </div>
+
+  <!-- RIGHT: WEIGHTS + TRAINING -->
+  <div class="panel">
+    <div class="panel-title">WEIGHTS &amp; TRAINING</div>
+
+    <div class="mode-row">
+      <button class="mode-btn active" id="modeAND" onclick="setMode('AND')">AND</button>
+      <button class="mode-btn" id="modeOR" onclick="setMode('OR')">OR</button>
+      <button class="mode-btn" id="modeXOR" onclick="setMode('XOR')">XOR</button>
+    </div>
+
+    <div class="weight-row">
+      <div class="weight-name">W0 (A)</div>
+      <input type="range" id="slW0" min="-1" max="1" step="0.01" value="0" oninput="manualWeight(0,this.value)">
+      <div class="weight-val" id="dispW0">0.00</div>
+    </div>
+    <div class="weight-row">
+      <div class="weight-name">W1 (B)</div>
+      <input type="range" id="slW1" min="-1" max="1" step="0.01" value="0" oninput="manualWeight(1,this.value)">
+      <div class="weight-val" id="dispW1">0.00</div>
+    </div>
+    <div class="weight-row">
+      <div class="weight-name">BIAS</div>
+      <input type="range" id="slBias" min="-1" max="1" step="0.01" value="0" oninput="manualBias(this.value)">
+      <div class="weight-val" id="dispBias">0.00</div>
+    </div>
+
+    <div class="loss-wrap">
+      <div class="loss-label">TOTAL ERROR ACROSS ALL 4 CASES</div>
+      <div class="loss-bar-bg"><div class="loss-bar-fill" id="lossBar" style="width:0%"></div></div>
+      <div class="loss-val" id="lossVal">0 / 4 wrong</div>
+    </div>
+
+    <div class="xor-warning" id="xorWarn">
+      XOR IS NOT LINEARLY SEPARABLE. A SINGLE PERCEPTRON CANNOT LEARN THIS. YOU NEED DEPTH.
+    </div>
+
+    <button class="train-btn" onclick="trainStep()">TRAIN ONE EPOCH</button>
+    <button class="train-btn" style="margin-top:6px;border-color:#555;color:#555;" onclick="trainAll()">TRAIN 100 EPOCHS</button>
+    <button class="reset-btn" onclick="resetWeights()">RESET WEIGHTS TO ZERO</button>
+    <div class="epoch-display" id="epochDisp">epoch: 0 | lr: 0.1</div>
+  </div>
+
+</div>
+
+<!-- TRUTH TABLE -->
+<div class="panel">
+  <div class="panel-title">TRUTH TABLE // ALL CASES</div>
+  <table>
+    <tr>
+      <th>A</th><th>B</th><th>TARGET</th><th>OUTPUT</th><th>ERROR</th><th>WEIGHTED SUM</th>
+    </tr>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<script>
+const LEARNING_RATE = 0.1;
+
+let weights = [0.0, 0.0];
+let bias = 0.0;
+let inputs = [0, 0];
+let epoch = 0;
+let mode = 'AND';
+
+const targets = {
+  AND: [0, 0, 0, 1],
+  OR:  [0, 1, 1, 1],
+  XOR: [0, 1, 1, 0]
+};
+
+const trainingInputs = [[0,0],[0,1],[1,0],[1,1]];
+
+function step(sum) { return sum > 0 ? 1 : 0; }
+
+function forward(inp, w, b) {
+  let sum = b;
+  for (let i = 0; i < 2; i++) sum += inp[i] * w[i];
+  return { sum, output: step(sum) };
+}
+
+function toggleInput(idx) {
+  inputs[idx] = inputs[idx] === 0 ? 1 : 0;
+  updateUI();
+}
+
+function manualWeight(idx, val) {
+  weights[idx] = parseFloat(val);
+  updateUI();
+}
+
+function manualBias(val) {
+  bias = parseFloat(val);
+  updateUI();
+}
+
+function setMode(m) {
+  mode = m;
+  ['AND','OR','XOR'].forEach(x => {
+    document.getElementById('mode'+x).classList.toggle('active', x === m);
+  });
+  document.getElementById('xorWarn').style.display = m === 'XOR' ? 'block' : 'none';
+  updateUI();
+}
+
+function resetWeights() {
+  weights = [0, 0];
+  bias = 0;
+  epoch = 0;
+  document.getElementById('slW0').value = 0;
+  document.getElementById('slW1').value = 0;
+  document.getElementById('slBias').value = 0;
+  updateUI();
+}
+
+function trainStep() {
+  const tgts = targets[mode];
+  for (let i = 0; i < 4; i++) {
+    const { output } = forward(trainingInputs[i], weights, bias);
+    const error = tgts[i] - output;
+    for (let j = 0; j < 2; j++) {
+      weights[j] += LEARNING_RATE * error * trainingInputs[i][j];
+    }
+    bias += LEARNING_RATE * error;
+  }
+  epoch++;
+  // clamp sliders
+  document.getElementById('slW0').value = Math.max(-1, Math.min(1, weights[0]));
+  document.getElementById('slW1').value = Math.max(-1, Math.min(1, weights[1]));
+  document.getElementById('slBias').value = Math.max(-1, Math.min(1, bias));
+  updateUI();
+}
+
+function trainAll() {
+  for (let i = 0; i < 100; i++) trainStep();
+}
+
+function updateUI() {
+  const { sum, output } = forward(inputs, weights, bias);
+
+  // toggle buttons
+  ['A','B'].forEach((l, i) => {
+    const btn = document.getElementById('btn'+l);
+    btn.textContent = inputs[i];
+    btn.classList.toggle('on', inputs[i] === 1);
+    const node = document.getElementById('node'+l);
+    node.textContent = inputs[i];
+    node.classList.toggle('active', inputs[i] === 1);
+  });
+
+  // neuron
+  const nb = document.getElementById('neuronBody');
+  nb.classList.toggle('firing', output === 1);
+  document.getElementById('sumVal').textContent = '\u03A3=' + sum.toFixed(2);
+  document.getElementById('outputWire').classList.toggle('active', output === 1);
+
+  // output nodes
+  [document.getElementById('outputNode'), document.getElementById('outputNode2')].forEach(n => {
+    n.textContent = output;
+    n.classList.toggle('on', output === 1);
+  });
+
+  // wire labels
+  document.getElementById('wlA').textContent = 'w0='+weights[0].toFixed(2);
+  document.getElementById('wlB').textContent = 'w1='+weights[1].toFixed(2);
+  document.getElementById('wlA').classList.toggle('active', inputs[0] === 1);
+  document.getElementById('wlB').classList.toggle('active', inputs[1] === 1);
+
+  // math
+  document.getElementById('mA').textContent = inputs[0];
+  document.getElementById('mB').textContent = inputs[1];
+  document.getElementById('mW0').textContent = weights[0].toFixed(2);
+  document.getElementById('mW1').textContent = weights[1].toFixed(2);
+  document.getElementById('mBias').textContent = bias.toFixed(2);
+  document.getElementById('mSum').textContent = sum.toFixed(3);
+  document.getElementById('mOut').textContent = output;
+
+  // weight displays
+  document.getElementById('dispW0').textContent = weights[0].toFixed(2);
+  document.getElementById('dispW1').textContent = weights[1].toFixed(2);
+  document.getElementById('dispBias').textContent = bias.toFixed(2);
+
+  // truth table
+  const tgts = targets[mode];
+  let wrong = 0;
+  let tbody = '';
+  trainingInputs.forEach((inp, i) => {
+    const { sum: s, output: o } = forward(inp, weights, bias);
+    const t = tgts[i];
+    const err = t - o;
+    if (err !== 0) wrong++;
+    const active = inp[0] === inputs[0] && inp[1] === inputs[1];
+    const cls = err === 0 ? 'correct' : 'wrong';
+    tbody += `<tr class="${active ? 'active-row' : ''}">
+      <td>${inp[0]}</td>
+      <td>${inp[1]}</td>
+      <td>${t}</td>
+      <td class="${cls}">${o}</td>
+      <td class="${err !== 0 ? 'wrong' : 'neutral'}">${err}</td>
+      <td style="color:#555">${s.toFixed(3)}</td>
+    </tr>`;
+  });
+  document.getElementById('tableBody').innerHTML = tbody;
+
+  // loss bar
+  const lossPct = (wrong / 4) * 100;
+  document.getElementById('lossBar').style.width = lossPct + '%';
+  document.getElementById('lossVal').textContent = wrong + ' / 4 wrong';
+
+  // epoch
+  document.getElementById('epochDisp').textContent = 'epoch: ' + epoch + ' | lr: ' + LEARNING_RATE;
+}
+
+updateUI();
+</script>
+</body>
+</html>

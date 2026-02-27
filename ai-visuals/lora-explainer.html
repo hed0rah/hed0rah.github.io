@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoRA // ADAPTER LAYERS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+
+  :root {
+  --bg:         #0a0a0a;
+  --surface:    #111111;
+  --surface2:   #0d0d0d;
+  --border:     #1e1e1e;
+  --border2:    #2a2a2a;
+  --cyan:       #00ffe9;
+  --yellow:     #ffe900;
+  --magenta:    #e900ff;
+  --red:        #ff2d55;
+  --green:      #39ff14;
+  --orange:     #ff6b00;
+  --dim:        #3a3a3a;
+  --text:       #cccccc;
+  --bright:     #ffffff;
+  --hi-cyan:    rgba(0,255,233,0.07);
+  --hi-red:     rgba(255,45,85,0.08);
+  --hi-yellow:  rgba(255,233,0,0.07);
+}
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 40px 32px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  /* HEADER */
+  .masthead {
+    border-top: 3px solid var(--cyan);
+    border-bottom: 1px solid var(--dim);
+    padding: 16px 0 12px;
+    margin-bottom: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .masthead h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 72px;
+    letter-spacing: 4px;
+    color: var(--bright);
+    line-height: 1;
+  }
+
+  .masthead h1 span {
+    color: var(--cyan);
+  }
+
+  .masthead-meta {
+    text-align: right;
+    font-size: 10px;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .masthead-meta strong {
+    color: var(--red);
+    display: block;
+    font-size: 11px;
+  }
+
+  /* GRID */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+
+  .grid-full {
+    margin-bottom: 2px;
+  }
+
+  /* PANELS */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px;
+    position: relative;
+  }
+
+  .panel-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: #444;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--bright);
+    margin-bottom: 10px;
+    line-height: 1;
+  }
+
+  .panel-title.cyan { color: var(--cyan); }
+  .panel-title.red { color: var(--red); }
+  .panel-title.yellow { color: var(--yellow); }
+
+  .accent-bar {
+    width: 32px;
+    height: 3px;
+    background: var(--cyan);
+    margin-bottom: 12px;
+  }
+
+  .accent-bar.red { background: var(--red); }
+  .accent-bar.yellow { background: var(--yellow); }
+
+  p {
+    color: var(--text);
+    margin-bottom: 8px;
+    font-size: 11px;
+    line-height: 1.7;
+  }
+
+  .highlight {
+    color: var(--cyan);
+    font-weight: 700;
+  }
+
+  .highlight.red { color: var(--red); }
+  .highlight.yellow { color: var(--yellow); }
+
+  /* MATH DISPLAY */
+  .math-block {
+    background: #0d0d0d;
+    border: 1px solid var(--dim);
+    border-left: 3px solid var(--cyan);
+    padding: 14px 16px;
+    margin: 12px 0;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--bright);
+  }
+
+  .math-block .eq {
+    color: var(--yellow);
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .math-block .note {
+    color: #555;
+    font-size: 10px;
+    margin-top: 6px;
+  }
+
+  /* ARCHITECTURE DIAGRAM */
+  .arch-diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding: 8px 0;
+  }
+
+  .arch-layer {
+    width: 100%;
+    max-width: 340px;
+    padding: 10px 14px;
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    position: relative;
+  }
+
+  .arch-layer.frozen {
+    background: #161616;
+    border: 1px solid #2a2a2a;
+    color: #666;
+  }
+
+  .arch-layer.adapter {
+    background: #001a17;
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    box-shadow: 0 0 12px rgba(0,255,233,0.08);
+  }
+
+  .arch-layer.output {
+    background: #1a0007;
+    border: 1px solid var(--red);
+    color: var(--red);
+  }
+
+  .arch-arrow {
+    width: 1px;
+    height: 16px;
+    background: var(--dim);
+    position: relative;
+  }
+
+  .arch-arrow::after {
+    content: '▼';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--dim);
+    font-size: 8px;
+  }
+
+  .arch-arrow.active {
+    background: var(--cyan);
+  }
+
+  .arch-arrow.active::after {
+    color: var(--cyan);
+  }
+
+  .frozen-tag {
+    font-size: 9px;
+    color: #333;
+    letter-spacing: 1px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* RANK TABLE */
+  .rank-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+  }
+
+  .rank-table th {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: #555;
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .rank-table td {
+    padding: 7px 8px;
+    font-size: 11px;
+    border-bottom: 1px solid #151515;
+  }
+
+  .rank-table tr:hover td {
+    background: #141414;
+  }
+
+  .rank-table .r { color: var(--red); font-weight: 700; }
+  .rank-table .c { color: var(--cyan); }
+  .rank-table .y { color: var(--yellow); }
+
+  /* DECOMPOSITION VIZ */
+  .decomp {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .matrix-box {
+    border: 1px solid var(--dim);
+    padding: 8px 12px;
+    text-align: center;
+    min-width: 60px;
+  }
+
+  .matrix-box .dim {
+    font-size: 10px;
+    color: #444;
+    margin-top: 2px;
+  }
+
+  .matrix-box.big {
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  .matrix-box.a {
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
+
+  .matrix-box.b {
+    border-color: var(--yellow);
+    color: var(--yellow);
+  }
+
+  .op {
+    color: #555;
+    font-size: 18px;
+  }
+
+  /* QLORA SECTION */
+  .quant-row {
+    display: flex;
+    gap: 2px;
+    margin: 10px 0;
+  }
+
+  .quant-bit {
+    flex: 1;
+    padding: 10px 6px;
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+
+  .bit-32 { background: #1a0a00; border: 1px solid #3d1a00; color: #ff6b00; }
+  .bit-16 { background: #0d1a00; border: 1px solid #2a3d00; color: #8aff2a; }
+  .bit-8  { background: #001a1a; border: 1px solid #003d3d; color: #2affff; }
+  .bit-4  { background: #0a0022; border: 1px solid #220050; color: #e900ff; }
+
+  .quant-bit .sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    opacity: 0.6;
+    display: block;
+    margin-top: 2px;
+    text-transform: lowercase;
+    letter-spacing: 0;
+  }
+
+  /* PERSONAL MODEL SECTION */
+  .personal-arch {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0;
+    align-items: center;
+    margin: 12px 0;
+  }
+
+  .pa-box {
+    padding: 12px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+
+  .pa-box.base {
+    background: #111111;
+    border-color: #2a2a2a;
+  }
+
+  .pa-box.personal {
+    background: #001a17;
+    border-color: var(--cyan);
+  }
+
+  .pa-box-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+
+  .pa-connector {
+    padding: 0 8px;
+    color: var(--yellow);
+    font-size: 20px;
+    text-align: center;
+  }
+
+  .tag-list {
+    margin-top: 8px;
+  }
+
+  .tag {
+    display: inline-block;
+    border: 1px solid var(--border);
+    padding: 2px 7px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #555;
+    margin: 2px 2px 2px 0;
+  }
+
+  .tag.active {
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
+
+  .tag.red {
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  /* TIMELINE */
+  .timeline {
+    position: relative;
+    padding-left: 20px;
+    margin-top: 8px;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .tl-item {
+    position: relative;
+    margin-bottom: 14px;
+    font-size: 11px;
+  }
+
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -23px;
+    top: 5px;
+    width: 7px;
+    height: 7px;
+    border: 1px solid var(--cyan);
+    background: var(--bg);
+  }
+
+  .tl-year {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--cyan);
+  }
+
+  /* FOOTER */
+  .footer {
+    border-top: 1px solid var(--border);
+    margin-top: 16px;
+    padding-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #333;
+    letter-spacing: 1px;
+  }
+
+  /* SCANLINE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    line-height: 1;
+    letter-spacing: 2px;
+    color: var(--bright);
+  }
+
+  .stat-num span { color: var(--cyan); }
+  .stat-sub {
+    font-size: 10px;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 2px;
+  }
+
+  .code-inline {
+    background: #141414;
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    color: var(--yellow);
+    font-size: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>LO<span>RA</span></h1>
+  <div class="masthead-meta">
+    LOW-RANK ADAPTATION OF LARGE LANGUAGE MODELS<br>
+    <strong>ADAPTER LAYER DEEP DIVE</strong>
+    REF-DOC // TECHNICAL REFERENCE
+  </div>
+</div>
+
+<!-- ROW 1: What + Why -->
+<div class="grid-2">
+
+  <div class="panel">
+    <div class="panel-label">01 // Concept</div>
+    <div class="panel-title cyan">WHAT IS LORA</div>
+    <div class="accent-bar"></div>
+    <p>
+      LoRA is a <span class="highlight">parameter-efficient fine-tuning</span> method. Instead of updating all weights in a pretrained model, it freezes the original weights entirely and injects small trainable matrices alongside specific layers.
+    </p>
+    <p>
+      The key insight: weight updates during fine-tuning have a <span class="highlight">low intrinsic rank</span>. You don't need a full-dimensional update to adapt behavior. A low-rank decomposition captures most of what matters.
+    </p>
+    <p>
+      Published by Hu et al. at Microsoft in 2021. Originally for GPT-style transformers but now applied broadly across vision, audio, and multimodal models.
+    </p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label">02 // Problem Solved</div>
+    <div class="panel-title red">WHY NOT FULL FINETUNE</div>
+    <div class="accent-bar red"></div>
+    <p>
+      A 70B parameter model has ~140GB of weights at FP16. Full fine-tuning requires storing those weights plus <span class="highlight red">optimizer states</span> (Adam needs 2x the param count), gradients, and activations.
+    </p>
+    <p>
+      That's realistically <span class="highlight red">500GB+ of GPU memory</span> per training run. You also need to store a full copy of the model per task. With LoRA you store tiny adapter files, often <span class="highlight">under 100MB</span>, that snap onto a shared base.
+    </p>
+    <p>
+      Catastrophic forgetting is also reduced since base weights never move.
+    </p>
+  </div>
+
+</div>
+
+<!-- ROW 2: Math + Architecture -->
+<div class="grid-2">
+
+  <div class="panel">
+    <div class="panel-label">03 // The Mathematics</div>
+    <div class="panel-title yellow">LOW-RANK DECOMPOSITION</div>
+    <div class="accent-bar yellow"></div>
+    <p>
+      For a pretrained weight matrix <span class="highlight">W₀ ∈ R^(d×k)</span>, LoRA constrains the update by representing it as the product of two smaller matrices:
+    </p>
+
+    <div class="math-block">
+      <div class="eq">W = W₀ + ΔW = W₀ + BA</div>
+      <div>Where:</div>
+      <div style="margin-top:6px; color: #00ffe9;">B ∈ R^(d×r)</div>
+      <div style="color: #ffe900;">A ∈ R^(r×k)</div>
+      <div style="color: #666; margin-top:4px;">rank r &lt;&lt; min(d, k)</div>
+      <div class="note">// A initialized with gaussian, B with zeros so ΔW=0 at start</div>
+    </div>
+
+    <div class="decomp">
+      <div class="matrix-box big">
+        <div>ΔW</div>
+        <div class="dim">d × k</div>
+        <div class="dim" style="color:#ff2d55; font-size:9px;">FULL RANK</div>
+      </div>
+      <div class="op">=</div>
+      <div class="matrix-box b">
+        <div>B</div>
+        <div class="dim">d × r</div>
+      </div>
+      <div class="op">×</div>
+      <div class="matrix-box a">
+        <div>A</div>
+        <div class="dim">r × k</div>
+      </div>
+    </div>
+
+    <p style="font-size:10px; color:#555;">
+      The scaling factor α/r is applied to ΔW output, where α is a hyperparameter. Typically r=4,8,16 or 64 depending on task complexity.
+    </p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label">04 // Architecture</div>
+    <div class="panel-title">LAYER STRUCTURE</div>
+    <div class="accent-bar"></div>
+
+    <div class="arch-diagram">
+      <div class="arch-layer frozen">
+        INPUT EMBEDDING
+        <div class="frozen-tag">// frozen</div>
+      </div>
+      <div class="arch-arrow"></div>
+
+      <div class="arch-layer frozen">
+        ATTENTION LAYER (W_q, W_k, W_v, W_o)
+        <div class="frozen-tag">// frozen base weights</div>
+      </div>
+      <div class="arch-arrow active"></div>
+
+      <div class="arch-layer adapter">
+        LORA ADAPTER
+        <div class="frozen-tag" style="color:#00ffe9; opacity:0.6;">BA · (α/r) // trainable</div>
+      </div>
+      <div class="arch-arrow active"></div>
+
+      <div class="arch-layer frozen">
+        FFN SUBLAYER
+        <div class="frozen-tag">// frozen</div>
+      </div>
+      <div class="arch-arrow active"></div>
+
+      <div class="arch-layer adapter">
+        LORA ADAPTER
+        <div class="frozen-tag" style="color:#00ffe9; opacity:0.6;">optional // FFN projection</div>
+      </div>
+      <div class="arch-arrow"></div>
+
+      <div class="arch-layer frozen">
+        LAYER NORM + RESIDUAL
+        <div class="frozen-tag">// frozen</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ROW 3: Rank table + QLoRA -->
+<div class="grid-2">
+
+  <div class="panel">
+    <div class="panel-label">05 // Hyperparameters</div>
+    <div class="panel-title">RANK SELECTION GUIDE</div>
+    <div class="accent-bar"></div>
+
+    <table class="rank-table">
+      <tr>
+        <th>Rank (r)</th>
+        <th>Params</th>
+        <th>Use Case</th>
+        <th>Quality</th>
+      </tr>
+      <tr>
+        <td class="r">r = 1</td>
+        <td class="c">~0.01%</td>
+        <td>Tone/style only</td>
+        <td class="y">low</td>
+      </tr>
+      <tr>
+        <td class="r">r = 4</td>
+        <td class="c">~0.05%</td>
+        <td>Persona, light domain</td>
+        <td class="y">medium</td>
+      </tr>
+      <tr>
+        <td class="r">r = 8</td>
+        <td class="c">~0.1%</td>
+        <td>Task-specific behavior</td>
+        <td class="y">good</td>
+      </tr>
+      <tr>
+        <td class="r">r = 16</td>
+        <td class="c">~0.2%</td>
+        <td>Domain knowledge</td>
+        <td class="y">high</td>
+      </tr>
+      <tr>
+        <td class="r">r = 64</td>
+        <td class="c">~0.8%</td>
+        <td>Complex task transfer</td>
+        <td class="y">very high</td>
+      </tr>
+    </table>
+
+    <p style="margin-top:12px; font-size:10px; color:#444;">
+      LoRA is typically applied to <span class="code-inline">W_q</span> and <span class="code-inline">W_v</span> attention projections. Applying to all four projections and FFN layers improves quality at the cost of adapter size.
+    </p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label">06 // QLoRA Variant</div>
+    <div class="panel-title cyan">QLORA // 4-BIT BASE</div>
+    <div class="accent-bar"></div>
+    <p>
+      QLoRA (Dettmers et al. 2023) combines LoRA with quantization of the base model weights. The frozen base runs in <span class="highlight">NF4</span> (Normal Float 4-bit), a data type optimized for normally distributed weights.
+    </p>
+
+    <div class="quant-row">
+      <div class="quant-bit bit-32">FP32<span class="sub">4 bytes/param</span></div>
+      <div class="quant-bit bit-16">FP16<span class="sub">2 bytes/param</span></div>
+      <div class="quant-bit bit-8">INT8<span class="sub">1 byte/param</span></div>
+      <div class="quant-bit bit-4">NF4<span class="sub">0.5 bytes/param</span></div>
+    </div>
+
+    <p>
+      A 65B model that requires ~130GB at FP16 fits in <span class="highlight">~35GB</span> at NF4. That's 2x A100s instead of 8. The adapters themselves remain in BF16 for training stability.
+    </p>
+    <p style="font-size:10px;">
+      Double quantization further compresses the quantization constants themselves. Paged optimizers handle memory spikes. Net result: you can fine-tune massive models on consumer hardware.
+    </p>
+  </div>
+
+</div>
+
+<!-- ROW 4: Personal model use case -->
+<div class="grid-full">
+  <div class="panel">
+    <div class="panel-label">07 // Personal Model Architecture // Your Use Case</div>
+    <div class="panel-title cyan">LORA AS A PERSONAL COGNITIVE LAYER</div>
+    <div class="accent-bar"></div>
+
+    <div class="personal-arch">
+      <div class="pa-box base">
+        <div class="pa-box-title" style="color:#555;">BASE MODEL</div>
+        <div style="font-size:10px; color:#444; margin-bottom:6px;">Claude / Llama 3 / Mistral</div>
+        <div style="font-size:10px; color:#333;">General reasoning<br>World knowledge<br>Language modeling<br>Code / math</div>
+        <div class="tag-list">
+          <span class="tag">frozen</span>
+          <span class="tag">shared</span>
+          <span class="tag">70B+</span>
+        </div>
+      </div>
+
+      <div class="pa-connector">+</div>
+
+      <div class="pa-box personal">
+        <div class="pa-box-title" style="color: var(--cyan);">YOUR LORA</div>
+        <div style="font-size:10px; color: #00a892; margin-bottom:6px;">Personal Adapter // ~50-200MB</div>
+        <div style="font-size:10px; color:#00c49f;">SRE / network domain<br>BGP / CDN context<br>Your writing voice<br>CY_BORG / modular refs<br>Preferred reasoning style</div>
+        <div class="tag-list">
+          <span class="tag active">trainable</span>
+          <span class="tag active">yours</span>
+          <span class="tag active">swappable</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:2px; margin-top:2px;">
+      <div style="background:#0d0d0d; border:1px solid #1a1a1a; padding:14px;">
+        <div style="font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:2px; color:#555; margin-bottom:8px;">TRAINING DATA</div>
+        <p style="font-size:10px;">Your conversation history, annotated with good/bad signal. Technical docs you reference. Code you've written. Notes, wiki entries, runbooks. The adapter learns your patterns and domain without touching base weights.</p>
+      </div>
+      <div style="background:#0d0d0d; border:1px solid #1a1a1a; padding:14px;">
+        <div style="font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:2px; color:#555; margin-bottom:8px;">INFERENCE</div>
+        <p style="font-size:10px;">At inference, ΔW is merged into base weights (zero latency overhead) or applied as a parallel branch. You load one base model, hot-swap adapter files per context: work mode, creative mode, technical mode.</p>
+      </div>
+      <div style="background:#0d0d0d; border:1px solid #1a1a1a; padding:14px;">
+        <div style="font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:2px; color:#555; margin-bottom:8px;">REFRESH CYCLE</div>
+        <p style="font-size:10px;">Not realtime but periodic. Every month, new data is added to training set, adapter retrained from scratch or continued from prior checkpoint. Small r keeps training under an hour on a single GPU even for large base models.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 5: Stats + Timeline -->
+<div class="grid-2">
+
+  <div class="panel">
+    <div class="panel-label">08 // By The Numbers</div>
+    <div class="panel-title">EFFICIENCY COMPARISON</div>
+    <div class="accent-bar"></div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px;">
+      <div>
+        <div class="stat-num"><span>0.1</span>%</div>
+        <div class="stat-sub">trainable params vs full finetune</div>
+      </div>
+      <div>
+        <div class="stat-num" style="color:var(--red);">3x</div>
+        <div class="stat-sub">faster training throughput</div>
+      </div>
+      <div>
+        <div class="stat-num"><span>~</span>0</div>
+        <div class="stat-sub">inference latency overhead (merged)</div>
+      </div>
+      <div>
+        <div class="stat-num" style="color:var(--yellow);">N</div>
+        <div class="stat-sub">adapters per base model // unlimited</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label">09 // Lineage</div>
+    <div class="panel-title">ADAPTER HISTORY</div>
+    <div class="accent-bar red"></div>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-year">2019</div>
+        <p>Houlsby et al. introduce adapter layers for NLP transfer learning. Small bottleneck modules inserted serially inside transformer layers.</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-year">2021</div>
+        <p>LoRA paper (Hu et al., Microsoft). Parallel low-rank matrices rather than serial bottlenecks. No added inference latency when merged.</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-year">2022</div>
+        <p>IA³, prefix tuning, prompt tuning proliferate. PEFT becomes a standard training paradigm. HuggingFace PEFT library released.</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-year">2023</div>
+        <p>QLoRA enables 65B fine-tuning on a single 48GB GPU. LLaMA ecosystem explodes with community adapters. DoRA, AdaLoRA, VeRA variants published.</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-year">2024+</div>
+        <p>LoRA merging research matures. Multiple adapters composed arithmetically. Personal model stacks become practical on prosumer hardware.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <span>LORA // LOW-RANK ADAPTATION // HU ET AL. 2021 // ARXIV:2106.09685</span>
+  <span>TECHNICAL REFERENCE // BRUTALIST TERMINAL v2</span>
+</div>
+
+</body>
+</html>

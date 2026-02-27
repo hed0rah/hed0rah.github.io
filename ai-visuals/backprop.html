@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backpropagation</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+
+:root {
+  --bg: #0a0a0f;
+  --panel: #0f0f1a;
+  --panel2: #12121f;
+  --border: #1e1e3a;
+  --border2: #2a2a4a;
+  --fwd: #00e5ff;
+  --bwd: #ff3d71;
+  --green: #69ff6e;
+  --orange: #ffaa00;
+  --text: #c8c8e0;
+  --dim: #555570;
+  --white: #eeeeff;
+  --purple: #b060ff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.noise {
+  position: fixed;
+  inset: 0;
+  opacity: 0.035;
+  pointer-events: none;
+  z-index: 1000;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+header {
+  padding: 3rem 2.5rem 2rem;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+header::before {
+  content: 'BACKPROP';
+  position: absolute;
+  right: -1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 14rem;
+  color: var(--border);
+  pointer-events: none;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.doc-meta {
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3.5rem, 9vw, 8rem);
+  line-height: 0.88;
+  letter-spacing: 0.01em;
+  color: var(--white);
+}
+
+h1 em { color: var(--bwd); font-style: normal; }
+
+.subtitle {
+  margin-top: 1rem;
+  font-size: 0.7rem;
+  color: var(--dim);
+  max-width: 600px;
+  line-height: 1.7;
+}
+
+/* sections */
+.section {
+  padding: 2rem 2.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-num {
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 0.3rem;
+}
+
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.8rem;
+  letter-spacing: 0.04em;
+  color: var(--white);
+  margin-bottom: 1rem;
+}
+
+.prose {
+  font-size: 0.72rem;
+  line-height: 1.8;
+  color: var(--text);
+  max-width: 680px;
+}
+
+.annotation {
+  margin-top: 0.75rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--bwd);
+  font-size: 0.68rem;
+  font-style: italic;
+  color: var(--dim);
+}
+
+/* two col */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1px;
+  background: var(--border);
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+
+canvas#netCanvas {
+  width: 100%;
+  height: 340px;
+  display: block;
+  background: var(--panel);
+}
+
+.side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--border);
+}
+
+.panel {
+  background: var(--panel);
+}
+
+.panel-head {
+  background: var(--border2);
+  color: var(--dim);
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-body { padding: 0.6rem 0.75rem; }
+
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.65rem;
+}
+.data-row:last-child { border-bottom: none; }
+.data-key { color: var(--dim); }
+.data-val { font-weight: 700; font-variant-numeric: tabular-nums; }
+.data-val.fwd { color: var(--fwd); }
+.data-val.bwd { color: var(--bwd); }
+.data-val.neu { color: var(--text); }
+
+.btn-row {
+  display: flex;
+  gap: 1px;
+  background: var(--border);
+  margin-top: 1px;
+}
+
+button {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.6rem 0.9rem;
+  border: none;
+  background: var(--panel2);
+  color: var(--dim);
+  cursor: pointer;
+  flex: 1;
+  transition: all 0.12s;
+}
+button:hover { background: var(--border2); color: var(--white); }
+button.active-fwd { background: var(--fwd); color: var(--bg); }
+button.active-bwd { background: var(--bwd); color: var(--white); }
+
+.step-hint {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.6rem;
+  color: var(--dim);
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  min-height: 28px;
+}
+
+/* chain rule */
+.chain-container { margin-top: 0.5rem; }
+
+.chain-line {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.35s, transform 0.35s;
+  font-size: 0.7rem;
+}
+.chain-line.visible { opacity: 1; transform: translateX(0); }
+.chain-line:last-child { border-bottom: none; }
+
+.chain-label {
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+  min-width: 90px;
+}
+
+.math { font-style: italic; color: var(--fwd); }
+.math.partial { color: var(--bwd); }
+.times { color: var(--dim); margin: 0 0.1rem; }
+.tag { font-size: 0.55rem; color: var(--dim); margin-left: auto; white-space: nowrap; }
+
+.chain-highlight {
+  background: rgba(255,61,113,0.06);
+  border-left: 2px solid var(--bwd) !important;
+}
+
+.update-box {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border2);
+  background: var(--panel);
+  font-size: 0.7rem;
+  max-width: 560px;
+}
+.update-box .math { color: var(--orange); }
+
+/* loss curve */
+canvas#lossCanvas {
+  width: 100%;
+  height: 200px;
+  display: block;
+  background: var(--panel);
+  margin-top: 1px;
+}
+
+.train-controls {
+  display: flex;
+  gap: 1px;
+  background: var(--border);
+}
+
+.epoch-track {
+  padding: 0.6rem 0.75rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.6rem;
+  color: var(--dim);
+}
+
+.epoch-bar-wrap {
+  height: 3px;
+  background: var(--border2);
+  margin-top: 0.4rem;
+}
+.epoch-bar-fill {
+  height: 100%;
+  background: var(--bwd);
+  transition: width 0.1s;
+  width: 0%;
+}
+
+.final-pred {
+  color: var(--fwd);
+  font-weight: 700;
+}
+
+/* concepts grid */
+.concepts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-top: 1.5rem;
+}
+
+.concept-card {
+  background: var(--panel);
+  padding: 1.25rem;
+}
+
+.concept-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+}
+
+.concept-name.red { color: var(--bwd); }
+.concept-name.cyan { color: var(--fwd); }
+.concept-name.green { color: var(--green); }
+.concept-name.orange { color: var(--orange); }
+.concept-name.purple { color: var(--purple); }
+
+.concept-def {
+  font-size: 0.65rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.formula-block {
+  margin-top: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border-left: 2px solid var(--border2);
+  font-size: 0.62rem;
+  font-style: italic;
+  color: var(--fwd);
+  background: var(--bg);
+}
+
+footer {
+  padding: 1.25rem 2.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.55rem;
+  color: var(--dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+
+<header>
+  <div class="doc-meta">
+    <span>Neural Networks / Training Theory</span>
+    <span>Gradient-Based Optimization</span>
+    <span>Series: AI Fundamentals</span>
+  </div>
+  <h1>BACK<em>PROP</em><br>AGATION</h1>
+  <p class="subtitle">The mechanism by which a network learns from its mistakes. An efficient application of the chain rule that assigns blame to every weight proportional to its contribution to the error.</p>
+</header>
+
+<div class="section">
+  <div class="section-num">01 / Concept</div>
+  <div class="section-title">THE BIG PICTURE</div>
+  <p class="prose">
+    A neural network makes a prediction. It's wrong. The question is: <strong>which weights caused this wrongness, and by how much?</strong> Backpropagation is the systematic answer — an efficient application of the chain rule of calculus that assigns blame to every single weight in the network proportionally to its contribution to the error.
+  </p>
+  <p class="prose" style="margin-top:0.75rem;">
+    The forward pass computes a prediction. The loss function measures how bad it is. Then backprop runs the signal in reverse — from output back to input — computing the gradient of the loss with respect to every parameter. Gradient descent then nudges each weight in the direction that reduces loss. Repeat millions of times. That is training.
+  </p>
+  <p class="annotation">
+    "Backprop is just the chain rule applied recursively. The insight was realizing you could cache intermediate computations and reuse them — making it O(n) instead of O(n²)."
+  </p>
+</div>
+
+<div class="section">
+  <div class="section-num">02 / Visualization</div>
+  <div class="section-title">FORWARD + BACKWARD PASS</div>
+  <p class="prose">
+    A tiny network: 2 inputs, one hidden layer of 3 neurons (ReLU), 1 output (sigmoid). Step through the forward pass to see activations propagate, then watch gradients flow backward. Edge thickness encodes magnitude.
+  </p>
+  <div class="two-col">
+    <canvas id="netCanvas"></canvas>
+    <div class="side-stack">
+      <div class="panel">
+        <div class="panel-head">Node Values</div>
+        <div class="panel-body">
+          <div class="data-row"><span class="data-key">x1 (input)</span><span class="data-val fwd" id="v-x1">0.80</span></div>
+          <div class="data-row"><span class="data-key">x2 (input)</span><span class="data-val fwd" id="v-x2">0.20</span></div>
+          <div class="data-row"><span class="data-key">h1 (pre-act)</span><span class="data-val fwd" id="v-h1pre">—</span></div>
+          <div class="data-row"><span class="data-key">h1 (post-ReLU)</span><span class="data-val fwd" id="v-h1">—</span></div>
+          <div class="data-row"><span class="data-key">h2 (post-ReLU)</span><span class="data-val fwd" id="v-h2">—</span></div>
+          <div class="data-row"><span class="data-key">h3 (post-ReLU)</span><span class="data-val fwd" id="v-h3">—</span></div>
+          <div class="data-row"><span class="data-key">output (sigmoid)</span><span class="data-val fwd" id="v-out">—</span></div>
+          <div class="data-row"><span class="data-key">target</span><span class="data-val neu">1.00</span></div>
+          <div class="data-row"><span class="data-key">BCE loss</span><span class="data-val bwd" id="v-loss">—</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">Gradients (dL/dW)</div>
+        <div class="panel-body">
+          <div class="data-row"><span class="data-key">dL/d(output)</span><span class="data-val bwd" id="g-out">—</span></div>
+          <div class="data-row"><span class="data-key">dL/dW_out[0]</span><span class="data-val bwd" id="g-w0">—</span></div>
+          <div class="data-row"><span class="data-key">dL/dW_out[1]</span><span class="data-val bwd" id="g-w1">—</span></div>
+          <div class="data-row"><span class="data-key">dL/dW_out[2]</span><span class="data-val bwd" id="g-w2">—</span></div>
+          <div class="data-row"><span class="data-key">dL/dh1</span><span class="data-val bwd" id="g-h1">—</span></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button id="btnFwd">Forward</button>
+        <button id="btnBwd">Backprop</button>
+        <button id="btnReset">Reset</button>
+      </div>
+      <div class="step-hint" id="stepHint">Click FORWARD to begin.</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-num">03 / Mathematics</div>
+  <div class="section-title">THE CHAIN RULE, UNROLLED</div>
+  <p class="prose">
+    To find how much a weight in layer 1 affects the loss, trace every path from that weight to the output and multiply local derivatives along the way. Every node owns just its local gradient — backprop does the rest by accumulation.
+  </p>
+  <div class="chain-container" id="chainContainer">
+    <div class="chain-line" id="c0">
+      <span class="chain-label">Loss fn</span>
+      <span>L = -[ y·log(ŷ) + (1-y)·log(1-ŷ) ]</span>
+      <span class="tag">Binary Cross-Entropy</span>
+    </div>
+    <div class="chain-line" id="c1">
+      <span class="chain-label">dL/dŷ</span>
+      <span class="math partial">= -(y/ŷ) + (1-y)/(1-ŷ)</span>
+    </div>
+    <div class="chain-line" id="c2">
+      <span class="chain-label">dŷ/dz_out</span>
+      <span class="math">= σ(z) · (1 - σ(z))</span>
+      <span class="tag">sigmoid derivative</span>
+    </div>
+    <div class="chain-line" id="c3">
+      <span class="chain-label">dz_out/dw_i</span>
+      <span class="math">= h_i</span>
+      <span class="tag">output layer weight grad</span>
+    </div>
+    <div class="chain-line chain-highlight" id="c4">
+      <span class="chain-label" style="color:var(--bwd);">dL/dw_i</span>
+      <span class="math partial">dL/dŷ</span>
+      <span class="times">×</span>
+      <span class="math">dŷ/dz_out</span>
+      <span class="times">×</span>
+      <span class="math">dz_out/dw_i</span>
+      <span class="tag" style="color:var(--bwd);">CHAIN RULE</span>
+    </div>
+    <div class="chain-line" id="c5">
+      <span class="chain-label">dL/dh_i</span>
+      <span class="math partial">= dL/dz_out</span>
+      <span class="times">×</span>
+      <span class="math">w_i</span>
+      <span class="tag">propagate back to hidden</span>
+    </div>
+    <div class="chain-line" id="c6">
+      <span class="chain-label">ReLU grad</span>
+      <span class="math">dh_i/dz_i = 1 if z_i > 0, else 0</span>
+      <span class="tag">gate: zero if pre-act negative</span>
+    </div>
+    <div class="chain-line" id="c7">
+      <span class="chain-label">dL/dw1_ij</span>
+      <span class="math partial">= dL/dh_i</span>
+      <span class="times">×</span>
+      <span class="math">dh_i/dz_i</span>
+      <span class="times">×</span>
+      <span class="math">x_j</span>
+      <span class="tag">hidden layer weight grad</span>
+    </div>
+  </div>
+  <div class="update-box">
+    <strong>Weight update:</strong>&nbsp;
+    <span class="math">w := w - η · dL/dw</span><br>
+    <span style="font-size:0.62rem; color:var(--dim);">where η is the learning rate — step size in parameter space per iteration.</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-num">04 / Training Dynamics</div>
+  <div class="section-title">LOSS OVER TIME</div>
+  <p class="prose">
+    Each backprop + weight update cycle should decrease the loss — we're descending the gradient. The loss curve reveals the health of training. Click <strong>Run Training</strong> to simulate 200 gradient descent steps.
+  </p>
+  <div style="margin-top:1rem;">
+    <div class="train-controls">
+      <button id="btnTrain" style="flex:none; padding: 0.6rem 1.5rem;">Run Training</button>
+      <button id="btnResetTrain" style="flex:none; padding: 0.6rem 1.5rem;">Reset</button>
+      <div style="flex:1; background:var(--panel); display:flex; align-items:center; padding:0 1rem; font-size:0.6rem; color:var(--dim);" id="epochLabel">—</div>
+    </div>
+    <div class="epoch-track">
+      <div style="display:flex; justify-content:space-between;">
+        <span>Epoch 0</span><span>Epoch 200</span>
+      </div>
+      <div class="epoch-bar-wrap"><div class="epoch-bar-fill" id="epochBar"></div></div>
+    </div>
+    <canvas id="lossCanvas"></canvas>
+    <div style="padding:0.5rem 0.75rem; background:var(--panel); font-size:0.62rem; color:var(--dim); border-top:1px solid var(--border);">
+      Final output prediction: <span class="final-pred" id="finalPred">—</span>
+      <span style="margin-left:1rem;">Target: <span style="color:var(--green);">1.0000</span></span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-num">05 / Glossary</div>
+  <div class="section-title">CORE CONCEPTS</div>
+  <div class="concepts">
+    <div class="concept-card">
+      <div class="concept-name red">Computational Graph</div>
+      <div class="concept-def">A directed acyclic graph where nodes are operations and edges carry values. Backprop traverses this graph in reverse topological order, accumulating gradients at each node via the chain rule.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-name cyan">Local Gradient</div>
+      <div class="concept-def">The derivative of a node's output with respect to its own input, computed independently of the rest of the graph. Each node multiplies incoming upstream gradient by its local gradient to produce the outgoing signal.</div>
+      <div class="formula-block">∂out/∂in &nbsp;(at a single node)</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-name green">Vanishing Gradient</div>
+      <div class="concept-def">When gradients shrink as they propagate backward through many layers, eventually becoming so small that early layers receive near-zero signal and stop learning. Caused by activations like sigmoid whose derivatives are less than 1.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-name orange">Learning Rate η</div>
+      <div class="concept-def">Scalar controlling step size in weight space. Too large: oscillates or diverges. Too small: trains glacially. Adaptive methods like Adam adjust it per-parameter dynamically based on gradient history.</div>
+      <div class="formula-block">w ← w - η · ∂L/∂w</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-name red">Loss Function</div>
+      <div class="concept-def">Maps network output + ground truth to a scalar measuring prediction error. This is the function whose gradient we compute. MSE for regression, cross-entropy for classification. Its geometry determines how hard training is.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-name cyan">Gradient Descent</div>
+      <div class="concept-def">The optimizer that uses backprop's output. Each step moves all weights opposite to the gradient — downhill on the loss surface. SGD: one sample. Mini-batch: small groups. Full-batch: all data at once.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-name green">Automatic Diff</div>
+      <div class="concept-def">PyTorch and JAX implement backprop via autodiff — they build a computation graph dynamically and populate gradients on backward(). You define the forward pass; you get backward for free.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-name purple">Saddle Points</div>
+      <div class="concept-def">Points where gradient is zero but it's not a minimum — some directions curve up, others down. High-dimensional networks are dominated by saddle points. Momentum-based optimizers escape them by accumulating directional velocity.</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>Backpropagation — Rumelhart, Hinton, Williams (1986)</span>
+  <span>AI Fundamentals Series</span>
+  <span>Efficient Gradient Computation via Reverse-Mode Autodiff</span>
+</footer>
+
+<script>
+const W1_INIT = [[0.5,-0.3],[0.2,0.8],[-0.6,0.4]];
+const b1_INIT = [0.1,-0.1,0.2];
+const W2_INIT = [0.7,-0.4,0.6];
+const b2_INIT = -0.2;
+const INPUT = [0.8, 0.2];
+const TARGET = 1.0;
+const LR = 0.5;
+
+function sigmoid(x){ return 1/(1+Math.exp(-x)); }
+function relu(x){ return Math.max(0,x); }
+function bce(p,t){ const e=1e-7; return -(t*Math.log(p+e)+(1-t)*Math.log(1-p+e)); }
+
+let state = {
+  phase:'idle',
+  w1:W1_INIT.map(r=>[...r]), b1:[...b1_INIT],
+  w2:[...W2_INIT], b2:b2_INIT,
+  x:[...INPUT],
+  z1:null,h1:null,z2:null,out:null,loss:null,
+  dout:null,dw2:null,dh1:null,dz1:null,dw1:null
+};
+
+function forwardPass(s){
+  s.z1=s.w1.map((row,i)=>row[0]*s.x[0]+row[1]*s.x[1]+s.b1[i]);
+  s.h1=s.z1.map(relu);
+  s.z2=s.w2.reduce((a,w,i)=>a+w*s.h1[i],s.b2);
+  s.out=sigmoid(s.z2);
+  s.loss=bce(s.out,TARGET);
+}
+
+function backwardPass(s){
+  const dl_do=-(TARGET/s.out)+(1-TARGET)/(1-s.out);
+  const do_dz=s.out*(1-s.out);
+  s.dout=dl_do*do_dz;
+  s.dw2=s.h1.map(h=>s.dout*h);
+  s.dh1=s.w2.map(w=>s.dout*w);
+  s.dz1=s.dh1.map((dh,i)=>dh*(s.z1[i]>0?1:0));
+  s.dw1=s.dz1.map(dz=>s.x.map(xi=>dz*xi));
+}
+
+function updateWeights(s){
+  s.w2=s.w2.map((w,i)=>w-LR*s.dw2[i]);
+  s.b2-=LR*s.dout;
+  s.w1=s.w1.map((row,i)=>row.map((w,j)=>w-LR*s.dw1[i][j]));
+  s.b1=s.b1.map((b,i)=>b-LR*s.dz1[i]);
+}
+
+// network canvas
+const nc=document.getElementById('netCanvas');
+const nctx=nc.getContext('2d');
+
+function getPos(W,H){
+  const xs=[W*0.12,W*0.5,W*0.88];
+  const counts=[2,3,1];
+  return counts.map((count,li)=>
+    Array.from({length:count},(_,ni)=>({
+      x:xs[li],
+      y:H*0.5+(ni-(count-1)/2)*80
+    }))
+  );
+}
+
+function hexToRgba(hex, a){
+  const r=parseInt(hex.slice(1,3),16);
+  const g=parseInt(hex.slice(3,5),16);
+  const b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function drawNet(){
+  const dpr=window.devicePixelRatio||1;
+  const rect=nc.getBoundingClientRect();
+  nc.width=rect.width*dpr; nc.height=rect.height*dpr;
+  nctx.scale(dpr,dpr);
+  const W=rect.width,H=rect.height;
+  const s=state;
+  const phase=s.phase;
+
+  nctx.fillStyle='#0f0f1a';
+  nctx.fillRect(0,0,W,H);
+
+  const pos=getPos(W,H);
+  const fwdCol='#00e5ff'; const bwdCol='#ff3d71';
+
+  // edges
+  pos[0].forEach((inp,ii)=>{
+    pos[1].forEach((hid,hi)=>{
+      const w=s.w1[hi][ii];
+      const wabs=Math.min(Math.abs(w)*3,5);
+      nctx.beginPath();
+      nctx.moveTo(inp.x,inp.y);
+      nctx.lineTo(hid.x,hid.y);
+      if(phase==='idle'){
+        nctx.strokeStyle='#1e1e3a'; nctx.lineWidth=1;
+      } else if(phase==='forward'){
+        nctx.strokeStyle=hexToRgba(fwdCol,0.2+wabs*0.08);
+        nctx.lineWidth=wabs;
+      } else {
+        const g=s.dw1?Math.abs(s.dw1[hi][ii])*10:0;
+        const gabs=Math.min(g,5);
+        nctx.strokeStyle=hexToRgba(bwdCol,0.15+gabs*0.15);
+        nctx.lineWidth=gabs;
+      }
+      nctx.stroke();
+    });
+  });
+
+  pos[1].forEach((hid,hi)=>{
+    pos[2].forEach(out=>{
+      const w=s.w2[hi];
+      const wabs=Math.min(Math.abs(w)*3,5);
+      nctx.beginPath();
+      nctx.moveTo(hid.x,hid.y);
+      nctx.lineTo(out.x,out.y);
+      if(phase==='idle'){
+        nctx.strokeStyle='#1e1e3a'; nctx.lineWidth=1;
+      } else if(phase==='forward'){
+        nctx.strokeStyle=hexToRgba(fwdCol,0.2+wabs*0.08);
+        nctx.lineWidth=wabs;
+      } else {
+        const g=s.dw2?Math.abs(s.dw2[hi])*10:0;
+        const gabs=Math.min(g,5);
+        nctx.strokeStyle=hexToRgba(bwdCol,0.15+gabs*0.15);
+        nctx.lineWidth=gabs;
+      }
+      nctx.stroke();
+    });
+  });
+
+  // layer labels
+  nctx.textAlign='center';
+  const lnames=[['INPUT'],['HIDDEN','(ReLU)'],['OUTPUT','(sigmoid)']];
+  pos.forEach((layer,li)=>{
+    const lx=layer[0].x;
+    const topY=Math.min(...layer.map(n=>n.y))-40;
+    lnames[li].forEach((line,lni)=>{
+      nctx.fillStyle='#555570';
+      nctx.font=`9px Space Mono`;
+      nctx.fillText(line,lx,topY+lni*13);
+    });
+  });
+
+  // nodes
+  const nodeLabels=[['x1','x2'],['h1','h2','h3'],['ŷ']];
+  const nodeVals=[s.x,s.h1||[null,null,null],s.out!==null?[s.out]:[null]];
+
+  pos.forEach((layer,li)=>{
+    layer.forEach((node,ni)=>{
+      const val=nodeVals[li][ni];
+      const r=22;
+      const activeColor=phase==='forward'?fwdCol:bwdCol;
+
+      if(phase!=='idle'&&val!==null){
+        const grad=nctx.createRadialGradient(node.x,node.y,r,node.x,node.y,r+16);
+        grad.addColorStop(0,hexToRgba(activeColor,0.2));
+        grad.addColorStop(1,'transparent');
+        nctx.fillStyle=grad;
+        nctx.beginPath();
+        nctx.arc(node.x,node.y,r+16,0,Math.PI*2);
+        nctx.fill();
+      }
+
+      nctx.beginPath();
+      nctx.arc(node.x,node.y,r,0,Math.PI*2);
+      nctx.fillStyle='#12121f';
+      nctx.fill();
+      nctx.strokeStyle=phase==='idle'?'#2a2a4a':activeColor;
+      nctx.lineWidth=phase==='idle'?1:2;
+      nctx.stroke();
+
+      nctx.fillStyle='#555570';
+      nctx.font='8px Space Mono';
+      nctx.textAlign='center';
+      nctx.fillText(nodeLabels[li][ni],node.x,node.y-7);
+
+      if(val!==null){
+        nctx.fillStyle=phase==='forward'?fwdCol:bwdCol;
+        nctx.font='bold 9px Space Mono';
+        nctx.fillText(val.toFixed(3),node.x,node.y+6);
+      }
+    });
+  });
+
+  const phaseTxt=phase==='idle'?'AWAITING INPUT':phase==='forward'?'>>> FORWARD PASS':'<<< BACKWARD PASS';
+  const phaseCol=phase==='forward'?fwdCol:phase==='backward'?bwdCol:'#555570';
+  nctx.fillStyle=phaseCol;
+  nctx.font='bold 10px Space Mono';
+  nctx.textAlign='left';
+  nctx.fillText(phaseTxt,10,H-10);
+}
+
+function updatePanel(){
+  const s=state;
+  const f=(v,d=4)=>v!==null?v.toFixed(d):'—';
+  document.getElementById('v-x1').textContent=f(s.x[0]);
+  document.getElementById('v-x2').textContent=f(s.x[1]);
+  document.getElementById('v-h1pre').textContent=s.z1?f(s.z1[0]):'—';
+  document.getElementById('v-h1').textContent=s.h1?f(s.h1[0]):'—';
+  document.getElementById('v-h2').textContent=s.h1?f(s.h1[1]):'—';
+  document.getElementById('v-h3').textContent=s.h1?f(s.h1[2]):'—';
+  document.getElementById('v-out').textContent=s.out!==null?f(s.out):'—';
+  document.getElementById('v-loss').textContent=s.loss!==null?f(s.loss):'—';
+  document.getElementById('g-out').textContent=s.dout!==null?f(s.dout):'—';
+  document.getElementById('g-w0').textContent=s.dw2?f(s.dw2[0]):'—';
+  document.getElementById('g-w1').textContent=s.dw2?f(s.dw2[1]):'—';
+  document.getElementById('g-w2').textContent=s.dw2?f(s.dw2[2]):'—';
+  document.getElementById('g-h1').textContent=s.dh1?f(s.dh1[0]):'—';
+}
+
+document.getElementById('btnFwd').addEventListener('click',()=>{
+  forwardPass(state); state.phase='forward';
+  drawNet(); updatePanel();
+  document.getElementById('stepHint').textContent='Forward complete. Click BACKPROP.';
+  document.getElementById('btnFwd').className='active-fwd';
+  document.getElementById('btnBwd').className='';
+});
+
+document.getElementById('btnBwd').addEventListener('click',()=>{
+  if(state.out===null)return;
+  backwardPass(state); state.phase='backward';
+  drawNet(); updatePanel();
+  document.getElementById('stepHint').textContent='Gradients computed. Weights would now update.';
+  document.getElementById('btnBwd').className='active-bwd';
+  document.getElementById('btnFwd').className='';
+});
+
+document.getElementById('btnReset').addEventListener('click',()=>{
+  state={phase:'idle',w1:W1_INIT.map(r=>[...r]),b1:[...b1_INIT],w2:[...W2_INIT],b2:b2_INIT,x:[...INPUT],z1:null,h1:null,z2:null,out:null,loss:null,dout:null,dw2:null,dh1:null,dz1:null,dw1:null};
+  drawNet(); updatePanel();
+  document.getElementById('stepHint').textContent='Click FORWARD to begin.';
+  document.getElementById('btnFwd').className='';
+  document.getElementById('btnBwd').className='';
+});
+
+// chain reveal
+let chainDone=false;
+function revealChain(){
+  if(chainDone)return; chainDone=true;
+  document.querySelectorAll('.chain-line').forEach((el,i)=>{
+    setTimeout(()=>el.classList.add('visible'),i*110);
+  });
+}
+new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)revealChain();});
+},{threshold:0.2}).observe(document.getElementById('chainContainer'));
+
+// loss canvas
+const lc=document.getElementById('lossCanvas');
+const lctx=lc.getContext('2d');
+let lossHistory=[],trainState=null,trainInterval=null,trainEpoch=0;
+
+function drawLoss(){
+  const dpr=window.devicePixelRatio||1;
+  const rect=lc.getBoundingClientRect();
+  lc.width=rect.width*dpr; lc.height=rect.height*dpr;
+  lctx.scale(dpr,dpr);
+  const W=rect.width,H=rect.height;
+  lctx.fillStyle='#0f0f1a'; lctx.fillRect(0,0,W,H);
+
+  // grid lines
+  for(let i=0;i<=4;i++){
+    const y=(H-20)*(i/4)+10;
+    lctx.strokeStyle='#1e1e3a'; lctx.lineWidth=1;
+    lctx.beginPath(); lctx.moveTo(32,y); lctx.lineTo(W-8,y); lctx.stroke();
+    lctx.fillStyle='#555570'; lctx.font='8px Space Mono'; lctx.textAlign='right';
+    lctx.fillText((1-i/4).toFixed(1),28,y+3);
+  }
+
+  if(lossHistory.length<2)return;
+  lctx.beginPath();
+  lossHistory.forEach((loss,i)=>{
+    const x=32+(i/200)*(W-42);
+    const y=10+(1-Math.min(loss,1.0))*(H-20);
+    i===0?lctx.moveTo(x,y):lctx.lineTo(x,y);
+  });
+  lctx.strokeStyle='#ff3d71'; lctx.lineWidth=2; lctx.stroke();
+
+  // glow effect
+  lctx.shadowColor='#ff3d71'; lctx.shadowBlur=8;
+  lctx.beginPath();
+  lossHistory.forEach((loss,i)=>{
+    const x=32+(i/200)*(W-42);
+    const y=10+(1-Math.min(loss,1.0))*(H-20);
+    i===0?lctx.moveTo(x,y):lctx.lineTo(x,y);
+  });
+  lctx.stroke();
+  lctx.shadowBlur=0;
+
+  const last=lossHistory.length-1;
+  const lx=32+(last/200)*(W-42);
+  const ly=10+(1-Math.min(lossHistory[last],1.0))*(H-20);
+  lctx.beginPath(); lctx.arc(lx,ly,4,0,Math.PI*2);
+  lctx.fillStyle='#ff3d71'; lctx.fill();
+}
+
+document.getElementById('btnTrain').addEventListener('click',()=>{
+  if(trainInterval)return;
+  trainState={w1:W1_INIT.map(r=>[...r]),b1:[...b1_INIT],w2:[...W2_INIT],b2:b2_INIT,x:[...INPUT]};
+  lossHistory=[]; trainEpoch=0;
+  trainInterval=setInterval(()=>{
+    if(trainEpoch>=200){
+      clearInterval(trainInterval); trainInterval=null;
+      document.getElementById('finalPred').textContent=trainState.out?trainState.out.toFixed(4):'—';
+      return;
+    }
+    forwardPass(trainState); backwardPass(trainState); updateWeights(trainState);
+    lossHistory.push(trainState.loss); trainEpoch++;
+    document.getElementById('epochBar').style.width=(trainEpoch/200*100)+'%';
+    document.getElementById('epochLabel').textContent=`Epoch ${trainEpoch} / Loss: ${trainState.loss.toFixed(4)}`;
+    drawLoss();
+  },18);
+});
+
+document.getElementById('btnResetTrain').addEventListener('click',()=>{
+  if(trainInterval){clearInterval(trainInterval);trainInterval=null;}
+  lossHistory=[]; trainEpoch=0;
+  document.getElementById('epochBar').style.width='0%';
+  document.getElementById('epochLabel').textContent='—';
+  document.getElementById('finalPred').textContent='—';
+  drawLoss();
+});
+
+window.addEventListener('load',()=>{ drawNet(); updatePanel(); drawLoss(); });
+window.addEventListener('resize',()=>{ drawNet(); drawLoss(); });
+</script>
+</body>
+</html>
