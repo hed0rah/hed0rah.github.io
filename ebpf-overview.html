@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eBPF Technical Overview</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0a0a0a;
+  --surface:   #111111;
+  --surface2:  #0d0d0d;
+  --border:    #1e1e1e;
+  --border2:   #2a2a2a;
+  --cyan:      #00ffe9;
+  --yellow:    #ffe900;
+  --magenta:   #e900ff;
+  --red:       #ff2d55;
+  --green:     #39ff14;
+  --orange:    #ff6b00;
+  --dim:       #3a3a3a;
+  --text:      #cccccc;
+  --bright:    #ffffff;
+  --hi-cyan:   rgba(0,255,233,0.07);
+  --hi-red:    rgba(255,45,85,0.08);
+  --hi-yellow: rgba(255,233,0,0.07);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  line-height: 1.65;
+  padding: 36px 30px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+  pointer-events: none;
+  z-index: 999;
+}
+.masthead {
+  border-top: 3px solid var(--green);
+  padding: 14px 0 10px;
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid var(--border);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 64px;
+  letter-spacing: 4px;
+  color: var(--bright);
+  line-height: 1;
+}
+.masthead h1 em { color: var(--green); font-style: normal; }
+.masthead-right {
+  text-align: right;
+  font-size: 10px;
+  color: #444;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.masthead-right strong {
+  display: block;
+  color: var(--cyan);
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-bottom: 2px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; margin-bottom: 2px; }
+.gfull { margin-bottom: 2px; }
+@media (max-width: 700px) { .g2, .g3 { grid-template-columns: 1fr; } }
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 18px;
+}
+.plabel {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: #383838;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.ptitle {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 2px;
+  color: var(--bright);
+  margin-bottom: 8px;
+  line-height: 1;
+}
+.ptitle.cy { color: var(--cyan); }
+.ptitle.rd { color: var(--red); }
+.ptitle.yl { color: var(--yellow); }
+.ptitle.gr { color: var(--green); }
+.ptitle.or { color: var(--orange); }
+.ptitle.pu { color: var(--magenta); }
+.bar { width: 28px; height: 2px; margin-bottom: 10px; background: var(--green); }
+.bar.cy { background: var(--cyan); }
+.bar.rd { background: var(--red); }
+.bar.yl { background: var(--yellow); }
+.bar.or { background: var(--orange); }
+.bar.pu { background: var(--magenta); }
+p { font-size: 11px; color: var(--text); margin-bottom: 7px; line-height: 1.65; }
+.hl { color: var(--cyan); font-weight: 700; }
+.hl.rd { color: var(--red); }
+.hl.yl { color: var(--yellow); }
+.hl.gr { color: var(--green); }
+.hl.or { color: var(--orange); }
+.hl.pu { color: var(--magenta); }
+.hl.dim { color: var(--dim); font-weight: 400; }
+.org-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid #111;
+  font-size: 10px;
+}
+.org-row:last-child { border-bottom: none; }
+.org-row-label { color: #333; text-transform: uppercase; letter-spacing: 1px; font-size: 9px; }
+.org-row-val { font-weight: 700; }
+.math-block {
+  background: #060606;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--yellow);
+  padding: 12px 14px;
+  margin: 10px 0;
+  font-size: 11px;
+}
+.math-block.cy { border-left-color: var(--cyan); }
+.math-block.rd { border-left-color: var(--red); }
+.math-block.gr { border-left-color: var(--green); }
+.math-block.pu { border-left-color: var(--magenta); }
+.tag {
+  display: inline-block;
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #444;
+  margin: 2px 2px 2px 0;
+}
+.tag.cy { border-color: var(--cyan); color: var(--cyan); }
+.tag.rd { border-color: var(--red); color: var(--red); }
+.tag.yl { border-color: var(--yellow); color: var(--yellow); }
+.tag.gr { border-color: var(--green); color: var(--green); }
+.tag.or { border-color: var(--orange); color: var(--orange); }
+.tag.pu { border-color: var(--magenta); color: var(--magenta); }
+.timeline-item {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-left: 14px;
+  position: relative;
+}
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 5px;
+  width: 6px; height: 6px;
+  border: 1px solid var(--cyan);
+  background: var(--bg);
+}
+.tl-year {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: var(--cyan);
+  flex-shrink: 0;
+  width: 50px;
+}
+.tl-content { font-size: 10px; color: #555; }
+.tl-content strong { color: var(--bright); display: block; margin-bottom: 1px; }
+code {
+  background: #060606;
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  font-size: 10px;
+  color: var(--yellow);
+}
+pre {
+  background: #060606;
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  margin: 8px 0;
+  font-size: 10px;
+  line-height: 1.7;
+  overflow-x: auto;
+  color: var(--text);
+}
+pre .kw { color: var(--cyan); }
+pre .fn { color: var(--yellow); }
+pre .cm { color: #333; }
+pre .st { color: var(--green); }
+pre .num { color: var(--orange); }
+.diagram {
+  background: #060606;
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin: 8px 0;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--dim);
+  white-space: pre;
+  overflow-x: auto;
+}
+.diagram .acc { color: var(--cyan); }
+.diagram .acc2 { color: var(--green); }
+.diagram .acc3 { color: var(--yellow); }
+.diagram .warn { color: var(--red); }
+.footer {
+  border-top: 1px solid var(--border);
+  margin-top: 14px;
+  padding-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #2a2a2a;
+  letter-spacing: 1px;
+}
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<div class="masthead">
+  <h1><em>e</em>BPF</h1>
+  <div class="masthead-right">
+    <strong>Extended Berkeley Packet Filter</strong>
+    Kernel-level programmability // Linux 3.15+
+  </div>
+</div>
+
+<!-- WHAT IS eBPF -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">Foundation</div>
+    <div class="ptitle gr">What eBPF Actually Is</div>
+    <div class="bar"></div>
+    <p>eBPF is a <span class="hl gr">sandboxed virtual machine inside the Linux kernel</span>. It lets you run custom bytecode at kernel hook points without modifying kernel source or loading kernel modules. Programs are verified at load time for safety (no infinite loops, no invalid memory access), then JIT-compiled to native machine code.</p>
+    <p>The "extended" part matters: classic BPF (cBPF, 1992) was a simple packet filter with 2 registers and 32-bit ops. eBPF (2014+) is a <span class="hl">general-purpose in-kernel execution engine</span> with 11 registers, 64-bit ops, maps (key-value stores), helper functions, and tail calls.</p>
+    <p>Programs attach to <span class="hl yl">hook points</span>: kprobes (any kernel function), uprobes (any userspace function), tracepoints (stable kernel instrumentation), XDP (network driver ingress), tc (traffic control), cgroup hooks, LSM hooks, and more. Each hook type defines what context the program receives and what it can do.</p>
+  </div>
+</div>
+
+<!-- ARCHITECTURE DIAGRAM -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">Architecture</div>
+    <div class="ptitle cy">Kernel Execution Pipeline</div>
+    <div class="bar cy"></div>
+    <div class="diagram"><span class="acc3">USERSPACE</span>
+  <span class="acc">BCC Python/Go</span>  or  <span class="acc">bpftrace</span>  or  <span class="acc">libbpf CO-RE</span>
+       |                    |                    |
+       |   C source code    |  bpftrace script   |  pre-compiled .o
+       |        |           |        |           |        |
+       v        v           v        v           v        v
+  <span class="acc3">LLVM/Clang</span> compiles to BPF bytecode  (or loaded directly)
+       |
+       v
+<span class="warn">----------- bpf() syscall ------------------------------------</span>
+       |
+<span class="acc3">KERNEL</span>
+       v
+  <span class="warn">VERIFIER</span>  ── rejects unsafe programs (bounds checks, no loops*,
+       |       stack depth &lt;= 512 bytes, no null derefs)
+       v
+  <span class="acc2">JIT COMPILER</span>  ── bytecode -> native (x86_64, arm64, etc.)
+       |
+       v
+  <span class="acc">ATTACH</span> to hook point (kprobe, tracepoint, XDP, etc.)
+       |
+       v
+  <span class="acc2">BPF MAPS</span> &lt;── shared state between kernel prog &amp; userspace
+  (hash, array, ringbuf, perf_event, LRU, stack_trace, ...)
+       |
+       v
+  Userspace reads maps / perf buffer / ring buffer for output
+
+<span class="cm">* bounded loops allowed since kernel 5.3 (verifier proves termination)</span></div>
+  </div>
+</div>
+
+<!-- CORE CONCEPTS -->
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">Core Concept</div>
+    <div class="ptitle yl">BPF Verifier</div>
+    <div class="bar yl"></div>
+    <p>Every BPF program passes through the verifier before execution. It walks all possible code paths and proves:</p>
+    <div class="math-block">
+<span class="hl yl">1.</span> No unreachable instructions
+<span class="hl yl">2.</span> No out-of-bounds memory access
+<span class="hl yl">3.</span> All branches terminate (DAG check)
+<span class="hl yl">4.</span> Stack usage &lt;= 512 bytes
+<span class="hl yl">5.</span> Only allowed helper functions called
+<span class="hl yl">6.</span> R0 contains valid return before exit
+<span class="hl yl">7.</span> Map pointers null-checked before deref
+    </div>
+    <p>The verifier is your biggest enemy when writing BPF C. <span class="hl rd">R1 invalid mem access 'scalar'</span> means you tried to dereference a raw pointer without <code>bpf_probe_read()</code>. Every struct field read from a kernel pointer in kprobe context needs an explicit probe read.</p>
+  </div>
+  <div class="panel">
+    <div class="plabel">Core Concept</div>
+    <div class="ptitle cy">BPF Maps</div>
+    <div class="bar cy"></div>
+    <p>Maps are the <span class="hl">shared data structures</span> between kernel-side BPF programs and userspace. They persist across BPF program invocations and are the primary mechanism for collecting data.</p>
+    <div class="org-row"><span class="org-row-label">BPF_MAP_TYPE_HASH</span><span class="org-row-val" style="color:var(--cyan)">general k/v store</span></div>
+    <div class="org-row"><span class="org-row-label">BPF_MAP_TYPE_ARRAY</span><span class="org-row-val" style="color:var(--cyan)">fixed-size indexed</span></div>
+    <div class="org-row"><span class="org-row-label">BPF_MAP_TYPE_PERF_EVENT_ARRAY</span><span class="org-row-val" style="color:var(--yellow)">per-cpu event stream</span></div>
+    <div class="org-row"><span class="org-row-label">BPF_MAP_TYPE_RINGBUF</span><span class="org-row-val" style="color:var(--yellow)">shared ring (5.8+)</span></div>
+    <div class="org-row"><span class="org-row-label">BPF_MAP_TYPE_LRU_HASH</span><span class="org-row-val" style="color:var(--green)">auto-evicting cache</span></div>
+    <div class="org-row"><span class="org-row-label">BPF_MAP_TYPE_STACK_TRACE</span><span class="org-row-val" style="color:var(--green)">call stack capture</span></div>
+    <div class="org-row"><span class="org-row-label">BPF_MAP_TYPE_PERCPU_HASH</span><span class="org-row-val" style="color:var(--orange)">lock-free per-cpu</span></div>
+    <p style="margin-top:8px">In BCC Python: <code>BPF_HASH(counts)</code> declares a hash map. <code>BPF_PERF_OUTPUT(events)</code> declares a perf buffer. Userspace polls with <code>b.perf_buffer_poll()</code>.</p>
+  </div>
+</div>
+
+<!-- HOOK POINTS -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">Hook Points</div>
+    <div class="ptitle or">Where BPF Programs Attach</div>
+    <div class="bar or"></div>
+    <div class="g3" style="margin:0">
+      <div class="panel" style="border:1px solid var(--border)">
+        <div class="ptitle" style="font-size:18px;color:var(--cyan)">Tracing</div>
+        <div class="org-row"><span class="org-row-label">kprobe / kretprobe</span><span class="org-row-val" style="color:var(--cyan)">any kernel func</span></div>
+        <div class="org-row"><span class="org-row-label">uprobe / uretprobe</span><span class="org-row-val" style="color:var(--cyan)">any userspace func</span></div>
+        <div class="org-row"><span class="org-row-label">tracepoint</span><span class="org-row-val" style="color:var(--green)">stable kernel events</span></div>
+        <div class="org-row"><span class="org-row-label">raw_tracepoint</span><span class="org-row-val" style="color:var(--green)">lower overhead</span></div>
+        <div class="org-row"><span class="org-row-label">fentry / fexit</span><span class="org-row-val" style="color:var(--yellow)">BTF-based (5.5+)</span></div>
+        <div class="org-row"><span class="org-row-label">perf_event</span><span class="org-row-val" style="color:var(--dim)">PMC / sampling</span></div>
+      </div>
+      <div class="panel" style="border:1px solid var(--border)">
+        <div class="ptitle" style="font-size:18px;color:var(--green)">Networking</div>
+        <div class="org-row"><span class="org-row-label">XDP</span><span class="org-row-val" style="color:var(--green)">driver-level ingress</span></div>
+        <div class="org-row"><span class="org-row-label">tc (clsact)</span><span class="org-row-val" style="color:var(--green)">traffic control</span></div>
+        <div class="org-row"><span class="org-row-label">sk_filter</span><span class="org-row-val" style="color:var(--dim)">socket filtering</span></div>
+        <div class="org-row"><span class="org-row-label">sk_msg / sk_skb</span><span class="org-row-val" style="color:var(--dim)">sockmap redirect</span></div>
+        <div class="org-row"><span class="org-row-label">lwt</span><span class="org-row-val" style="color:var(--dim)">lightweight tunnel</span></div>
+        <div class="org-row"><span class="org-row-label">cgroup/sock*</span><span class="org-row-val" style="color:var(--orange)">per-cgroup policy</span></div>
+      </div>
+      <div class="panel" style="border:1px solid var(--border)">
+        <div class="ptitle" style="font-size:18px;color:var(--red)">Security</div>
+        <div class="org-row"><span class="org-row-label">LSM</span><span class="org-row-val" style="color:var(--red)">security hooks (5.7+)</span></div>
+        <div class="org-row"><span class="org-row-label">seccomp</span><span class="org-row-val" style="color:var(--red)">syscall filtering</span></div>
+        <div class="org-row"><span class="org-row-label">cgroup/device</span><span class="org-row-val" style="color:var(--orange)">device access ctrl</span></div>
+        <div class="org-row"><span class="org-row-label">cgroup/sysctl</span><span class="org-row-val" style="color:var(--orange)">sysctl interpose</span></div>
+        <p style="margin-top:12px;font-size:10px">LSM hooks let BPF <span class="hl rd">enforce security policy</span> at the same kernel points as SELinux/AppArmor. Cilium uses this for network policy enforcement at the kernel level.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BCC SECTION -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">Toolchain</div>
+    <div class="ptitle yl">BCC (BPF Compiler Collection)</div>
+    <div class="bar yl"></div>
+    <p>BCC provides a <span class="hl yl">Python (and Lua) frontend</span> for writing BPF programs. C code is embedded as a string, compiled at runtime via LLVM, and loaded into the kernel. This is the fastest path from zero to working BPF instrumentation but has trade-offs.</p>
+    <div class="g2" style="margin:8px 0 0 0">
+      <div>
+        <p><span class="hl gr">Advantages</span></p>
+        <div class="org-row"><span class="org-row-label">rapid prototyping</span><span class="org-row-val" style="color:var(--green)">write, run, iterate</span></div>
+        <div class="org-row"><span class="org-row-label">rich python API</span><span class="org-row-val" style="color:var(--green)">map access, formatting</span></div>
+        <div class="org-row"><span class="org-row-label">100+ built-in tools</span><span class="org-row-val" style="color:var(--green)">production-ready</span></div>
+        <div class="org-row"><span class="org-row-label">auto struct offsets</span><span class="org-row-val" style="color:var(--green)">reads kernel headers</span></div>
+      </div>
+      <div>
+        <p><span class="hl rd">Trade-offs</span></p>
+        <div class="org-row"><span class="org-row-label">requires LLVM + headers</span><span class="org-row-val" style="color:var(--red)">on every target</span></div>
+        <div class="org-row"><span class="org-row-label">compile at runtime</span><span class="org-row-val" style="color:var(--red)">slow startup on ARM</span></div>
+        <div class="org-row"><span class="org-row-label">not portable</span><span class="org-row-val" style="color:var(--red)">tied to kernel ver</span></div>
+        <div class="org-row"><span class="org-row-label">heavy deps</span><span class="org-row-val" style="color:var(--red)">~300MB installed</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BCC ANATOMY -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">BCC Pattern</div>
+    <div class="ptitle cy">Anatomy of a BCC Program</div>
+    <div class="bar cy"></div>
+    <pre><span class="cm">#!/usr/bin/env python3</span>
+<span class="kw">from</span> bcc <span class="kw">import</span> BPF
+
+<span class="cm"># ---- KERNEL SIDE (C) ----</span>
+prog = <span class="st">"""
+struct event_t {
+    u32 pid;
+    char comm[16];
+    char fname[64];
+    u64 size;
+};
+
+BPF_PERF_OUTPUT(events);              // declare perf buffer
+
+int trace_read_entry(struct pt_regs *ctx,
+                     struct file *file,
+                     char __user *buf,
+                     size_t count) {
+    struct event_t evt = {};
+    evt.pid = bpf_get_current_pid_tgid() >> 32;
+    bpf_get_current_comm(&evt.comm, sizeof(evt.comm));
+    bpf_probe_read_kernel_str(&evt.fname, sizeof(evt.fname),
+                               file->f_path.dentry->d_name.name);
+    evt.size = count;
+    events.perf_submit(ctx, &evt, sizeof(evt));
+    return 0;
+}
+"""</span>
+
+<span class="cm"># ---- USERSPACE SIDE (Python) ----</span>
+b = BPF(text=prog)                           <span class="cm"># compile + load</span>
+b.attach_kprobe(event=<span class="st">"vfs_read"</span>,
+                fn_name=<span class="st">"trace_read_entry"</span>) <span class="cm"># attach to hook</span>
+
+<span class="kw">def</span> <span class="fn">handle_event</span>(cpu, data, size):         <span class="cm"># callback for events</span>
+    evt = b[<span class="st">"events"</span>].event(data)
+    print(f<span class="st">"{evt.pid}  {evt.comm}  {evt.fname}  {evt.size}"</span>)
+
+b[<span class="st">"events"</span>].open_perf_buffer(handle_event)
+<span class="kw">while</span> True:
+    b.perf_buffer_poll()                     <span class="cm"># blocks, calls handle_event</span></pre>
+    <p style="margin-top:6px">The C string is compiled by LLVM into BPF bytecode at runtime. BCC's rewriter automatically converts struct member access into <code>bpf_probe_read()</code> calls -- but it misses some cases (like <code>ntohs(sk->field)</code>), which is why you hit verifier errors and need explicit <code>bpf_probe_read_kernel()</code>.</p>
+  </div>
+</div>
+
+<!-- COMMON HELPERS -->
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">BPF C</div>
+    <div class="ptitle">Key Helper Functions</div>
+    <div class="bar cy"></div>
+    <div class="org-row"><span class="org-row-label">bpf_get_current_pid_tgid()</span><span class="org-row-val" style="color:var(--cyan)">pid in upper 32 bits</span></div>
+    <div class="org-row"><span class="org-row-label">bpf_get_current_comm(buf, sz)</span><span class="org-row-val" style="color:var(--cyan)">process name (16 char)</span></div>
+    <div class="org-row"><span class="org-row-label">bpf_ktime_get_ns()</span><span class="org-row-val" style="color:var(--yellow)">monotonic nanoseconds</span></div>
+    <div class="org-row"><span class="org-row-label">bpf_probe_read_kernel()</span><span class="org-row-val" style="color:var(--red)">safe kernel mem read</span></div>
+    <div class="org-row"><span class="org-row-label">bpf_probe_read_user()</span><span class="org-row-val" style="color:var(--red)">safe user mem read</span></div>
+    <div class="org-row"><span class="org-row-label">bpf_probe_read_kernel_str()</span><span class="org-row-val" style="color:var(--green)">read kernel string</span></div>
+    <div class="org-row"><span class="org-row-label">bpf_map_lookup_elem()</span><span class="org-row-val" style="color:var(--orange)">read from map</span></div>
+    <div class="org-row"><span class="org-row-label">bpf_map_update_elem()</span><span class="org-row-val" style="color:var(--orange)">write to map</span></div>
+    <div class="org-row"><span class="org-row-label">bpf_map_delete_elem()</span><span class="org-row-val" style="color:var(--orange)">remove from map</span></div>
+    <div class="org-row"><span class="org-row-label">bpf_perf_event_output()</span><span class="org-row-val" style="color:var(--yellow)">send to perf buffer</span></div>
+    <div class="org-row"><span class="org-row-label">bpf_trace_printk()</span><span class="org-row-val" style="color:var(--dim)">debug only (slow)</span></div>
+  </div>
+  <div class="panel">
+    <div class="plabel">BCC Python</div>
+    <div class="ptitle">Key BCC Macros &amp; API</div>
+    <div class="bar yl"></div>
+    <p style="margin-bottom:4px"><span class="hl yl">C-side macros</span> (used in the embedded C string):</p>
+    <div class="org-row"><span class="org-row-label">BPF_HASH(name, key_t, val_t)</span><span class="org-row-val" style="color:var(--yellow)">hash map</span></div>
+    <div class="org-row"><span class="org-row-label">BPF_ARRAY(name, val_t, max)</span><span class="org-row-val" style="color:var(--yellow)">array map</span></div>
+    <div class="org-row"><span class="org-row-label">BPF_PERF_OUTPUT(name)</span><span class="org-row-val" style="color:var(--yellow)">perf buffer</span></div>
+    <div class="org-row"><span class="org-row-label">BPF_PERCPU_ARRAY(name)</span><span class="org-row-val" style="color:var(--yellow)">per-cpu array</span></div>
+    <p style="margin-top:8px;margin-bottom:4px"><span class="hl">Python-side API</span>:</p>
+    <div class="org-row"><span class="org-row-label">b.attach_kprobe(event, fn_name)</span><span class="org-row-val" style="color:var(--cyan)">hook kernel func</span></div>
+    <div class="org-row"><span class="org-row-label">b.attach_kretprobe(event, fn)</span><span class="org-row-val" style="color:var(--cyan)">hook return</span></div>
+    <div class="org-row"><span class="org-row-label">b.attach_uprobe(name, sym, fn)</span><span class="org-row-val" style="color:var(--green)">hook userspace</span></div>
+    <div class="org-row"><span class="org-row-label">b.attach_tracepoint(tp, fn)</span><span class="org-row-val" style="color:var(--green)">stable hook</span></div>
+    <div class="org-row"><span class="org-row-label">b["map"].open_perf_buffer(cb)</span><span class="org-row-val" style="color:var(--orange)">register callback</span></div>
+    <div class="org-row"><span class="org-row-label">b.perf_buffer_poll()</span><span class="org-row-val" style="color:var(--orange)">block + dispatch</span></div>
+    <div class="org-row"><span class="org-row-label">b["map"][key]</span><span class="org-row-val" style="color:var(--dim)">read map entry</span></div>
+  </div>
+</div>
+
+<!-- VERIFIER PAIN -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">Common Failures</div>
+    <div class="ptitle rd">BPF Verifier Errors &amp; Fixes</div>
+    <div class="bar rd"></div>
+    <div class="g2" style="margin:0">
+      <div>
+        <div class="math-block rd">
+<span class="hl rd">R1 invalid mem access 'scalar'</span>
+Dereferencing a kernel pointer directly.
+Fix: use bpf_probe_read_kernel()
+        </div>
+        <div class="math-block rd">
+<span class="hl rd">BPF stack limit exceeded (512 bytes)</span>
+Struct too large for stack.
+Fix: use BPF_PERCPU_ARRAY as scratch space
+        </div>
+        <div class="math-block rd">
+<span class="hl rd">back-edge from insn X to Y</span>
+Unbounded loop detected (pre-5.3 kernels).
+Fix: unroll with #pragma unroll, or use
+bounded for-loops on 5.3+
+        </div>
+      </div>
+      <div>
+        <div class="math-block rd">
+<span class="hl rd">invalid indirect read from stack</span>
+Reading uninitialized stack memory.
+Fix: zero-init structs: struct foo bar = {};
+        </div>
+        <div class="math-block rd">
+<span class="hl rd">cannot pass map_value to helper</span>
+Map value pointer used where scalar expected.
+Fix: dereference into local var first
+        </div>
+        <div class="math-block rd">
+<span class="hl rd">btf_vmlinux is malformed</span>
+Kernel BTF data missing or broken.
+Fix: install linux-headers or build kernel
+with CONFIG_DEBUG_INFO_BTF=y
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLCHAINS COMPARED -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">Ecosystem</div>
+    <div class="ptitle pu">Toolchains Compared</div>
+    <div class="bar pu"></div>
+    <div class="g3" style="margin:0">
+      <div class="panel" style="border:1px solid var(--border)">
+        <div class="ptitle" style="font-size:18px;color:var(--yellow)">BCC</div>
+        <span class="tag yl">python</span> <span class="tag yl">lua</span> <span class="tag">runtime compile</span>
+        <p style="margin-top:8px">Inline C compiled at load time. Best for prototyping and ad-hoc investigation. Requires LLVM + kernel headers on target.</p>
+        <div class="org-row"><span class="org-row-label">startup</span><span class="org-row-val" style="color:var(--red)">slow (LLVM compile)</span></div>
+        <div class="org-row"><span class="org-row-label">portability</span><span class="org-row-val" style="color:var(--red)">kernel-version tied</span></div>
+        <div class="org-row"><span class="org-row-label">prototyping</span><span class="org-row-val" style="color:var(--green)">fastest iteration</span></div>
+      </div>
+      <div class="panel" style="border:1px solid var(--border)">
+        <div class="ptitle" style="font-size:18px;color:var(--cyan)">libbpf + CO-RE</div>
+        <span class="tag cy">c</span> <span class="tag cy">go</span> <span class="tag cy">rust</span> <span class="tag">pre-compiled</span>
+        <p style="margin-top:8px">Compile Once, Run Everywhere. BPF programs compiled ahead of time with clang. BTF provides struct layout info at runtime. Production standard.</p>
+        <div class="org-row"><span class="org-row-label">startup</span><span class="org-row-val" style="color:var(--green)">instant (pre-compiled)</span></div>
+        <div class="org-row"><span class="org-row-label">portability</span><span class="org-row-val" style="color:var(--green)">cross-kernel (BTF)</span></div>
+        <div class="org-row"><span class="org-row-label">prototyping</span><span class="org-row-val" style="color:var(--red)">slower iteration</span></div>
+      </div>
+      <div class="panel" style="border:1px solid var(--border)">
+        <div class="ptitle" style="font-size:18px;color:var(--green)">bpftrace</div>
+        <span class="tag gr">awk-like DSL</span> <span class="tag">one-liners</span>
+        <p style="margin-top:8px">High-level tracing language inspired by DTrace/awk. One-liners for quick investigation. Compiles to BPF under the hood.</p>
+        <div class="org-row"><span class="org-row-label">startup</span><span class="org-row-val" style="color:var(--yellow)">moderate</span></div>
+        <div class="org-row"><span class="org-row-label">portability</span><span class="org-row-val" style="color:var(--yellow)">needs BTF or headers</span></div>
+        <div class="org-row"><span class="org-row-label">prototyping</span><span class="org-row-val" style="color:var(--green)">one-liner speed</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CILIUM / GO -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">Production Path</div>
+    <div class="ptitle cy">Cilium eBPF Go Library</div>
+    <div class="bar cy"></div>
+    <p><span class="hl">cilium/ebpf</span> is the Go library for loading and managing pre-compiled BPF programs. It's the production approach: write BPF C, compile with clang to <code>.o</code>, then load/attach/read from Go. No LLVM on the target machine. CO-RE + BTF handles cross-kernel portability.</p>
+    <div class="math-block cy">
+<span class="hl">Workflow:</span>
+1. Write BPF C program  (probe.bpf.c)
+2. Compile:  clang -O2 -target bpf -c probe.bpf.c -o probe.bpf.o
+3. Generate Go bindings: bpf2go or manual
+4. Load from Go: ebpf.LoadCollection() / link.Kprobe()
+5. Read maps: map.Lookup() / map.Iterate()
+    </div>
+    <p>This is what Cilium itself uses for Kubernetes network policy, service mesh, and observability (Hubble). Also used by Cloudflare, Meta, and Netflix for production eBPF tooling.</p>
+    <span class="tag cy">cilium/ebpf</span> <span class="tag gr">CO-RE</span> <span class="tag yl">BTF</span> <span class="tag or">bpf2go</span> <span class="tag pu">kubernetes</span>
+  </div>
+</div>
+
+<!-- USEFUL KERNEL FUNCTIONS -->
+<div class="g2">
+  <div class="panel">
+    <div class="plabel">Reference</div>
+    <div class="ptitle gr">Common kprobe Targets</div>
+    <div class="bar gr"></div>
+    <p style="margin-bottom:4px"><span class="hl gr">File I/O</span></p>
+    <div class="org-row"><span class="org-row-label">vfs_read / vfs_write</span><span class="org-row-val" style="color:var(--green)">all file reads/writes</span></div>
+    <div class="org-row"><span class="org-row-label">vfs_open</span><span class="org-row-val" style="color:var(--green)">file open</span></div>
+    <div class="org-row"><span class="org-row-label">do_sys_openat2</span><span class="org-row-val" style="color:var(--dim)">openat syscall impl</span></div>
+    <p style="margin-top:8px;margin-bottom:4px"><span class="hl">Networking</span></p>
+    <div class="org-row"><span class="org-row-label">tcp_v4_connect</span><span class="org-row-val" style="color:var(--cyan)">outbound TCP</span></div>
+    <div class="org-row"><span class="org-row-label">tcp_finish_connect</span><span class="org-row-val" style="color:var(--cyan)">handshake done</span></div>
+    <div class="org-row"><span class="org-row-label">tcp_sendmsg / tcp_recvmsg</span><span class="org-row-val" style="color:var(--cyan)">TCP data xfer</span></div>
+    <div class="org-row"><span class="org-row-label">tcp_close</span><span class="org-row-val" style="color:var(--cyan)">connection teardown</span></div>
+    <div class="org-row"><span class="org-row-label">udp_sendmsg</span><span class="org-row-val" style="color:var(--dim)">UDP send (DNS etc)</span></div>
+    <p style="margin-top:8px;margin-bottom:4px"><span class="hl yl">Process</span></p>
+    <div class="org-row"><span class="org-row-label">__arm64_sys_execve</span><span class="org-row-val" style="color:var(--yellow)">exec (arm64)</span></div>
+    <div class="org-row"><span class="org-row-label">do_exit</span><span class="org-row-val" style="color:var(--yellow)">process exit</span></div>
+    <div class="org-row"><span class="org-row-label">wake_up_new_task</span><span class="org-row-val" style="color:var(--yellow)">fork/clone</span></div>
+  </div>
+  <div class="panel">
+    <div class="plabel">Reference</div>
+    <div class="ptitle yl">bpftrace One-Liners</div>
+    <div class="bar yl"></div>
+    <pre><span class="cm"># count syscalls by process</span>
+bpftrace -e <span class="st">'tracepoint:raw_syscalls:sys_enter
+  { @[comm] = count(); }'</span>
+
+<span class="cm"># trace file opens with path</span>
+bpftrace -e <span class="st">'tracepoint:syscalls:sys_enter_openat
+  { printf("%s %s\n", comm, str(args.filename)); }'</span>
+
+<span class="cm"># histogram of read() sizes</span>
+bpftrace -e <span class="st">'tracepoint:syscalls:sys_exit_read
+  /args.ret > 0/
+  { @bytes = hist(args.ret); }'</span>
+
+<span class="cm"># TCP connect with dest IP</span>
+bpftrace -e <span class="st">'kprobe:tcp_v4_connect
+  { printf("%s -> %s\n", comm,
+    ntop(((struct sock *)arg0)
+    ->__sk_common.skc_daddr)); }'</span>
+
+<span class="cm"># slow syscalls (>1ms)</span>
+bpftrace -e <span class="st">'tracepoint:raw_syscalls:sys_enter
+  { @start[tid] = nsecs; }
+  tracepoint:raw_syscalls:sys_exit
+  /@start[tid]/
+  { $d = nsecs - @start[tid];
+    if ($d > 1000000) {
+      printf("%s %dms\n", comm, $d/1000000);
+    }
+    delete(@start[tid]); }'</span></pre>
+  </div>
+</div>
+
+<!-- TIMELINE -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">History</div>
+    <div class="ptitle">eBPF Evolution</div>
+    <div class="bar cy"></div>
+    <div class="timeline-item"><div class="tl-year">1992</div><div class="tl-content"><strong>BPF introduced</strong>Steven McCanne and Van Jacobson. Simple packet filter in BSD. 2 registers, 32-bit.</div></div>
+    <div class="timeline-item"><div class="tl-year">2014</div><div class="tl-content"><strong>eBPF merged (Linux 3.15-3.18)</strong>Alexei Starovoitov. 11 registers, 64-bit, maps, verifier, JIT. Initial use: networking.</div></div>
+    <div class="timeline-item"><div class="tl-year">2015</div><div class="tl-content"><strong>kprobes + tracing support</strong>BPF programs can attach to kernel functions. BCC project starts at PLUMgrid.</div></div>
+    <div class="timeline-item"><div class="tl-year">2016</div><div class="tl-content"><strong>Cilium founded</strong>Thomas Graf. eBPF-based Kubernetes networking, security, and observability.</div></div>
+    <div class="timeline-item"><div class="tl-year">2016</div><div class="tl-content"><strong>XDP merged (Linux 4.8)</strong>eXpress Data Path. BPF at the network driver level. DDoS mitigation, load balancing.</div></div>
+    <div class="timeline-item"><div class="tl-year">2018</div><div class="tl-content"><strong>BTF (BPF Type Format)</strong>Struct layout metadata enables CO-RE: compile once, run on different kernel versions.</div></div>
+    <div class="timeline-item"><div class="tl-year">2019</div><div class="tl-content"><strong>bpftrace 0.9 / bounded loops (5.3)</strong>High-level tracing goes mainstream. Verifier gains bounded loop support.</div></div>
+    <div class="timeline-item"><div class="tl-year">2020</div><div class="tl-content"><strong>LSM hooks (5.7) / fentry (5.5)</strong>BPF can enforce security policy. Zero-overhead function entry/exit tracing.</div></div>
+    <div class="timeline-item"><div class="tl-year">2023</div><div class="tl-content"><strong>eBPF Foundation / BPF arena</strong>Linux Foundation governance. New memory model explorations. Windows eBPF runtime.</div></div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <span>GREGG / STAROVOITOV / GRAF // 2014-2025 // KERNEL PROGRAMMABILITY</span>
+  <span>BPF-FUN // eBPF TECHNICAL OVERVIEW</span>
+</div>
+
+</body>
+</html>
