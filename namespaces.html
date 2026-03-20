@@ -5,469 +5,396 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Linux Namespaces</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #0a0a0a;
+  --surface:   #111111;
+  --surface2:  #0d0d0d;
+  --border:    #1e1e1e;
+  --border2:   #2a2a2a;
+  --cyan:      #00ffe9;
+  --yellow:    #ffe900;
+  --magenta:   #e900ff;
+  --red:       #ff2d55;
+  --green:     #39ff14;
+  --orange:    #ff6b00;
+  --dim:       #555555;
+  --dim2:      #444444;
+  --text:      #cccccc;
+  --bright:    #ffffff;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--cyan); color: var(--bg); }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  pointer-events: none;
+  z-index: 999;
+}
 
-  :root {
-    --bg: #0a0a0f;
-    --surface: #12121a;
-    --surface2: #1a1a26;
-    --border: #2a2a3a;
-    --text: #c8c8d4;
-    --text-dim: #6a6a80;
-    --accent: #9d7cd8;
-    --accent2: #7dcfff;
-    --green: #73daca;
-    --red: #f7768e;
-    --yellow: #e0af68;
-    --orange: #ff9e64;
-    --blue: #7aa2f7;
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Inter', -apple-system, sans-serif;
-  }
+/* ── MASTHEAD ── */
+.masthead {
+  position: relative;
+  border-top: 3px solid var(--cyan);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--cyan); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 2px;
+}
+.masthead .subtitle span { color: var(--green); }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+/* ── STICKY NAV ── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,10,10,0.88);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0;
+  white-space: nowrap;
+}
+.nav a {
+  display: block;
+  padding: 12px 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+.nav a:hover { color: var(--cyan); border-bottom-color: var(--cyan); }
+.nav a.active { color: var(--cyan); border-bottom-color: var(--cyan); }
 
-  html { scroll-behavior: smooth; }
+/* ── LAYOUT ── */
+.container { max-width: 1100px; margin: 0 auto; padding: 0 28px; }
+section { padding: 52px 0; border-bottom: 1px solid var(--border); }
+section:last-of-type { border-bottom: none; }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 15px;
-    line-height: 1.7;
-    overflow-x: hidden;
-  }
+/* ── HEADINGS ── */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.cy { color: var(--cyan); }
+h2 em.gr { color: var(--green); }
+h2 em.yl { color: var(--yellow); }
+h2 em.rd { color: var(--red); }
+h2 em.or { color: var(--orange); }
+h2 em.pu { color: var(--magenta); }
+h2 .htag {
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 400;
+  padding: 2px 8px;
+  border: 1px solid var(--border2);
+  vertical-align: middle;
+  margin-left: 10px;
+  position: relative;
+  top: -3px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.section-bar { width: 32px; height: 2px; margin-bottom: 16px; background: var(--cyan); }
+.section-bar.gr { background: var(--green); }
+.section-bar.yl { background: var(--yellow); }
+.section-bar.rd { background: var(--red); }
+.section-bar.or { background: var(--orange); }
+.section-bar.pu { background: var(--magenta); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  margin: 28px 0 10px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
 
-  ::selection { background: var(--accent); color: var(--bg); }
+/* ── NAMESPACE CARDS ── */
+.ns-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 2px;
+  margin: 24px 0;
+}
+.ns-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 20px;
+  transition: border-color 0.2s;
+}
+.ns-card:hover { border-color: var(--cyan); }
+.ns-card .ns-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--bright);
+  margin-bottom: 2px;
+}
+.ns-card .ns-flag {
+  font-size: 10px;
+  color: var(--cyan);
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.ns-card .ns-cli {
+  font-size: 10px;
+  color: var(--green);
+  background: var(--surface2);
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.ns-card .ns-desc { font-size: 11px; color: var(--dim); line-height: 1.6; }
+.ns-card .ns-since { margin-top: 8px; font-size: 9px; color: var(--dim2); letter-spacing: 1px; text-transform: uppercase; }
 
-  /* --- HEADER / HERO --- */
-  .hero {
-    position: relative;
-    padding: 80px 40px 60px;
-    text-align: center;
-    overflow: hidden;
-    border-bottom: 1px solid var(--border);
-  }
+/* card accent borders */
+.ns-card[data-type="mnt"]    { border-left: 3px solid var(--green); }
+.ns-card[data-type="uts"]    { border-left: 3px solid var(--yellow); }
+.ns-card[data-type="ipc"]    { border-left: 3px solid var(--magenta); }
+.ns-card[data-type="pid"]    { border-left: 3px solid var(--red); }
+.ns-card[data-type="net"]    { border-left: 3px solid var(--cyan); }
+.ns-card[data-type="user"]   { border-left: 3px solid var(--orange); }
+.ns-card[data-type="cgroup"] { border-left: 3px solid var(--magenta); }
+.ns-card[data-type="time"]   { border-left: 3px solid var(--dim); }
 
-  .hero::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 600px 300px at 50% 0%, rgba(157,124,216,0.12), transparent),
-      radial-gradient(ellipse 400px 200px at 80% 100%, rgba(125,207,255,0.06), transparent);
-    pointer-events: none;
-  }
+/* ── CODE ── */
+code {
+  background: #060606;
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--yellow);
+}
+pre {
+  background: #060606;
+  border: 1px solid var(--border);
+  padding: 16px 18px;
+  margin: 12px 0;
+  font-size: 11px;
+  line-height: 1.75;
+  overflow-x: auto;
+  color: var(--text);
+  position: relative;
+}
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: var(--dim2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .prompt { color: var(--green); user-select: none; }
+pre .cm { color: var(--dim); font-style: italic; }
+pre .flag { color: var(--magenta); }
+pre .str { color: var(--yellow); }
+pre .out { color: var(--dim); }
+pre .cmd { color: #ddd; }
 
-  .hero h1 {
-    font-size: clamp(2.5rem, 6vw, 4.5rem);
-    font-weight: 900;
-    letter-spacing: -2px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 12px;
-  }
+/* ── TABLES ── */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+}
+tr:hover td { background: var(--surface); }
 
-  .hero .subtitle {
-    font-family: var(--mono);
-    font-size: 14px;
-    color: var(--text-dim);
-  }
+/* ── INFO BOXES ── */
+.info-box {
+  background: var(--surface);
+  border-left: 3px solid var(--cyan);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.warn { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
 
-  .hero .subtitle span { color: var(--green); }
+/* ── TABS ── */
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-top: 20px;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 10px 18px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.tab-content { display: none; padding-top: 14px; }
+.tab-content.active { display: block; }
 
-  /* --- NAV --- */
-  .nav {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: rgba(10,10,15,0.85);
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 20px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
+/* ── TWO COL ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; }
 
-  .nav-inner {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    gap: 0;
-    white-space: nowrap;
-  }
+/* ── PROC TREE ── */
+.proc-tree {
+  background: #060606;
+  border: 1px solid var(--border);
+  padding: 18px 22px;
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 12px 0;
+}
+.proc-tree .dir { color: var(--cyan); }
+.proc-tree .link { color: var(--dim); }
+.proc-tree .inode { color: var(--yellow); }
 
-  .nav a {
-    display: block;
-    padding: 14px 16px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-dim);
-    text-decoration: none;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-  }
+/* ── FLOW DIAGRAM ── */
+.flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 20px 0;
+  overflow-x: auto;
+  padding: 12px 0;
+}
+.flow-step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 14px 18px;
+  min-width: 140px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.flow-step .step-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.flow-step .step-name { font-weight: 700; font-size: 13px; color: var(--bright); }
+.flow-step .step-detail { font-size: 10px; color: var(--cyan); margin-top: 3px; }
+.flow-arrow { font-size: 18px; color: var(--dim2); padding: 0 6px; flex-shrink: 0; }
 
-  .nav a:hover {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
+/* ── ASCII DIAGRAM ── */
+.diagram {
+  background: #060606;
+  border: 1px solid var(--border);
+  padding: 18px;
+  margin: 12px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+}
+.diagram .c-a { color: var(--green); }
+.diagram .c-b { color: var(--cyan); }
+.diagram .bridge { color: var(--yellow); }
+.diagram .ext { color: var(--dim); }
 
-  /* --- LAYOUT --- */
-  .container {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
+/* ── FOOTER ── */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #333;
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+.footer a { color: var(--cyan); text-decoration: none; }
 
-  section {
-    padding: 64px 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  section:last-of-type { border-bottom: none; }
-
-  h2 {
-    font-size: 1.8rem;
-    font-weight: 900;
-    letter-spacing: -0.5px;
-    margin-bottom: 8px;
-    color: #eee;
-  }
-
-  h2 .tag {
-    display: inline-block;
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 400;
-    padding: 3px 10px;
-    border-radius: 4px;
-    vertical-align: middle;
-    margin-left: 10px;
-    position: relative;
-    top: -2px;
-  }
-
-  h3 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--accent2);
-    margin: 32px 0 12px;
-  }
-
-  p { margin: 12px 0; max-width: 72ch; }
-
-  /* --- NAMESPACE TYPE GRID --- */
-  .ns-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 16px;
-    margin: 32px 0;
-  }
-
-  .ns-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 24px;
-    transition: border-color 0.2s, transform 0.2s;
-    cursor: default;
-  }
-
-  .ns-card:hover {
-    border-color: var(--accent);
-    transform: translateY(-2px);
-  }
-
-  .ns-card .ns-name {
-    font-family: var(--mono);
-    font-weight: 700;
-    font-size: 1.1rem;
-    margin-bottom: 4px;
-  }
-
-  .ns-card .ns-flag {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--accent);
-    margin-bottom: 8px;
-  }
-
-  .ns-card .ns-cli {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--green);
-    background: var(--surface2);
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    margin-bottom: 10px;
-  }
-
-  .ns-card .ns-desc {
-    font-size: 13px;
-    color: var(--text-dim);
-    line-height: 1.5;
-  }
-
-  .ns-card .ns-since {
-    margin-top: 10px;
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text-dim);
-  }
-
-  /* card color accents */
-  .ns-card[data-type="uts"]    { border-left: 3px solid var(--yellow); }
-  .ns-card[data-type="pid"]    { border-left: 3px solid var(--red); }
-  .ns-card[data-type="net"]    { border-left: 3px solid var(--blue); }
-  .ns-card[data-type="mnt"]    { border-left: 3px solid var(--green); }
-  .ns-card[data-type="user"]   { border-left: 3px solid var(--orange); }
-  .ns-card[data-type="ipc"]    { border-left: 3px solid var(--accent); }
-  .ns-card[data-type="cgroup"] { border-left: 3px solid var(--accent2); }
-  .ns-card[data-type="time"]   { border-left: 3px solid var(--text-dim); }
-
-  /* --- CODE BLOCKS --- */
-  pre {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 20px 24px;
-    overflow-x: auto;
-    margin: 16px 0;
-    font-family: var(--mono);
-    font-size: 13px;
-    line-height: 1.65;
-    position: relative;
-  }
-
-  pre .prompt { color: var(--green); user-select: none; }
-  pre .comment { color: var(--text-dim); font-style: italic; }
-  pre .flag { color: var(--accent); }
-  pre .string { color: var(--yellow); }
-  pre .output { color: var(--text-dim); }
-  pre .cmd { color: #ddd; }
-  pre .path { color: var(--accent2); }
-
-  pre .label {
-    position: absolute;
-    top: 8px;
-    right: 12px;
-    font-size: 10px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-
-  code {
-    font-family: var(--mono);
-    font-size: 13px;
-    background: var(--surface2);
-    padding: 2px 7px;
-    border-radius: 4px;
-    color: var(--accent2);
-  }
-
-  /* --- TABLES --- */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-    font-size: 13px;
-  }
-
-  th {
-    text-align: left;
-    padding: 12px 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    font-family: var(--mono);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--text-dim);
-  }
-
-  td {
-    padding: 10px 16px;
-    border: 1px solid var(--border);
-    font-family: var(--mono);
-    font-size: 13px;
-  }
-
-  tr:hover td { background: var(--surface); }
-
-  /* --- PROC TREE --- */
-  .proc-tree {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 24px 28px;
-    font-family: var(--mono);
-    font-size: 13px;
-    line-height: 1.8;
-    margin: 16px 0;
-  }
-
-  .proc-tree .dir { color: var(--accent2); }
-  .proc-tree .link { color: var(--text-dim); }
-  .proc-tree .inode { color: var(--yellow); }
-
-  /* --- FLOW DIAGRAM --- */
-  .flow {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    margin: 24px 0;
-    overflow-x: auto;
-    padding: 16px 0;
-  }
-
-  .flow-step {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px 20px;
-    min-width: 160px;
-    text-align: center;
-    flex-shrink: 0;
-  }
-
-  .flow-step .step-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 6px;
-  }
-
-  .flow-step .step-name {
-    font-weight: 700;
-    font-size: 14px;
-    color: #eee;
-  }
-
-  .flow-step .step-detail {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--accent);
-    margin-top: 4px;
-  }
-
-  .flow-arrow {
-    font-size: 20px;
-    color: var(--text-dim);
-    padding: 0 8px;
-    flex-shrink: 0;
-  }
-
-  /* --- DOCKER BRIDGE DIAGRAM --- */
-  .diagram {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 28px;
-    font-family: var(--mono);
-    font-size: 13px;
-    line-height: 1.8;
-    margin: 16px 0;
-    overflow-x: auto;
-    white-space: pre;
-  }
-
-  .diagram .c-a { color: var(--green); }
-  .diagram .c-b { color: var(--accent2); }
-  .diagram .bridge { color: var(--yellow); }
-  .diagram .ext { color: var(--text-dim); }
-
-  /* --- INFO / WARNING BOXES --- */
-  .info-box {
-    background: var(--surface);
-    border-left: 3px solid var(--accent2);
-    border-radius: 0 8px 8px 0;
-    padding: 16px 20px;
-    margin: 20px 0;
-    font-size: 13px;
-  }
-
-  .info-box.warn { border-left-color: var(--yellow); }
-  .info-box.danger { border-left-color: var(--red); }
-
-  .info-box strong {
-    display: block;
-    margin-bottom: 4px;
-    color: #eee;
-  }
-
-  /* --- INTERACTIVE TABS --- */
-  .tabs {
-    display: flex;
-    gap: 0;
-    border-bottom: 1px solid var(--border);
-    margin-top: 24px;
-  }
-
-  .tab-btn {
-    background: none;
-    border: none;
-    padding: 10px 20px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-dim);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-  }
-
-  .tab-btn:hover { color: var(--text); }
-  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-  .tab-content { display: none; padding-top: 16px; }
-  .tab-content.active { display: block; }
-
-  /* --- COLUMNS --- */
-  .two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin: 16px 0;
-  }
-
-  @media (max-width: 768px) {
-    .two-col { grid-template-columns: 1fr; }
-    .ns-grid { grid-template-columns: 1fr; }
-    .flow { flex-direction: column; }
-    .flow-arrow { transform: rotate(90deg); }
-    .hero { padding: 48px 20px 36px; }
-  }
-
-  /* --- FOOTER --- */
-  footer {
-    text-align: center;
-    padding: 40px;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-dim);
-    border-top: 1px solid var(--border);
-  }
-
-  footer a { color: var(--accent); text-decoration: none; }
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .ns-grid { grid-template-columns: 1fr; }
+  .flow { flex-direction: column; }
+  .flow-arrow { transform: rotate(90deg); }
+  .masthead { padding: 40px 20px 28px; }
+}
 </style>
 </head>
 <body>
 
-<!-- ================================================================ HERO -->
-<div class="hero">
-  <h1>Linux Namespaces</h1>
+<!-- ══════ MASTHEAD ══════ -->
+<div class="masthead">
+  <h1>Linux <em>Namespaces</em></h1>
   <div class="subtitle">
     <span>$</span> unshare --pid --uts --net --mount --fork --mount-proc bash
   </div>
 </div>
 
-<!-- ================================================================ NAV -->
+<!-- ══════ NAV ══════ -->
 <div class="nav">
   <div class="nav-inner">
     <a href="#types">Types</a>
@@ -479,20 +406,21 @@
     <a href="#uid">User / UID Maps</a>
     <a href="#container">Container from Scratch</a>
     <a href="#docker">Docker Internals</a>
+    <a href="#mount-prop">Mount Propagation</a>
     <a href="#recipes">Recipes</a>
-    <a href="#nsm">nsm Tool</a>
+    <a href="#quickref">Quick Ref</a>
   </div>
 </div>
 
 <div class="container">
 
-<!-- ================================================================ TYPES -->
+<!-- ══════ TYPES ══════ -->
 <section id="types">
-  <h2>The 8 Namespace Types</h2>
+  <h2>The 8 <em class="cy">Namespace Types</em></h2>
+  <div class="section-bar"></div>
   <p>Namespaces partition kernel resources so one set of processes sees one set of resources, another sees a different set. They are the isolation layer behind every container runtime.</p>
 
   <div class="ns-grid">
-
     <div class="ns-card" data-type="mnt">
       <div class="ns-name">Mount</div>
       <div class="ns-flag">CLONE_NEWNS</div>
@@ -500,7 +428,6 @@
       <div class="ns-desc">Filesystem mount points. Each namespace gets its own mount table. This is how containers get their own rootfs.</div>
       <div class="ns-since">Linux 2.4.19 (2002)</div>
     </div>
-
     <div class="ns-card" data-type="uts">
       <div class="ns-name">UTS</div>
       <div class="ns-flag">CLONE_NEWUTS</div>
@@ -508,7 +435,6 @@
       <div class="ns-desc">Hostname and NIS domain name. The simplest namespace type. Change hostname without affecting the host.</div>
       <div class="ns-since">Linux 2.6.19 (2006)</div>
     </div>
-
     <div class="ns-card" data-type="ipc">
       <div class="ns-name">IPC</div>
       <div class="ns-flag">CLONE_NEWIPC</div>
@@ -516,7 +442,6 @@
       <div class="ns-desc">System V IPC objects and POSIX message queues. Prevents cross-container IPC snooping.</div>
       <div class="ns-since">Linux 2.6.19 (2006)</div>
     </div>
-
     <div class="ns-card" data-type="pid">
       <div class="ns-name">PID</div>
       <div class="ns-flag">CLONE_NEWPID</div>
@@ -524,7 +449,6 @@
       <div class="ns-desc">Process ID number space. First forked child becomes PID 1. Processes outside are invisible from inside.</div>
       <div class="ns-since">Linux 2.6.24 (2008)</div>
     </div>
-
     <div class="ns-card" data-type="net">
       <div class="ns-name">Network</div>
       <div class="ns-flag">CLONE_NEWNET</div>
@@ -532,7 +456,6 @@
       <div class="ns-desc">Entire network stack: interfaces, routes, iptables, sockets. Starts with only a loopback (and it's DOWN).</div>
       <div class="ns-since">Linux 2.6.29 (2009)</div>
     </div>
-
     <div class="ns-card" data-type="user">
       <div class="ns-name">User</div>
       <div class="ns-flag">CLONE_NEWUSER</div>
@@ -540,7 +463,6 @@
       <div class="ns-desc">UIDs, GIDs, and capabilities. Be root inside, nobody outside. Enables rootless containers.</div>
       <div class="ns-since">Linux 3.8 (2013)</div>
     </div>
-
     <div class="ns-card" data-type="cgroup">
       <div class="ns-name">Cgroup</div>
       <div class="ns-flag">CLONE_NEWCGROUP</div>
@@ -548,7 +470,6 @@
       <div class="ns-desc">Cgroup root directory. Virtualizes /proc/self/cgroup so the container sees itself at the cgroup root.</div>
       <div class="ns-since">Linux 4.6 (2016)</div>
     </div>
-
     <div class="ns-card" data-type="time">
       <div class="ns-name">Time</div>
       <div class="ns-flag">CLONE_NEWTIME</div>
@@ -556,13 +477,13 @@
       <div class="ns-desc">CLOCK_MONOTONIC and CLOCK_BOOTTIME offsets. Make a process think the system booted at a different time.</div>
       <div class="ns-since">Linux 5.6 (2020)</div>
     </div>
-
   </div>
 </section>
 
-<!-- ================================================================ SYSCALLS -->
+<!-- ══════ SYSCALLS ══════ -->
 <section id="syscalls">
-  <h2>Syscalls</h2>
+  <h2><em class="gr">Syscalls</em></h2>
+  <div class="section-bar gr"></div>
   <p>Three syscalls power the entire namespace subsystem.</p>
 
   <table>
@@ -570,10 +491,10 @@
     <tr>
       <td style="color:var(--green)">clone()</td>
       <td>clone(fn, stack, flags, arg)</td>
-      <td>Create child process in new namespace(s). The flags are OR'd CLONE_NEW* constants.</td>
+      <td>Create child process in new namespace(s). Flags are OR'd CLONE_NEW* constants.</td>
     </tr>
     <tr>
-      <td style="color:var(--accent2)">unshare()</td>
+      <td style="color:var(--cyan)">unshare()</td>
       <td>unshare(flags)</td>
       <td>Move the <em>calling</em> process into new namespace(s). No fork needed.</td>
     </tr>
@@ -584,37 +505,39 @@
     </tr>
   </table>
 
-  <pre><span class="comment">// C example: create child in new PID + UTS namespace</span>
+  <pre><span class="label">C</span>
+<span class="cm">// Create child in new PID + UTS namespace</span>
 <span class="cmd">int flags = CLONE_NEWPID | CLONE_NEWUTS | SIGCHLD;</span>
 <span class="cmd">pid_t pid = clone(child_fn, stack + STACK_SIZE, flags, arg);</span>
 
-<span class="comment">// Move current process into a new network namespace</span>
+<span class="cm">// Move current process into a new network namespace</span>
 <span class="cmd">unshare(CLONE_NEWNET);</span>
 
-<span class="comment">// Join an existing namespace</span>
+<span class="cm">// Join an existing namespace</span>
 <span class="cmd">int fd = open("/proc/12345/ns/net", O_RDONLY);</span>
 <span class="cmd">setns(fd, CLONE_NEWNET);</span></pre>
 </section>
 
-<!-- ================================================================ UNSHARE -->
+<!-- ══════ UNSHARE ══════ -->
 <section id="unshare">
-  <h2>unshare <span class="tag" style="background:var(--surface2);color:var(--green)">command</span></h2>
+  <h2><em class="gr">unshare</em> <span class="htag" style="color:var(--green)">command</span></h2>
+  <div class="section-bar gr"></div>
   <p>Create new namespace(s) and run a program inside them.</p>
 
   <pre><span class="label">basics</span>
-<span class="comment"># New UTS namespace, change hostname</span>
-<span class="prompt">$ </span><span class="cmd">sudo unshare</span> <span class="flag">--uts</span> <span class="cmd">bash -c</span> <span class="string">'hostname mybox; bash'</span>
+<span class="cm"># New UTS namespace, change hostname</span>
+<span class="prompt">$ </span><span class="cmd">sudo unshare</span> <span class="flag">--uts</span> <span class="cmd">bash -c</span> <span class="str">'hostname mybox; bash'</span>
 
-<span class="comment"># New PID namespace (must fork + remount /proc)</span>
+<span class="cm"># New PID namespace (must fork + remount /proc)</span>
 <span class="prompt">$ </span><span class="cmd">sudo unshare</span> <span class="flag">--pid --fork --mount-proc</span> <span class="cmd">bash</span>
 
-<span class="comment"># New network namespace (blank stack, only lo)</span>
+<span class="cm"># New network namespace (blank stack, only lo)</span>
 <span class="prompt">$ </span><span class="cmd">sudo unshare</span> <span class="flag">--net</span> <span class="cmd">bash</span>
 
-<span class="comment"># Rootless user namespace (no sudo!)</span>
+<span class="cm"># Rootless user namespace (no sudo!)</span>
 <span class="prompt">$ </span><span class="cmd">unshare</span> <span class="flag">--user --map-root-user</span> <span class="cmd">bash</span>
 
-<span class="comment"># All namespaces (basically a container)</span>
+<span class="cm"># All namespaces (basically a container)</span>
 <span class="prompt">$ </span><span class="cmd">sudo unshare</span> <span class="flag">--pid --uts --mount --ipc --net --fork --mount-proc</span> <span class="cmd">bash</span></pre>
 
   <div class="info-box">
@@ -623,28 +546,30 @@
   </div>
 </section>
 
-<!-- ================================================================ NSENTER -->
+<!-- ══════ NSENTER ══════ -->
 <section id="nsenter">
-  <h2>nsenter <span class="tag" style="background:var(--surface2);color:var(--accent2)">command</span></h2>
+  <h2><em class="cy">nsenter</em> <span class="htag" style="color:var(--cyan)">command</span></h2>
+  <div class="section-bar"></div>
   <p>Enter existing namespaces of a running process. Uses <code>setns()</code> under the hood.</p>
 
   <pre><span class="label">enter by pid</span>
-<span class="comment"># Enter all namespaces of PID 12345</span>
+<span class="cm"># Enter all namespaces of PID 12345</span>
 <span class="prompt">$ </span><span class="cmd">sudo nsenter</span> <span class="flag">--target 12345 --all</span> <span class="cmd">bash</span>
 
-<span class="comment"># Enter just the network namespace</span>
+<span class="cm"># Enter just the network namespace</span>
 <span class="prompt">$ </span><span class="cmd">sudo nsenter</span> <span class="flag">--target 12345 --net</span> <span class="cmd">bash</span>
 
-<span class="comment"># Enter a Docker container (bypass docker exec)</span>
+<span class="cm"># Enter a Docker container (bypass docker exec)</span>
 <span class="prompt">$ </span><span class="cmd">PID=$(docker inspect -f '{{.State.Pid}}' mycontainer)</span>
 <span class="prompt">$ </span><span class="cmd">sudo nsenter</span> <span class="flag">--target $PID --all</span> <span class="cmd">bash</span>
 
-<span class="comment"># Useful when dockerd is stuck but you need into a container</span></pre>
+<span class="cm"># Useful when dockerd is stuck but you need into a container</span></pre>
 </section>
 
-<!-- ================================================================ NET NS -->
+<!-- ══════ NETWORK NS ══════ -->
 <section id="netns">
-  <h2>Network Namespaces</h2>
+  <h2><em class="cy">Network</em> Namespaces</h2>
+  <div class="section-bar"></div>
   <p>A new net namespace starts with nothing. You build the network from scratch using veth pairs.</p>
 
   <div class="tabs">
@@ -655,53 +580,53 @@
 
   <div id="tab-veth" class="tab-content active">
     <pre><span class="label">veth pair</span>
-<span class="comment"># Create a virtual ethernet pair (two ends of a cable)</span>
+<span class="cm"># Create a virtual ethernet pair (two ends of a cable)</span>
 <span class="prompt"># </span><span class="cmd">ip link add veth-host type veth peer name veth-ns</span>
 
-<span class="comment"># Move one end into the namespace</span>
+<span class="cm"># Move one end into the namespace</span>
 <span class="prompt"># </span><span class="cmd">ip link set veth-ns netns myns</span>
 
-<span class="comment"># Assign IPs</span>
+<span class="cm"># Assign IPs</span>
 <span class="prompt"># </span><span class="cmd">ip addr add 10.200.1.1/24 dev veth-host</span>
 <span class="prompt"># </span><span class="cmd">ip netns exec myns ip addr add 10.200.1.2/24 dev veth-ns</span>
 
-<span class="comment"># Bring up</span>
+<span class="cm"># Bring up</span>
 <span class="prompt"># </span><span class="cmd">ip link set veth-host up</span>
 <span class="prompt"># </span><span class="cmd">ip netns exec myns ip link set veth-ns up</span>
 <span class="prompt"># </span><span class="cmd">ip netns exec myns ip link set lo up</span>
 
-<span class="comment"># Test</span>
+<span class="cm"># Test</span>
 <span class="prompt"># </span><span class="cmd">ip netns exec myns ping 10.200.1.1</span></pre>
   </div>
 
   <div id="tab-bridge" class="tab-content">
     <pre><span class="label">internet access</span>
-<span class="comment"># Enable IP forwarding</span>
+<span class="cm"># Enable IP forwarding</span>
 <span class="prompt"># </span><span class="cmd">echo 1 > /proc/sys/net/ipv4/ip_forward</span>
 
-<span class="comment"># NAT the namespace traffic</span>
+<span class="cm"># NAT the namespace traffic</span>
 <span class="prompt"># </span><span class="cmd">iptables -t nat -A POSTROUTING -s 10.200.1.0/24 -j MASQUERADE</span>
 
-<span class="comment"># Default route inside the namespace</span>
+<span class="cm"># Default route inside the namespace</span>
 <span class="prompt"># </span><span class="cmd">ip netns exec myns ip route add default via 10.200.1.1</span>
 
-<span class="comment"># Now the namespace can reach the internet</span>
+<span class="cm"># Now the namespace can reach the internet</span>
 <span class="prompt"># </span><span class="cmd">ip netns exec myns curl ifconfig.me</span></pre>
   </div>
 
   <div id="tab-ipnetns" class="tab-content">
     <pre><span class="label">ip netns</span>
-<span class="prompt">$ </span><span class="cmd">ip netns add myns</span>          <span class="comment"># create</span>
-<span class="prompt">$ </span><span class="cmd">ip netns list</span>              <span class="comment"># list</span>
-<span class="prompt">$ </span><span class="cmd">ip netns exec myns bash</span>    <span class="comment"># enter</span>
-<span class="prompt">$ </span><span class="cmd">ip netns exec myns ip a</span>    <span class="comment"># run command inside</span>
-<span class="prompt">$ </span><span class="cmd">ip netns del myns</span>          <span class="comment"># delete</span>
+<span class="prompt">$ </span><span class="cmd">ip netns add myns</span>          <span class="cm"># create</span>
+<span class="prompt">$ </span><span class="cmd">ip netns list</span>              <span class="cm"># list</span>
+<span class="prompt">$ </span><span class="cmd">ip netns exec myns bash</span>    <span class="cm"># enter</span>
+<span class="prompt">$ </span><span class="cmd">ip netns exec myns ip a</span>    <span class="cm"># run command inside</span>
+<span class="prompt">$ </span><span class="cmd">ip netns del myns</span>          <span class="cm"># delete</span>
 
-<span class="comment"># ip netns creates bind mounts at /var/run/netns/&lt;name&gt;</span>
-<span class="comment"># This keeps the namespace alive even with no processes in it</span></pre>
+<span class="cm"># ip netns creates bind mounts at /var/run/netns/&lt;name&gt;</span>
+<span class="cm"># This keeps the namespace alive even with no processes in it</span></pre>
   </div>
 
-  <h3>How Docker's Bridge Networking Works</h3>
+  <h3>Docker's Bridge Networking</h3>
   <div class="diagram"><span class="c-a">Container A ---veth---</span>+
                         |
                     <span class="bridge">docker0 bridge</span> --- <span class="ext">eth0 --- internet</span>
@@ -709,9 +634,10 @@
 <span class="c-b">Container B ---veth---</span>+</div>
 </section>
 
-<!-- ================================================================ PROC -->
+<!-- ══════ PROC ══════ -->
 <section id="proc">
-  <h2>/proc Namespace Interface</h2>
+  <h2><em class="yl">/proc</em> Namespace Interface</h2>
+  <div class="section-bar yl"></div>
   <p>Every process exposes its namespace memberships as symlinks under <code>/proc/&lt;pid&gt;/ns/</code>. Same inode number = same namespace.</p>
 
   <div class="proc-tree">
@@ -729,55 +655,56 @@
   </div>
 
   <pre><span class="label">inspection</span>
-<span class="comment"># Your own namespaces</span>
+<span class="cm"># Your own namespaces</span>
 <span class="prompt">$ </span><span class="cmd">ls -la /proc/$$/ns/</span>
 
-<span class="comment"># Compare two processes</span>
+<span class="cm"># Compare two processes</span>
 <span class="prompt">$ </span><span class="cmd">readlink /proc/1/ns/pid</span>
-<span class="output">pid:[4026531836]</span>
+<span class="out">pid:[4026531836]</span>
 <span class="prompt">$ </span><span class="cmd">readlink /proc/$$/ns/pid</span>
-<span class="output">pid:[4026531836]</span>          <span class="comment"># same inode = same namespace</span>
+<span class="out">pid:[4026531836]</span>          <span class="cm"># same inode = same namespace</span>
 
-<span class="comment"># List all namespaces on the system</span>
+<span class="cm"># List all namespaces on the system</span>
 <span class="prompt">$ </span><span class="cmd">lsns</span>
 
-<span class="comment"># Filter by type</span>
+<span class="cm"># Filter by type</span>
 <span class="prompt">$ </span><span class="cmd">lsns -t net</span>
 
-<span class="comment"># A process has TWO PIDs in a PID namespace</span>
+<span class="cm"># A process has TWO PIDs in a PID namespace</span>
 <span class="prompt">$ </span><span class="cmd">grep NSpid /proc/&lt;pid&gt;/status</span>
-<span class="output">NSpid:  12345   1</span>       <span class="comment"># host PID 12345, container PID 1</span></pre>
+<span class="out">NSpid:  12345   1</span>       <span class="cm"># host PID 12345, container PID 1</span></pre>
 </section>
 
-<!-- ================================================================ USER NS -->
+<!-- ══════ USER NS ══════ -->
 <section id="uid">
-  <h2>User Namespaces + UID Maps</h2>
+  <h2><em class="or">User Namespaces</em> + UID Maps</h2>
+  <div class="section-bar or"></div>
   <p>The most security-relevant namespace. Maps UIDs between namespaces. Root inside the container is an unprivileged user on the host.</p>
 
   <div class="two-col">
     <div>
       <pre><span class="label">uid_map</span>
-<span class="comment"># /proc/&lt;pid&gt;/uid_map format:</span>
-<span class="comment"># &lt;id_inside&gt; &lt;id_outside&gt; &lt;range&gt;</span>
+<span class="cm"># /proc/&lt;pid&gt;/uid_map format:</span>
+<span class="cm"># &lt;id_inside&gt; &lt;id_outside&gt; &lt;range&gt;</span>
 
 <span class="cmd">         0       1000          1</span>
 
-<span class="comment"># UID 0 inside = UID 1000 outside</span>
-<span class="comment"># "root" in the container is</span>
-<span class="comment"># your unprivileged user on host</span></pre>
+<span class="cm"># UID 0 inside = UID 1000 outside</span>
+<span class="cm"># "root" in the container is</span>
+<span class="cm"># your unprivileged user on host</span></pre>
     </div>
     <div>
       <pre><span class="label">rootless</span>
-<span class="comment"># No sudo needed</span>
+<span class="cm"># No sudo needed</span>
 <span class="prompt">$ </span><span class="cmd">unshare --user --map-root-user bash</span>
 
-<span class="comment"># Inside:</span>
+<span class="cm"># Inside:</span>
 <span class="prompt"># </span><span class="cmd">whoami</span>
-<span class="output">root</span>
+<span class="out">root</span>
 <span class="prompt"># </span><span class="cmd">id</span>
-<span class="output">uid=0(root) gid=0(root)</span>
+<span class="out">uid=0(root) gid=0(root)</span>
 
-<span class="comment"># But on the host, it's still you</span></pre>
+<span class="cm"># But on the host, it's still you</span></pre>
     </div>
   </div>
 
@@ -787,16 +714,17 @@
   </div>
 </section>
 
-<!-- ================================================================ CONTAINER FROM SCRATCH -->
+<!-- ══════ CONTAINER FROM SCRATCH ══════ -->
 <section id="container">
-  <h2>Container from Scratch</h2>
+  <h2><em class="rd">Container</em> from Scratch</h2>
+  <div class="section-bar rd"></div>
   <p>A container is just namespaces + chroot/pivot_root + cgroups. Here's the process.</p>
 
   <div class="flow">
     <div class="flow-step">
       <div class="step-label">Step 1</div>
       <div class="step-name">clone()</div>
-      <div class="step-detail">CLONE_NEWPID | NEWUTS | NEWNS | NEWNET | NEWIPC</div>
+      <div class="step-detail">NEWPID | NEWUTS | NEWNS | NEWNET</div>
     </div>
     <div class="flow-arrow">&#8594;</div>
     <div class="flow-step">
@@ -831,19 +759,19 @@
   </div>
 
   <pre><span class="label">bash</span>
-<span class="comment">#!/usr/bin/env bash</span>
-<span class="comment"># Minimal container in ~20 lines</span>
+<span class="cm">#!/usr/bin/env bash</span>
+<span class="cm"># Minimal container in ~20 lines</span>
 
 <span class="cmd">ROOTFS="/tmp/container-root"</span>
 <span class="cmd">mkdir -p "$ROOTFS"</span>
 
-<span class="comment"># Install a minimal userland (busybox)</span>
+<span class="cm"># Install a minimal userland (busybox)</span>
 <span class="cmd">cp /path/to/busybox "$ROOTFS/bin/busybox"</span>
 <span class="cmd">for cmd in sh ls ps mount cat echo; do</span>
 <span class="cmd">    ln -s busybox "$ROOTFS/bin/$cmd"</span>
 <span class="cmd">done</span>
 
-<span class="comment"># Launch with all namespaces</span>
+<span class="cm"># Launch with all namespaces</span>
 <span class="cmd">sudo unshare --pid --uts --mount --ipc --net --fork \</span>
 <span class="cmd">    /bin/bash -c "</span>
 <span class="cmd">        hostname container</span>
@@ -859,34 +787,36 @@
   </div>
 </section>
 
-<!-- ================================================================ DOCKER -->
+<!-- ══════ DOCKER ══════ -->
 <section id="docker">
-  <h2>How Docker Actually Does It</h2>
-  <p>Simplified flow of <code>docker run</code>. Steps 4a-4b are what the demo scripts do, just in Go instead of bash.</p>
+  <h2>How <em class="pu">Docker</em> Actually Does It</h2>
+  <div class="section-bar pu"></div>
+  <p>Simplified flow of <code>docker run</code>. Steps 4a-4b are what the demo scripts above do, just in Go instead of bash.</p>
 
   <pre><span class="label">docker run flow</span>
-<span class="cmd">1.</span>  <span class="string">docker CLI</span> <span class="output">--></span> <span class="string">dockerd</span> <span class="output">(REST API call)</span>
-<span class="cmd">2.</span>  <span class="string">dockerd</span> <span class="output">--></span> <span class="string">containerd</span> <span class="output">(gRPC: create container)</span>
-<span class="cmd">3.</span>  <span class="string">containerd</span> <span class="output">--></span> <span class="string">runc</span> <span class="output">(OCI runtime)</span>
-<span class="cmd">4.</span>  <span class="string">runc:</span>
+<span class="cmd">1.</span>  <span class="str">docker CLI</span> <span class="out">--></span> <span class="str">dockerd</span> <span class="out">(REST API call)</span>
+<span class="cmd">2.</span>  <span class="str">dockerd</span> <span class="out">--></span> <span class="str">containerd</span> <span class="out">(gRPC: create container)</span>
+<span class="cmd">3.</span>  <span class="str">containerd</span> <span class="out">--></span> <span class="str">runc</span> <span class="out">(OCI runtime)</span>
+<span class="cmd">4.</span>  <span class="str">runc:</span>
     <span class="cmd">a.</span> clone(CLONE_NEWPID | CLONE_NEWUTS | CLONE_NEWNS | ...)
     <span class="cmd">b.</span> In child:
-       <span class="output">- Set up cgroups</span>
-       <span class="output">- Mount /proc, /sys, /dev</span>
-       <span class="output">- Set up rootfs (overlay mounts)</span>
-       <span class="output">- pivot_root</span>
-       <span class="output">- Set hostname</span>
-       <span class="output">- Configure network (via CNI plugin)</span>
-       <span class="output">- Drop capabilities</span>
-       <span class="output">- Set seccomp filters</span>
-       <span class="output">- Set AppArmor/SELinux labels</span>
-       <span class="output">- execve(container entrypoint)</span>
-<span class="cmd">5.</span>  <span class="string">Container process running, fully isolated</span></pre>
+       <span class="out">- Set up cgroups</span>
+       <span class="out">- Mount /proc, /sys, /dev</span>
+       <span class="out">- Set up rootfs (overlay mounts)</span>
+       <span class="out">- pivot_root</span>
+       <span class="out">- Set hostname</span>
+       <span class="out">- Configure network (via CNI plugin)</span>
+       <span class="out">- Drop capabilities</span>
+       <span class="out">- Set seccomp filters</span>
+       <span class="out">- Set AppArmor/SELinux labels</span>
+       <span class="out">- execve(container entrypoint)</span>
+<span class="cmd">5.</span>  <span class="str">Container process running, fully isolated</span></pre>
 </section>
 
-<!-- ================================================================ MOUNT PROPAGATION -->
+<!-- ══════ MOUNT PROPAGATION ══════ -->
 <section id="mount-prop">
-  <h2>Mount Propagation</h2>
+  <h2><em class="gr">Mount</em> Propagation</h2>
+  <div class="section-bar gr"></div>
   <p>Mounts can propagate between namespaces. This is often the source of subtle container bugs.</p>
 
   <table>
@@ -897,7 +827,7 @@
       <td>Default for containers</td>
     </tr>
     <tr>
-      <td style="color:var(--accent2)">shared</td>
+      <td style="color:var(--cyan)">shared</td>
       <td>Changes propagate to all peer mounts</td>
       <td>Host mounts visible in containers</td>
     </tr>
@@ -907,7 +837,7 @@
       <td>One-way host-to-container sync</td>
     </tr>
     <tr>
-      <td style="color:var(--text-dim)">unbindable</td>
+      <td style="color:var(--dim)">unbindable</td>
       <td>Can't be bind-mounted at all</td>
       <td>Prevent mount namespace escapes</td>
     </tr>
@@ -916,19 +846,20 @@
   <pre><span class="label">check propagation</span>
 <span class="prompt">$ </span><span class="cmd">findmnt -o TARGET,PROPAGATION</span>
 
-<span class="comment"># Make a mount private (no propagation)</span>
+<span class="cm"># Make a mount private (no propagation)</span>
 <span class="prompt"># </span><span class="cmd">mount --make-private /mnt/data</span>
 
-<span class="comment"># Make a mount shared (propagate everywhere)</span>
+<span class="cm"># Make a mount shared (propagate everywhere)</span>
 <span class="prompt"># </span><span class="cmd">mount --make-shared /mnt/data</span>
 
-<span class="comment"># Recursively make everything private (container startup)</span>
+<span class="cm"># Recursively make everything private (container startup)</span>
 <span class="prompt"># </span><span class="cmd">mount --make-rprivate /</span></pre>
 </section>
 
-<!-- ================================================================ RECIPES -->
+<!-- ══════ RECIPES ══════ -->
 <section id="recipes">
-  <h2>Recipes</h2>
+  <h2><em class="yl">Recipes</em></h2>
+  <div class="section-bar yl"></div>
 
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab(event, 'tab-isolate')">Isolate Network</button>
@@ -940,13 +871,13 @@
 
   <div id="tab-isolate" class="tab-content active">
     <pre><span class="label">no network</span>
-<span class="comment"># Run a process with zero network access</span>
+<span class="cm"># Run a process with zero network access</span>
 <span class="prompt">$ </span><span class="cmd">sudo unshare --net -- bash -c '</span>
-<span class="cmd">    curl google.com</span>   <span class="comment"># fails: no interfaces</span>
-<span class="cmd">    ping 8.8.8.8</span>      <span class="comment"># fails: no route</span>
-<span class="string">'</span>
+<span class="cmd">    curl google.com</span>   <span class="cm"># fails: no interfaces</span>
+<span class="cmd">    ping 8.8.8.8</span>      <span class="cm"># fails: no route</span>
+<span class="str">'</span>
 
-<span class="comment"># Useful for sandboxing builds, running untrusted code, etc.</span></pre>
+<span class="cm"># Useful for sandboxing builds, running untrusted code, etc.</span></pre>
   </div>
 
   <div id="tab-hostname" class="tab-content">
@@ -954,23 +885,23 @@
 <span class="prompt">$ </span><span class="cmd">sudo unshare --uts -- bash -c '</span>
 <span class="cmd">    hostname devbox</span>
 <span class="cmd">    exec my-app</span>
-<span class="string">'</span>
+<span class="str">'</span>
 
-<span class="comment"># my-app sees hostname "devbox"</span>
-<span class="comment"># Host hostname is untouched</span></pre>
+<span class="cm"># my-app sees hostname "devbox"</span>
+<span class="cm"># Host hostname is untouched</span></pre>
   </div>
 
   <div id="tab-rootless" class="tab-content">
     <pre><span class="label">rootless</span>
-<span class="comment"># No sudo needed</span>
+<span class="cm"># No sudo needed</span>
 <span class="prompt">$ </span><span class="cmd">unshare --user --map-root-user --pid --fork --mount-proc bash</span>
 
-<span class="comment"># You're now "root" with isolated PIDs</span>
+<span class="cm"># You're now "root" with isolated PIDs</span>
 <span class="prompt"># </span><span class="cmd">whoami</span>
-<span class="output">root</span>
+<span class="out">root</span>
 <span class="prompt"># </span><span class="cmd">ps aux</span>
-<span class="output">  PID  USER  COMMAND</span>
-<span class="output">    1  root  bash</span></pre>
+<span class="out">  PID  USER  COMMAND</span>
+<span class="out">    1  root  bash</span></pre>
   </div>
 
   <div id="tab-spy" class="tab-content">
@@ -978,57 +909,40 @@
 <span class="prompt">$ </span><span class="cmd">docker run -d --name test alpine sleep 3600</span>
 <span class="prompt">$ </span><span class="cmd">PID=$(docker inspect -f '{{.State.Pid}}' test)</span>
 
-<span class="comment"># Compare container vs host namespaces</span>
+<span class="cm"># Compare container vs host namespaces</span>
 <span class="prompt">$ </span><span class="cmd">for ns in /proc/$PID/ns/*; do</span>
 <span class="cmd">    type=$(basename $ns)</span>
 <span class="cmd">    cnt=$(readlink $ns)</span>
 <span class="cmd">    host=$(readlink /proc/1/ns/$type)</span>
 <span class="cmd">    [[ "$cnt" != "$host" ]] && echo "ISOLATED: $type"</span>
 <span class="cmd">done</span>
-<span class="output">ISOLATED: cgroup</span>
-<span class="output">ISOLATED: ipc</span>
-<span class="output">ISOLATED: mnt</span>
-<span class="output">ISOLATED: net</span>
-<span class="output">ISOLATED: pid</span>
-<span class="output">ISOLATED: uts</span></pre>
+<span class="out">ISOLATED: cgroup</span>
+<span class="out">ISOLATED: ipc</span>
+<span class="out">ISOLATED: mnt</span>
+<span class="out">ISOLATED: net</span>
+<span class="out">ISOLATED: pid</span>
+<span class="out">ISOLATED: uts</span></pre>
   </div>
 
   <div id="tab-rescue" class="tab-content">
     <pre><span class="label">rescue</span>
-<span class="comment"># Enter a container when docker exec hangs or dockerd is dead</span>
-<span class="prompt">$ </span><span class="cmd">PID=$(cat /run/docker/containerd/*/init.pid)</span>  <span class="comment"># or find it in ps</span>
+<span class="cm"># Enter a container when docker exec hangs or dockerd is dead</span>
+<span class="prompt">$ </span><span class="cmd">PID=$(cat /run/docker/containerd/*/init.pid)</span>  <span class="cm"># or find it in ps</span>
 <span class="prompt">$ </span><span class="cmd">sudo nsenter --target $PID --all bash</span>
 
-<span class="comment"># You're inside the container, full shell</span>
-<span class="comment"># Works even if docker daemon is completely dead</span></pre>
+<span class="cm"># You're inside the container, full shell</span>
+<span class="cm"># Works even if docker daemon is completely dead</span></pre>
   </div>
 </section>
 
-<!-- ================================================================ NSM -->
-<section id="nsm">
-  <h2>nsm <span class="tag" style="background:var(--surface2);color:var(--accent)">namespace manager</span></h2>
-  <p>A tool for creating, inspecting, entering, and cleaning up namespaces.</p>
-
-  <pre><span class="label">usage</span>
-<span class="prompt">$ </span><span class="cmd">nsm list</span>                          <span class="comment"># list all namespaces</span>
-<span class="prompt">$ </span><span class="cmd">nsm create mybox --type net</span>       <span class="comment"># create named namespace</span>
-<span class="prompt">$ </span><span class="cmd">nsm enter mybox</span>                   <span class="comment"># shell into it</span>
-<span class="prompt">$ </span><span class="cmd">nsm exec mybox -- ip addr show</span>    <span class="comment"># run command inside</span>
-<span class="prompt">$ </span><span class="cmd">nsm inspect $(pidof nginx)</span>        <span class="comment"># inspect process namespaces</span>
-<span class="prompt">$ </span><span class="cmd">nsm diff 1 $$</span>                     <span class="comment"># compare two processes</span>
-<span class="prompt">$ </span><span class="cmd">nsm tree</span>                          <span class="comment"># namespace hierarchy</span>
-<span class="prompt">$ </span><span class="cmd">nsm ps --ns-type net</span>              <span class="comment"># processes grouped by namespace</span>
-<span class="prompt">$ </span><span class="cmd">nsm monitor</span>                       <span class="comment"># watch events in real-time</span>
-<span class="prompt">$ </span><span class="cmd">nsm destroy mybox</span>                 <span class="comment"># tear it down</span></pre>
-</section>
-
-<!-- ================================================================ QUICK REF -->
+<!-- ══════ QUICK REF ══════ -->
 <section id="quickref">
-  <h2>Quick Reference</h2>
+  <h2><em class="cy">Quick</em> Reference</h2>
+  <div class="section-bar"></div>
 
   <div class="two-col">
     <div>
-      <h3>Key Files</h3>
+      <h3 style="color:var(--yellow)">Key Files</h3>
       <table>
         <tr><td><code>/proc/&lt;pid&gt;/ns/*</code></td><td>Namespace symlinks</td></tr>
         <tr><td><code>/proc/&lt;pid&gt;/uid_map</code></td><td>UID mapping</td></tr>
@@ -1039,7 +953,7 @@
       </table>
     </div>
     <div>
-      <h3>Key Tools</h3>
+      <h3 style="color:var(--green)">Key Tools</h3>
       <table>
         <tr><td><code>unshare</code></td><td>Create new namespaces</td></tr>
         <tr><td><code>nsenter</code></td><td>Enter existing namespaces</td></tr>
@@ -1051,41 +965,42 @@
     </div>
   </div>
 
-  <h3>Man Pages</h3>
-  <pre><span class="prompt">$ </span><span class="cmd">man 7 namespaces</span>          <span class="comment"># overview</span>
-<span class="prompt">$ </span><span class="cmd">man 7 user_namespaces</span>     <span class="comment"># UID mapping details</span>
-<span class="prompt">$ </span><span class="cmd">man 7 cgroups</span>             <span class="comment"># resource limits (the other half of containers)</span>
-<span class="prompt">$ </span><span class="cmd">man 2 unshare</span>             <span class="comment"># syscall</span>
-<span class="prompt">$ </span><span class="cmd">man 2 clone</span>               <span class="comment"># syscall</span>
-<span class="prompt">$ </span><span class="cmd">man 2 setns</span>               <span class="comment"># syscall</span></pre>
+  <h3 style="color:var(--dim)">Man Pages</h3>
+  <pre><span class="prompt">$ </span><span class="cmd">man 7 namespaces</span>          <span class="cm"># overview</span>
+<span class="prompt">$ </span><span class="cmd">man 7 user_namespaces</span>     <span class="cm"># UID mapping details</span>
+<span class="prompt">$ </span><span class="cmd">man 7 cgroups</span>             <span class="cm"># resource limits (the other half of containers)</span>
+<span class="prompt">$ </span><span class="cmd">man 2 unshare</span>             <span class="cm"># syscall</span>
+<span class="prompt">$ </span><span class="cmd">man 2 clone</span>               <span class="cm"># syscall</span>
+<span class="prompt">$ </span><span class="cmd">man 2 setns</span>               <span class="cm"># syscall</span></pre>
 </section>
 
-</div>
+</div><!-- /container -->
 
-<footer>
-  linux namespaces reference // <a href="https://man7.org/linux/man-pages/man7/namespaces.7.html">man 7 namespaces</a>
-</footer>
+<!-- ══════ FOOTER ══════ -->
+<div class="footer">
+  <span>LINUX NAMESPACES REFERENCE // 2002-2025 // KERNEL ISOLATION</span>
+  <span><a href="https://man7.org/linux/man-pages/man7/namespaces.7.html">man 7 namespaces</a></span>
+</div>
 
 <script>
 function switchTab(e, tabId) {
-  const group = e.target.closest('section') || e.target.closest('.container');
-  group.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  group.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const section = e.target.closest('section');
+  section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  section.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   e.target.classList.add('active');
   document.getElementById(tabId).classList.add('active');
 }
 
-// Highlight current nav section on scroll
 const sections = document.querySelectorAll('section[id]');
 const navLinks = document.querySelectorAll('.nav a');
 window.addEventListener('scroll', () => {
   let current = '';
   sections.forEach(s => {
-    if (window.scrollY >= s.offsetTop - 100) current = s.id;
+    if (window.scrollY >= s.offsetTop - 80) current = s.id;
   });
   navLinks.forEach(a => {
-    a.style.color = a.getAttribute('href') === '#' + current ? 'var(--accent)' : '';
-    a.style.borderBottomColor = a.getAttribute('href') === '#' + current ? 'var(--accent)' : 'transparent';
+    const isActive = a.getAttribute('href') === '#' + current;
+    a.classList.toggle('active', isActive);
   });
 });
 </script>
