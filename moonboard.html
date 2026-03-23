@@ -1,0 +1,922 @@
+<!--
+  BRUTALIST TERMINAL // HED0RAH DESIGN SYSTEM
+  MOONBOARD v1.0
+  Space Mono + Bebas Neue // #0A0A0A // #00FFE9
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOONBOARD v1.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0a0a0a;
+  --surface:   #111111;
+  --surface2:  #0d0d0d;
+  --border:    #1e1e1e;
+  --border2:   #2a2a2a;
+  --cyan:      #00ffe9;
+  --yellow:    #ffe900;
+  --red:       #ff2233;
+  --green:     #39ff14;
+  --dim:       #3a3a3a;
+  --text:      #cccccc;
+  --bright:    #ffffff;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  line-height: 1.65;
+  padding: 28px 24px;
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+  pointer-events: none;
+  z-index: 999;
+}
+
+.masthead {
+  border-top: 3px solid var(--cyan);
+  padding: 14px 0 10px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid var(--border);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 52px; letter-spacing: 4px; color: var(--bright); line-height: 1;
+}
+.masthead h1 em { color: var(--cyan); font-style: normal; }
+.masthead-right { text-align: right; font-size: 9px; color: #444; letter-spacing: 2px; text-transform: uppercase; }
+.masthead-right strong { display: block; color: var(--cyan); font-size: 10px; margin-bottom: 2px; }
+
+.workspace { display: grid; grid-template-columns: 254px 1fr; gap: 2px; align-items: start; }
+.sidebar { display: flex; flex-direction: column; gap: 2px; }
+
+.panel { background: var(--surface); border: 1px solid var(--border); padding: 14px; }
+
+.plabel {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 9px; letter-spacing: 3px; color: #333;
+  text-transform: uppercase; margin-bottom: 10px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--border);
+}
+.sec-label {
+  font-size: 8px; color: #333; letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 6px; margin-top: 4px;
+}
+
+button.term-btn {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  background: var(--surface2); color: var(--dim);
+  border: 1px solid var(--border);
+  padding: 6px 12px; cursor: pointer; transition: all 0.15s;
+  width: 100%; margin-bottom: 4px; text-align: left;
+}
+button.term-btn:hover { border-color: var(--border2); color: var(--text); }
+button.term-btn.active { background: var(--cyan); color: var(--bg); border-color: var(--cyan); font-weight: 700; }
+button.term-btn.export-btn { background: #0a1a10; color: var(--green); border-color: #1a3a1a; margin-top: 2px; }
+button.term-btn.export-btn:hover { background: var(--green); color: var(--bg); border-color: var(--green); }
+button.term-btn.danger { color: #2a1010; border-color: #1a0808; }
+button.term-btn.danger:hover { background: var(--red); color: var(--bright); border-color: var(--red); }
+
+/* drop zone */
+.drop-zone {
+  border: 1px dashed var(--border2); padding: 20px 14px;
+  text-align: center; cursor: pointer; transition: all 0.15s;
+  background: #060606; position: relative; margin-bottom: 8px;
+}
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--cyan); background: rgba(0,255,233,0.03); }
+.drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.drop-zone-text { color: #444; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; line-height: 2; pointer-events: none; }
+.drop-zone-text strong { display: block; color: var(--cyan); font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 3px; margin-bottom: 4px; }
+
+/* thumbnails */
+.thumb-list { display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow-y: auto; }
+.thumb-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--border); background: #060606; cursor: pointer; transition: border-color 0.1s; }
+.thumb-item:hover { border-color: var(--border2); }
+.thumb-item.selected { border-color: var(--cyan); }
+.thumb-item img { width: 36px; height: 36px; object-fit: cover; flex-shrink: 0; }
+.thumb-item-name { font-size: 8px; color: #444; letter-spacing: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.thumb-remove { font-size: 8px; color: #2a2a2a; cursor: pointer; padding: 2px 4px; flex-shrink: 0; }
+.thumb-remove:hover { color: var(--red); }
+
+/* 9x9 grid picker */
+.grid-selector { display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px; margin-bottom: 8px; }
+.grid-cell-btn {
+  aspect-ratio: 1; background: #060606; border: 1px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Mono', monospace; font-size: 6px; color: #2a2a2a;
+  transition: all 0.1s; padding: 0; line-height: 1;
+}
+.grid-cell-btn:hover { border-color: var(--border2); color: var(--dim); }
+.grid-cell-btn.active { background: rgba(0,255,233,0.1); border-color: var(--cyan); color: var(--cyan); }
+
+/* constellations */
+.const-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-bottom: 8px; }
+.const-btn {
+  background: #060606; border: 1px solid var(--border);
+  padding: 8px 6px; cursor: pointer; text-align: center; transition: all 0.1s;
+}
+.const-btn:hover { border-color: var(--border2); }
+.const-btn.active { border-color: var(--cyan); background: rgba(0,255,233,0.05); }
+.const-name {
+  font-size: 7px; letter-spacing: 1px; color: #333;
+  text-transform: uppercase; margin-top: 4px; font-family: 'Space Mono', monospace;
+}
+.const-btn.active .const-name { color: var(--cyan); }
+.ep { display: grid; gap: 1px; width: 44px; height: 28px; margin: 0 auto 3px; }
+.ep div { background: #2a2a2a; }
+.const-btn.active .ep div { background: var(--cyan); opacity: 0.4; }
+
+/* selects */
+select.term-select {
+  font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1px;
+  background: #060606; color: var(--cyan); border: 1px solid var(--border);
+  padding: 5px 8px; outline: none; width: 100%; margin-bottom: 6px; cursor: pointer;
+}
+
+/* sliders */
+.slider-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.slider-row label { font-size: 8px; letter-spacing: 1px; color: #444; text-transform: uppercase; width: 52px; flex-shrink: 0; }
+.slider-row input[type="range"] { flex: 1; appearance: none; background: #1a1a1a; height: 2px; outline: none; border: none; }
+.slider-row input[type="range"]::-webkit-slider-thumb { appearance: none; width: 10px; height: 10px; background: var(--cyan); cursor: pointer; }
+.slider-row .slider-val { font-size: 9px; color: var(--cyan); width: 32px; text-align: right; flex-shrink: 0; }
+
+/* bg swatches */
+.bg-options { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin-top: 6px; margin-bottom: 6px; }
+.bg-swatch { height: 20px; border: 1px solid transparent; cursor: pointer; transition: border-color 0.1s; }
+.bg-swatch:hover, .bg-swatch.active { border-color: var(--cyan); }
+
+/* overlay tint controls */
+.tint-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.tint-swatch {
+  width: 18px; height: 18px; border: 1px solid var(--border); cursor: pointer;
+  flex-shrink: 0; transition: border-color 0.1s;
+}
+.tint-swatch.active { border-color: var(--cyan); }
+.tint-swatch:hover { border-color: var(--border2); }
+
+.divider { height: 1px; background: var(--border); margin: 10px 0; }
+
+/* canvas */
+.canvas-container { background: #060606; border: 1px solid var(--border); }
+#moonboard-canvas { display: block; width: 100%; height: auto; }
+
+.status-bar {
+  display: flex; justify-content: space-between; padding: 6px 14px;
+  background: #060606; border: 1px solid var(--border); margin-top: 2px;
+  font-size: 8px; color: #333; letter-spacing: 1px;
+}
+
+/* watermark toggle */
+.wm-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.wm-row label { font-size: 8px; color: #444; letter-spacing: 1px; text-transform: uppercase; flex: 1; cursor: pointer; }
+.wm-row input[type="checkbox"] { accent-color: var(--cyan); cursor: pointer; }
+
+@media (max-width: 700px) { .workspace { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>MOON<em>BOARD</em></h1>
+  <div class="masthead-right">
+    <strong>v1.0</strong>
+    MOODBOARD COMPOSITOR
+  </div>
+</div>
+
+<div class="workspace">
+  <div class="sidebar">
+
+    <!-- UPLOAD -->
+    <div class="panel">
+      <div class="plabel">01 // Images</div>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" accept="image/*" multiple>
+        <div class="drop-zone-text">
+          <strong>DROP FILES</strong>
+          or click to browse<br>jpg / png / webp / gif
+        </div>
+      </div>
+      <div class="thumb-list" id="thumb-list"></div>
+    </div>
+
+    <!-- LAYOUT -->
+    <div class="panel">
+      <div class="plabel">02 // Layout</div>
+      <div class="sec-label">UNIFORM GRID -- cols x rows</div>
+      <div class="grid-selector" id="grid-selector"></div>
+
+      <div class="divider"></div>
+      <div class="sec-label">CONSTELLATIONS</div>
+      <div class="const-grid">
+
+        <div class="const-btn" data-layout="diptych">
+          <div class="ep" style="grid-template-columns:1fr 1fr;"><div></div><div></div></div>
+          <div class="const-name">Diptych</div>
+        </div>
+
+        <div class="const-btn" data-layout="triptych">
+          <div class="ep" style="grid-template-columns:1fr 1fr 1fr;"><div></div><div></div><div></div></div>
+          <div class="const-name">Triptych</div>
+        </div>
+
+        <div class="const-btn" data-layout="hero-left">
+          <div class="ep" style="grid-template-columns:2fr 1fr; grid-template-rows:1fr 1fr;">
+            <div style="grid-row:1/3;"></div><div></div><div></div>
+          </div>
+          <div class="const-name">Hero Left</div>
+        </div>
+
+        <div class="const-btn" data-layout="hero-right">
+          <div class="ep" style="grid-template-columns:1fr 2fr; grid-template-rows:1fr 1fr;">
+            <div></div><div style="grid-row:1/3;"></div><div></div>
+          </div>
+          <div class="const-name">Hero Right</div>
+        </div>
+
+        <div class="const-btn" data-layout="hero-top">
+          <div class="ep" style="grid-template-columns:1fr 1fr 1fr; grid-template-rows:2fr 1fr;">
+            <div style="grid-column:1/4;"></div><div></div><div></div><div></div>
+          </div>
+          <div class="const-name">Hero Top</div>
+        </div>
+
+        <div class="const-btn" data-layout="hero-bottom">
+          <div class="ep" style="grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 2fr;">
+            <div></div><div></div><div></div><div style="grid-column:1/4;"></div>
+          </div>
+          <div class="const-name">Hero Bottom</div>
+        </div>
+
+        <div class="const-btn" data-layout="masonry5">
+          <div class="ep" style="grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr 1fr;">
+            <div style="grid-row:1/3;"></div><div></div><div></div><div style="grid-column:1/3;"></div>
+          </div>
+          <div class="const-name">Masonry 5</div>
+        </div>
+
+        <div class="const-btn" data-layout="cross">
+          <div class="ep" style="grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr;">
+            <div style="grid-column:2/3; grid-row:1/2;"></div>
+            <div style="grid-column:1/4; grid-row:2/3;"></div>
+            <div style="grid-column:2/3; grid-row:3/4;"></div>
+          </div>
+          <div class="const-name">Cross</div>
+        </div>
+
+        <div class="const-btn" data-layout="diamond4">
+          <div class="ep" style="grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr 1fr;">
+            <div style="grid-column:1/3; grid-row:1;"></div>
+            <div style="grid-row:2;"></div><div style="grid-row:2;"></div>
+            <div style="grid-column:1/3; grid-row:3;"></div>
+          </div>
+          <div class="const-name">Diamond 4</div>
+        </div>
+
+        <div class="const-btn" data-layout="stairs">
+          <div class="ep" style="grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr;">
+            <div style="grid-column:1; grid-row:1;"></div>
+            <div style="grid-column:2; grid-row:2;"></div>
+            <div style="grid-column:3; grid-row:3;"></div>
+          </div>
+          <div class="const-name">Stairs</div>
+        </div>
+
+        <div class="const-btn" data-layout="split-h">
+          <div class="ep" style="grid-template-columns:1fr; grid-template-rows:1fr 1fr;">
+            <div></div><div></div>
+          </div>
+          <div class="const-name">Split H</div>
+        </div>
+
+        <div class="const-btn" data-layout="big-small-4">
+          <div class="ep" style="grid-template-columns:2fr 1fr; grid-template-rows:1fr 1fr 1fr;">
+            <div style="grid-row:1/3;"></div><div></div><div></div><div style="grid-column:1/3;"></div>
+          </div>
+          <div class="const-name">Column 4</div>
+        </div>
+
+      </div>
+
+      <div class="divider"></div>
+      <div class="sec-label">Canvas Size</div>
+      <select class="term-select" id="canvas-size">
+        <option value="1080x1080">1080 x 1080 (1:1)</option>
+        <option value="1920x1080">1920 x 1080 (16:9)</option>
+        <option value="2560x1440">2560 x 1440 (QHD)</option>
+        <option value="3840x2160">3840 x 2160 (4K)</option>
+        <option value="1200x900">1200 x 900 (4:3)</option>
+        <option value="1200x628">1200 x 628 (OG)</option>
+        <option value="2480x3508">2480 x 3508 (A4 Portrait)</option>
+        <option value="3508x2480">3508 x 2480 (A4 Landscape)</option>
+      </select>
+    </div>
+
+    <!-- STYLE -->
+    <div class="panel">
+      <div class="plabel">03 // Style</div>
+
+      <div class="slider-row">
+        <label>Gap</label>
+        <input type="range" id="gap-slider" min="0" max="60" value="4" step="1">
+        <span class="slider-val" id="gap-val">4px</span>
+      </div>
+      <div class="slider-row">
+        <label>Padding</label>
+        <input type="range" id="pad-slider" min="0" max="120" value="0" step="2">
+        <span class="slider-val" id="pad-val">0px</span>
+      </div>
+      <div class="slider-row">
+        <label>Opacity</label>
+        <input type="range" id="opacity-slider" min="10" max="100" value="100" step="1">
+        <span class="slider-val" id="opacity-val">100%</span>
+      </div>
+
+      <div class="sec-label" style="margin-top:4px;">Background</div>
+      <div class="bg-options" id="bg-options">
+        <div class="bg-swatch active" style="background:#0a0a0a;" data-color="#0a0a0a"></div>
+        <div class="bg-swatch" style="background:#ffffff;" data-color="#ffffff"></div>
+        <div class="bg-swatch" style="background:#f0ede6;" data-color="#f0ede6"></div>
+        <div class="bg-swatch" style="background:#1a1a2e;" data-color="#1a1a2e"></div>
+        <div class="bg-swatch" style="background:#2d1b00;" data-color="#2d1b00"></div>
+        <div class="bg-swatch" style="background:#0d1a0d;" data-color="#0d1a0d"></div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="sec-label">Overlay Tint</div>
+      <div class="tint-row" id="tint-options">
+        <div class="tint-swatch active" style="background:transparent; border-style:dashed;" data-tint="none" title="None"></div>
+        <div class="tint-swatch" style="background:rgba(0,255,233,0.18);"  data-tint="rgba(0,255,233,0.18)"  title="Cyan"></div>
+        <div class="tint-swatch" style="background:rgba(255,233,0,0.18);"  data-tint="rgba(255,233,0,0.18)"  title="Yellow"></div>
+        <div class="tint-swatch" style="background:rgba(255,34,51,0.18);"  data-tint="rgba(255,34,51,0.18)"  title="Red"></div>
+        <div class="tint-swatch" style="background:rgba(233,0,255,0.18);"  data-tint="rgba(233,0,255,0.18)"  title="Magenta"></div>
+        <div class="tint-swatch" style="background:rgba(0,0,0,0.35);"      data-tint="rgba(0,0,0,0.35)"      title="Dark"></div>
+        <div class="tint-swatch" style="background:rgba(255,255,255,0.2);" data-tint="rgba(255,255,255,0.2)" title="Light"></div>
+        <span style="font-size:8px; color:#333; letter-spacing:1px; text-transform:uppercase; margin-left:2px;">per-image tint</span>
+      </div>
+
+      <div class="divider"></div>
+      <div class="sec-label">Image Fit</div>
+      <select class="term-select" id="fit-mode">
+        <option value="cover">Cover (fill, crop)</option>
+        <option value="contain">Contain (letterbox)</option>
+        <option value="stretch">Stretch (exact fill)</option>
+      </select>
+
+      <div class="sec-label">Grayscale</div>
+      <select class="term-select" id="gray-mode">
+        <option value="none">None (full color)</option>
+        <option value="all">All images</option>
+        <option value="selected">Selected image only</option>
+      </select>
+    </div>
+
+    <!-- TOOLS -->
+    <div class="panel">
+      <div class="plabel">04 // Tools</div>
+      <p style="font-size:8px; color:#333; margin-bottom:8px;">// select image in list first</p>
+      <button class="term-btn" id="rotate-btn">Rotate 90</button>
+      <button class="term-btn" id="flip-h-btn">Flip H</button>
+      <button class="term-btn" id="flip-v-btn">Flip V</button>
+      <button class="term-btn" id="apply-tint-btn">Apply Tint to Selected</button>
+      <button class="term-btn" id="apply-gray-btn">Gray Selected</button>
+      <div class="divider"></div>
+      <button class="term-btn" id="shuffle-btn">Shuffle Order</button>
+      <button class="term-btn" id="move-up-btn">Move Selected Up</button>
+      <button class="term-btn" id="move-dn-btn">Move Selected Down</button>
+    </div>
+
+    <!-- EXPORT -->
+    <div class="panel">
+      <div class="plabel">05 // Export</div>
+
+      <div class="sec-label">Filename</div>
+      <input type="text" id="filename-input" value="moonboard"
+        style="font-family:'Space Mono',monospace; font-size:9px; letter-spacing:1px; background:#060606; color:var(--cyan); border:1px solid var(--border); padding:5px 8px; outline:none; width:100%; margin-bottom:8px;">
+
+      <div class="wm-row">
+        <input type="checkbox" id="watermark-toggle">
+        <label for="watermark-toggle">Stamp MOONBOARD watermark</label>
+      </div>
+
+      <button class="term-btn export-btn" id="export-btn">Export PNG</button>
+      <button class="term-btn danger" id="clear-btn">Clear All</button>
+    </div>
+
+  </div>
+
+  <!-- CANVAS -->
+  <div>
+    <div class="canvas-container">
+      <canvas id="moonboard-canvas"></canvas>
+    </div>
+    <div class="status-bar">
+      <span id="status-left">// NO IMAGES LOADED</span>
+      <span id="status-right">READY</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const state = {
+  images: [],       // { id, name, dataUrl, img, rot, flipH, flipV, tint, gray }
+  selected: null,
+  layoutType: 'grid',
+  gridCols: 2,
+  gridRows: 2,
+  constellation: null,
+  bgColor: '#0a0a0a',
+  gap: 4,
+  padding: 0,
+  opacity: 1,
+  fitMode: 'cover',
+  grayMode: 'none',
+  activeTint: 'none',
+  canvasW: 1080,
+  canvasH: 1080,
+  watermark: false,
+};
+
+let uid = 0;
+const canvas = document.getElementById('moonboard-canvas');
+const ctx = canvas.getContext('2d');
+const thumbList = document.getElementById('thumb-list');
+
+// ---- 9x9 GRID PICKER ----
+const gridSel = document.getElementById('grid-selector');
+for (let r = 1; r <= 9; r++) {
+  for (let c = 1; c <= 9; c++) {
+    const btn = document.createElement('button');
+    btn.className = 'grid-cell-btn' + (r === 2 && c === 2 ? ' active' : '');
+    btn.textContent = c + 'x' + r;
+    btn.title = c + ' col' + (c > 1 ? 's' : '') + ' / ' + r + ' row' + (r > 1 ? 's' : '');
+    btn.dataset.cols = c;
+    btn.dataset.rows = r;
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.grid-cell-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.const-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      state.layoutType = 'grid';
+      state.gridCols = +this.dataset.cols;
+      state.gridRows = +this.dataset.rows;
+      render();
+    });
+    gridSel.appendChild(btn);
+  }
+}
+
+// ---- CONSTELLATION BUTTONS ----
+document.querySelectorAll('.const-btn').forEach(btn => {
+  btn.addEventListener('click', function () {
+    document.querySelectorAll('.grid-cell-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.const-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    state.layoutType = 'constellation';
+    state.constellation = this.dataset.layout;
+    render();
+  });
+});
+
+// ---- CANVAS SIZE ----
+document.getElementById('canvas-size').addEventListener('change', function () {
+  const [w, h] = this.value.split('x').map(Number);
+  state.canvasW = w; state.canvasH = h; render();
+});
+
+// ---- SLIDERS ----
+document.getElementById('gap-slider').addEventListener('input', function () {
+  state.gap = +this.value;
+  document.getElementById('gap-val').textContent = state.gap + 'px';
+  render();
+});
+document.getElementById('pad-slider').addEventListener('input', function () {
+  state.padding = +this.value;
+  document.getElementById('pad-val').textContent = state.padding + 'px';
+  render();
+});
+document.getElementById('opacity-slider').addEventListener('input', function () {
+  state.opacity = +this.value / 100;
+  document.getElementById('opacity-val').textContent = this.value + '%';
+  render();
+});
+
+// ---- BG COLOR ----
+document.getElementById('bg-options').addEventListener('click', function (e) {
+  const s = e.target.closest('.bg-swatch');
+  if (!s) return;
+  document.querySelectorAll('.bg-swatch').forEach(x => x.classList.remove('active'));
+  s.classList.add('active');
+  state.bgColor = s.dataset.color;
+  render();
+});
+
+// ---- TINT SWATCHES ----
+document.getElementById('tint-options').addEventListener('click', function (e) {
+  const s = e.target.closest('.tint-swatch');
+  if (!s) return;
+  document.querySelectorAll('.tint-swatch').forEach(x => x.classList.remove('active'));
+  s.classList.add('active');
+  state.activeTint = s.dataset.tint;
+});
+
+// ---- FIT + GRAY ----
+document.getElementById('fit-mode').addEventListener('change', function () { state.fitMode = this.value; render(); });
+document.getElementById('gray-mode').addEventListener('change', function () { state.grayMode = this.value; render(); });
+
+// ---- WATERMARK ----
+document.getElementById('watermark-toggle').addEventListener('change', function () {
+  state.watermark = this.checked; render();
+});
+
+// ---- FILE LOADING ----
+const fileInput = document.getElementById('file-input');
+const dropZone = document.getElementById('drop-zone');
+
+fileInput.addEventListener('change', function () { loadFiles(Array.from(this.files)); this.value = ''; });
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  loadFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')));
+});
+
+function loadFiles(files) {
+  Array.from(files).forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const dataUrl = e.target.result;
+      const img = new Image();
+      img.onload = function () {
+        const entry = {
+          id: ++uid,
+          name: file.name.length > 20 ? file.name.slice(0, 17) + '...' : file.name,
+          dataUrl, img,
+          rot: 0, flipH: false, flipV: false,
+          tint: null, gray: false,
+        };
+        state.images.push(entry);
+        addThumb(entry);
+        updateStatus();
+        render();
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ---- THUMBNAILS ----
+function addThumb(entry) {
+  const item = document.createElement('div');
+  item.className = 'thumb-item';
+  item.dataset.id = entry.id;
+
+  const imgEl = document.createElement('img');
+  imgEl.src = entry.dataUrl;
+
+  const name = document.createElement('div');
+  name.className = 'thumb-item-name';
+  name.textContent = entry.name;
+
+  const rm = document.createElement('span');
+  rm.className = 'thumb-remove';
+  rm.textContent = '[x]';
+  rm.addEventListener('click', e => { e.stopPropagation(); removeImage(entry.id); });
+
+  item.appendChild(imgEl);
+  item.appendChild(name);
+  item.appendChild(rm);
+  item.addEventListener('click', () => {
+    const already = state.selected === entry.id;
+    document.querySelectorAll('.thumb-item').forEach(t => t.classList.remove('selected'));
+    state.selected = already ? null : entry.id;
+    if (!already) item.classList.add('selected');
+    updateStatus();
+  });
+  thumbList.appendChild(item);
+}
+
+function removeImage(id) {
+  state.images = state.images.filter(i => i.id !== id);
+  if (state.selected === id) state.selected = null;
+  const el = thumbList.querySelector('[data-id="' + id + '"]');
+  if (el) el.remove();
+  updateStatus(); render();
+}
+
+function rebuildThumbs() {
+  thumbList.innerHTML = '';
+  state.images.forEach(e => addThumb(e));
+}
+
+// ---- TOOLS ----
+document.getElementById('shuffle-btn').addEventListener('click', () => {
+  for (let i = state.images.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [state.images[i], state.images[j]] = [state.images[j], state.images[i]];
+  }
+  rebuildThumbs(); render();
+});
+
+document.getElementById('move-up-btn').addEventListener('click', () => {
+  if (!state.selected) return;
+  const idx = state.images.findIndex(i => i.id === state.selected);
+  if (idx <= 0) return;
+  [state.images[idx - 1], state.images[idx]] = [state.images[idx], state.images[idx - 1]];
+  rebuildThumbs();
+  // re-select
+  const el = thumbList.querySelector('[data-id="' + state.selected + '"]');
+  if (el) el.classList.add('selected');
+  render();
+});
+
+document.getElementById('move-dn-btn').addEventListener('click', () => {
+  if (!state.selected) return;
+  const idx = state.images.findIndex(i => i.id === state.selected);
+  if (idx < 0 || idx >= state.images.length - 1) return;
+  [state.images[idx], state.images[idx + 1]] = [state.images[idx + 1], state.images[idx]];
+  rebuildThumbs();
+  const el = thumbList.querySelector('[data-id="' + state.selected + '"]');
+  if (el) el.classList.add('selected');
+  render();
+});
+
+document.getElementById('rotate-btn').addEventListener('click',   () => modSel(e => ({ ...e, rot: (e.rot + 90) % 360 })));
+document.getElementById('flip-h-btn').addEventListener('click',   () => modSel(e => ({ ...e, flipH: !e.flipH })));
+document.getElementById('flip-v-btn').addEventListener('click',   () => modSel(e => ({ ...e, flipV: !e.flipV })));
+document.getElementById('apply-tint-btn').addEventListener('click', () => modSel(e => ({ ...e, tint: state.activeTint === 'none' ? null : state.activeTint })));
+document.getElementById('apply-gray-btn').addEventListener('click', () => modSel(e => ({ ...e, gray: !e.gray })));
+
+document.getElementById('clear-btn').addEventListener('click', () => {
+  state.images = []; state.selected = null;
+  thumbList.innerHTML = '';
+  updateStatus(); render();
+});
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  if (state.images.length === 0) { setStatus('// NO IMAGES TO EXPORT', 'ABORT'); return; }
+  const fname = (document.getElementById('filename-input').value.trim() || 'moonboard') + '_' + Date.now() + '.png';
+  const dataUrl = canvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setStatus('// EXPORTED // ' + fname, 'SAVED');
+});
+
+function modSel(fn) {
+  if (!state.selected) { setStatus('// NO IMAGE SELECTED', 'SELECT ONE'); return; }
+  state.images = state.images.map(img => img.id === state.selected ? fn(img) : img);
+  render();
+}
+
+// ---- LAYOUT ENGINE ----
+function getCells(n, W, H) {
+  const gap = state.gap, pad = state.padding;
+  const w = W - pad * 2, h = H - pad * 2;
+  const ox = pad, oy = pad;
+  const cells = [];
+
+  if (state.layoutType === 'grid') {
+    const cols = state.gridCols, rows = state.gridRows;
+    const count = Math.min(n, cols * rows);
+    const cw = cols > 1 ? (w - gap * (cols - 1)) / cols : w;
+    const ch = rows > 1 ? (h - gap * (rows - 1)) / rows : h;
+    for (let i = 0; i < count; i++) {
+      const c = i % cols, r = Math.floor(i / cols);
+      cells.push({ x: ox + c * (cw + gap), y: oy + r * (ch + gap), w: cw, h: ch });
+    }
+    return cells;
+  }
+
+  const cn = state.constellation;
+
+  if (cn === 'diptych') {
+    const cw = (w - gap) / 2;
+    return [{ x: ox, y: oy, w: cw, h }, { x: ox + cw + gap, y: oy, w: cw, h }].slice(0, Math.min(n, 2));
+  }
+
+  if (cn === 'triptych') {
+    const cw = (w - gap * 2) / 3;
+    return [0,1,2].map(i => ({ x: ox + i*(cw+gap), y: oy, w: cw, h })).slice(0, Math.min(n, 3));
+  }
+
+  if (cn === 'split-h') {
+    const ch = (h - gap) / 2;
+    return [{ x: ox, y: oy, w, h: ch }, { x: ox, y: oy + ch + gap, w, h: ch }].slice(0, Math.min(n, 2));
+  }
+
+  if (cn === 'hero-left') {
+    const big = (w - gap) * 0.6, sm = w - big - gap, hh = (h - gap) / 2;
+    return [
+      { x: ox, y: oy, w: big, h },
+      { x: ox + big + gap, y: oy, w: sm, h: hh },
+      { x: ox + big + gap, y: oy + hh + gap, w: sm, h: hh }
+    ].slice(0, Math.min(n, 3));
+  }
+
+  if (cn === 'hero-right') {
+    const big = (w - gap) * 0.6, sm = w - big - gap, hh = (h - gap) / 2;
+    return [
+      { x: ox, y: oy, w: sm, h: hh },
+      { x: ox, y: oy + hh + gap, w: sm, h: hh },
+      { x: ox + sm + gap, y: oy, w: big, h }
+    ].slice(0, Math.min(n, 3));
+  }
+
+  if (cn === 'hero-top') {
+    const th = (h - gap) * 0.55, bh = h - th - gap, cw3 = (w - gap * 2) / 3;
+    cells.push({ x: ox, y: oy, w, h: th });
+    for (let i = 0; i < 3; i++) cells.push({ x: ox + i*(cw3+gap), y: oy + th + gap, w: cw3, h: bh });
+    return cells.slice(0, Math.min(n, 4));
+  }
+
+  if (cn === 'hero-bottom') {
+    const bh = (h - gap) * 0.5, th = h - bh - gap, cw3 = (w - gap * 2) / 3;
+    for (let i = 0; i < 3; i++) cells.push({ x: ox + i*(cw3+gap), y: oy, w: cw3, h: th });
+    cells.push({ x: ox, y: oy + th + gap, w, h: bh });
+    return cells.slice(0, Math.min(n, 4));
+  }
+
+  if (cn === 'masonry5') {
+    const lw = (w - gap) * 0.55, rw = w - lw - gap;
+    const lh = (h - gap) / 2, rh = (h - gap * 2) / 3;
+    return [
+      { x: ox, y: oy, w: lw, h: lh },
+      { x: ox, y: oy + lh + gap, w: lw, h: lh },
+      { x: ox + lw + gap, y: oy, w: rw, h: rh },
+      { x: ox + lw + gap, y: oy + rh + gap, w: rw, h: rh },
+      { x: ox + lw + gap, y: oy + (rh + gap) * 2, w: rw, h: rh }
+    ].slice(0, Math.min(n, 5));
+  }
+
+  if (cn === 'big-small-4') {
+    // big left, 2 small right top, full-width bottom
+    const lw = (w - gap) * 0.6, rw = w - lw - gap;
+    const topH = (h - gap) * 0.65, botH = h - topH - gap;
+    const rh = (topH - gap) / 2;
+    return [
+      { x: ox, y: oy, w: lw, h: topH },
+      { x: ox + lw + gap, y: oy, w: rw, h: rh },
+      { x: ox + lw + gap, y: oy + rh + gap, w: rw, h: rh },
+      { x: ox, y: oy + topH + gap, w, h: botH }
+    ].slice(0, Math.min(n, 4));
+  }
+
+  if (cn === 'diamond4') {
+    // top center, middle left+right, bottom center
+    const third = (h - gap * 2) / 3;
+    const hw = (w - gap) / 2;
+    return [
+      { x: ox + hw/2, y: oy, w: hw, h: third },
+      { x: ox, y: oy + third + gap, w: hw, h: third },
+      { x: ox + hw + gap, y: oy + third + gap, w: hw, h: third },
+      { x: ox + hw/2, y: oy + (third + gap) * 2, w: hw, h: third }
+    ].slice(0, Math.min(n, 4));
+  }
+
+  if (cn === 'cross') {
+    // 5 cells: top, left, center, right, bottom
+    const third = (h - gap * 2) / 3;
+    const thirdW = (w - gap * 2) / 3;
+    return [
+      { x: ox + thirdW + gap, y: oy, w: thirdW, h: third },
+      { x: ox, y: oy + third + gap, w: thirdW, h: third },
+      { x: ox + thirdW + gap, y: oy + third + gap, w: thirdW, h: third },
+      { x: ox + (thirdW + gap) * 2, y: oy + third + gap, w: thirdW, h: third },
+      { x: ox + thirdW + gap, y: oy + (third + gap) * 2, w: thirdW, h: third }
+    ].slice(0, Math.min(n, 5));
+  }
+
+  if (cn === 'stairs') {
+    // 3 cells diagonal
+    const cw = (w - gap * 2) / 3, ch = (h - gap * 2) / 3;
+    return [
+      { x: ox, y: oy, w: cw, h: ch },
+      { x: ox + cw + gap, y: oy + ch + gap, w: cw, h: ch },
+      { x: ox + (cw + gap) * 2, y: oy + (ch + gap) * 2, w: cw, h: ch }
+    ].slice(0, Math.min(n, 3));
+  }
+
+  return cells;
+}
+
+// ---- DRAW IMAGE ----
+function drawCell(entry, cell) {
+  const { img, rot, flipH, flipV, tint, gray } = entry;
+  const { x, y, w, h } = cell;
+  const fit = state.fitMode;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.globalAlpha = state.opacity;
+
+  // grayscale via offscreen canvas
+  let source = img;
+  const doGray = gray || (state.grayMode === 'all') || (state.grayMode === 'selected' && entry.id === state.selected);
+  if (doGray) {
+    const off = document.createElement('canvas');
+    off.width = img.naturalWidth; off.height = img.naturalHeight;
+    const octx = off.getContext('2d');
+    octx.filter = 'grayscale(1)';
+    octx.drawImage(img, 0, 0);
+    source = off;
+  }
+
+  ctx.translate(x + w / 2, y + h / 2);
+  if (rot) ctx.rotate(rot * Math.PI / 180);
+  if (flipH) ctx.scale(-1, 1);
+  if (flipV) ctx.scale(1, -1);
+
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+  let sw, sh;
+  if (fit === 'cover')        { const sc = Math.max(w/iw, h/ih); sw = iw*sc; sh = ih*sc; }
+  else if (fit === 'contain') { const sc = Math.min(w/iw, h/ih); sw = iw*sc; sh = ih*sc; }
+  else                        { sw = w; sh = h; }
+
+  ctx.drawImage(source, -sw/2, -sh/2, sw, sh);
+
+  // per-image tint overlay
+  if (tint) {
+    ctx.fillStyle = tint;
+    ctx.fillRect(-sw/2, -sh/2, sw, sh);
+  }
+
+  ctx.restore();
+}
+
+// ---- RENDER ----
+function render() {
+  const W = state.canvasW, H = state.canvasH;
+  canvas.width = W; canvas.height = H;
+  ctx.fillStyle = state.bgColor;
+  ctx.fillRect(0, 0, W, H);
+
+  if (state.images.length === 0) {
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = '700 ' + Math.round(W / 22) + 'px "Bebas Neue", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('DROP IMAGES TO BEGIN', W/2, H/2);
+    setStatus('// NO IMAGES LOADED', 'READY');
+    return;
+  }
+
+  const cells = getCells(state.images.length, W, H);
+  cells.forEach((cell, i) => {
+    const entry = state.images[i];
+    if (entry) drawCell(entry, cell);
+  });
+
+  // watermark
+  if (state.watermark) {
+    const sz = Math.round(W / 55);
+    ctx.font = sz + 'px "Bebas Neue", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('MOONBOARD', W - state.padding - 6, H - state.padding - 6);
+  }
+
+  const label = state.layoutType === 'grid'
+    ? state.gridCols + 'x' + state.gridRows + ' GRID'
+    : state.constellation.toUpperCase();
+  setStatus('// ' + state.images.length + ' IMG // ' + label, W + 'x' + H);
+}
+
+function updateStatus() {
+  const n = state.images.length;
+  const sel = state.selected ? ' // #' + state.selected + ' SEL' : '';
+  setStatus('// ' + n + ' IMAGE' + (n !== 1 ? 'S' : '') + sel, 'READY');
+}
+function setStatus(l, r) {
+  document.getElementById('status-left').textContent = l;
+  document.getElementById('status-right').textContent = r;
+}
+
+render();
+</script>
+</body>
+</html>
