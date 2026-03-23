@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!--
+  BRUTALIST TERMINAL // HED0RAH DESIGN SYSTEM
+  hed0rah.github.io/ai-visuals
+  Space Mono + Bebas Neue // #0A0A0A // #00FFE9
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CUDA // TENSOR CORES</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0a0a0a;
+    --surface:   #111111;
+    --surface2:  #0d0d0d;
+    --border:    #1e1e1e;
+    --border2:   #2a2a2a;
+    --cyan:      #00ffe9;
+    --yellow:    #ffe900;
+    --magenta:   #e900ff;
+    --red:       #ff2233;
+    --green:     #39ff14;
+    --orange:    #ff6b00;
+    --dim:       #3a3a3a;
+    --text:      #cccccc;
+    --bright:    #ffffff;
+
+    --m-cyan:    #6ab8b0;
+    --m-yellow:  #b8a855;
+    --m-red:     #b85a62;
+    --m-magenta: #a06aaa;
+    --m-orange:  #b8784a;
+    --m-green:   #6aaa55;
+
+    --code-text:    #abb2bf;
+    --code-keyword: #c678dd;
+    --code-type:    #e5c07b;
+    --code-func:    #61afef;
+    --code-string:  #98c379;
+    --code-number:  #d19a66;
+    --code-comment: #5c6370;
+    --code-op:      #888888;
+    --code-pp:      #e06c75;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    line-height: 1.65;
+    padding: 0 0 40px;
+    max-width: 980px;
+    margin: 0 auto;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* MASTHEAD */
+  .masthead { border-top: 3px solid var(--orange); padding: 14px 30px 10px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--border); }
+  .masthead h1 { font-family: 'Bebas Neue', sans-serif; font-size: 64px; letter-spacing: 4px; color: var(--bright); line-height: 1; }
+  .masthead h1 em { color: var(--orange); font-style: normal; }
+  .masthead-right { text-align: right; font-size: 10px; color: #444; letter-spacing: 2px; text-transform: uppercase; }
+  .masthead-right strong { display: block; color: var(--orange); font-size: 11px; margin-bottom: 2px; }
+
+  /* NAV */
+  .nav-strip { position: sticky; top: 0; z-index: 100; background: #060606; border-bottom: 1px solid var(--border); padding: 8px 30px; display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 2px; }
+  .nav-pill { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; padding: 4px 10px; border: 1px solid var(--border); color: var(--dim); text-decoration: none; transition: all 0.15s; cursor: pointer; }
+  .nav-pill:hover, .nav-pill.active { border-color: var(--orange); color: var(--orange); }
+
+  .content { padding: 0 30px; }
+
+  /* GRIDS */
+  .g2   { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-bottom: 2px; }
+  .g3   { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; margin-bottom: 2px; }
+  .gfull { margin-bottom: 2px; }
+  @media (max-width: 700px) { .g2, .g3 { grid-template-columns: 1fr; } .masthead { flex-direction: column; gap: 8px; } .masthead-right { text-align: left; } }
+
+  /* PANELS */
+  .panel { background: var(--surface); border: 1px solid var(--border); padding: 20px; }
+  .plabel { font-family: 'Bebas Neue', sans-serif; font-size: 10px; letter-spacing: 3px; color: #383838; text-transform: uppercase; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .ptitle { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; color: var(--bright); margin-bottom: 8px; line-height: 1; }
+  .ptitle.cy { color: var(--cyan); } .ptitle.rd { color: var(--red); } .ptitle.yl { color: var(--yellow); } .ptitle.pu { color: var(--magenta); } .ptitle.or { color: var(--orange); } .ptitle.gr { color: var(--green); }
+  .bar { width: 28px; height: 2px; margin-bottom: 12px; background: var(--cyan); }
+  .bar.rd { background: var(--red); } .bar.yl { background: var(--yellow); } .bar.pu { background: var(--magenta); } .bar.or { background: var(--orange); } .bar.gr { background: var(--green); }
+  p { font-size: 11px; color: var(--text); margin-bottom: 8px; line-height: 1.7; }
+  .hl { color: var(--cyan); font-weight: 700; } .hl.rd { color: var(--red); } .hl.yl { color: var(--yellow); } .hl.pu { color: var(--magenta); } .hl.or { color: var(--orange); } .hl.gr { color: var(--green); } .hl.dim { color: var(--dim); font-weight: 400; }
+
+  /* EQ CARDS — neon borders, muted text */
+  .eq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+  .eq-card { background: #060606; border: 1px solid var(--border); border-left: 3px solid var(--yellow); padding: 14px 16px; }
+  .eq-card.wide { grid-column: 1 / -1; }
+  .eq-card.cy-border { border-left-color: var(--cyan); } .eq-card.rd-border { border-left-color: var(--red); } .eq-card.pu-border { border-left-color: var(--magenta); } .eq-card.or-border { border-left-color: var(--orange); } .eq-card.gr-border { border-left-color: var(--green); }
+  .eq-name { font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 2px; color: var(--bright); margin-bottom: 8px; }
+  .eq-math { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--m-yellow); white-space: pre; line-height: 1.9; margin-bottom: 10px; background: rgba(255,233,0,0.02); padding: 10px; border: 1px solid rgba(255,233,0,0.04); overflow-x: auto; }
+  .eq-card.cy-border .eq-math { color: var(--m-cyan); background: rgba(0,255,233,0.02); border-color: rgba(0,255,233,0.04); }
+  .eq-card.rd-border .eq-math { color: var(--m-red); background: rgba(255,34,51,0.02); border-color: rgba(255,34,51,0.04); }
+  .eq-card.pu-border .eq-math { color: var(--m-magenta); background: rgba(233,0,255,0.02); border-color: rgba(233,0,255,0.04); }
+  .eq-card.or-border .eq-math { color: var(--m-orange); background: rgba(255,107,0,0.02); border-color: rgba(255,107,0,0.04); }
+  .eq-card.gr-border .eq-math { color: var(--m-green); background: rgba(57,255,20,0.02); border-color: rgba(57,255,20,0.04); }
+  .eq-note { font-size: 10px; color: #666; line-height: 1.65; }
+  .eq-note strong { color: var(--text); }
+  @media (max-width: 700px) { .eq-grid { grid-template-columns: 1fr; } .eq-card.wide { grid-column: 1; } }
+
+  /* CODE TERMINAL — syntax highlighted */
+  .code-terminal { background: #050508; border: 1px solid var(--border); margin: 10px 0; overflow: hidden; }
+  .code-terminal .code-header { background: #0c0c0f; border-bottom: 1px solid var(--border); padding: 6px 14px; display: flex; align-items: center; gap: 10px; }
+  .code-terminal .code-dots { display: flex; gap: 5px; }
+  .code-terminal .code-dots span { width: 8px; height: 8px; border: 1px solid #2a2a2a; background: #1a1a1a; }
+  .code-terminal .code-title { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1px; color: #555; }
+  .code-terminal .code-lang { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1px; color: #444; margin-left: auto; text-transform: uppercase; }
+  .code-terminal pre { font-family: 'Space Mono', monospace; font-size: 10.5px; line-height: 1.75; color: var(--code-text); padding: 14px 16px; margin: 0; white-space: pre; overflow-x: auto; }
+  .code-terminal .kw  { color: var(--code-keyword); }
+  .code-terminal .ty  { color: var(--code-type); }
+  .code-terminal .fn  { color: var(--code-func); }
+  .code-terminal .st  { color: var(--code-string); }
+  .code-terminal .num { color: var(--code-number); }
+  .code-terminal .cm  { color: var(--code-comment); }
+  .code-terminal .op  { color: var(--code-op); }
+  .code-terminal .pp  { color: var(--code-pp); }
+
+  /* TAGS */
+  .tag { display: inline-block; border: 1px solid var(--border); padding: 1px 6px; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: #444; margin: 2px 2px 2px 0; }
+  .tag.cy { border-color: var(--cyan); color: var(--cyan); } .tag.rd { border-color: var(--red); color: var(--red); } .tag.yl { border-color: var(--yellow); color: var(--yellow); } .tag.pu { border-color: var(--magenta); color: var(--magenta); } .tag.or { border-color: var(--orange); color: var(--orange); } .tag.gr { border-color: var(--green); color: var(--green); }
+
+  .section-anchor { scroll-margin-top: 40px; }
+
+  /* STAT / HERO */
+  .stat-box { background: var(--surface2); border: 1px solid var(--border); padding: 10px 12px; margin-bottom: 6px; }
+  .stat-box .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 32px; line-height: 1; letter-spacing: 2px; }
+  .stat-box .stat-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); margin-top: 2px; }
+  .hero-flex { display: flex; gap: 18px; }
+  .hero-flex .hero-text { flex: 1; }
+  .hero-flex .hero-stats { width: 180px; flex-shrink: 0; }
+  @media (max-width: 700px) { .hero-flex { flex-direction: column; } .hero-flex .hero-stats { width: 100%; } }
+
+  /* CANVAS VIZ */
+  canvas { display: block; width: 100%; background: #060606; border: 1px solid var(--border); }
+  .viz-controls { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
+  .viz-legend { font-size: 9px; color: var(--dim); margin-left: auto; }
+
+  .footer { border-top: 1px solid var(--border); margin-top: 14px; padding: 10px 30px 0; display: flex; justify-content: space-between; font-size: 9px; color: #2a2a2a; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>CUDA<br><em>TENSOR CORES</em></h1>
+  <div class="masthead-right">
+    <strong>GPU Architecture Deep Dive</strong>
+    WARPS // MEMORY // TENSOR OPS // LINUX
+  </div>
+</div>
+
+<div class="nav-strip">
+  <a class="nav-pill" href="#sec-arch">Architecture</a>
+  <a class="nav-pill" href="#sec-exec">Execution</a>
+  <a class="nav-pill" href="#sec-memory">Memory</a>
+  <a class="nav-pill" href="#sec-tensor">Tensor Cores</a>
+  <a class="nav-pill" href="#sec-viz">Memory Viz</a>
+  <a class="nav-pill" href="#sec-code">CUDA Code</a>
+  <a class="nav-pill" href="#sec-kernels">Kernel Patterns</a>
+  <a class="nav-pill" href="#sec-perf">Performance</a>
+  <a class="nav-pill" href="#sec-linux">Linux</a>
+  <a class="nav-pill" href="#sec-debug">Debug</a>
+</div>
+
+<div class="content">
+
+<!-- 00 OVERVIEW -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">00 // Reference Card</div>
+    <div class="hero-flex">
+      <div class="hero-text">
+        <div class="ptitle or">Inside the Silicon</div>
+        <div class="bar or"></div>
+        <p>A GPU is not a faster CPU. It is a fundamentally different machine -- thousands of simple cores organized into a rigid execution hierarchy, connected to memory through a bandwidth-optimized pipeline that trades latency for throughput. Understanding this hierarchy is the difference between code that runs and code that runs <span class="hl or">100x faster</span>.</p>
+        <p>This reference covers NVIDIA GPU architecture from the transistor level up: streaming multiprocessors, warp execution, the memory hierarchy from registers to HBM, tensor core operations, CUDA programming patterns, kernel optimization, and the Linux toolchain for profiling and debugging.</p>
+        <p>Hardware references target <span class="hl or">Turing</span> (1650 Ti) through <span class="hl">Ampere</span>/<span class="hl yl">Ada</span>/<span class="hl gr">Hopper</span>.</p>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-box"><div class="stat-num" style="color: var(--orange);">10</div><div class="stat-label">Sections</div></div>
+        <div class="stat-box"><div class="stat-num" style="color: var(--cyan);">1024</div><div class="stat-label">Max threads / block</div></div>
+        <div class="stat-box"><div class="stat-num" style="color: var(--yellow);">32</div><div class="stat-label">Threads per warp</div></div>
+        <div class="stat-box"><div class="stat-num" style="color: var(--red);">~200x</div><div class="stat-label">HBM vs SRAM latency</div></div>
+      </div>
+    </div>
+    <div style="margin-top: 8px;">
+      <span class="tag or">SM</span><span class="tag cy">warps</span><span class="tag yl">tensor cores</span><span class="tag rd">memory wall</span><span class="tag pu">WMMA</span><span class="tag gr">nvcc</span>
+    </div>
+  </div>
+</div>
+
+<!-- 01 ARCHITECTURE -->
+<div class="gfull section-anchor" id="sec-arch">
+  <div class="panel">
+    <div class="plabel">01 // GPU Architecture</div>
+    <div class="ptitle or">Streaming Multiprocessors All the Way Down</div>
+    <div class="bar or"></div>
+    <p>An NVIDIA GPU is a grid of <span class="hl or">Streaming Multiprocessors (SMs)</span>. Each SM is an independent processor with its own register file, shared memory, warp schedulers, and execution units. The GPU doesn't execute on individual threads -- it executes in lockstep groups of 32 called <span class="hl">warps</span>.</p>
+    <div class="eq-grid" style="margin-top: 12px;">
+      <div class="eq-card or-border wide">
+        <div class="eq-name">SM Anatomy (Ampere / Ada)</div>
+        <div class="eq-math">GPU
+ +-- GPC (Graphics Processing Cluster) x N
+      +-- TPC (Texture Processing Cluster) x M
+           +-- SM (Streaming Multiprocessor)
+                +-- 4 Processing Blocks (partitions)
+                     +-- Warp Scheduler (1 per block)
+                     +-- Dispatch Unit (1 per block)
+                     +-- FP32 CUDA Cores (16-32 per block)
+                     +-- INT32 units
+                     +-- Tensor Core (1 per block)
+                     +-- Load/Store units (8)
+                     +-- SFU (sin/cos/exp)
+                +-- Register File (65536 x 32-bit)
+                +-- Shared Memory / L1 Cache
+                +-- Tex Units</div>
+        <div class="eq-note">Each SM can host up to <strong>2048 resident threads</strong> (64 warps). The 4 warp schedulers issue instructions from 4 different warps each cycle. This is how the GPU hides latency -- while one warp waits for memory, another executes.</div>
+      </div>
+      <div class="eq-card or-border">
+        <div class="eq-name">Generation Comparison</div>
+        <div class="eq-math">            SMs   Cores  TensorCores
+Turing       16   1024      64    // 1650 Ti
+Ampere       84  10752     336    // A100
+Ada         128  16384     512    // RTX 4090
+Hopper      132  16896     528    // H100</div>
+        <div class="eq-note">The 1650 Ti has 16 SMs with <strong>no FP16 tensor cores</strong> -- Turing consumer cards only do INT8/INT4. This is why quantized inference is the only viable local LLM path on this hardware.</div>
+      </div>
+      <div class="eq-card or-border">
+        <div class="eq-name">Key Numbers by Card</div>
+        <div class="eq-math">            VRAM    BW        TDP    Arch
+1650 Ti      4 GB   128 GB/s   75W   Turing
+3090        24 GB   936 GB/s  350W   Ampere
+4090        24 GB  1008 GB/s  450W   Ada
+A100        80 GB  2039 GB/s  300W   Ampere
+H100        80 GB  3350 GB/s  700W   Hopper</div>
+        <div class="eq-note"><strong>Memory bandwidth</strong> is the bottleneck for LLM inference. Token generation is memory-bound: you read the entire weight matrix per token. A 7B Q4 model reads ~3.5GB per token. At 128 GB/s that's ~27ms = ~37 tok/s theoretical max.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 02 EXECUTION -->
+<div class="gfull section-anchor" id="sec-exec">
+  <div class="panel">
+    <div class="plabel">02 // CUDA Execution Model</div>
+    <div class="ptitle cy">Grids, Blocks, Warps, Threads</div>
+    <div class="bar"></div>
+    <p>CUDA's execution hierarchy: a <span class="hl">grid</span> of <span class="hl">blocks</span>, each block containing <span class="hl">threads</span>. Threads within a block share memory and can synchronize. Threads across blocks cannot. The hardware groups threads into <span class="hl yl">warps of 32</span> -- the actual unit of execution.</p>
+    <div class="eq-grid" style="margin-top: 12px;">
+      <div class="eq-card cy-border wide">
+        <div class="eq-name">Thread Hierarchy</div>
+        <div class="eq-math">Grid
+ +-- Block (0,0) ... Block (gx, gy, gz)       // up to 2^31 blocks
+      +-- Thread (0,0) ... Thread (tx, ty, tz)  // up to 1024 per block
+           +-- [grouped into warps of 32]
+
+// thread identity
+int idx = threadIdx.x + blockIdx.x * blockDim.x;</div>
+        <div class="eq-note">blockDim must be a multiple of 32 for full warp utilization. Common block sizes: <strong>128, 256, 512</strong>. Above 512 limits occupancy from register pressure. Below 128 wastes scheduler slots.</div>
+      </div>
+      <div class="eq-card cy-border">
+        <div class="eq-name">Warp Execution</div>
+        <div class="eq-math">warp = 32 consecutive threads
+all 32 execute SAME instruction per cycle
+
+divergence: if threads take different branches
+BOTH paths execute sequentially (serialized)</div>
+        <div class="eq-note"><strong>Warp divergence</strong> is the most important performance concept. An if/else where half the warp goes each way runs at 50% efficiency. Worst case: 32-way divergence = serial execution.</div>
+      </div>
+      <div class="eq-card cy-border">
+        <div class="eq-name">Occupancy</div>
+        <div class="eq-math">occupancy = active_warps / max_warps_per_SM
+
+limited by:
+  registers_per_thread * threads > register_file
+  shared_mem_per_block * blocks > shared_mem
+  threads_per_block > 1024
+  warps_per_SM > 64
+
+sweet spot: 50-75%</div>
+        <div class="eq-note">Higher occupancy = more warps to hide latency. But sometimes lower occupancy with more registers per thread wins. Profile, don't guess.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 03 MEMORY -->
+<div class="gfull section-anchor" id="sec-memory">
+  <div class="panel">
+    <div class="plabel">03 // Memory Hierarchy</div>
+    <div class="ptitle rd">The Memory Wall</div>
+    <div class="bar rd"></div>
+    <p>The gap between arithmetic throughput and memory bandwidth is the <span class="hl rd">memory wall</span>. Tensor cores compute matrix multiplies in nanoseconds, but the data has to get there first. Nearly all GPU optimization is memory optimization.</p>
+    <div class="eq-grid" style="margin-top: 12px;">
+      <div class="eq-card rd-border wide">
+        <div class="eq-name">Memory Hierarchy (Fastest to Slowest)</div>
+        <div class="eq-math">LEVEL           SIZE          BW           LATENCY     SCOPE
+Registers       256 KB/SM     ~20 TB/s     0 cycles    per-thread
+Shared Mem      up to 164KB   ~19 TB/s     ~20 cyc     per-block
+L1 Cache        128 KB/SM     ~19 TB/s     ~30 cyc     per-SM
+L2 Cache        6-50 MB       ~6 TB/s      ~200 cyc    device-wide
+HBM (Global)    4-80 GB       0.1-3.4 TB/s ~400 cyc    device-wide
+PCIe/NVLink     --            32-900 GB/s  ~usec       host-device</div>
+        <div class="eq-note">Key insight: <strong>shared memory is ~100x faster than global memory</strong>. Every high-performance kernel loads data into shared memory once, then reuses it. FlashAttention is literally this principle applied to attention.</div>
+      </div>
+      <div class="eq-card rd-border">
+        <div class="eq-name">Coalesced Memory Access</div>
+        <div class="eq-math">// GOOD: consecutive threads, consecutive addresses
+// one 128-byte transaction for the whole warp
+data[threadIdx.x]             // stride 1
+
+// BAD: scattered or strided access
+// multiple transactions, massive slowdown
+data[threadIdx.x * stride]    // stride > 1
+data[random_index]            // worst case</div>
+        <div class="eq-note">Global memory is accessed in <strong>128-byte transactions</strong>. If 32 threads touch 32 consecutive 4-byte floats, that's one transaction. Scattered access degrades to 32 separate transactions = 32x slower.</div>
+      </div>
+      <div class="eq-card rd-border">
+        <div class="eq-name">Bank Conflicts (Shared Memory)</div>
+        <div class="eq-math">shared memory: 32 banks
+bank = address % 32
+
+// NO conflict: each thread hits different bank
+shmem[threadIdx.x]              // stride 1
+
+// 32-WAY conflict (serialized):
+shmem[threadIdx.x * 32]        // all same bank
+
+// fix: pad the array
+__shared__ float s[32][33];    // +1 column</div>
+        <div class="eq-note">If two threads in a warp hit the same bank, accesses serialize. The classic fix is padding arrays by +1 to shift the stride off bank boundaries.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 04 TENSOR CORES -->
+<div class="gfull section-anchor" id="sec-tensor">
+  <div class="panel">
+    <div class="plabel">04 // Tensor Cores</div>
+    <div class="ptitle yl">Matrix Math in Hardware</div>
+    <div class="bar yl"></div>
+    <p>Tensor cores perform <span class="hl yl">matrix multiply-accumulate</span> (MMA) on small matrix tiles in a single cycle. Instead of element-by-element dot products, a tensor core computes D = A * B + C atomically. This is the hardware that makes transformer inference fast.</p>
+    <div class="eq-grid" style="margin-top: 12px;">
+      <div class="eq-card wide">
+        <div class="eq-name">Core Operation: D = A * B + C</div>
+        <div class="eq-math">// one tensor core operation per cycle:
+D(4x4) = A(4x4) * B(4x4) + C(4x4)
+
+// warp-level (32 threads cooperate):
+D(16x16) = A(16x16) * B(16x16) + C(16x16)   // FP16
+D(16x16) = A(16x8)  * B(8x16)  + C(16x16)   // INT8
+
+// throughput per SM per cycle:
+Turing     64  FP16 ops  vs   64 FP32 ops  (CUDA cores)
+Ampere    256  FP16 ops  vs  128 FP32 ops
+Hopper    512+ FP16 ops  with warpgroup MMA</div>
+        <div class="eq-note">One cycle on tensor cores takes CUDA cores hundreds of cycles. A100 tensor cores deliver <strong>~256 TFLOPS FP16</strong> vs ~19.5 TFLOPS FP32 from CUDA cores. Every modern ML framework routes matmuls through tensor cores.</div>
+      </div>
+      <div class="eq-card">
+        <div class="eq-name">Supported Precisions</div>
+        <div class="eq-math">Turing (2018):  FP16, INT8, INT4
+Ampere (2020):  FP16, BF16, TF32, INT8, FP64*
+Ada    (2022):  FP16, BF16, TF32, INT8, FP8
+Hopper (2022):  all above + warpgroup MMA</div>
+        <div class="eq-note"><strong>TF32</strong> = 19-bit float (8-bit exp + 10-bit mantissa). Transparent drop-in for FP32 matmuls at 8x throughput. Enabled by default in PyTorch on Ampere+. <strong>FP8</strong> on Ada/Hopper doubles throughput again.</div>
+      </div>
+      <div class="eq-card">
+        <div class="eq-name">Alignment Requirements</div>
+        <div class="eq-math">tile sizes must be multiples of:
+  FP16:  16 x 16 x 16
+  INT8:  16 x 16 x 32
+  TF32:  16 x 16 x 8
+
+misaligned dims -> CUDA core fallback = SLOW</div>
+        <div class="eq-note">This is why model dimensions (d_model, d_ff) are always multiples of 64 or 128. Misalignment causes padding waste or full fallback to CUDA cores.</div>
+      </div>
+      <div class="eq-card wide">
+        <div class="eq-name">Arithmetic Intensity: Compute-Bound or Memory-Bound?</div>
+        <div class="eq-math">AI = FLOPs / bytes_transferred
+
+matmul C(M,N) = A(M,K) * B(K,N):
+  FLOPs = 2 * M * N * K
+  bytes = (M*K + K*N + M*N) * sizeof(dtype)
+
+if AI > machine_ops_per_byte -> COMPUTE BOUND
+if AI < machine_ops_per_byte -> MEMORY BOUND
+
+A100:  312 TFLOPS / 2039 GB/s = ~153 FLOP/byte
+H100:  990 TFLOPS / 3350 GB/s = ~295 FLOP/byte
+
+LLM inference (batch=1):  ALWAYS memory-bound
+LLM training (batch=512): usually compute-bound</div>
+        <div class="eq-note">The <strong>roofline model</strong>. For batch=1 inference, you read the entire weight matrix but compute one vector-matrix product -- AI is tiny, memory bandwidth bottlenecks. For training, the same weights are reused across the batch, pushing above the roofline knee.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 05 MEMORY VIZ -->
+<div class="gfull section-anchor" id="sec-viz">
+  <div class="panel">
+    <div class="plabel">05 // Memory Hierarchy Visualizer -- Interactive</div>
+    <div class="ptitle rd">Data Flow Through the Pipeline</div>
+    <div class="bar rd"></div>
+    <p>Click a memory level to see its characteristics. Bar width represents relative bandwidth. The gap between <span class="hl rd">global memory</span> and <span class="hl">shared memory</span> is the bottleneck all GPU optimization tries to bridge.</p>
+    <canvas id="mem-canvas" height="360"></canvas>
+    <div class="viz-controls"><span class="viz-legend" id="mem-info">click a level for details</span></div>
+  </div>
+</div>
+
+<!-- 06 CUDA CODE -->
+<div class="gfull section-anchor" id="sec-code">
+  <div class="panel">
+    <div class="plabel">06 // CUDA Programming</div>
+    <div class="ptitle cy">Writing Kernels</div>
+    <div class="bar"></div>
+    <p>A CUDA kernel is a function that runs on the GPU. You write it like a serial program for one thread, then launch it across thousands. The programming model hides the warp machinery -- but the performance model does not.</p>
+
+    <div class="code-terminal">
+      <div class="code-header">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <span class="code-title">vector_add.cu</span>
+        <span class="code-lang">CUDA C++</span>
+      </div>
+      <pre><span class="cm">// vector addition -- the "hello world" of CUDA</span>
+<span class="kw">__global__</span> <span class="kw">void</span> <span class="fn">vecAdd</span>(<span class="ty">float</span>* a, <span class="ty">float</span>* b, <span class="ty">float</span>* c, <span class="ty">int</span> n) {
+    <span class="ty">int</span> i <span class="op">=</span> blockIdx.x <span class="op">*</span> blockDim.x <span class="op">+</span> threadIdx.x;
+    <span class="kw">if</span> (i <span class="op">&lt;</span> n) c[i] <span class="op">=</span> a[i] <span class="op">+</span> b[i];
+}
+
+<span class="cm">// launch: 256 threads per block</span>
+<span class="ty">int</span> blocks <span class="op">=</span> (n <span class="op">+</span> <span class="num">255</span>) <span class="op">/</span> <span class="num">256</span>;
+<span class="fn">vecAdd</span><span class="op">&lt;&lt;&lt;</span>blocks, <span class="num">256</span><span class="op">&gt;&gt;&gt;</span>(d_a, d_b, d_c, n);</pre>
+    </div>
+
+    <div class="code-terminal">
+      <div class="code-header">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <span class="code-title">memory_management.cu</span>
+        <span class="code-lang">CUDA C++</span>
+      </div>
+      <pre><span class="cm">// allocate on GPU</span>
+<span class="ty">float</span> *d_a;
+<span class="fn">cudaMalloc</span>(<span class="op">&amp;</span>d_a, n <span class="op">*</span> <span class="kw">sizeof</span>(<span class="ty">float</span>));
+
+<span class="cm">// copy host -> device</span>
+<span class="fn">cudaMemcpy</span>(d_a, h_a, n <span class="op">*</span> <span class="kw">sizeof</span>(<span class="ty">float</span>), cudaMemcpyHostToDevice);
+
+<span class="cm">// copy device -> host</span>
+<span class="fn">cudaMemcpy</span>(h_a, d_a, n <span class="op">*</span> <span class="kw">sizeof</span>(<span class="ty">float</span>), cudaMemcpyDeviceToHost);
+
+<span class="cm">// free</span>
+<span class="fn">cudaFree</span>(d_a);
+
+<span class="cm">// unified memory (auto-migrates, simpler but slower)</span>
+<span class="ty">float</span> *u_a;
+<span class="fn">cudaMallocManaged</span>(<span class="op">&amp;</span>u_a, n <span class="op">*</span> <span class="kw">sizeof</span>(<span class="ty">float</span>));
+<span class="cm">// accessible from both CPU and GPU -- driver pages on demand</span></pre>
+    </div>
+
+    <div class="code-terminal">
+      <div class="code-header">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <span class="code-title">wmma_gemm.cu</span>
+        <span class="code-lang">CUDA C++ // Tensor Core</span>
+      </div>
+      <pre><span class="pp">#include</span> <span class="st">&lt;mma.h&gt;</span>
+<span class="kw">using namespace</span> nvcuda::wmma;
+
+<span class="kw">__global__</span> <span class="kw">void</span> <span class="fn">wmma_gemm</span>(<span class="ty">half</span>* a, <span class="ty">half</span>* b, <span class="ty">float</span>* c, <span class="ty">int</span> M, <span class="ty">int</span> N, <span class="ty">int</span> K) {
+    <span class="cm">// declare fragments (distributed across 32 threads in warp)</span>
+    <span class="ty">fragment</span>&lt;matrix_a, <span class="num">16</span>, <span class="num">16</span>, <span class="num">16</span>, <span class="ty">half</span>, row_major&gt; a_frag;
+    <span class="ty">fragment</span>&lt;matrix_b, <span class="num">16</span>, <span class="num">16</span>, <span class="num">16</span>, <span class="ty">half</span>, col_major&gt; b_frag;
+    <span class="ty">fragment</span>&lt;accumulator, <span class="num">16</span>, <span class="num">16</span>, <span class="num">16</span>, <span class="ty">float</span>&gt; c_frag;
+
+    <span class="fn">fill_fragment</span>(c_frag, <span class="num">0.0f</span>);
+
+    <span class="kw">for</span> (<span class="ty">int</span> k <span class="op">=</span> <span class="num">0</span>; k <span class="op">&lt;</span> K; k <span class="op">+=</span> <span class="num">16</span>) {
+        <span class="fn">load_matrix_sync</span>(a_frag, a <span class="op">+</span> row<span class="op">*</span><span class="num">16</span><span class="op">*</span>K <span class="op">+</span> k, K);
+        <span class="fn">load_matrix_sync</span>(b_frag, b <span class="op">+</span> k<span class="op">*</span>N <span class="op">+</span> col<span class="op">*</span><span class="num">16</span>, N);
+        <span class="fn">mma_sync</span>(c_frag, a_frag, b_frag, c_frag);  <span class="cm">// D = A*B + C</span>
+    }
+
+    <span class="fn">store_matrix_sync</span>(c <span class="op">+</span> row<span class="op">*</span><span class="num">16</span><span class="op">*</span>N <span class="op">+</span> col<span class="op">*</span><span class="num">16</span>, c_frag, N, mem_row_major);
+}</pre>
+    </div>
+    <p>The WMMA API distributes the 16x16 fragment across the 32 warp threads. You never index individual elements -- the hardware decides which thread holds what. <span class="hl rd">Do not access fragment elements by thread ID</span> -- the mapping is undefined and changes across architectures.</p>
+  </div>
+</div>
+
+<!-- 07 KERNEL PATTERNS -->
+<div class="gfull section-anchor" id="sec-kernels">
+  <div class="panel">
+    <div class="plabel">07 // Kernel Optimization Patterns</div>
+    <div class="ptitle pu">Squeezing Cycles</div>
+    <div class="bar pu"></div>
+
+    <div class="code-terminal">
+      <div class="code-header">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <span class="code-title">tiled_matmul.cu</span>
+        <span class="code-lang">CUDA C++ // The Fundamental Pattern</span>
+      </div>
+      <pre><span class="cm">// Tiled Matrix Multiply via Shared Memory</span>
+<span class="cm">// 1. load tile from global -> shared memory</span>
+<span class="cm">// 2. __syncthreads()</span>
+<span class="cm">// 3. compute on tile in shared memory</span>
+<span class="cm">// 4. repeat for next tile</span>
+
+<span class="kw">for</span> (<span class="ty">int</span> tile <span class="op">=</span> <span class="num">0</span>; tile <span class="op">&lt;</span> K; tile <span class="op">+=</span> TILE_SIZE) {
+    <span class="cm">// cooperative load: each thread loads one element</span>
+    sA[ty][tx] <span class="op">=</span> A[row <span class="op">*</span> K <span class="op">+</span> tile <span class="op">+</span> tx];
+    sB[ty][tx] <span class="op">=</span> B[(tile <span class="op">+</span> ty) <span class="op">*</span> N <span class="op">+</span> col];
+    <span class="fn">__syncthreads</span>();
+
+    <span class="cm">// compute partial dot product from shared mem</span>
+    <span class="kw">for</span> (<span class="ty">int</span> k <span class="op">=</span> <span class="num">0</span>; k <span class="op">&lt;</span> TILE_SIZE; k<span class="op">++</span>)
+        sum <span class="op">+=</span> sA[ty][k] <span class="op">*</span> sB[k][tx];
+    <span class="fn">__syncthreads</span>();
+}
+C[row <span class="op">*</span> N <span class="op">+</span> col] <span class="op">=</span> sum;</pre>
+    </div>
+    <p>This is the pattern. Load a tile cooperatively. Sync. Compute from shared memory. Sync. Repeat. Every high-performance GPU kernel -- GEMM, convolution, FlashAttention -- is a variation of this.</p>
+
+    <div class="eq-grid" style="margin-top: 12px;">
+      <div class="eq-card pu-border">
+        <div class="eq-name">Reduction (Sum/Max)</div>
+        <div class="eq-math">// tree reduction in shared memory
+for (s = blockDim.x/2; s > 0; s >>= 1)
+    if (tid < s) sdata[tid] += sdata[tid + s];
+    __syncthreads();
+// sdata[0] = block sum  // O(log n) steps</div>
+        <div class="eq-note">Each step halves active threads. Last warp (32 threads) can skip __syncthreads() and use warp shuffles. Used in softmax, layer norm, loss computation.</div>
+      </div>
+      <div class="eq-card pu-border">
+        <div class="eq-name">Warp Shuffle (No Shared Mem)</div>
+        <div class="eq-math">// direct register-to-register within a warp
+val = __shfl_down_sync(0xffffffff, x, delta);
+val = __shfl_xor_sync(0xffffffff, x, mask);
+
+// warp-level reduction:
+for (offset = 16; offset > 0; offset /= 2)
+    val += __shfl_down_sync(0xffffffff, val, offset);
+// lane 0 holds the sum</div>
+        <div class="eq-note">Faster than shared memory for intra-warp communication. No bank conflicts, no sync. <strong>0xffffffff</strong> = all 32 threads participate. Used heavily in attention kernels.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 08 PERFORMANCE -->
+<div class="gfull section-anchor" id="sec-perf">
+  <div class="panel">
+    <div class="plabel">08 // Performance Analysis</div>
+    <div class="ptitle yl">Roofline Thinking</div>
+    <div class="bar yl"></div>
+    <div class="eq-grid" style="margin-top: 4px;">
+      <div class="eq-card wide">
+        <div class="eq-name">Roofline Model</div>
+        <div class="eq-math">attainable_FLOPS = min(peak_FLOPS, peak_BW * AI)
+
+if AI < peak_FLOPS / peak_BW:  MEMORY BOUND  ->  optimize data movement
+if AI > peak_FLOPS / peak_BW:  COMPUTE BOUND ->  optimize instruction throughput</div>
+        <div class="eq-note">Plot arithmetic intensity on x-axis, performance on y-axis. The roof is peak FLOPS. The ramp is bandwidth * AI. Know where your kernel sits before optimizing.</div>
+      </div>
+      <div class="eq-card">
+        <div class="eq-name">Common Bottlenecks</div>
+        <div class="eq-math">1. uncoalesced global memory   10-30x slowdown
+2. warp divergence              2-32x
+3. bank conflicts (shared mem)  2-32x
+4. low occupancy (reg pressure) 2-4x
+5. kernel launch overhead       ~5-10 us/launch
+6. host-device transfers        PCIe is slow</div>
+        <div class="eq-note">Start with memory coalescing. Then shared memory tiling. Then occupancy tuning. Profile first.</div>
+      </div>
+      <div class="eq-card">
+        <div class="eq-name">FlashAttention: Tiling Attention</div>
+        <div class="eq-math">standard:
+  compute S = Q*K^T      // N^2 in HBM
+  compute P = softmax(S)  // N^2 in HBM
+  compute O = P*V          // N^2 in HBM
+
+flash:
+  tile Q into SRAM blocks
+  for each K,V tile: compute in SRAM
+  online softmax accumulation
+  total: O(N^2*d/M) HBM accesses
+  O(N) memory instead of O(N^2)</div>
+        <div class="eq-note">FlashAttention never materializes the full N^2 matrix. Everything computes in SRAM tiles with an online softmax trick. <strong>Same exact math, ~2-4x faster.</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 09 LINUX -->
+<div class="gfull section-anchor" id="sec-linux">
+  <div class="panel">
+    <div class="plabel">09 // Linux Commands and Toolchain</div>
+    <div class="ptitle gr">The Shell Is Your Friend</div>
+    <div class="bar gr"></div>
+
+    <div class="code-terminal">
+      <div class="code-header">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <span class="code-title">nvidia-smi quick reference</span>
+        <span class="code-lang">BASH</span>
+      </div>
+      <pre><span class="cm"># live GPU monitoring (updates every 1s)</span>
+<span class="fn">watch</span> -n1 nvidia-smi
+
+<span class="cm"># just VRAM usage</span>
+nvidia-smi <span class="op">--</span>query-gpu<span class="op">=</span>memory.used,memory.total <span class="op">--</span>format<span class="op">=</span>csv
+
+<span class="cm"># GPU utilization over time</span>
+nvidia-smi dmon <span class="op">-</span>s um <span class="op">-</span>d <span class="num">1</span>
+
+<span class="cm"># list all processes using GPU</span>
+nvidia-smi pmon <span class="op">-</span>d <span class="num">1</span>
+
+<span class="cm"># set persistence mode (reduces launch latency)</span>
+<span class="kw">sudo</span> nvidia-smi <span class="op">-</span>pm <span class="num">1</span>
+
+<span class="cm"># lock GPU clocks for consistent benchmarking</span>
+<span class="kw">sudo</span> nvidia-smi <span class="op">-</span>lgc <span class="num">1500</span></pre>
+    </div>
+
+    <div class="code-terminal">
+      <div class="code-header">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <span class="code-title">compilation</span>
+        <span class="code-lang">BASH</span>
+      </div>
+      <pre><span class="cm"># compile with optimization and architecture target</span>
+nvcc <span class="op">-</span>O3 <span class="op">-</span>arch<span class="op">=</span>sm_75 <span class="op">-</span>o program program.cu    <span class="cm"># Turing (1650 Ti)</span>
+nvcc <span class="op">-</span>O3 <span class="op">-</span>arch<span class="op">=</span>sm_86 <span class="op">-</span>o program program.cu    <span class="cm"># Ampere (3090)</span>
+nvcc <span class="op">-</span>O3 <span class="op">-</span>arch<span class="op">=</span>sm_89 <span class="op">-</span>o program program.cu    <span class="cm"># Ada (4090)</span>
+
+<span class="cm"># show register/shared mem usage per kernel</span>
+nvcc <span class="op">--</span>ptxas-options<span class="op">=-</span>v <span class="op">-</span>o program program.cu
+
+<span class="cm"># generate PTX (intermediate assembly)</span>
+nvcc <span class="op">-</span>ptx program.cu
+<span class="fn">cat</span> program.ptx
+
+<span class="cm"># check CUDA capabilities</span>
+/usr/local/cuda/extras/demo_suite/<span class="fn">deviceQuery</span></pre>
+    </div>
+
+    <div class="code-terminal">
+      <div class="code-header">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <span class="code-title">profiling</span>
+        <span class="code-lang">BASH // nsys + ncu</span>
+      </div>
+      <pre><span class="cm"># nsys: system-wide timeline profiler</span>
+nsys profile <span class="op">-</span>o report ./my_program
+nsys stats report.nsys-rep
+
+<span class="cm"># ncu: kernel-level profiler (detailed metrics)</span>
+ncu <span class="op">--</span>set full <span class="op">-</span>o kernel_report ./my_program
+
+<span class="cm"># key metrics to check:</span>
+<span class="cm">#   sm__warps_active.avg.pct_of_peak_sustained_active   (occupancy)</span>
+<span class="cm">#   dram__bytes.sum                                      (global mem traffic)</span>
+<span class="cm">#   l1tex__t_bytes_pipe_lsu_mem_global_op_ld.sum         (L1 hit rate)</span>
+<span class="cm">#   sm__sass_thread_inst_executed_op_ffma.sum            (FLOPS)</span></pre>
+    </div>
+
+    <div class="code-terminal">
+      <div class="code-header">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <span class="code-title">environment</span>
+        <span class="code-lang">BASH</span>
+      </div>
+      <pre><span class="cm"># check driver and toolkit</span>
+<span class="fn">cat</span> /proc/driver/nvidia/version
+nvcc <span class="op">--</span>version
+lspci <span class="op">|</span> <span class="fn">grep</span> <span class="op">-</span>i nvidia
+
+<span class="cm"># CUDA environment variables</span>
+<span class="kw">export</span> CUDA_VISIBLE_DEVICES<span class="op">=</span><span class="num">0</span>        <span class="cm"># limit to GPU 0</span>
+<span class="kw">export</span> CUDA_LAUNCH_BLOCKING<span class="op">=</span><span class="num">1</span>        <span class="cm"># sync launches (debug)</span>
+<span class="kw">export</span> TORCH_CUDA_ARCH_LIST<span class="op">=</span><span class="st">"7.5"</span>    <span class="cm"># compile for specific arch</span>
+
+<span class="cm"># PyTorch CUDA check</span>
+python <span class="op">-</span>c <span class="st">"import torch; print(torch.cuda.get_device_properties(0))"</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- 10 DEBUG -->
+<div class="gfull section-anchor" id="sec-debug">
+  <div class="panel">
+    <div class="plabel">10 // Debugging and Common Errors</div>
+    <div class="ptitle rd">When Things Break</div>
+    <div class="bar rd"></div>
+
+    <div class="code-terminal">
+      <div class="code-header">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <span class="code-title">error_check.cu</span>
+        <span class="code-lang">CUDA C++ // Non-negotiable</span>
+      </div>
+      <pre><span class="cm">// ALWAYS check CUDA errors. Kernels fail silently.</span>
+<span class="pp">#define</span> <span class="fn">CUDA_CHECK</span>(call) { \
+    <span class="ty">cudaError_t</span> err <span class="op">=</span> call; \
+    <span class="kw">if</span> (err <span class="op">!=</span> cudaSuccess) { \
+        <span class="fn">fprintf</span>(stderr, <span class="st">"CUDA error at %s:%d: %s\n"</span>, \
+                __FILE__, __LINE__, <span class="fn">cudaGetErrorString</span>(err)); \
+        <span class="fn">exit</span>(<span class="num">1</span>); \
+    } \
+}
+
+<span class="fn">CUDA_CHECK</span>(<span class="fn">cudaMalloc</span>(<span class="op">&amp;</span>d_a, size));
+<span class="fn">CUDA_CHECK</span>(<span class="fn">cudaMemcpy</span>(d_a, h_a, size, cudaMemcpyHostToDevice));
+
+<span class="cm">// check kernel launch (errors are async!)</span>
+myKernel<span class="op">&lt;&lt;&lt;</span>grid, block<span class="op">&gt;&gt;&gt;</span>(args);
+<span class="fn">CUDA_CHECK</span>(<span class="fn">cudaGetLastError</span>());       <span class="cm">// launch config errors</span>
+<span class="fn">CUDA_CHECK</span>(<span class="fn">cudaDeviceSynchronize</span>());  <span class="cm">// runtime errors</span></pre>
+    </div>
+    <p><strong>CUDA kernels fail silently by default.</strong> Without explicit error checking, an illegal memory access produces no output and no crash -- just wrong results. The CUDA_CHECK macro is non-negotiable.</p>
+
+    <div class="eq-grid" style="margin-top: 12px;">
+      <div class="eq-card rd-border">
+        <div class="eq-name">Common Errors Decoded</div>
+        <div class="eq-math">cudaErrorInvalidConfiguration
+  block size > 1024 or grid dims wrong
+
+cudaErrorIllegalAddress
+  out-of-bounds GPU memory access
+  run with: compute-sanitizer ./program
+
+cudaErrorLaunchOutOfResources
+  too many registers or shared mem
+  fix: reduce block size or __launch_bounds__
+
+cudaErrorMemoryAllocation (OOM)
+  VRAM exhausted, check nvidia-smi</div>
+        <div class="eq-note">For memory bugs: <strong>compute-sanitizer ./program</strong> catches out-of-bounds, races, and uninitialized reads. The GPU equivalent of valgrind.</div>
+      </div>
+      <div class="eq-card rd-border">
+        <div class="eq-name">PyTorch CUDA Debugging</div>
+        <div class="eq-math">CUDA_LAUNCH_BLOCKING=1 python script.py
+  errors report the exact call, not later
+
+torch.autograd.set_detect_anomaly(True)
+  catches NaN grads (slow, debug only)
+
+torch.cuda.memory_summary()
+  shows what's eating VRAM
+
+torch.cuda.empty_cache()
+  clears cache (not allocated tensors)</div>
+        <div class="eq-note"><strong>CUDA_LAUNCH_BLOCKING=1</strong> is always the first thing to set when debugging. Makes kernel launches synchronous so errors point to the right place.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TRIPTYCH -->
+<div class="g3">
+  <div class="panel">
+    <div class="plabel">A // Thesis</div>
+    <div class="ptitle or">Hardware Dictates Software</div>
+    <div class="bar or"></div>
+    <p>Every transformer optimization in the last 5 years responds to GPU architecture constraints. FlashAttention: SRAM fast, HBM slow. Quantization: VRAM finite. GQA: KV cache grows with sequence length. The software follows the silicon.</p>
+  </div>
+  <div class="panel">
+    <div class="plabel">B // The Wall</div>
+    <div class="ptitle rd">Memory, Always Memory</div>
+    <div class="bar rd"></div>
+    <p>LLM inference at batch=1 will always be memory-bandwidth-bound. You read every weight once per token. The only levers: fewer weights (pruning), fewer bytes per weight (quantization), or more bandwidth (better hardware). Everything else is noise.</p>
+  </div>
+  <div class="panel">
+    <div class="plabel">C // The Path</div>
+    <div class="ptitle cy">Profile Before You Optimize</div>
+    <div class="bar"></div>
+    <p>The roofline tells you compute-bound vs memory-bound before you write a line of optimization. nsys shows where time is spent. ncu shows why. If you're optimizing without profiling at the GPU level, you're guessing.</p>
+  </div>
+</div>
+
+<div class="footer">
+  <span>REFERENCE // NVIDIA CUDA PROGRAMMING GUIDE // DAO 2022 (FLASH) // HARRIS 2007 (REDUCTION)</span>
+  <span>BRUTALIST TERMINAL // HED0RAH // CUDA TENSOR CORES</span>
+</div>
+
+</div>
+
+<script>
+/* MEMORY HIERARCHY VIZ */
+(function() {
+  var canvas = document.getElementById('mem-canvas');
+  var ctx = canvas.getContext('2d');
+  var selected = -1;
+
+  var levels = [
+    { name: 'REGISTERS',     size: '256 KB/SM',  bw: '~20 TB/s',     lat: '0 cyc',   bwNorm: 1.0,  color: '#6ab8b0', detail: 'Fastest storage. Each thread gets ~255 32-bit registers. Compiler allocates automatically. More registers = fewer warps = lower occupancy. Use --maxrregcount to limit.' },
+    { name: 'SHARED MEMORY', size: '48-164 KB',   bw: '~19 TB/s',     lat: '~20 cyc',  bwNorm: 0.95, color: '#6aaa55', detail: 'Programmer-managed scratchpad via __shared__. All threads in a block see the same data. 32 banks -- watch for bank conflicts. Configurable split with L1 cache.' },
+    { name: 'L1 CACHE',      size: '128 KB/SM',   bw: '~19 TB/s',     lat: '~30 cyc',  bwNorm: 0.90, color: '#b8a855', detail: 'Hardware-managed. Shares physical memory with shared mem. Caches global memory loads. Read-only data can be cached via __ldg() or const __restrict__.' },
+    { name: 'L2 CACHE',      size: '6-50 MB',     bw: '~6 TB/s',      lat: '~200 cyc', bwNorm: 0.30, color: '#b8784a', detail: 'Shared across all SMs. A100=40MB, H100=50MB. Can be partitioned for persistent data in CUDA 11.1+. Crucial for reducing HBM traffic in inference.' },
+    { name: 'HBM (GLOBAL)',  size: '4-80 GB',     bw: '0.1-3.4 TB/s', lat: '~400 cyc', bwNorm: 0.08, color: '#b85a62', detail: 'Main GPU memory (VRAM). Every global access should be coalesced. This is where model weights live. The bottleneck for LLM inference.' },
+    { name: 'PCIe / NVLink', size: 'host RAM',    bw: '32-900 GB/s',  lat: '~usec',    bwNorm: 0.02, color: '#a06aaa', detail: 'CPU-GPU transfer. PCIe 4.0 x16 = 32 GB/s. NVLink up to 900 GB/s on H100. Minimize transfers. Pin host memory with cudaMallocHost() for faster DMA.' }
+  ];
+
+  function resize() {
+    var rect = canvas.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function draw() {
+    var w = canvas.getBoundingClientRect().width;
+    var h = canvas.getBoundingClientRect().height;
+    ctx.clearRect(0, 0, w, h);
+
+    var margin = 20, barH = 28, gap = 8, labelW = 130;
+    var maxBarW = w - labelW - margin * 2 - 140;
+    var startY = 20;
+
+    ctx.fillStyle = '#2a2a2a';
+    ctx.font = '8px Space Mono';
+    ctx.textAlign = 'left';
+    ctx.fillText('RELATIVE BANDWIDTH (LOG SCALE)', labelW + margin, 14);
+
+    for (var i = 0; i < levels.length; i++) {
+      var y = startY + i * (barH + gap);
+      var level = levels[i];
+      var barW = Math.max(8, maxBarW * Math.pow(level.bwNorm, 0.3));
+      var isSel = (i === selected);
+
+      ctx.fillStyle = isSel ? level.color : '#555';
+      ctx.font = (isSel ? 'bold ' : '') + '9px Space Mono';
+      ctx.textAlign = 'right';
+      ctx.fillText(level.name, labelW, y + barH / 2 + 3);
+
+      ctx.fillStyle = '#0d0d0d';
+      ctx.fillRect(labelW + margin, y, maxBarW, barH);
+
+      ctx.globalAlpha = isSel ? 0.8 : 0.35;
+      ctx.fillStyle = level.color;
+      ctx.fillRect(labelW + margin, y, barW, barH);
+      ctx.globalAlpha = 1;
+
+      ctx.strokeStyle = isSel ? level.color : '#1e1e1e';
+      ctx.lineWidth = isSel ? 1.5 : 0.5;
+      ctx.strokeRect(labelW + margin, y, maxBarW, barH);
+
+      ctx.fillStyle = isSel ? '#ddd' : '#444';
+      ctx.font = '9px Space Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText(level.bw, labelW + margin + maxBarW + 8, y + barH / 2 + 3);
+
+      if (barW > 60) {
+        ctx.fillStyle = isSel ? 'rgba(10,10,10,0.8)' : 'rgba(255,255,255,0.12)';
+        ctx.font = '8px Space Mono';
+        ctx.textAlign = 'center';
+        ctx.fillText(level.lat, labelW + margin + barW / 2, y + barH / 2 + 3);
+      }
+    }
+
+    if (selected >= 0) {
+      var detailY = startY + levels.length * (barH + gap) + 10;
+      var lv = levels[selected];
+
+      ctx.strokeStyle = lv.color;
+      ctx.globalAlpha = 0.4;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, detailY); ctx.lineTo(w, detailY); ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = lv.color;
+      ctx.font = 'bold 10px Space Mono';
+      ctx.textAlign = 'left';
+      ctx.fillText(lv.name + '  //  ' + lv.size, 12, detailY + 18);
+
+      ctx.fillStyle = '#888';
+      ctx.font = '10px Space Mono';
+      var words = lv.detail.split(' '), line = '', lineY = detailY + 36, maxLW = w - 24;
+      for (var j = 0; j < words.length; j++) {
+        var test = line + words[j] + ' ';
+        if (ctx.measureText(test).width > maxLW && line.length > 0) {
+          ctx.fillText(line.trim(), 12, lineY);
+          line = words[j] + ' ';
+          lineY += 16;
+        } else { line = test; }
+      }
+      ctx.fillText(line.trim(), 12, lineY);
+    }
+  }
+
+  canvas.addEventListener('click', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var my = e.clientY - rect.top;
+    var idx = Math.floor((my - 20) / 36);
+    if (idx >= 0 && idx < levels.length) {
+      selected = (selected === idx) ? -1 : idx;
+      draw();
+      document.getElementById('mem-info').textContent = selected >= 0 ? levels[selected].name.toLowerCase() + ' selected' : 'click a level for details';
+    }
+  });
+
+  window.addEventListener('resize', function() { resize(); draw(); });
+  resize(); draw();
+})();
+
+/* NAV SCROLL */
+(function() {
+  var pills = document.querySelectorAll('.nav-pill');
+  var sections = [];
+  pills.forEach(function(pill) {
+    var href = pill.getAttribute('href');
+    if (href && href.startsWith('#')) {
+      var target = document.querySelector(href);
+      if (target) sections.push({ pill: pill, el: target });
+    }
+    pill.addEventListener('click', function(e) {
+      e.preventDefault();
+      var t = document.querySelector(this.getAttribute('href'));
+      if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+  function updateActive() {
+    var scrollY = window.scrollY + 80, active = null;
+    sections.forEach(function(s) { if (s.el.offsetTop <= scrollY) active = s; });
+    pills.forEach(function(p) { p.classList.remove('active'); });
+    if (active) active.pill.classList.add('active');
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+
+</body>
+</html>
