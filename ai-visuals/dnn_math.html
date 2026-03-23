@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!--
+  BRUTALIST TERMINAL // HED0RAH DESIGN SYSTEM
+  hed0rah.github.io/ai-visuals
+  Space Mono + Bebas Neue // #0A0A0A // #00FFE9
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DNN MATH // CHEATSHEET</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0a0a0a;
+    --surface:   #111111;
+    --surface2:  #0d0d0d;
+    --border:    #1e1e1e;
+    --border2:   #2a2a2a;
+    --cyan:      #00ffe9;
+    --yellow:    #ffe900;
+    --magenta:   #e900ff;
+    --red:       #ff2233;
+    --green:     #39ff14;
+    --orange:    #ff6b00;
+    --dim:       #3a3a3a;
+    --text:      #cccccc;
+    --bright:    #ffffff;
+
+    --m-cyan:    #6ab8b0;
+    --m-yellow:  #b8a855;
+    --m-red:     #b85a62;
+    --m-magenta: #a06aaa;
+    --m-orange:  #b8784a;
+    --m-green:   #6aaa55;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    line-height: 1.65;
+    padding: 0 0 40px;
+    max-width: 980px;
+    margin: 0 auto;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  .masthead { border-top: 3px solid var(--cyan); padding: 14px 30px 10px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--border); }
+  .masthead h1 { font-family: 'Bebas Neue', sans-serif; font-size: 64px; letter-spacing: 4px; color: var(--bright); line-height: 1; }
+  .masthead h1 em { color: var(--cyan); font-style: normal; }
+  .masthead-right { text-align: right; font-size: 10px; color: #444; letter-spacing: 2px; text-transform: uppercase; }
+  .masthead-right strong { display: block; color: var(--yellow); font-size: 11px; margin-bottom: 2px; }
+
+  .nav-strip { position: sticky; top: 0; z-index: 100; background: #060606; border-bottom: 1px solid var(--border); padding: 8px 30px; display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 2px; }
+  .nav-pill { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; padding: 4px 10px; border: 1px solid var(--border); color: var(--dim); text-decoration: none; transition: all 0.15s; cursor: pointer; }
+  .nav-pill:hover, .nav-pill.active { border-color: var(--cyan); color: var(--cyan); }
+
+  .content { padding: 0 30px; }
+
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-bottom: 2px; }
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; margin-bottom: 2px; }
+  .gfull { margin-bottom: 2px; }
+  @media (max-width: 700px) { .g2, .g3 { grid-template-columns: 1fr; } .masthead { flex-direction: column; gap: 8px; } .masthead-right { text-align: left; } }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); padding: 20px; }
+  .plabel { font-family: 'Bebas Neue', sans-serif; font-size: 10px; letter-spacing: 3px; color: #383838; text-transform: uppercase; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .ptitle { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; color: var(--bright); margin-bottom: 8px; line-height: 1; }
+  .ptitle.cy { color: var(--cyan); } .ptitle.rd { color: var(--red); } .ptitle.yl { color: var(--yellow); } .ptitle.pu { color: var(--magenta); } .ptitle.or { color: var(--orange); } .ptitle.gr { color: var(--green); }
+  .bar { width: 28px; height: 2px; margin-bottom: 12px; background: var(--cyan); }
+  .bar.rd { background: var(--red); } .bar.yl { background: var(--yellow); } .bar.pu { background: var(--magenta); } .bar.or { background: var(--orange); } .bar.gr { background: var(--green); }
+  p { font-size: 11px; color: var(--text); margin-bottom: 8px; line-height: 1.7; }
+  .hl { color: var(--cyan); font-weight: 700; } .hl.rd { color: var(--red); } .hl.yl { color: var(--yellow); } .hl.pu { color: var(--magenta); } .hl.or { color: var(--orange); } .hl.gr { color: var(--green); } .hl.dim { color: var(--dim); font-weight: 400; }
+
+  /* EQ CARDS — neon borders, muted text */
+  .eq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+  .eq-card { background: #060606; border: 1px solid var(--border); border-left: 3px solid var(--yellow); padding: 14px 16px; }
+  .eq-card.wide { grid-column: 1 / -1; }
+  .eq-card.cy-border { border-left-color: var(--cyan); } .eq-card.rd-border { border-left-color: var(--red); } .eq-card.pu-border { border-left-color: var(--magenta); } .eq-card.or-border { border-left-color: var(--orange); } .eq-card.gr-border { border-left-color: var(--green); }
+  .eq-name { font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 2px; color: var(--bright); margin-bottom: 8px; }
+  .eq-math { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--m-yellow); white-space: pre; line-height: 1.9; margin-bottom: 10px; background: rgba(255,233,0,0.02); padding: 10px; border: 1px solid rgba(255,233,0,0.04); overflow-x: auto; }
+  .eq-card.cy-border .eq-math { color: var(--m-cyan); background: rgba(0,255,233,0.02); border-color: rgba(0,255,233,0.04); }
+  .eq-card.rd-border .eq-math { color: var(--m-red); background: rgba(255,34,51,0.02); border-color: rgba(255,34,51,0.04); }
+  .eq-card.pu-border .eq-math { color: var(--m-magenta); background: rgba(233,0,255,0.02); border-color: rgba(233,0,255,0.04); }
+  .eq-card.or-border .eq-math { color: var(--m-orange); background: rgba(255,107,0,0.02); border-color: rgba(255,107,0,0.04); }
+  .eq-card.gr-border .eq-math { color: var(--m-green); background: rgba(57,255,20,0.02); border-color: rgba(57,255,20,0.04); }
+  .eq-note { font-size: 10px; color: #666; line-height: 1.65; }
+  .eq-note strong { color: var(--text); }
+  @media (max-width: 700px) { .eq-grid { grid-template-columns: 1fr; } .eq-card.wide { grid-column: 1; } }
+
+  .tag { display: inline-block; border: 1px solid var(--border); padding: 1px 6px; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: #444; margin: 2px 2px 2px 0; }
+  .tag.cy { border-color: var(--cyan); color: var(--cyan); } .tag.rd { border-color: var(--red); color: var(--red); } .tag.yl { border-color: var(--yellow); color: var(--yellow); } .tag.pu { border-color: var(--magenta); color: var(--magenta); } .tag.or { border-color: var(--orange); color: var(--orange); } .tag.gr { border-color: var(--green); color: var(--green); }
+
+  .section-anchor { scroll-margin-top: 40px; }
+
+  .stat-box { background: var(--surface2); border: 1px solid var(--border); padding: 10px 12px; margin-bottom: 6px; }
+  .stat-box .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 32px; line-height: 1; letter-spacing: 2px; }
+  .stat-box .stat-label { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); margin-top: 2px; }
+  .hero-flex { display: flex; gap: 18px; }
+  .hero-flex .hero-text { flex: 1; }
+  .hero-flex .hero-stats { width: 180px; flex-shrink: 0; }
+  @media (max-width: 700px) { .hero-flex { flex-direction: column; } .hero-flex .hero-stats { width: 100%; } }
+
+  /* CANVAS */
+  canvas { display: block; width: 100%; background: #060606; border: 1px solid var(--border); }
+  .viz-controls { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
+  .viz-btn { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; background: var(--surface2); color: var(--dim); border: 1px solid var(--border); padding: 4px 10px; cursor: pointer; transition: all 0.15s; }
+  .viz-btn:hover { border-color: var(--border2); color: var(--text); }
+  .viz-btn.active { background: var(--cyan); color: var(--bg); border-color: var(--cyan); }
+  .viz-btn.active-yl { background: var(--yellow); color: var(--bg); border-color: var(--yellow); }
+  .viz-legend { font-size: 9px; color: var(--dim); margin-left: auto; }
+
+  .footer { border-top: 1px solid var(--border); margin-top: 14px; padding: 10px 30px 0; display: flex; justify-content: space-between; font-size: 9px; color: #2a2a2a; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>DNN<br><em>MATH</em></h1>
+  <div class="masthead-right">
+    <strong>Deep Network Mathematics Reference</strong>
+    ACTIVATION // LOSS // BACKPROP // TRANSFORMER
+  </div>
+</div>
+
+<div class="nav-strip">
+  <a class="nav-pill" href="#sec-linear">Linear Algebra</a>
+  <a class="nav-pill" href="#sec-activation">Activations</a>
+  <a class="nav-pill" href="#sec-loss">Loss</a>
+  <a class="nav-pill" href="#sec-backprop">Backprop</a>
+  <a class="nav-pill" href="#sec-landscape">Landscape</a>
+  <a class="nav-pill" href="#sec-transformer">Transformer</a>
+  <a class="nav-pill" href="#sec-attention-viz">Attention Viz</a>
+  <a class="nav-pill" href="#sec-quant">Quantization</a>
+  <a class="nav-pill" href="#sec-info">Information</a>
+  <a class="nav-pill" href="#sec-sampling">Sampling</a>
+  <a class="nav-pill" href="#sec-reg">Regularization</a>
+  <a class="nav-pill" href="#sec-numerics">Numerics</a>
+</div>
+
+<div class="content">
+
+<!-- 00 OVERVIEW -->
+<div class="gfull">
+  <div class="panel">
+    <div class="plabel">00 // Reference Card</div>
+    <div class="hero-flex">
+      <div class="hero-text">
+        <div class="ptitle cy">The Math That Runs Everything</div>
+        <div class="bar"></div>
+        <p>Every deep learning system -- from a two-layer perceptron to a 405B transformer -- is built on the same small set of operations. Linear transformations, nonlinear gates, loss minimization, gradient propagation. The architectures change. The math doesn't.</p>
+        <p>Twelve sections covering linear algebra, activation functions with <span class="hl">live interactive plots</span>, loss functions, backpropagation, a <span class="hl pu">gradient descent landscape simulator</span>, transformer internals, an <span class="hl yl">attention pattern visualizer</span>, quantization/LoRA, information theory, sampling, regularization, and numerical stability.</p>
+        <p>Notes reference <span class="hl">Qwen</span>, <span class="hl yl">LLaMA</span>, and the <span class="hl or">ersatz lab</span> where relevant.</p>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-box"><div class="stat-num" style="color: var(--cyan);">12</div><div class="stat-label">Sections</div></div>
+        <div class="stat-box"><div class="stat-num" style="color: var(--yellow);">38</div><div class="stat-label">Equations</div></div>
+        <div class="stat-box"><div class="stat-num" style="color: var(--magenta);">3</div><div class="stat-label">Interactive viz</div></div>
+        <div class="stat-box"><div class="stat-num" style="color: var(--red);">0</div><div class="stat-label">MathJax deps</div></div>
+      </div>
+    </div>
+    <div style="margin-top: 8px;">
+      <span class="tag cy">backprop</span><span class="tag yl">transformer</span><span class="tag pu">gradient landscape</span><span class="tag or">quantization</span><span class="tag gr">LoRA</span><span class="tag rd">vanishing gradients</span>
+    </div>
+  </div>
+</div>
+
+<!-- 01 LINEAR ALGEBRA -->
+<div class="gfull section-anchor" id="sec-linear">
+  <div class="panel">
+    <div class="plabel">01 // Linear Algebra Foundations</div>
+    <div class="ptitle cy">The Substrate</div>
+    <div class="bar"></div>
+    <p>Everything in a neural network reduces to matrix multiplication and element-wise operations. Knowing shapes at each step is more useful than memorizing architecture diagrams.</p>
+    <div class="eq-grid" style="margin-top: 12px;">
+      <div class="eq-card cy-border wide">
+        <div class="eq-name">Core Forward Pass</div>
+        <div class="eq-math">z = Wx + b          // pre-activation (affine transform)
+a = f(z)            // post-activation (nonlinearity)
+y_hat = softmax(aL) // final output (classification)
+
+shapes: W is (d_out x d_in), x is (d_in,), b is (d_out,)</div>
+        <div class="eq-note">The whole network is a composition of these. Every "layer" is one pass. <strong>d_in</strong> and <strong>d_out</strong> must match at boundaries.</div>
+      </div>
+      <div class="eq-card cy-border">
+        <div class="eq-name">Dot Product</div>
+        <div class="eq-math">a . b = SUM(a_i * b_i) = ||a|| * ||b|| * cos(theta)</div>
+        <div class="eq-note">Similarity measure. High dot product = aligned vectors. This is what attention computes.</div>
+      </div>
+      <div class="eq-card cy-border">
+        <div class="eq-name">Matrix Multiply</div>
+        <div class="eq-math">(A @ B)_ij = SUM_k(A_ik * B_kj)
+(m x n) @ (n x p) = (m x p)</div>
+        <div class="eq-note">Inner dimensions must match. Every linear layer is a matmul. Every attention head is four matmuls.</div>
+      </div>
+      <div class="eq-card cy-border">
+        <div class="eq-name">Cosine Similarity</div>
+        <div class="eq-math">cos_sim(a, b) = (a . b) / (||a|| * ||b||)</div>
+        <div class="eq-note">Range [-1, 1]. Used in embedding retrieval, RAG, contrastive loss.</div>
+      </div>
+      <div class="eq-card cy-border">
+        <div class="eq-name">Eigendecomposition</div>
+        <div class="eq-math">Av = lambda * v
+A = Q * Lambda * Q^T     // symmetric case</div>
+        <div class="eq-note">Eigenvalues of the Hessian determine loss surface curvature. Large eigenvalue ratios = ill-conditioned optimization. This is why Adam outperforms SGD.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 02 ACTIVATIONS (INTERACTIVE) -->
+<div class="gfull section-anchor" id="sec-activation">
+  <div class="panel">
+    <div class="plabel">02 // Activation Functions -- Interactive</div>
+    <div class="ptitle yl">Nonlinearity or Bust</div>
+    <div class="bar yl"></div>
+    <p>Without nonlinearity, any stack of linear layers collapses to one linear transform. Select an activation to see its shape and derivative. The <span class="hl rd">red dashed trace</span> is the derivative -- when it flatlines at zero, gradients die.</p>
+    <canvas id="activation-canvas" height="280"></canvas>
+    <div class="viz-controls">
+      <button class="viz-btn active-yl" data-fn="relu" onclick="setActivation(this)">ReLU</button>
+      <button class="viz-btn" data-fn="leaky" onclick="setActivation(this)">Leaky</button>
+      <button class="viz-btn" data-fn="gelu" onclick="setActivation(this)">GELU</button>
+      <button class="viz-btn" data-fn="sigmoid" onclick="setActivation(this)">Sigmoid</button>
+      <button class="viz-btn" data-fn="silu" onclick="setActivation(this)">SiLU</button>
+      <button class="viz-btn" data-fn="tanh" onclick="setActivation(this)">Tanh</button>
+      <span class="viz-legend" id="act-hover"></span>
+    </div>
+    <div class="eq-grid" style="margin-top: 12px;">
+      <div class="eq-card">
+        <div class="eq-name">ReLU</div>
+        <div class="eq-math">f(x) = max(0, x)
+f'(x) = 1 if x > 0, else 0</div>
+        <div class="eq-note">Cheap, fast, works. Dying ReLU: units that go negative never recover.</div>
+      </div>
+      <div class="eq-card">
+        <div class="eq-name">GELU (Transformers)</div>
+        <div class="eq-math">f(x) = x * Phi(x)
+approx: 0.5x(1 + tanh(sqrt(2/pi)(x + 0.044715x^3)))</div>
+        <div class="eq-note"><strong>Phi</strong> = standard normal CDF. Smooth, differentiable everywhere. Default in BERT, GPT-2.</div>
+      </div>
+      <div class="eq-card">
+        <div class="eq-name">SiLU / Swish (LLaMA, Qwen)</div>
+        <div class="eq-math">f(x) = x * sigma(x)
+f'(x) = sigma(x) + x * sigma(x) * (1 - sigma(x))</div>
+        <div class="eq-note">Self-gated. Used in SwiGLU FFN blocks. Small negative lobe avoids dead neurons.</div>
+      </div>
+      <div class="eq-card">
+        <div class="eq-name">Softmax</div>
+        <div class="eq-math">softmax(z_i) = e^(z_i) / SUM_j(e^(z_j))
+temperature: softmax(z_i / T)</div>
+        <div class="eq-note">Turns logits into probabilities. <strong>T</strong> = temperature slider in Ollama and LM Studio.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 03 LOSS -->
+<div class="gfull section-anchor" id="sec-loss">
+  <div class="panel">
+    <div class="plabel">03 // Loss Functions</div>
+    <div class="ptitle rd">What the Network Is Minimizing</div>
+    <div class="bar rd"></div>
+    <p>The loss function defines "correct." The optimizer only knows the scalar it's trying to shrink.</p>
+    <div class="eq-grid" style="margin-top: 12px;">
+      <div class="eq-card rd-border">
+        <div class="eq-name">Cross-Entropy</div>
+        <div class="eq-math">L = -SUM(y_i * log(y_hat_i))
+binary: L = -[y*log(p) + (1-y)*log(1-p)]</div>
+        <div class="eq-note">Standard for classification. Also next-token prediction loss in LLMs.</div>
+      </div>
+      <div class="eq-card rd-border">
+        <div class="eq-name">KL Divergence</div>
+        <div class="eq-math">D_KL(P || Q) = SUM(P(x) * log(P(x) / Q(x)))</div>
+        <div class="eq-note"><strong>Not symmetric.</strong> Shows up in VAEs, knowledge distillation, RLHF.</div>
+      </div>
+      <div class="eq-card rd-border">
+        <div class="eq-name">MSE (Regression)</div>
+        <div class="eq-math">L = (1/n) * SUM((y_i - y_hat_i)^2)</div>
+        <div class="eq-note">Penalizes large errors quadratically. Sensitive to outliers.</div>
+      </div>
+      <div class="eq-card rd-border">
+        <div class="eq-name">Perplexity</div>
+        <div class="eq-math">PPL = e^L    // L = avg cross-entropy per token</div>
+        <div class="eq-note">PPL of <strong>k</strong> = model is as uncertain as choosing among k tokens uniformly. Lower is better.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 04 BACKPROP -->
+<div class="gfull section-anchor" id="sec-backprop">
+  <div class="panel">
+    <div class="plabel">04 // Backpropagation and Optimization</div>
+    <div class="ptitle pu">Gradient Flow</div>
+    <div class="bar pu"></div>
+    <p>Backprop is the chain rule applied recursively from loss to first layer. The optimizer uses these gradients to update weights.</p>
+    <div class="eq-grid" style="margin-top: 12px;">
+      <div class="eq-card pu-border wide">
+        <div class="eq-name">Chain Rule (The Whole Game)</div>
+        <div class="eq-math">dL/dw = (dL/da) * (da/dz) * (dz/dw)
+
+dL/dz_l = dL/dz_(l+1) * W_(l+1)^T * f'(z_l)    // layer recursion</div>
+        <div class="eq-note">That's it. Everything else is bookkeeping. Autograd builds and traverses the computational graph.</div>
+      </div>
+      <div class="eq-card pu-border wide">
+        <div class="eq-name">Adam / AdamW (The Default)</div>
+        <div class="eq-math">m <- beta1*m + (1-beta1)*grad(L)            // first moment
+v <- beta2*v + (1-beta2)*(grad(L))^2         // second moment
+m_hat = m / (1 - beta1^t)                    // bias correction
+v_hat = v / (1 - beta2^t)
+w <- w - eta * m_hat / (sqrt(v_hat) + eps)
+
+AdamW: w <- w - eta*(m_hat/(sqrt(v_hat)+eps) + lambda*w)
+typical: beta1=0.9  beta2=0.999  eps=1e-8</div>
+        <div class="eq-note">Per-parameter adaptive learning rates. <strong>AdamW</strong> decouples weight decay from gradient. The standard for transformer training.</div>
+      </div>
+      <div class="eq-card pu-border">
+        <div class="eq-name">SGD + Momentum</div>
+        <div class="eq-math">v <- beta*v + grad(L)
+w <- w - eta*v</div>
+        <div class="eq-note">Accumulates velocity. Dampens oscillation in high-curvature directions.</div>
+      </div>
+      <div class="eq-card pu-border">
+        <div class="eq-name">Cosine Annealing + Warmup</div>
+        <div class="eq-math">warmup: eta(t) = eta_max * (t / warmup_steps)
+anneal: eta(t) = eta_min + 0.5*(eta_max - eta_min)
+                  * (1 + cos(pi * t / T))</div>
+        <div class="eq-note">Linear warmup for first 1-5% prevents early instability. Cosine decay over remaining steps.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 05 LANDSCAPE (INTERACTIVE) -->
+<div class="gfull section-anchor" id="sec-landscape">
+  <div class="panel">
+    <div class="plabel">05 // Gradient Descent Landscape -- Interactive</div>
+    <div class="ptitle pu">The Terrain of Optimization</div>
+    <div class="bar pu"></div>
+    <p>The <span class="hl">cyan dot</span> is the current parameter. Watch how learning rate and momentum affect convergence. The <span class="hl rd">red arrow</span> shows negative gradient direction.</p>
+    <canvas id="landscape-canvas" height="320"></canvas>
+    <div class="viz-controls">
+      <button class="viz-btn active" id="landscape-run" onclick="toggleLandscape()">Run</button>
+      <button class="viz-btn" onclick="resetLandscape()">Reset</button>
+      <span style="font-size:9px;color:var(--dim);margin-left:8px;">LR:</span>
+      <button class="viz-btn active" data-lr="0.01" onclick="setLR(this)">0.01</button>
+      <button class="viz-btn" data-lr="0.05" onclick="setLR(this)">0.05</button>
+      <button class="viz-btn" data-lr="0.15" onclick="setLR(this)">0.15</button>
+      <span style="font-size:9px;color:var(--dim);margin-left:8px;">Mom:</span>
+      <button class="viz-btn active" data-mom="0" onclick="setMom(this)">0.0</button>
+      <button class="viz-btn" data-mom="0.9" onclick="setMom(this)">0.9</button>
+      <span class="viz-legend" id="landscape-info">step: 0 | loss: --</span>
+    </div>
+  </div>
+</div>
+
+<!-- 06 TRANSFORMER -->
+<div class="gfull section-anchor" id="sec-transformer">
+  <div class="panel">
+    <div class="plabel">06 // Transformer Architecture</div>
+    <div class="ptitle cy">Attention Is All You Need (And Some FFN)</div>
+    <div class="bar"></div>
+    <p>The block: <span class="hl">norm -> attention -> residual -> norm -> FFN -> residual</span>. Modern variants use pre-norm, RMSNorm, SwiGLU. The attention mechanism hasn't changed since 2017.</p>
+    <div class="eq-grid" style="margin-top: 12px;">
+      <div class="eq-card cy-border wide">
+        <div class="eq-name">Scaled Dot-Product Attention</div>
+        <div class="eq-math">Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V
+
+Q = x * W_Q    // what am I looking for?
+K = x * W_K    // what do I contain?
+V = x * W_V    // what do I return?</div>
+        <div class="eq-note"><strong>sqrt(d_k)</strong> prevents dot products from pushing softmax into saturation. Without it, near-one-hot distributions kill gradients.</div>
+      </div>
+      <div class="eq-card cy-border">
+        <div class="eq-name">Multi-Head Attention</div>
+        <div class="eq-math">MultiHead = Concat(head_1,...,head_h) * W_O
+head_i = Attention(Q*W_i^Q, K*W_i^K, V*W_i^V)</div>
+        <div class="eq-note">Each head attends to different relationships. GQA in LLaMA 3 shares K/V heads to reduce KV cache.</div>
+      </div>
+      <div class="eq-card cy-border">
+        <div class="eq-name">RoPE</div>
+        <div class="eq-math">q_m = R(theta_m) * q
+k_n = R(theta_n) * k
+score = q_m . k_n = f(m - n)    // relative pos</div>
+        <div class="eq-note">Rotates Q and K in 2D subspaces. Score depends on relative distance. Better long-sequence extension than sinusoidal.</div>
+      </div>
+      <div class="eq-card cy-border">
+        <div class="eq-name">SwiGLU FFN (Qwen, LLaMA)</div>
+        <div class="eq-math">FFN(x) = (Swish(x*W1) * x*W3) * W2
+// three matrices, hidden ~ 8/3 * d_model</div>
+        <div class="eq-note">Gated linear unit. More expressive than ReLU-FFN at same parameter count.</div>
+      </div>
+      <div class="eq-card cy-border">
+        <div class="eq-name">RMSNorm</div>
+        <div class="eq-math">RMSNorm(x) = x * gamma / sqrt(mean(x^2) + eps)</div>
+        <div class="eq-note">Drops mean-centering from LayerNorm. Slightly faster. The norm of choice in modern open weights.</div>
+      </div>
+      <div class="eq-card cy-border">
+        <div class="eq-name">Residual Connection</div>
+        <div class="eq-math">output = x + sublayer(x)
+d(output)/d(x) = 1 + d(sublayer)/d(x)</div>
+        <div class="eq-note">The +1 prevents vanishing gradients. Not optional -- gradients collapse exponentially without them.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 07 ATTENTION VIZ (INTERACTIVE) -->
+<div class="gfull section-anchor" id="sec-attention-viz">
+  <div class="panel">
+    <div class="plabel">07 // Attention Pattern Visualizer -- Interactive</div>
+    <div class="ptitle yl">What Tokens Attend To</div>
+    <div class="bar yl"></div>
+    <p>Each cell shows how much a <span class="hl">query</span> (row) attends to each <span class="hl yl">key</span> (column). Rows sum to 1.0 (softmax). Hover for weights. Causal mask means tokens only see backward.</p>
+    <canvas id="attn-canvas" height="340"></canvas>
+    <div class="viz-controls">
+      <button class="viz-btn active-yl" data-pattern="causal" onclick="setAttnPattern(this)">Causal LM</button>
+      <button class="viz-btn" data-pattern="local" onclick="setAttnPattern(this)">Local Window</button>
+      <button class="viz-btn" data-pattern="sparse" onclick="setAttnPattern(this)">Sparse</button>
+      <button class="viz-btn" data-pattern="full" onclick="setAttnPattern(this)">Full (Encoder)</button>
+      <span class="viz-legend" id="attn-hover">hover a cell</span>
+    </div>
+  </div>
+</div>
+
+<!-- 08 QUANTIZATION -->
+<div class="gfull section-anchor" id="sec-quant">
+  <div class="panel">
+    <div class="plabel">08 // Quantization and LoRA</div>
+    <div class="ptitle or">Fitting Large Models Into Small Boxes</div>
+    <div class="bar or"></div>
+    <p>Quantization reduces precision. LoRA reduces trainable parameters. Both necessary for running anything on a <span class="hl or">1650 Ti</span>.</p>
+    <div class="eq-grid" style="margin-top: 12px;">
+      <div class="eq-card or-border">
+        <div class="eq-name">Uniform Quantization</div>
+        <div class="eq-math">q = round((x - z) / s)      // quantize
+x_hat = q * s + z           // dequantize
+s = (x_max - x_min) / (2^b - 1)</div>
+        <div class="eq-note"><strong>b</strong> = bits (4 or 8). Error bounded by s/2. Symmetric sets z=0, simpler but wastes range.</div>
+      </div>
+      <div class="eq-card or-border">
+        <div class="eq-name">NF4 (NormalFloat 4-bit)</div>
+        <div class="eq-math">quantile bins: equal probability mass
+under N(0,1) distribution
+non-uniform edges clustered near zero</div>
+        <div class="eq-note">Trained weights are ~normal. NF4 puts more bins where density is highest. Used in bitsandbytes QLoRA.</div>
+      </div>
+      <div class="eq-card or-border wide">
+        <div class="eq-name">LoRA (Low-Rank Adaptation)</div>
+        <div class="eq-math">frozen: W (d x d)     trainable: B (d x r), A (r x d)    r &lt;&lt; d
+h = (W + B * A) * x         merged: W' = W + (alpha/r) * B * A
+
+full finetune: d^2           LoRA: 2*d*r  // r=16, d=4096 -> 0.78%</div>
+        <div class="eq-note">Only A and B get gradients. <strong>r</strong> typically 8-64. <strong>alpha</strong> often = r. At merge time, folds back into full weight.</div>
+      </div>
+      <div class="eq-card or-border">
+        <div class="eq-name">VRAM Rule of Thumb</div>
+        <div class="eq-math">inference: params * bytes_per_param
+  3B @ int4  ~1.5 GB
+  7B @ int4  ~3.5 GB
+  7B @ fp16  ~14  GB
+training: ~3-4x inference</div>
+        <div class="eq-note">Add 10-20% for KV cache. Qwen 3B Q4 fits on 4GB 1650 Ti with room. 7B Q4 fits if you trim context.</div>
+      </div>
+      <div class="eq-card or-border">
+        <div class="eq-name">GGUF Quant Levels</div>
+        <div class="eq-math">Q2_K   ~2.5 bpw   barely coherent
+Q3_K_M ~3.5 bpw   usable for small models
+Q4_K_M ~4.5 bpw   sweet spot (1650 Ti)
+Q5_K_M ~5.5 bpw   near-lossless
+Q6_K   ~6.5 bpw   diminishing returns
+Q8_0   ~8.5 bpw   basically FP16</div>
+        <div class="eq-note"><strong>bpw</strong> = bits per weight. _K = k-quant with per-group scaling. IQ variants use importance-weighted quantization.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 09 INFO THEORY -->
+<div class="gfull section-anchor" id="sec-info">
+  <div class="panel">
+    <div class="plabel">09 // Information Theory</div>
+    <div class="ptitle gr">Uncertainty as a Quantity</div>
+    <div class="bar gr"></div>
+    <p>Shannon's framework treats information as measurable. These equations appear throughout DL because next-token prediction is an information-theoretic problem.</p>
+    <div class="eq-grid" style="margin-top: 12px;">
+      <div class="eq-card gr-border">
+        <div class="eq-name">Shannon Entropy</div>
+        <div class="eq-math">H(X) = -SUM(p(x) * log2(p(x)))
+max: log2(N) uniform    min: 0 deterministic</div>
+        <div class="eq-note">Average uncertainty. Uniform maximizes, delta minimizes. Units: bits (log2), nats (ln).</div>
+      </div>
+      <div class="eq-card gr-border">
+        <div class="eq-name">Mutual Information</div>
+        <div class="eq-math">I(X;Y) = H(X) - H(X|Y) = H(X) + H(Y) - H(X,Y)</div>
+        <div class="eq-note">How much Y reduces uncertainty about X. <strong>Symmetric</strong>, unlike KL divergence.</div>
+      </div>
+      <div class="eq-card gr-border wide">
+        <div class="eq-name">Cross-Entropy (Information View)</div>
+        <div class="eq-math">H(P, Q) = -SUM(P(x) * log(Q(x)))  =  H(P) + D_KL(P || Q)</div>
+        <div class="eq-note">Minimizing CE over data minimizes KL from model to data distribution. The LLM training objective exactly.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 10 SAMPLING -->
+<div class="gfull section-anchor" id="sec-sampling">
+  <div class="panel">
+    <div class="plabel">10 // LLM Sampling</div>
+    <div class="ptitle yl">Controlling the Output</div>
+    <div class="bar yl"></div>
+    <div class="eq-grid" style="margin-top: 4px;">
+      <div class="eq-card">
+        <div class="eq-name">Temperature</div>
+        <div class="eq-math">P(token) = softmax(logit / T)
+T->0: greedy   T=1: standard   T->inf: uniform</div>
+        <div class="eq-note">Creative writing: 0.7-0.9. Coding: 0.2-0.4.</div>
+      </div>
+      <div class="eq-card">
+        <div class="eq-name">Top-p (Nucleus)</div>
+        <div class="eq-math">sort by P descending, accumulate until >= p
+sample from this "nucleus", renormalize</div>
+        <div class="eq-note">p=0.9 uses smallest set covering 90% mass. Adapts to distribution shape.</div>
+      </div>
+      <div class="eq-card">
+        <div class="eq-name">Top-k</div>
+        <div class="eq-math">keep k highest tokens, zero rest, renormalize</div>
+        <div class="eq-note">Fixed slice regardless of shape. Often combined with temp and top-p.</div>
+      </div>
+      <div class="eq-card">
+        <div class="eq-name">Min-P (Dynamic Floor)</div>
+        <div class="eq-math">threshold = min_p * max(P)
+keep tokens where P >= threshold</div>
+        <div class="eq-note">Scales cutoff relative to most likely token. More adaptive than top-k. Gaining adoption in llama.cpp.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 11 REGULARIZATION -->
+<div class="gfull section-anchor" id="sec-reg">
+  <div class="panel">
+    <div class="plabel">11 // Regularization</div>
+    <div class="ptitle rd">Keeping the Network Stable</div>
+    <div class="bar rd"></div>
+    <div class="eq-grid" style="margin-top: 4px;">
+      <div class="eq-card rd-border">
+        <div class="eq-name">Dropout</div>
+        <div class="eq-math">mask ~ Bernoulli(1-p)
+output = (x * mask) / (1-p)</div>
+        <div class="eq-note">Zero activations with probability p. Scale by 1/(1-p) to preserve expectation. Disabled at inference.</div>
+      </div>
+      <div class="eq-card rd-border">
+        <div class="eq-name">Gradient Clipping</div>
+        <div class="eq-math">if ||g|| > threshold:
+  g <- threshold * g / ||g||</div>
+        <div class="eq-note">Prevents exploding gradients. Preserves direction. Standard <strong>max_norm = 1.0</strong>.</div>
+      </div>
+      <div class="eq-card rd-border">
+        <div class="eq-name">Weight Decay (L2)</div>
+        <div class="eq-math">L_total = L_task + (lambda/2) * ||w||^2
+step: w <- w*(1-eta*lambda) - eta*grad(L)</div>
+        <div class="eq-note">Pulls weights toward zero. In Adam, L2 != weight decay -- AdamW implements true decay.</div>
+      </div>
+      <div class="eq-card rd-border">
+        <div class="eq-name">Vanishing Gradient Cascade</div>
+        <div class="eq-math">grad at layer l = PRODUCT(k=l..L) f'(z_k)*W_k^T
+
+sigmoid: max(f') = 0.25
+  50 layers: 0.25^50 = ~10^(-30)   DEAD
+
+relu: f' = 1 (when active)
+  50 layers: 1^50 = 1               ALIVE</div>
+        <div class="eq-note"><strong>The</strong> reason ReLU replaced sigmoid. Sigmoid derivatives compound multiplicatively. The entirety of "why deep learning works now" is managing this cascade.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 12 NUMERICS -->
+<div class="gfull section-anchor" id="sec-numerics">
+  <div class="panel">
+    <div class="plabel">12 // Numerical Intuitions</div>
+    <div class="ptitle cy">Numbers You Should Know Cold</div>
+    <div class="bar"></div>
+    <div class="eq-grid" style="margin-top: 4px;">
+      <div class="eq-card cy-border">
+        <div class="eq-name">Floating Point Ranges</div>
+        <div class="eq-math">FP32:  ~1.4e-45 to 3.4e38    23-bit mantissa
+FP16:  ~6e-8   to 65504     10-bit, OVERFLOWS
+BF16:  ~1.4e-45 to 3.4e38   7-bit, FP32 exponent</div>
+        <div class="eq-note"><strong>BF16</strong> preferred for training: same range as FP32. FP16 needs loss scaling. Mix of BF16 activations + int4/int8 weights is common.</div>
+      </div>
+      <div class="eq-card cy-border">
+        <div class="eq-name">Softmax Stability</div>
+        <div class="eq-math">// UNSTABLE: e^z_i / SUM(e^z_j)    overflows
+
+// STABLE:
+c = max(z)
+softmax(z_i) = e^(z_i - c) / SUM(e^(z_j - c))</div>
+        <div class="eq-note">Softmax is shift-invariant. Subtracting max prevents overflow. Every production implementation does this.</div>
+      </div>
+      <div class="eq-card cy-border">
+        <div class="eq-name">Transformer Param Count</div>
+        <div class="eq-math">~12*L*d^2 + 2*V*d
+LLaMA 7B: L=32 d=4096 V=32000 -> ~6.7B</div>
+        <div class="eq-note">12 = 4 attention + 2 FFN matrices, each d^2. Embedding often tied input/output.</div>
+      </div>
+      <div class="eq-card cy-border">
+        <div class="eq-name">KV Cache Memory</div>
+        <div class="eq-math">KV = 2 * L * h * d_head * seq_len * bytes
+LLaMA 7B, FP16, 4k: ~2.1 GB</div>
+        <div class="eq-note">Grows linearly with sequence length. GQA reduces h for K/V heads. This is why long context costs.</div>
+      </div>
+      <div class="eq-card cy-border wide">
+        <div class="eq-name">FlashAttention</div>
+        <div class="eq-math">standard: O(N^2) memory     (materializes full NxN)
+flash:    O(N) memory       (tiled, never materializes)
+speed:    ~2-4x faster via reduced HBM reads</div>
+        <div class="eq-note">IO-aware exact algorithm, not an approximation. Tiles computation to fit in GPU SRAM. Same math, reordered. This is why 32k+ context works on consumer GPUs.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>REFERENCE // GOODFELLOW ET AL. 2016 // VASWANI ET AL. 2017 // HU ET AL. 2022 (LORA) // DAO 2022 (FLASH)</span>
+  <span>BRUTALIST TERMINAL // HED0RAH // DNN MATH</span>
+</div>
+
+</div>
+
+<script>
+/* ACTIVATION FUNCTION VIZ */
+(function() {
+  var canvas = document.getElementById('activation-canvas');
+  var ctx = canvas.getContext('2d');
+  var currentFn = 'relu';
+  var mouseX = -1;
+
+  function sig(x) { return 1 / (1 + Math.exp(-x)); }
+  var fns = {
+    relu:    function(x) { return Math.max(0, x); },
+    leaky:   function(x) { return x > 0 ? x : 0.01 * x; },
+    gelu:    function(x) { return 0.5*x*(1 + Math.tanh(Math.sqrt(2/Math.PI)*(x + 0.044715*x*x*x))); },
+    sigmoid: sig,
+    silu:    function(x) { return x * sig(x); },
+    tanh:    function(x) { return Math.tanh(x); }
+  };
+  var derivs = {
+    relu:    function(x) { return x > 0 ? 1 : 0; },
+    leaky:   function(x) { return x > 0 ? 1 : 0.01; },
+    gelu:    function(x) { var h=0.001; return (fns.gelu(x+h)-fns.gelu(x-h))/(2*h); },
+    sigmoid: function(x) { var s=sig(x); return s*(1-s); },
+    silu:    function(x) { var s=sig(x); return s + x*s*(1-s); },
+    tanh:    function(x) { var t=Math.tanh(x); return 1-t*t; }
+  };
+
+  function resize() { var r=canvas.getBoundingClientRect(), d=window.devicePixelRatio||1; canvas.width=r.width*d; canvas.height=r.height*d; ctx.setTransform(d,0,0,d,0,0); }
+
+  function draw() {
+    var w=canvas.getBoundingClientRect().width, h=canvas.getBoundingClientRect().height;
+    ctx.clearRect(0,0,w,h);
+    var xMin=-5,xMax=5,yMin=-2,yMax=3;
+    var toX=function(v){return(v-xMin)/(xMax-xMin)*w;};
+    var toY=function(v){return h-(v-yMin)/(yMax-yMin)*h;};
+    var fromX=function(px){return xMin+px/w*(xMax-xMin);};
+
+    ctx.strokeStyle='#1e1e1e'; ctx.lineWidth=0.5;
+    for(var gx=Math.ceil(xMin);gx<=xMax;gx++){ctx.beginPath();ctx.moveTo(toX(gx),0);ctx.lineTo(toX(gx),h);ctx.stroke();}
+    for(var gy=Math.ceil(yMin);gy<=yMax;gy++){ctx.beginPath();ctx.moveTo(0,toY(gy));ctx.lineTo(w,toY(gy));ctx.stroke();}
+
+    ctx.strokeStyle='#2a2a2a'; ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(toX(xMin),toY(0));ctx.lineTo(toX(xMax),toY(0));ctx.stroke();
+    ctx.beginPath();ctx.moveTo(toX(0),toY(yMin));ctx.lineTo(toX(0),toY(yMax));ctx.stroke();
+
+    ctx.fillStyle='#2a2a2a'; ctx.font='9px Space Mono'; ctx.textAlign='center';
+    for(var lx=Math.ceil(xMin);lx<=xMax;lx++){if(lx!==0)ctx.fillText(lx,toX(lx),toY(0)+14);}
+
+    var fn=fns[currentFn], df=derivs[currentFn], step=(xMax-xMin)/w;
+
+    // derivative (muted red, dashed)
+    ctx.strokeStyle='#b85a62'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.beginPath(); var started=false;
+    for(var x=xMin;x<=xMax;x+=step){var dy=df(x),py=toY(dy);if(py>-10&&py<h+10){if(!started){ctx.moveTo(toX(x),py);started=true;}else ctx.lineTo(toX(x),py);}}
+    ctx.stroke(); ctx.setLineDash([]);
+
+    // function (muted cyan)
+    ctx.strokeStyle='#6ab8b0'; ctx.lineWidth=2;
+    ctx.beginPath(); started=false;
+    for(var x2=xMin;x2<=xMax;x2+=step){var fy=fn(x2),py2=toY(fy);if(py2>-50&&py2<h+50){if(!started){ctx.moveTo(toX(x2),py2);started=true;}else ctx.lineTo(toX(x2),py2);}}
+    ctx.stroke();
+
+    // glow
+    ctx.fillStyle='rgba(0,255,233,0.03)';
+    ctx.beginPath(); ctx.moveTo(toX(xMin),toY(0));
+    for(var x3=xMin;x3<=xMax;x3+=step){ctx.lineTo(toX(x3),toY(Math.max(0,fn(x3))));}
+    ctx.lineTo(toX(xMax),toY(0)); ctx.closePath(); ctx.fill();
+
+    if(mouseX>=0&&mouseX<=w){
+      var xVal=fromX(mouseX),yVal=fn(xVal),dVal=df(xVal);
+      ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=0.5;
+      ctx.beginPath();ctx.moveTo(mouseX,0);ctx.lineTo(mouseX,h);ctx.stroke();
+
+      ctx.fillStyle='#0a0a0a'; ctx.strokeStyle='#00ffe9'; ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(toX(xVal),toY(yVal),4,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.strokeStyle='#ff2233';
+      ctx.beginPath();ctx.arc(toX(xVal),toY(dVal),3,0,Math.PI*2);ctx.fill();ctx.stroke();
+
+      document.getElementById('act-hover').textContent='x='+xVal.toFixed(2)+'  f(x)='+yVal.toFixed(3)+'  f\'(x)='+dVal.toFixed(3);
+    }
+
+    ctx.font='9px Space Mono'; ctx.textAlign='left';
+    ctx.fillStyle='#6ab8b0'; ctx.fillText('--- f(x)',12,18);
+    ctx.fillStyle='#b85a62'; ctx.fillText('- - f\'(x)',12,32);
+  }
+
+  canvas.addEventListener('mousemove',function(e){var r=canvas.getBoundingClientRect();mouseX=e.clientX-r.left;draw();});
+  canvas.addEventListener('mouseleave',function(){mouseX=-1;draw();document.getElementById('act-hover').textContent='';});
+  window.setActivation=function(btn){currentFn=btn.dataset.fn;document.querySelectorAll('#sec-activation .viz-btn').forEach(function(b){b.classList.remove('active-yl');});btn.classList.add('active-yl');draw();};
+  window.addEventListener('resize',function(){resize();draw();}); resize(); draw();
+})();
+
+/* GRADIENT DESCENT LANDSCAPE */
+(function() {
+  var canvas=document.getElementById('landscape-canvas'), ctx=canvas.getContext('2d');
+  var running=false, lr=0.01, momentum=0, posX=-3.5, vel=0, step=0, trail=[], animId=null;
+
+  function loss(x){return 0.04*x*x*x*x-0.3*x*x*x+0.5*x*x+0.8*Math.sin(2.5*x)+3;}
+  function grad(x){return 0.16*x*x*x-0.9*x*x+1.0*x+2.0*Math.cos(2.5*x);}
+
+  function resize(){var r=canvas.getBoundingClientRect(),d=window.devicePixelRatio||1;canvas.width=r.width*d;canvas.height=r.height*d;ctx.setTransform(d,0,0,d,0,0);}
+
+  function draw() {
+    var w=canvas.getBoundingClientRect().width, h=canvas.getBoundingClientRect().height;
+    ctx.clearRect(0,0,w,h);
+    var xMin=-5,xMax=6,yMin=-1,yMax=10;
+    var toX=function(v){return(v-xMin)/(xMax-xMin)*w;};
+    var toY=function(v){return h-(v-yMin)/(yMax-yMin)*h;};
+
+    ctx.strokeStyle='#1e1e1e'; ctx.lineWidth=0.5;
+    for(var gx=Math.ceil(xMin);gx<=xMax;gx++){ctx.beginPath();ctx.moveTo(toX(gx),0);ctx.lineTo(toX(gx),h);ctx.stroke();}
+
+    // loss surface fill
+    ctx.fillStyle='rgba(160,106,170,0.04)';
+    ctx.beginPath(); ctx.moveTo(toX(xMin),toY(0));
+    for(var x=xMin;x<=xMax;x+=0.05) ctx.lineTo(toX(x),toY(loss(x)));
+    ctx.lineTo(toX(xMax),toY(0)); ctx.closePath(); ctx.fill();
+
+    // loss surface line (muted magenta)
+    ctx.strokeStyle='#a06aaa'; ctx.lineWidth=2;
+    ctx.beginPath();
+    for(var x2=xMin;x2<=xMax;x2+=0.05){var py=toY(loss(x2));if(x2===xMin)ctx.moveTo(toX(x2),py);else ctx.lineTo(toX(x2),py);}
+    ctx.stroke();
+
+    // trail
+    if(trail.length>1){
+      ctx.strokeStyle='rgba(0,255,233,0.15)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(toX(trail[0]),toY(loss(trail[0])));
+      for(var t=1;t<trail.length;t++) ctx.lineTo(toX(trail[t]),toY(loss(trail[t])));
+      ctx.stroke();
+      for(var t2=0;t2<trail.length;t2++){
+        ctx.fillStyle='rgba(0,255,233,'+(0.05+0.3*(t2/trail.length))+')';
+        ctx.beginPath();ctx.arc(toX(trail[t2]),toY(loss(trail[t2])),1.5,0,Math.PI*2);ctx.fill();
+      }
+    }
+
+    // current dot
+    var ly=loss(posX);
+    ctx.fillStyle='#0a0a0a'; ctx.strokeStyle='#00ffe9'; ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(toX(posX),toY(ly),6,0,Math.PI*2);ctx.fill();ctx.stroke();
+
+    // gradient arrow (muted red)
+    var g=grad(posX), arrowLen=Math.min(Math.abs(g)*8,60), arrowDir=g>0?-1:1;
+    ctx.strokeStyle='#b85a62'; ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(toX(posX),toY(ly)-14);ctx.lineTo(toX(posX)+arrowDir*arrowLen,toY(ly)-14);ctx.stroke();
+    ctx.fillStyle='#b85a62'; ctx.beginPath();
+    ctx.moveTo(toX(posX)+arrowDir*arrowLen,toY(ly)-14);
+    ctx.lineTo(toX(posX)+arrowDir*(arrowLen-6),toY(ly)-18);
+    ctx.lineTo(toX(posX)+arrowDir*(arrowLen-6),toY(ly)-10);
+    ctx.closePath();ctx.fill();
+
+    ctx.font='9px Space Mono'; ctx.textAlign='left';
+    ctx.fillStyle='#a06aaa'; ctx.fillText('loss surface',12,18);
+    ctx.fillStyle='#b85a62'; ctx.fillText('-grad',12,32);
+    ctx.fillStyle='#6ab8b0'; ctx.fillText('parameter',12,46);
+
+    document.getElementById('landscape-info').textContent='step: '+step+' | loss: '+ly.toFixed(4)+' | grad: '+g.toFixed(3);
+  }
+
+  function stepGD(){var g=grad(posX);vel=momentum*vel+g;posX=posX-lr*vel;posX=Math.max(-5,Math.min(6,posX));trail.push(posX);if(trail.length>300)trail.shift();step++;draw();if(running)animId=requestAnimationFrame(stepGD);}
+
+  window.toggleLandscape=function(){running=!running;var btn=document.getElementById('landscape-run');btn.textContent=running?'Pause':'Run';btn.classList.toggle('active',running);if(running)animId=requestAnimationFrame(stepGD);else cancelAnimationFrame(animId);};
+  window.resetLandscape=function(){running=false;cancelAnimationFrame(animId);document.getElementById('landscape-run').textContent='Run';document.getElementById('landscape-run').classList.remove('active');posX=-3.5;vel=0;step=0;trail=[];draw();};
+  window.setLR=function(btn){lr=parseFloat(btn.dataset.lr);document.querySelectorAll('[data-lr]').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');};
+  window.setMom=function(btn){momentum=parseFloat(btn.dataset.mom);document.querySelectorAll('[data-mom]').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');};
+  window.addEventListener('resize',function(){resize();draw();}); resize(); draw();
+})();
+
+/* ATTENTION HEATMAP */
+(function() {
+  var canvas=document.getElementById('attn-canvas'), ctx=canvas.getContext('2d');
+  var pattern='causal', hoverR=-1, hoverC=-1;
+  var tokens=['<bos>','the','cat','sat','on','the','warm','mat'];
+  var N=tokens.length;
+
+  function softmax(arr){var max=Math.max.apply(null,arr);var exps=arr.map(function(v){return Math.exp(v-max);});var sum=exps.reduce(function(a,b){return a+b;},0);return exps.map(function(v){return v/sum;});}
+
+  function generateWeights() {
+    var W=[];
+    for(var i=0;i<N;i++){
+      var row=[];
+      for(var j=0;j<N;j++){
+        var val=0;
+        if(pattern==='causal'){if(j>i)val=-1e9;else{val=-0.5*Math.abs(i-j)+(j===0?1.5:0);if(tokens[i]===tokens[j]&&i!==j)val+=2;val+=Math.sin(i*3.7+j*2.1)*0.8;}}
+        else if(pattern==='local'){if(Math.abs(i-j)>2)val=-1e9;else val=2-Math.abs(i-j)+Math.sin(i+j)*0.5;}
+        else if(pattern==='sparse'){if(j>i)val=-1e9;else if(j%2===0||Math.abs(i-j)<=1)val=1.5-0.3*Math.abs(i-j)+Math.cos(i*j)*0.5;else val=-1e9;}
+        else{val=-0.3*Math.abs(i-j)+Math.sin(i*2.3+j*1.7)*1.2;if(tokens[i]===tokens[j]&&i!==j)val+=2.5;}
+        row.push(val);
+      }
+      W.push(softmax(row));
+    }
+    return W;
+  }
+  var weights=generateWeights();
+
+  function resize(){var r=canvas.getBoundingClientRect(),d=window.devicePixelRatio||1;canvas.width=r.width*d;canvas.height=r.height*d;ctx.setTransform(d,0,0,d,0,0);}
+
+  function draw() {
+    var w=canvas.getBoundingClientRect().width, h=canvas.getBoundingClientRect().height;
+    ctx.clearRect(0,0,w,h);
+    var labelW=70,labelH=50;
+    var cellW=Math.min((w-labelW-20)/N,36), cellH=Math.min((h-labelH-30)/N,32);
+    var gridW=cellW*N, ox=labelW+(w-labelW-gridW)/2, oy=labelH;
+
+    // column labels (muted yellow)
+    ctx.fillStyle='#b8a855'; ctx.font='9px Space Mono'; ctx.textAlign='center';
+    for(var c=0;c<N;c++){ctx.save();ctx.translate(ox+c*cellW+cellW/2,oy-6);ctx.rotate(-0.5);ctx.fillText(tokens[c],0,0);ctx.restore();}
+
+    // row labels (muted cyan)
+    ctx.fillStyle='#6ab8b0'; ctx.textAlign='right';
+    for(var r=0;r<N;r++) ctx.fillText(tokens[r],ox-8,oy+r*cellH+cellH/2+3);
+
+    ctx.fillStyle='#2a2a2a'; ctx.font='8px Space Mono'; ctx.textAlign='center';
+    ctx.fillText('KEYS',ox+gridW/2,12);
+    ctx.save();ctx.translate(10,oy+gridW*cellH/gridW/2+gridW/2*cellH/cellW);ctx.rotate(-Math.PI/2);ctx.fillText('QUERIES',0,0);ctx.restore();
+
+    for(var i=0;i<N;i++){
+      for(var j=0;j<N;j++){
+        var val=weights[i][j];
+        var x=ox+j*cellW, y=oy+i*cellH;
+        // warmth scale: dark -> amber
+        var intensity=Math.pow(val,0.6);
+        ctx.fillStyle='rgb('+Math.round(200*intensity)+','+Math.round(168*intensity)+','+Math.round(50*intensity)+')';
+        ctx.fillRect(x,y,cellW-1,cellH-1);
+
+        if(val>0.01){
+          ctx.fillStyle=val>0.3?'#0a0a0a':'#666';
+          ctx.font='8px Space Mono'; ctx.textAlign='center';
+          ctx.fillText(val.toFixed(2),x+cellW/2,y+cellH/2+3);
+        }
+        if(i===hoverR&&j===hoverC){ctx.strokeStyle='#00ffe9';ctx.lineWidth=2;ctx.strokeRect(x,y,cellW-1,cellH-1);}
+      }
+    }
+    if(hoverR>=0){
+      ctx.strokeStyle='rgba(0,255,233,0.12)';ctx.lineWidth=1;
+      ctx.strokeRect(ox,oy+hoverR*cellH,gridW,cellH);
+      ctx.strokeStyle='rgba(184,168,85,0.12)';
+      ctx.strokeRect(ox+hoverC*cellW,oy,cellW,cellH*N);
+    }
+  }
+
+  canvas.addEventListener('mousemove',function(e){
+    var rect=canvas.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;
+    var w2=rect.width,labelW2=70,labelH2=50;
+    var cellW2=Math.min((w2-labelW2-20)/N,36),cellH2=Math.min((rect.height-labelH2-30)/N,32);
+    var gridW2=cellW2*N,ox2=labelW2+(w2-labelW2-gridW2)/2,oy2=labelH2;
+    var c=Math.floor((mx-ox2)/cellW2),r=Math.floor((my-oy2)/cellH2);
+    if(r>=0&&r<N&&c>=0&&c<N){hoverR=r;hoverC=c;document.getElementById('attn-hover').textContent=tokens[r]+' -> '+tokens[c]+': '+weights[r][c].toFixed(4);}
+    else{hoverR=-1;hoverC=-1;document.getElementById('attn-hover').textContent='hover a cell';}
+    draw();
+  });
+  canvas.addEventListener('mouseleave',function(){hoverR=-1;hoverC=-1;draw();document.getElementById('attn-hover').textContent='hover a cell';});
+  window.setAttnPattern=function(btn){pattern=btn.dataset.pattern;document.querySelectorAll('#sec-attention-viz .viz-btn').forEach(function(b){b.classList.remove('active-yl');});btn.classList.add('active-yl');weights=generateWeights();draw();};
+  window.addEventListener('resize',function(){resize();draw();}); resize(); draw();
+})();
+
+/* NAV SCROLL */
+(function() {
+  var pills=document.querySelectorAll('.nav-pill'), sections=[];
+  pills.forEach(function(pill){
+    var href=pill.getAttribute('href');
+    if(href&&href.startsWith('#')){var target=document.querySelector(href);if(target)sections.push({pill:pill,el:target});}
+    pill.addEventListener('click',function(e){e.preventDefault();var t=document.querySelector(this.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'});});
+  });
+  function updateActive(){var scrollY=window.scrollY+80,active=null;sections.forEach(function(s){if(s.el.offsetTop<=scrollY)active=s;});pills.forEach(function(p){p.classList.remove('active');});if(active)active.pill.classList.add('active');}
+  window.addEventListener('scroll',updateActive,{passive:true}); updateActive();
+})();
+</script>
+
+</body>
+</html>
