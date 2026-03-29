@@ -1,203 +1,380 @@
-<!--
-  BRUTALIST TERMINAL // HED0RAH DESIGN SYSTEM (TUNED)
--->
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>HED0RAH</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap" rel="stylesheet">
+
 <style>
 :root {
-  --bg:      #0a0a0a;
-  --border:  #1e1e1e;
-  --border2: #2a2a2a;
-  --cyan:    #00ffe9;
-  --dim:     #9a9a9a;
-  --text:    #f2f2f2; /* slightly lighter */
+  --bg: #f4f0e8;
+  --paper: #f8f5ee;
+  --ink: #1a1a1a;
+  --red: #c03a2b;
+  --dim: #8a8578;
+  --rule: #d4cfc4;
+  --fine: #e6e2da;
+  --grid: #f2eee8;
+  --sans: 'Barlow', system-ui, sans-serif;
+  --cond: 'Barlow Condensed', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
   background: var(--bg);
-  color: var(--text);
-  font-family: 'Space Mono', monospace;
-  font-size: 14px;
-  line-height: 1.75;
-  padding: 56px 44px;
-  max-width: 760px;
-  margin: 0 auto;
+  color: var(--ink);
+  font: 400 14px/1.7 var(--sans);
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-  pointer-events: none;
-  z-index: 999;
+.page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 56px 48px 72px;
+  background: var(--paper);
+  min-height: 100vh;
+  border-inline: 1px solid var(--rule);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+header {
+  margin-bottom: 44px;
+  padding-bottom: 20px;
+  border-bottom: .5px solid var(--ink);
 }
 
 h1 {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 40px;
-  letter-spacing: 4px;
-  color: #fff;
-  line-height: 1;
-  margin-bottom: 8px;
-}
-
-h1 span { color: var(--cyan); }
-
-.sub {
-  font-size: 11px;
-  color: var(--dim);
-  letter-spacing: 2px;
+  font: 600 48px/1 var(--cond);
+  letter-spacing: 7px;
   text-transform: uppercase;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 32px;
 }
 
-h2 {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 16px;
+h1 b { color: var(--red); }
+
+.tagline {
+  font: 300 10px var(--mono);
   letter-spacing: 3px;
-  color: #bbb;
   text-transform: uppercase;
-  margin-bottom: 14px;
+  color: var(--dim);
+  margin-top: 6px;
 }
 
-ul { list-style: none; margin-bottom: 32px; }
-
-li {
-  padding: 10px 0;
-  border-bottom: 1px solid #151515;
+.scale {
+  margin-top: 10px;
+  font: 300 9px var(--mono);
+  color: var(--dim);
 }
 
-li:last-child { border-bottom: none; }
+section { margin-bottom: 40px; }
 
-a {
-  color: var(--cyan);
+.sec-head {
+  font: 500 12px var(--cond);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--dim);
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.sec-head::after {
+  content: '';
+  flex: 1;
+  border-top: .5px dashed var(--rule);
+}
+
+.sec-num {
+  font: 400 9px var(--mono);
+  color: var(--red);
+}
+
+section ol {
+  list-style: none;
+  counter-reset: item;
+}
+
+section ol li {
+  counter-increment: item;
+  padding: 12px 0;
+  border-bottom: .5px solid var(--fine);
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 10px;
+  will-change: transform;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s ease;
+}
+
+section ol li::before {
+  content: counter(item) ".";
+  font: 400 9px var(--mono);
+  color: var(--red);
+  text-align: right;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+
+li a {
+  font: 500 15px var(--sans);
+  color: var(--ink);
   text-decoration: none;
 }
 
-a:hover { color: #fff; }
+li a:hover { color: var(--red); }
 
-.links {
-  display: block;
-  margin-top: 2px;
-  font-size: 12px;
-}
-
-.links a {
-  margin-right: 10px;
-  color: #7ff;
-}
-
-.links a:hover {
-  color: #fff;
-}
-
-.desc {
-  display: block;
+.d {
   color: var(--dim);
-  margin-top: 4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin-top: 2px;
 }
 
-.foot {
-  border-top: 1px solid var(--border);
-  padding-top: 16px;
-  margin-top: 12px;
-  font-size: 11px;
-  color: #777;
+.lnk {
+  display: flex;
+  gap: 12px;
+  margin-top: 3px;
+}
+
+.lnk a {
+  font: 400 9px var(--mono);
   letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--red);
+  text-decoration: none;
+  border-bottom: .5px solid transparent;
 }
 
-@media (max-width: 640px) {
-  body { padding: 32px 20px; }
+.lnk a:hover { border-bottom-color: var(--red); }
+
+.t {
+  font: 400 9px var(--mono);
+  color: var(--dim);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* =========================
+   FIELD — GRAVITATIONAL DISPLACEMENT
+   pure CSS, zero JS
+   ========================= */
+
+section ol li:hover {
+  transform: scale(1.025);
+  z-index: 2;
+}
+
+/* === BELOW === */
+section ol li:hover ~ li {
+  transform: translateY(6px) translateX(1px) rotate(0.15deg);
+  opacity: 0.92;
+}
+section ol li:hover ~ li ~ li {
+  transform: translateY(4px) translateX(0.5px) rotate(0.1deg);
+  opacity: 0.9;
+}
+section ol li:hover ~ li ~ li ~ li {
+  transform: translateY(2px) translateX(0.25px) rotate(0.05deg);
+  opacity: 0.88;
+}
+section ol li:hover ~ li ~ li ~ li ~ li {
+  transform: translateY(1px);
+  opacity: 0.86;
+}
+
+/* === ABOVE === */
+section ol li:has(~ li:hover) {
+  transform: translateY(-6px) translateX(-1px) rotate(-0.15deg);
+  opacity: 0.92;
+}
+section ol li:has(~ li ~ li:hover) {
+  transform: translateY(-4px) translateX(-0.5px) rotate(-0.1deg);
+  opacity: 0.9;
+}
+section ol li:has(~ li ~ li ~ li:hover) {
+  transform: translateY(-2px) translateX(-0.25px) rotate(-0.05deg);
+  opacity: 0.88;
+}
+section ol li:has(~ li ~ li ~ li ~ li:hover) {
+  transform: translateY(-1px);
+  opacity: 0.86;
+}
+
+/* === NUMBER DRIFT === */
+section ol li:hover ~ li::before {
+  transform: translateX(6px);
+  opacity: 0.6;
+}
+section ol li:has(~ li:hover)::before {
+  transform: translateX(-6px);
+  opacity: 0.6;
+}
+
+/* === GLOBAL SOFT FOCUS === */
+section ol:hover li:not(:hover) {
+  opacity: 0.82;
+}
+
+footer {
+  border-top: .5px solid var(--ink);
+  padding-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  font: 300 10px var(--mono);
+  color: var(--dim);
+}
+
+footer a { color: inherit; text-decoration: none; }
+footer a:hover { color: var(--red); }
+
+@media (max-width: 600px) {
+  .page { padding: 28px 20px; }
+  li { grid-template-columns: 20px 1fr; }
+  .t { display: none; }
+}
+
+@media print {
+  body { background: #fff; }
+  .page { border: none; background: #fff; padding: 20px; max-width: 100%; background-image: none; }
+  a { color: var(--ink); }
+  .lnk a::after { content: " (" attr(href) ")"; font-size: 8px; color: var(--dim); }
+}
+
+/* fallback for browsers without :has() */
+@supports not selector(li:has(~ li:hover)) {
+  section ol li:hover ~ li {
+    transform: translateY(3px);
+  }
 }
 </style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600&family=JetBrains+Mono:wght@300;400&display=swap" media="print" onload="this.media='all'">
 </head>
+
 <body>
+<div class="page">
 
-<h1>HED<span>0RAH</span></h1>
-<div class="sub">github pages</div>
+<header>
+  <h1>HED<b>0RAH</b></h1>
+  <p class="tagline">experiments &amp; instruments</p>
+  <p class="scale">github.io</p>
+</header>
 
-<h2>Experiments</h2>
-<ul>
+<section>
+  <h2 class="sec-head"><span class="sec-num">01</span> Tools</h2>
+  <ol>
+    <li>
+      <div>
+        <a href="https://github.com/hed0rah/pagescope">pagescope</a>
+        <p class="d">Chrome DevTools in your terminal.</p>
+        <p class="lnk"><a href="https://pypi.org/project/pagescope/">pypi</a> <a href="https://github.com/hed0rah/pagescope">repo</a></p>
+      </div>
+      <span class="t">python</span>
+    </li>
+    <li>
+      <div>
+        <a href="https://github.com/hed0rah/spectrum_tui">spectrum_tui</a>
+        <p class="d">RTL-SDR spectrum scanner TUI.</p>
+        <p class="lnk"><a href="https://github.com/hed0rah/spectrum_tui">repo</a></p>
+      </div>
+      <span class="t">rust</span>
+    </li>
+    <li>
+      <div>
+        <a href="https://github.com/hed0rah/acid_cat">acid_cat</a>
+        <p class="d">WAV metadata explorer + audio feature extraction (BPM / Key).</p>
+        <p class="lnk"><a href="https://github.com/hed0rah/acid_cat">repo</a></p>
+      </div>
+      <span class="t">python</span>
+    </li>
+    <li>
+      <div>
+        <a href="/moonboard.html">Moonboard</a>
+        <p class="d">Lightweight moodboard for local use.</p>
+      </div>
+      <span class="t">web</span>
+    </li>
+  </ol>
+</section>
 
-  <li>
-    <a href="https://github.com/hed0rah/pagescope">pagescope</a>
-    <span class="links">
-      <a href="https://pypi.org/project/pagescope/">pypi</a>
-    </span>
-    <span class="desc">Chrome DevTools in your terminal.</span>
-  </li>
+<section>
+  <h2 class="sec-head"><span class="sec-num">02</span> Simulations</h2>
+  <ol>
+    <li>
+      <div>
+        <a href="bff-v2.html">BFF Primordial Soup v2</a>
+        <p class="d">Spontaneous self-replicator emergence in a Brainfuck-derived computational substrate.</p>
+      </div>
+      <span class="t">simulation</span>
+    </li>
+    <li>
+      <div>
+        <a href="https://web-production-55622.up.railway.app/">Spectral Audio Averaging</a>
+        <p class="d">Inspired by Jim Campbell's Illuminated Averages.</p>
+      </div>
+      <span class="t">audio</span>
+    </li>
+  </ol>
+</section>
 
-  <li>
-    <a href="bff-v2.html">BFF Primordial Soup v2</a>
-    <span class="desc">browser simulation of spontaneous self-replicator emergence in a Brainfuck-derived computational substrate.</span>
-  </li>
+<section>
+  <h2 class="sec-head"><span class="sec-num">03</span> References</h2>
+  <ol>
+    <li>
+      <div>
+        <a href="/k8s/k8s-cheatsheet.html">Kubernetes Cheatsheet</a>
+        <p class="d">Interactive k8s reference with search.</p>
+      </div>
+      <span class="t">infra</span>
+    </li>
+    <li>
+      <div>
+        <a href="/namespaces.html">Linux Namespaces</a>
+        <p class="d">Overview, cheatsheet + demos.</p>
+        <p class="lnk"><a href="https://github.com/hed0rah/namespaces-fun">repo</a></p>
+      </div>
+      <span class="t">linux</span>
+    </li>
+    <li>
+      <div>
+        <a href="/ebpf-overview.html">eBPF Overview</a>
+        <p class="d">Overview, cheatsheet + BCC tools.</p>
+        <p class="lnk"><a href="https://github.com/hed0rah/bpf-fun">repo</a></p>
+      </div>
+      <span class="t">linux</span>
+    </li>
+    <li>
+      <div>
+        <a href="/ai-visuals/index.html">AI / ML Infographic Series</a>
+        <p class="d">20 interactive explainers + cheatsheets.</p>
+      </div>
+      <span class="t">ml</span>
+    </li>
+  </ol>
+</section>
 
-  <li>
-    <a href="/moonboard.html">Moonboard</a>
-    <span class="desc">lightweight moodboard for local use.</span>
-  </li>
+<section>
+  <h2 class="sec-head"><span class="sec-num">04</span> Ongoing</h2>
+  <ol>
+    <li>
+      <div>
+        <a href="https://skateglossary.com">Skate Glossary</a>
+        <p class="d">WIP.</p>
+      </div>
+      <span class="t">web</span>
+    </li>
+  </ol>
+</section>
 
-  <li>
-    <a href="/k8s/k8s-cheatsheet.html">Kubernetes Cheatsheet</a>
-    <span class="desc">interactive k8s reference / cheatsheet with search.</span>
-  </li>
+<footer>
+  <a href="https://github.com/hed0rah">github.com/hed0rah</a>
+  <span>2025</span>
+</footer>
 
-  <li>
-    <a href="https://web-production-55622.up.railway.app/">Spectral Audio Averaging Web App</a>
-    <span class="desc">inspired by Jim Campbell's Illuminated Averages.</span>
-  </li>
-
-  <li>
-    <a href="/namespaces.html">Linux Namespaces</a>
-    <span class="links">
-      <a href="https://github.com/hed0rah/namespaces-fun">repo</a>
-    </span>
-    <span class="desc">overview / cheatsheet + demos.</span>
-  </li>
-
-  <li>
-    <a href="/ebpf-overview.html">eBPF Overview</a>
-    <span class="links">
-      <a href="https://github.com/hed0rah/bpf-fun">repo</a>
-    </span>
-    <span class="desc">overview / cheatsheet + BCC tools.</span>
-  </li>
-
-  <li>
-    <a href="https://github.com/hed0rah/spectrum_tui">spectrum_tui</a>
-    <span class="desc">simple RTL-SDR spectrum scanner TUI.</span>
-  </li>
-
-  <li>
-    <a href="https://github.com/hed0rah/acid_cat">acid_cat</a>
-    <span class="desc">WAV metadata explorer + audio feature extraction (BPM / Key).</span>
-  </li>
-
-  <li>
-    <a href="/ai-visuals/index.html">AI / ML Infographic Series</a>
-    <span class="desc">learning materials built with claude. 20 interactive explainers + cheatsheets.</span>
-  </li>
-
-  <li>
-    <a href="https://skateglossary.com">Skate Glossary</a>
-    <span class="desc">WIP.</span>
-  </li>
-
-</ul>
-
-<div class="foot">
-  <a href="https://github.com/hed0rah" style="color:inherit;">github.com/hed0rah</a>
 </div>
-
 </body>
 </html>
