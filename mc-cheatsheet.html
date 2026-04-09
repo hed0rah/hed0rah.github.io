@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP Cheatsheet</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ── MASTHEAD ── */
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+
+/* ── STICKY NAV ── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0;
+  white-space: nowrap;
+}
+.nav a {
+  display: block;
+  padding: 12px 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav a:hover { color: var(--orange); border-bottom-color: var(--orange); }
+.nav a.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+/* ── LAYOUT ── */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+  counter-reset: section;
+}
+section { padding: 52px 0; border-bottom: 1px solid var(--border2); counter-increment: section; }
+section:last-of-type { border-bottom: none; }
+section::before {
+  content: counter(section, decimal-leading-zero) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+/* ── HEADINGS ── */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--bright); }
+h2 em.gr { color: var(--bright); }
+h2 em.pu { color: var(--bright); }
+h2 .htag {
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 400;
+  padding: 2px 8px;
+  border: 1px solid var(--border2);
+  vertical-align: middle;
+  margin-left: 10px;
+  position: relative;
+  top: -3px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+
+/* ── PRIMITIVE CARDS ── */
+.prim-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  margin: 24px 0;
+}
+.prim-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 24px;
+  transition: border-color 0.2s;
+}
+.prim-card:hover { border-color: var(--orange); }
+.prim-card[data-type="tools"]     { border-left: 3px solid var(--orange); }
+.prim-card[data-type="resources"] { border-left: 3px solid var(--cyan); }
+.prim-card[data-type="prompts"]   { border-left: 3px solid var(--yellow); }
+.prim-card .p-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 4px;
+}
+.prim-card .p-method {
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+.prim-card[data-type="tools"]     .p-method { color: var(--orange); }
+.prim-card[data-type="resources"] .p-method { color: var(--cyan); }
+.prim-card[data-type="prompts"]   .p-method { color: var(--yellow); }
+.prim-card .p-desc {
+  font-size: 11px;
+  color: var(--dim);
+  line-height: 1.65;
+  margin-bottom: 12px;
+}
+.prim-card .p-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.prim-card .p-method-row {
+  font-size: 10px;
+  color: var(--text);
+  padding: 3px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  letter-spacing: 0.5px;
+}
+.prim-card .p-method-row span { color: var(--dim); float: right; }
+
+/* ── CODE ── */
+code {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  padding: 1px 6px;
+  font-size: 11px;
+  color: #C8A030;
+}
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .prompt { color: #3AB8AC; user-select: none; }
+pre .flag   { color: #7A7870; }
+pre .cmd    { color: #CCCBC4; }
+pre .out    { color: #5A5952; }
+
+/* ── TABLES ── */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; }
+td.cy   { color: var(--cyan); }
+td.rd   { color: var(--red); }
+td.yl   { color: var(--yellow); }
+
+/* ── INFO BOXES ── */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy    { border-left-color: var(--cyan); }
+.info-box.warn  { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── TABS ── */
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border2);
+  margin-top: 20px;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 10px 18px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); }
+.tab-content { display: none; padding-top: 14px; }
+.tab-content.active { display: block; }
+
+/* ── FLOW DIAGRAM ── */
+.flow {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+  overflow-x: auto;
+  padding: 12px 0;
+}
+.flow-step {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 12px 16px;
+  min-width: 120px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.flow-step .step-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 2px;
+  margin-bottom: 3px;
+}
+.flow-step .step-name { font-weight: 700; font-size: 12px; color: var(--bright); }
+.flow-step .step-detail { font-size: 9px; color: var(--orange); margin-top: 2px; }
+.flow-step.cy .step-detail { color: var(--cyan); }
+.flow-arrow { font-size: 18px; color: var(--dim2); padding: 0 4px; flex-shrink: 0; }
+
+/* ── ASCII DIAGRAM ── */
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #5A5952;
+}
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .dim  { color: #5A5952; }
+.diagram .yl   { color: #C8A030; }
+
+/* ── TWO COL ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; align-items: stretch; }
+.two-col > div { display: flex; flex-direction: column; }
+.two-col > div > pre { flex: 1; margin-bottom: 0; }
+
+/* ── SPINE ── */
+.spine {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* ── FOOTER ── */
+.footer {
+  border-top: 1px solid var(--border2);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+.footer a { color: var(--orange); text-decoration: none; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .prim-grid { grid-template-columns: 1fr; }
+  .two-col { grid-template-columns: 1fr; }
+  .flow { flex-direction: column; }
+  .flow-arrow { transform: rotate(90deg); }
+  .masthead { padding: 40px 20px 28px; }
+}
+@media (max-width: 1280px) { .spine { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- ══════ MASTHEAD ══════ -->
+<div class="masthead">
+  <h1>Model <em>Context</em> Protocol</h1>
+  <div class="subtitle">
+    <span>Tools · Resources · Prompts</span> // JSON-RPC 2.0 // stdio · SSE
+  </div>
+</div>
+
+<!-- ══════ NAV ══════ -->
+<div class="nav">
+  <div class="nav-inner">
+    <a href="#overview">Overview</a>
+    <a href="#primitives">Primitives</a>
+    <a href="#transport">Transport</a>
+    <a href="#tools">Tool Schema</a>
+    <a href="#resources">Resources</a>
+    <a href="#prompts">Prompts</a>
+    <a href="#lifecycle">Lifecycle</a>
+    <a href="#errors">Errors</a>
+    <a href="#sdk">SDK</a>
+    <a href="#quickref">Quick Ref</a>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ══════ OVERVIEW ══════ -->
+<section id="overview">
+  <h2><em class="or">MCP</em> Architecture</h2>
+  <div class="section-bar"></div>
+  <p>MCP is an open protocol for connecting LLMs to external tools, data sources, and services. A <strong>Host</strong> (Claude Desktop, an IDE, your app) embeds one or more <strong>Clients</strong>; each Client maintains a 1:1 connection to a <strong>Server</strong> that exposes capabilities.</p>
+
+  <div class="diagram"><span class="dim">┌──────────────────────────────────────────────────────────────┐
+│  </span><span class="acc">HOST</span><span class="dim">  (Claude Desktop / IDE / custom application)            │
+│                                                              │
+│  ┌─────────────────┐      ┌─────────────────┐              │
+│  │  </span><span class="acc2">MCP Client</span><span class="dim">      │      │  </span><span class="acc2">MCP Client</span><span class="dim">      │  ...         │
+│  └────────┬────────┘      └────────┬────────┘              │
+└───────────┼────────────────────────┼───────────────────────┘
+            │ </span><span class="yl">stdio / SSE</span><span class="dim">           │ </span><span class="yl">stdio / SSE</span><span class="dim">
+   ┌────────▼────────┐      ┌────────▼────────┐
+   │  </span><span class="acc">MCP Server</span><span class="dim">      │      │  </span><span class="acc">MCP Server</span><span class="dim">      │
+   │                 │      │                 │
+   │  tools          │      │  tools          │
+   │  resources      │      │  resources      │
+   │  prompts        │      │  prompts        │
+   └─────────────────┘      └─────────────────┘
+        </span><span class="dim">filesystem            database / API</span></div>
+
+  <table>
+    <tr><th>Role</th><th>Responsibilities</th><th>Example</th></tr>
+    <tr>
+      <td class="meth">Host</td>
+      <td>Owns LLM context, manages client connections, enforces security policy</td>
+      <td>Claude Desktop, VS Code, your app</td>
+    </tr>
+    <tr>
+      <td class="cy">Client</td>
+      <td>Maintains one server connection, forwards capability calls from host to server</td>
+      <td>Embedded in host process</td>
+    </tr>
+    <tr>
+      <td class="yl">Server</td>
+      <td>Exposes tools, resources, prompts over a transport. Stateless or stateful.</td>
+      <td>Your MCP server process</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ══════ PRIMITIVES ══════ -->
+<section id="primitives">
+  <h2>The 3 <em class="or">Primitives</em></h2>
+  <div class="section-bar"></div>
+  <p>Everything a server exposes falls into one of three capability types. A server can implement any combination.</p>
+
+  <div class="prim-grid">
+    <div class="prim-card" data-type="tools">
+      <div class="p-name">Tools</div>
+      <div class="p-method">Model-controlled actions</div>
+      <div class="p-desc">Functions the LLM can call to perform actions or retrieve computed data. The model decides when to invoke them based on context.</div>
+      <div class="p-methods">
+        <div class="p-method-row">tools/list <span>→ tool definitions</span></div>
+        <div class="p-method-row">tools/call <span>→ result | error</span></div>
+      </div>
+    </div>
+    <div class="prim-card" data-type="resources">
+      <div class="p-name">Resources</div>
+      <div class="p-method">App-controlled data</div>
+      <div class="p-desc">Static or dynamic data the application exposes to the LLM's context. Addressed by URI. The host decides what to attach.</div>
+      <div class="p-methods">
+        <div class="p-method-row">resources/list <span>→ resource list</span></div>
+        <div class="p-method-row">resources/read <span>→ contents</span></div>
+        <div class="p-method-row">resources/subscribe <span>→ live updates</span></div>
+      </div>
+    </div>
+    <div class="prim-card" data-type="prompts">
+      <div class="p-name">Prompts</div>
+      <div class="p-method">User-controlled templates</div>
+      <div class="p-desc">Reusable prompt templates with argument slots. Surface in the host UI (slash commands, etc.) for users to invoke directly.</div>
+      <div class="p-methods">
+        <div class="p-method-row">prompts/list <span>→ prompt list</span></div>
+        <div class="p-method-row">prompts/get <span>→ messages array</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ TRANSPORT ══════ -->
+<section id="transport">
+  <h2><em class="or">Transport</em> Layer</h2>
+  <div class="section-bar"></div>
+  <p>MCP is transport-agnostic. The two standard transports cover local processes and remote HTTP services.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>stdio</h3>
+      <pre><span class="label">local process</span>
+<span class="cm"># Server reads from stdin, writes to stdout</span>
+<span class="cm"># Host launches server as subprocess</span>
+
+<span class="cm"># claude_desktop_config.json</span>
+{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"my-server"</span>: {
+      <span class="key">"command"</span>: <span class="st">"python"</span>,
+      <span class="key">"args"</span>: [<span class="st">"-m"</span>, <span class="st">"my_mcp_server"</span>],
+      <span class="key">"env"</span>: { <span class="key">"API_KEY"</span>: <span class="st">"..."</span> }
+    }
+  }
+}</pre>
+    </div>
+    <div>
+      <h3>SSE (HTTP)</h3>
+      <pre class="cy"><span class="label">remote / network</span>
+<span class="cm"># Server exposes two endpoints:</span>
+<span class="cm">#   GET  /sse   — event stream (server → client)</span>
+<span class="cm">#   POST /message — messages (client → server)</span>
+
+<span class="cm"># Config</span>
+{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"remote"</span>: {
+      <span class="key">"url"</span>: <span class="st">"https://example.com/sse"</span>
+    }
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="info-box warn">
+    <strong>Streamable HTTP (2025-03-26+)</strong>
+    The newer spec replaces SSE with a single <code>POST /mcp</code> endpoint that can return either a single JSON response or an SSE stream. Older clients use legacy SSE; check spec version via <code>protocolVersion</code> in the initialize handshake.
+  </div>
+</section>
+
+<!-- ══════ TOOL SCHEMA ══════ -->
+<section id="tools">
+  <h2>Tool <em class="or">Schema</em></h2>
+  <div class="section-bar"></div>
+  <p>Tools are defined with a name, description, and a JSON Schema for their inputs. The description is critical — the LLM uses it to decide when and how to call the tool.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(event,'tab-tooldef')">Definition</button>
+    <button class="tab-btn" onclick="switchTab(event,'tab-toolcall')">Call / Response</button>
+    <button class="tab-btn" onclick="switchTab(event,'tab-toolerr')">Error</button>
+    <button class="tab-btn" onclick="switchTab(event,'tab-annotations')">Annotations</button>
+  </div>
+
+  <div id="tab-tooldef" class="tab-content active">
+    <pre><span class="label">JSON Schema</span>
+{
+  <span class="key">"name"</span>:        <span class="st">"read_file"</span>,
+  <span class="key">"description"</span>: <span class="st">"Read the contents of a file at a given path"</span>,
+  <span class="key">"inputSchema"</span>: {
+    <span class="key">"type"</span>: <span class="st">"object"</span>,
+    <span class="key">"properties"</span>: {
+      <span class="key">"path"</span>: {
+        <span class="key">"type"</span>:        <span class="st">"string"</span>,
+        <span class="key">"description"</span>: <span class="st">"Absolute path to the file"</span>
+      },
+      <span class="key">"encoding"</span>: {
+        <span class="key">"type"</span>:    <span class="st">"string"</span>,
+        <span class="key">"enum"</span>:    [<span class="st">"utf-8"</span>, <span class="st">"base64"</span>],
+        <span class="key">"default"</span>: <span class="st">"utf-8"</span>
+      }
+    },
+    <span class="key">"required"</span>: [<span class="st">"path"</span>]
+  }
+}</pre>
+  </div>
+
+  <div id="tab-toolcall" class="tab-content">
+    <div class="two-col">
+      <div>
+        <pre><span class="label">request</span>
+{
+  <span class="key">"jsonrpc"</span>: <span class="st">"2.0"</span>,
+  <span class="key">"id"</span>:      <span class="num">1</span>,
+  <span class="key">"method"</span>: <span class="st">"tools/call"</span>,
+  <span class="key">"params"</span>: {
+    <span class="key">"name"</span>:      <span class="st">"read_file"</span>,
+    <span class="key">"arguments"</span>: {
+      <span class="key">"path"</span>: <span class="st">"/etc/hosts"</span>
+    }
+  }
+}</pre>
+      </div>
+      <div>
+        <pre><span class="label">response</span>
+{
+  <span class="key">"jsonrpc"</span>: <span class="st">"2.0"</span>,
+  <span class="key">"id"</span>:      <span class="num">1</span>,
+  <span class="key">"result"</span>: {
+    <span class="key">"content"</span>: [
+      {
+        <span class="key">"type"</span>: <span class="st">"text"</span>,
+        <span class="key">"text"</span>: <span class="st">"127.0.0.1 localhost\n..."</span>
+      }
+    ],
+    <span class="key">"isError"</span>: <span class="kw">false</span>
+  }
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-toolerr" class="tab-content">
+    <div class="info-box danger">
+      <strong>Tool errors vs protocol errors</strong>
+      A tool can fail in two ways. A <em>tool-level error</em> returns a normal JSON-RPC result with <code>isError: true</code> and error text in content — the LLM sees this and can react. A <em>protocol error</em> returns a JSON-RPC error object — used for invalid calls, unknown tools, malformed requests.
+    </div>
+    <div class="two-col">
+      <div>
+        <pre><span class="label">tool-level error (LLM sees it)</span>
+{
+  <span class="key">"result"</span>: {
+    <span class="key">"content"</span>: [{
+      <span class="key">"type"</span>: <span class="st">"text"</span>,
+      <span class="key">"text"</span>: <span class="st">"File not found: /etc/foo"</span>
+    }],
+    <span class="key">"isError"</span>: <span class="kw">true</span>
+  }
+}</pre>
+      </div>
+      <div>
+        <pre class="rd"><span class="label">protocol error</span>
+{
+  <span class="key">"error"</span>: {
+    <span class="key">"code"</span>:    <span class="num">-32601</span>,
+    <span class="key">"message"</span>: <span class="st">"Method not found"</span>,
+    <span class="key">"data"</span>:    <span class="st">"unknown tool: read_file"</span>
+  }
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-annotations" class="tab-content">
+    <p>Tool annotations hint at behavior to help hosts make security and UX decisions. They are <em>advisory only</em> — hosts must not rely on them for enforcement.</p>
+    <table>
+      <tr><th>Annotation</th><th>Type</th><th>Meaning</th></tr>
+      <tr><td class="meth">readOnlyHint</td><td>bool</td><td>Tool does not modify external state</td></tr>
+      <tr><td class="meth">destructiveHint</td><td>bool</td><td>May perform destructive actions (delete, overwrite)</td></tr>
+      <tr><td class="meth">idempotentHint</td><td>bool</td><td>Repeated calls with same args have no extra effect</td></tr>
+      <tr><td class="meth">openWorldHint</td><td>bool</td><td>Interacts with external systems (network, etc.)</td></tr>
+    </table>
+    <pre><span class="label">with annotations</span>
+{
+  <span class="key">"name"</span>: <span class="st">"delete_file"</span>,
+  <span class="key">"annotations"</span>: {
+    <span class="key">"destructiveHint"</span>: <span class="kw">true</span>,
+    <span class="key">"readOnlyHint"</span>:   <span class="kw">false</span>
+  },
+  <span class="key">"inputSchema"</span>: { <span class="dim">...</span> }
+}</pre>
+  </div>
+</section>
+
+<!-- ══════ RESOURCES ══════ -->
+<section id="resources">
+  <h2><em class="cy">Resources</em></h2>
+  <div class="section-bar cy"></div>
+  <p>Resources expose data to the LLM context. Each resource has a URI, a human-readable name, and optional MIME type. Resources can be static files or dynamically generated.</p>
+
+  <div class="two-col">
+    <div>
+      <pre><span class="label">list response</span>
+{
+  <span class="key">"resources"</span>: [
+    {
+      <span class="key">"uri"</span>:         <span class="st">"file:///project/README.md"</span>,
+      <span class="key">"name"</span>:        <span class="st">"Project README"</span>,
+      <span class="key">"description"</span>: <span class="st">"Project overview"</span>,
+      <span class="key">"mimeType"</span>:    <span class="st">"text/markdown"</span>
+    },
+    {
+      <span class="key">"uri"</span>:      <span class="st">"db://users/active"</span>,
+      <span class="key">"name"</span>:     <span class="st">"Active Users"</span>,
+      <span class="key">"mimeType"</span>: <span class="st">"application/json"</span>
+    }
+  ]
+}</pre>
+    </div>
+    <div>
+      <pre><span class="label">read response</span>
+{
+  <span class="key">"contents"</span>: [
+    {
+      <span class="key">"uri"</span>:      <span class="st">"file:///project/README.md"</span>,
+      <span class="key">"mimeType"</span>: <span class="st">"text/markdown"</span>,
+      <span class="key">"text"</span>:     <span class="st">"# My Project\n..."</span>
+    }
+  ]
+}
+
+<span class="cm">// Binary content uses blob + base64</span>
+{
+  <span class="key">"uri"</span>:      <span class="st">"file:///image.png"</span>,
+  <span class="key">"mimeType"</span>: <span class="st">"image/png"</span>,
+  <span class="key">"blob"</span>:     <span class="st">"iVBORw0KGgo..."</span>
+}</pre>
+    </div>
+  </div>
+
+  <h3>Resource Templates</h3>
+  <p>URI templates (RFC 6570) let you define parametric resources without enumerating every possible URI.</p>
+  <pre><span class="label">resourceTemplates</span>
+{
+  <span class="key">"uriTemplate"</span>: <span class="st">"file:///{path}"</span>,
+  <span class="key">"name"</span>:        <span class="st">"File system access"</span>,
+  <span class="key">"mimeType"</span>:    <span class="st">"text/plain"</span>
+}
+
+{
+  <span class="key">"uriTemplate"</span>: <span class="st">"db://users/{id}/profile"</span>,
+  <span class="key">"name"</span>:        <span class="st">"User profile"</span>,
+  <span class="key">"mimeType"</span>:    <span class="st">"application/json"</span>
+}</pre>
+</section>
+
+<!-- ══════ PROMPTS ══════ -->
+<section id="prompts">
+  <h2><em class="or">Prompts</em></h2>
+  <div class="section-bar"></div>
+  <p>Prompt templates are predefined message sequences with typed argument slots. Hosts surface these as slash commands or UI elements for direct user invocation.</p>
+
+  <div class="two-col">
+    <div>
+      <pre><span class="label">prompt definition</span>
+{
+  <span class="key">"name"</span>:        <span class="st">"review_code"</span>,
+  <span class="key">"description"</span>: <span class="st">"Review code for issues"</span>,
+  <span class="key">"arguments"</span>: [
+    {
+      <span class="key">"name"</span>:        <span class="st">"language"</span>,
+      <span class="key">"description"</span>: <span class="st">"Programming language"</span>,
+      <span class="key">"required"</span>:    <span class="kw">true</span>
+    },
+    {
+      <span class="key">"name"</span>:     <span class="st">"focus"</span>,
+      <span class="key">"description"</span>: <span class="st">"security | performance | style"</span>,
+      <span class="key">"required"</span>: <span class="kw">false</span>
+    }
+  ]
+}</pre>
+    </div>
+    <div>
+      <pre><span class="label">get response</span>
+{
+  <span class="key">"messages"</span>: [
+    {
+      <span class="key">"role"</span>: <span class="st">"user"</span>,
+      <span class="key">"content"</span>: {
+        <span class="key">"type"</span>: <span class="st">"text"</span>,
+        <span class="key">"text"</span>: <span class="st">"Review this Python code
+focusing on security issues:
+
+```python
+# user's code injected here
+```"</span>
+      }
+    }
+  ]
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ LIFECYCLE ══════ -->
+<section id="lifecycle">
+  <h2>Connection <em class="or">Lifecycle</em></h2>
+  <div class="section-bar"></div>
+  <p>Every MCP session follows a strict initialization handshake before capability exchange. Both sides declare supported protocol versions and capabilities.</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="step-label">Client</div>
+      <div class="step-name">initialize</div>
+      <div class="step-detail">protocolVersion + capabilities</div>
+    </div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-step cy">
+      <div class="step-label">Server</div>
+      <div class="step-name">initialize</div>
+      <div class="step-detail">serverInfo + capabilities</div>
+    </div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-step">
+      <div class="step-label">Client</div>
+      <div class="step-name">initialized</div>
+      <div class="step-detail">notification (no response)</div>
+    </div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-step cy">
+      <div class="step-label">Both</div>
+      <div class="step-name">Ready</div>
+      <div class="step-detail">tools / resources / prompts</div>
+    </div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-step">
+      <div class="step-label">Either</div>
+      <div class="step-name">shutdown</div>
+      <div class="step-detail">graceful close</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <pre><span class="label">initialize request (client)</span>
+{
+  <span class="key">"method"</span>: <span class="st">"initialize"</span>,
+  <span class="key">"params"</span>: {
+    <span class="key">"protocolVersion"</span>: <span class="st">"2025-03-26"</span>,
+    <span class="key">"capabilities"</span>: {
+      <span class="key">"roots"</span>:    { <span class="key">"listChanged"</span>: <span class="kw">true</span> },
+      <span class="key">"sampling"</span>: {}
+    },
+    <span class="key">"clientInfo"</span>: {
+      <span class="key">"name"</span>:    <span class="st">"MyApp"</span>,
+      <span class="key">"version"</span>: <span class="st">"1.0.0"</span>
+    }
+  }
+}</pre>
+    </div>
+    <div>
+      <pre><span class="label">initialize response (server)</span>
+{
+  <span class="key">"result"</span>: {
+    <span class="key">"protocolVersion"</span>: <span class="st">"2025-03-26"</span>,
+    <span class="key">"capabilities"</span>: {
+      <span class="key">"tools"</span>:     { <span class="key">"listChanged"</span>: <span class="kw">true</span> },
+      <span class="key">"resources"</span>: { <span class="key">"subscribe"</span>: <span class="kw">true</span> },
+      <span class="key">"prompts"</span>:   { <span class="key">"listChanged"</span>: <span class="kw">true</span> }
+    },
+    <span class="key">"serverInfo"</span>: {
+      <span class="key">"name"</span>:    <span class="st">"my-server"</span>,
+      <span class="key">"version"</span>: <span class="st">"0.1.0"</span>
+    }
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="info-box cy">
+    <strong>Capability negotiation</strong>
+    A server advertising <code>tools: {}</code> means it supports tools but not list-change notifications. <code>tools: { listChanged: true }</code> means the server will send <code>notifications/tools/list_changed</code> when its tool list changes. Clients should only use capabilities the other side declared.
+  </div>
+</section>
+
+<!-- ══════ ERRORS ══════ -->
+<section id="errors">
+  <h2><em class="rd">Error</em> Codes</h2>
+  <div class="section-bar rd"></div>
+  <p>MCP uses standard JSON-RPC 2.0 error codes plus its own range.</p>
+
+  <table>
+    <tr><th>Code</th><th>Name</th><th>When</th></tr>
+    <tr><td class="rd">-32700</td><td>Parse error</td><td>Invalid JSON received</td></tr>
+    <tr><td class="rd">-32600</td><td>Invalid request</td><td>JSON is not a valid request object</td></tr>
+    <tr><td class="rd">-32601</td><td>Method not found</td><td>Called method doesn't exist / not supported</td></tr>
+    <tr><td class="rd">-32602</td><td>Invalid params</td><td>Invalid method parameters</td></tr>
+    <tr><td class="rd">-32603</td><td>Internal error</td><td>Internal JSON-RPC error</td></tr>
+    <tr><td style="color:var(--orange)">-32000 to -32099</td><td>Server error</td><td>Implementation-defined server errors</td></tr>
+  </table>
+
+  <div class="info-box danger">
+    <strong>Don't confuse protocol errors with tool errors</strong>
+    Protocol errors (<code>-32xxx</code>) mean something went wrong at the transport/protocol level. Tool errors use <code>isError: true</code> in the tool result content — the LLM receives and reasons about these. Use tool-level errors for expected failure cases (file not found, rate limit hit, invalid input). Use protocol errors only for malformed requests.
+  </div>
+</section>
+
+<!-- ══════ SDK ══════ -->
+<section id="sdk">
+  <h2>SDK <em class="or">Patterns</em></h2>
+  <div class="section-bar"></div>
+  <p>Both official SDKs follow the same pattern: create a server, register handlers, connect a transport.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(event,'tab-python')">Python (FastMCP)</button>
+    <button class="tab-btn" onclick="switchTab(event,'tab-pylow')">Python (low-level)</button>
+    <button class="tab-btn" onclick="switchTab(event,'tab-ts')">TypeScript</button>
+  </div>
+
+  <div id="tab-python" class="tab-content active">
+    <pre><span class="label">Python</span>
+<span class="kw">from</span> mcp.server.fastmcp <span class="kw">import</span> FastMCP
+
+mcp = <span class="fn">FastMCP</span>(<span class="st">"my-server"</span>)
+
+<span class="cm"># Tool</span>
+<span class="kw">@mcp</span>.tool()
+<span class="kw">def</span> <span class="fn">read_file</span>(path: str) -> str:
+    <span class="st">"""Read a file and return its contents."""</span>
+    <span class="kw">with</span> <span class="fn">open</span>(path) <span class="kw">as</span> f:
+        <span class="kw">return</span> f.<span class="fn">read</span>()
+
+<span class="cm"># Resource</span>
+<span class="kw">@mcp</span>.resource(<span class="st">"config://app"</span>)
+<span class="kw">def</span> <span class="fn">get_config</span>() -> str:
+    <span class="st">"""Current application config."""</span>
+    <span class="kw">return</span> config.<span class="fn">to_json</span>()
+
+<span class="cm"># Prompt</span>
+<span class="kw">@mcp</span>.prompt()
+<span class="kw">def</span> <span class="fn">review_code</span>(language: str, code: str) -> str:
+    <span class="kw">return</span> <span class="fn">f</span><span class="st">"Review this {language} code:\n\n{code}"</span>
+
+<span class="kw">if</span> __name__ == <span class="st">"__main__"</span>:
+    mcp.<span class="fn">run</span>()  <span class="cm"># stdio by default</span></pre>
+  </div>
+
+  <div id="tab-pylow" class="tab-content">
+    <pre><span class="label">Python low-level</span>
+<span class="kw">from</span> mcp.server <span class="kw">import</span> Server
+<span class="kw">from</span> mcp.server.stdio <span class="kw">import</span> stdio_server
+<span class="kw">import</span> mcp.types <span class="kw">as</span> types
+
+server = <span class="fn">Server</span>(<span class="st">"my-server"</span>)
+
+<span class="kw">@server</span>.list_tools()
+<span class="kw">async def</span> <span class="fn">handle_list_tools</span>() -> list[types.Tool]:
+    <span class="kw">return</span> [
+        types.<span class="fn">Tool</span>(
+            name=<span class="st">"read_file"</span>,
+            description=<span class="st">"Read a file"</span>,
+            inputSchema={
+                <span class="st">"type"</span>: <span class="st">"object"</span>,
+                <span class="st">"properties"</span>: { <span class="st">"path"</span>: { <span class="st">"type"</span>: <span class="st">"string"</span> } },
+                <span class="st">"required"</span>: [<span class="st">"path"</span>]
+            }
+        )
+    ]
+
+<span class="kw">@server</span>.call_tool()
+<span class="kw">async def</span> <span class="fn">handle_call_tool</span>(name: str, arguments: dict):
+    <span class="kw">if</span> name == <span class="st">"read_file"</span>:
+        content = <span class="fn">open</span>(arguments[<span class="st">"path"</span>]).<span class="fn">read</span>()
+        <span class="kw">return</span> [types.<span class="fn">TextContent</span>(type=<span class="st">"text"</span>, text=content)]
+    <span class="kw">raise</span> <span class="fn">ValueError</span>(<span class="fn">f</span><span class="st">"Unknown tool: {name}"</span>)
+
+<span class="kw">async def</span> <span class="fn">main</span>():
+    <span class="kw">async with</span> <span class="fn">stdio_server</span>() <span class="kw">as</span> (r, w):
+        <span class="kw">await</span> server.<span class="fn">run</span>(r, w, server.<span class="fn">create_initialization_options</span>())</pre>
+  </div>
+
+  <div id="tab-ts" class="tab-content">
+    <pre><span class="label">TypeScript</span>
+<span class="kw">import</span> { Server }              <span class="kw">from</span> <span class="st">"@modelcontextprotocol/sdk/server/index.js"</span>;
+<span class="kw">import</span> { StdioServerTransport } <span class="kw">from</span> <span class="st">"@modelcontextprotocol/sdk/server/stdio.js"</span>;
+<span class="kw">import</span> { ListToolsRequestSchema, CallToolRequestSchema } <span class="kw">from</span> <span class="st">"..."</span>;
+
+<span class="kw">const</span> server = <span class="kw">new</span> <span class="fn">Server</span>(
+  { name: <span class="st">"my-server"</span>, version: <span class="st">"1.0.0"</span> },
+  { capabilities: { tools: {} } }
+);
+
+server.<span class="fn">setRequestHandler</span>(ListToolsRequestSchema, <span class="kw">async</span> () => ({
+  tools: [{
+    name:        <span class="st">"read_file"</span>,
+    description: <span class="st">"Read a file"</span>,
+    inputSchema: {
+      type: <span class="st">"object"</span>,
+      properties: { path: { type: <span class="st">"string"</span> } },
+      required: [<span class="st">"path"</span>]
+    }
+  }]
+}));
+
+server.<span class="fn">setRequestHandler</span>(CallToolRequestSchema, <span class="kw">async</span> (req) => {
+  <span class="kw">if</span> (req.params.name === <span class="st">"read_file"</span>) {
+    <span class="kw">const</span> content = fs.<span class="fn">readFileSync</span>(req.params.arguments.path, <span class="st">"utf-8"</span>);
+    <span class="kw">return</span> { content: [{ type: <span class="st">"text"</span>, text: content }] };
+  }
+  <span class="kw">throw new</span> <span class="fn">Error</span>(<span class="st">`Unknown tool: ${req.params.name}`</span>);
+});
+
+<span class="kw">const</span> transport = <span class="kw">new</span> <span class="fn">StdioServerTransport</span>();
+<span class="kw">await</span> server.<span class="fn">connect</span>(transport);</pre>
+  </div>
+</section>
+
+<!-- ══════ QUICK REF ══════ -->
+<section id="quickref">
+  <h2><em class="or">Quick</em> Reference</h2>
+  <div class="section-bar"></div>
+
+  <div class="two-col">
+    <div>
+      <h3>All Methods</h3>
+      <table>
+        <tr><th>Method</th><th>Direction</th></tr>
+        <tr><td class="meth">initialize</td><td>client → server</td></tr>
+        <tr><td class="meth">tools/list</td><td>client → server</td></tr>
+        <tr><td class="meth">tools/call</td><td>client → server</td></tr>
+        <tr><td class="meth">resources/list</td><td>client → server</td></tr>
+        <tr><td class="meth">resources/read</td><td>client → server</td></tr>
+        <tr><td class="meth">resources/subscribe</td><td>client → server</td></tr>
+        <tr><td class="meth">prompts/list</td><td>client → server</td></tr>
+        <tr><td class="meth">prompts/get</td><td>client → server</td></tr>
+        <tr><td class="meth">sampling/createMessage</td><td>server → client</td></tr>
+        <tr><td class="meth">roots/list</td><td>server → client</td></tr>
+        <tr><td class="meth">ping</td><td>either</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Notifications</h3>
+      <table>
+        <tr><th>Notification</th><th>Sender</th></tr>
+        <tr><td class="cy">notifications/initialized</td><td>client</td></tr>
+        <tr><td class="cy">notifications/roots/list_changed</td><td>client</td></tr>
+        <tr><td class="meth">notifications/tools/list_changed</td><td>server</td></tr>
+        <tr><td class="meth">notifications/resources/list_changed</td><td>server</td></tr>
+        <tr><td class="meth">notifications/resources/updated</td><td>server</td></tr>
+        <tr><td class="meth">notifications/prompts/list_changed</td><td>server</td></tr>
+        <tr><td class="meth">notifications/progress</td><td>either</td></tr>
+        <tr><td class="meth">notifications/message</td><td>either (logging)</td></tr>
+        <tr><td class="meth">notifications/cancelled</td><td>either</td></tr>
+      </table>
+
+      <h3 style="margin-top:20px">Content Types</h3>
+      <table>
+        <tr><th>Type</th><th>Fields</th></tr>
+        <tr><td class="meth">text</td><td><code>text: string</code></td></tr>
+        <tr><td class="meth">image</td><td><code>data: base64, mimeType</code></td></tr>
+        <tr><td class="meth">resource</td><td><code>resource: { uri, text|blob }</code></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h3>Protocol Versions</h3>
+  <table>
+    <tr><th>Version</th><th>Key additions</th></tr>
+    <tr><td class="meth">2024-11-05</td><td>Initial stable release. Tools, resources, prompts, sampling.</td></tr>
+    <tr><td class="meth">2025-03-26</td><td>Streamable HTTP transport, tool annotations, OAuth 2.1 auth, resource links in tool results.</td></tr>
+  </table>
+</section>
+
+</div><!-- /container -->
+
+<!-- ══════ FOOTER ══════ -->
+<div class="footer">
+  <span>MODEL CONTEXT PROTOCOL // ANTHROPIC // SPEC 2025-03-26</span>
+  <span><a href="https://modelcontextprotocol.io">modelcontextprotocol.io</a></span>
+</div>
+
+<div class="spine">// model context protocol // tools · resources · prompts //</div>
+
+<script>
+function switchTab(e, tabId) {
+  const section = e.target.closest('section');
+  section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  section.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 80) current = s.id;
+  });
+  navLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+  });
+});
+</script>
+</body>
+</html>
