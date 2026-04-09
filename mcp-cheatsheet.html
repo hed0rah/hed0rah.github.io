@@ -211,11 +211,18 @@ p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-w
 
 /* ── CODE ── */
 code {
-  background: #1A1918;
-  border: 1px solid #2E2D2A;
+  background: var(--surface);
+  border: 1px solid var(--border2);
   padding: 1px 6px;
   font-size: 11px;
-  color: #C8A030;
+  color: var(--bright);
+}
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
 }
 pre {
   background: #1A1918;
@@ -447,22 +454,22 @@ td.yl   { color: var(--yellow); }
   <div class="section-bar"></div>
   <p>MCP is an open protocol for connecting LLMs to external tools, data sources, and services. A <strong>Host</strong> (Claude Desktop, an IDE, your app) embeds one or more <strong>Clients</strong>; each Client maintains a 1:1 connection to a <strong>Server</strong> that exposes capabilities.</p>
 
-  <div class="diagram"><span class="dim">┌──────────────────────────────────────────────────────────────┐
-│  </span><span class="acc">HOST</span><span class="dim">  (Claude Desktop / IDE / custom application)            │
+  <pre class="diagram">┌──────────────────────────────────────────────────────────────┐
+│  <span class="acc">HOST</span>  (Claude Desktop / IDE / custom application)            │
 │                                                              │
 │  ┌─────────────────┐      ┌─────────────────┐              │
-│  │  </span><span class="acc2">MCP Client</span><span class="dim">      │      │  </span><span class="acc2">MCP Client</span><span class="dim">      │  ...         │
+│  │  <span class="acc2">MCP Client</span>      │      │  <span class="acc2">MCP Client</span>      │  ...         │
 │  └────────┬────────┘      └────────┬────────┘              │
 └───────────┼────────────────────────┼───────────────────────┘
-            │ </span><span class="yl">stdio / SSE</span><span class="dim">           │ </span><span class="yl">stdio / SSE</span><span class="dim">
+            │ <span class="yl">stdio / SSE</span>           │ <span class="yl">stdio / SSE</span>
    ┌────────▼────────┐      ┌────────▼────────┐
-   │  </span><span class="acc">MCP Server</span><span class="dim">      │      │  </span><span class="acc">MCP Server</span><span class="dim">      │
+   │  <span class="acc">MCP Server</span>      │      │  <span class="acc">MCP Server</span>      │
    │                 │      │                 │
    │  tools          │      │  tools          │
    │  resources      │      │  resources      │
    │  prompts        │      │  prompts        │
    └─────────────────┘      └─────────────────┘
-        </span><span class="dim">filesystem            database / API</span></div>
+        filesystem                database / API</pre>
 
   <table>
     <tr><th>Role</th><th>Responsibilities</th><th>Example</th></tr>
