@@ -1,0 +1,620 @@
+<!--
+  INDUSTRIAL MANIFEST // HED0RAH
+  hed0rah.github.io
+  Bebas Neue + Space Mono // #F2F1EE // #E85000
+  Atlassian MCP -- Optimization Manifest
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATLASSIAN MCP // OPTIMIZATION MANIFEST</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:     #F2F1EE;
+      --panel:  #FFFFFF;
+      --panel2: #EBEBEA;
+      --ink:    #0D0D0D;
+      --mid:    #5A5A5A;
+      --dim:    #9A9A9A;
+      --rule:   #D4D3D0;
+      --orange: #E85000;
+      --blue:   #1A4A8A;
+      --red:    #BF1020;
+      --amber:  #9A6A00;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      padding: 44px 36px;
+      max-width: 1020px;
+      margin: 0 auto;
+    }
+
+    .g2   { display: grid; grid-template-columns: 1fr 1fr;     gap: 2px; margin-bottom: 2px; }
+    .g3   { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; margin-bottom: 2px; }
+    .gcol { display: grid; grid-template-columns: 64px 1fr;    gap: 2px; margin-bottom: 2px; }
+    .gfull { margin-bottom: 2px; }
+
+    @media (max-width: 700px) {
+      .g2, .g3, .gcol { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--ink);
+      padding: 20px 22px;
+    }
+    .panel.inset { background: var(--panel2); }
+    .al-or { border-left: 4px solid var(--orange); }
+    .al-bl { border-left: 4px solid var(--blue); }
+    .al-rd { border-left: 4px solid var(--red); }
+
+    .inv { background: var(--ink); border-color: var(--ink); }
+    .inv .plabel    { color: #444444; border-bottom-color: #2a2a2a; }
+    .inv .ptitle    { color: #F2F1EE; }
+    .inv .ptitle.or { color: var(--orange); }
+    .inv .bar       { background: var(--orange); }
+    .inv p          { color: #888888; }
+    .inv .hl        { color: var(--orange); }
+
+    .sec-idx {
+      background: var(--ink);
+      color: var(--bg);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--ink);
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      padding: 16px 0;
+    }
+
+    .plabel {
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .ptitle {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 30px;
+      letter-spacing: 2px;
+      color: var(--ink);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .ptitle.or { color: var(--orange); }
+    .ptitle.bl { color: var(--blue); }
+    .ptitle.rd { color: var(--red); }
+    .ptitle.lg { font-size: 48px; }
+
+    .bar { width: 28px; height: 3px; background: var(--orange); margin-bottom: 14px; }
+    .bar.bl { background: var(--blue); }
+    .bar.dk { background: var(--ink); }
+
+    p { font-size: 13px; color: var(--mid); margin-bottom: 9px; line-height: 1.7; }
+    p:last-child { margin-bottom: 0; }
+
+    .hl     { color: var(--orange); font-weight: 700; }
+    .hl.bl  { color: var(--blue); }
+    .hl.am  { color: var(--amber); }
+    .hl.dim { color: var(--dim); font-weight: 400; }
+    .hl.ink { color: var(--ink); }
+
+    .tag {
+      display: inline-block;
+      border: 1px solid var(--rule);
+      padding: 2px 7px;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin: 2px 2px 2px 0;
+    }
+    .tag.or { border-color: var(--orange); color: var(--orange); }
+    .tag.bl { border-color: var(--blue);   color: var(--blue); }
+    .tag.dk { border-color: var(--ink);    color: var(--ink); }
+
+    .mrow {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--rule);
+      font-size: 11px;
+      gap: 16px;
+    }
+    .mrow:last-child { border-bottom: none; }
+    .mrow-key {
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--dim);
+      flex-shrink: 0;
+      min-width: 160px;
+    }
+    .mrow-body { color: var(--mid); font-size: 11px; flex: 1; }
+    .mrow-tags { text-align: right; white-space: nowrap; flex-shrink: 0; }
+
+    .code-block {
+      background: var(--panel2);
+      border: 1px solid var(--rule);
+      border-left: 4px solid var(--amber);
+      padding: 12px 14px;
+      margin: 12px 0;
+      font-size: 11px;
+    }
+    .code-block.or { border-left-color: var(--orange); }
+    .code-block.bl { border-left-color: var(--blue); }
+    .code-block .eq  { color: var(--amber); font-weight: 700; }
+    .code-block.or .eq { color: var(--orange); }
+    .code-block.bl .eq { color: var(--blue); }
+    .code-block .cmt { color: var(--dim); font-size: 10px; margin-top: 5px; }
+
+    .masthead {
+      border-top: 5px solid var(--orange);
+      padding: 16px 0 14px;
+      margin-bottom: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 1px solid var(--ink);
+    }
+    .masthead h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 76px;
+      letter-spacing: 4px;
+      color: var(--ink);
+      line-height: 1;
+    }
+    .masthead h1 em { color: var(--orange); font-style: normal; }
+    .mh-meta {
+      text-align: right;
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--dim);
+      line-height: 2;
+    }
+    .mh-meta strong { display: block; color: var(--ink); font-size: 11px; }
+
+    .form-band {
+      display: flex;
+      border: 1px solid var(--ink);
+      border-top: none;
+      margin-bottom: 2px;
+      flex-wrap: wrap;
+    }
+    .ff { flex: 1; padding: 7px 14px; border-right: 1px solid var(--rule); min-width: 120px; }
+    .ff:last-child { border-right: none; }
+    .ff-lbl { font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--dim); margin-bottom: 2px; }
+    .ff-val { font-weight: 700; font-size: 11px; color: var(--ink); }
+    .ff-val.or { color: var(--orange); }
+    .ff-val.bl { color: var(--blue); }
+
+    .footer {
+      border-top: 1px solid var(--ink);
+      margin-top: 14px;
+      padding-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    ul.idea-list {
+      list-style: none;
+      margin-top: 4px;
+    }
+    ul.idea-list li {
+      padding: 7px 0;
+      border-bottom: 1px solid var(--rule);
+      font-size: 11px;
+      color: var(--mid);
+    }
+    ul.idea-list li:last-child { border-bottom: none; }
+    ul.idea-list li strong { color: var(--ink); display: block; margin-bottom: 2px; }
+
+    .spacer { height: 14px; }
+  </style>
+</head>
+<body>
+
+  <div class="masthead">
+    <h1>ATLASSIAN MCP<br><em>OPTIMIZATION</em></h1>
+    <div class="mh-meta">
+      <strong>hed0rah // personal ref</strong>
+      Focus: Token + Speed<br>
+      Stack: Python / FastMCP<br>
+      Rev. 2026-04
+    </div>
+  </div>
+
+  <div class="form-band">
+    <div class="ff">
+      <div class="ff-lbl">Products</div>
+      <div class="ff-val">Jira Cloud + Confluence</div>
+    </div>
+    <div class="ff">
+      <div class="ff-lbl">Framework</div>
+      <div class="ff-val">Python FastMCP</div>
+    </div>
+    <div class="ff">
+      <div class="ff-lbl">Protocol</div>
+      <div class="ff-val">MCP 2024-11-05</div>
+    </div>
+    <div class="ff">
+      <div class="ff-lbl">Goal A</div>
+      <div class="ff-val or">Token Efficiency</div>
+    </div>
+    <div class="ff">
+      <div class="ff-lbl">Goal B</div>
+      <div class="ff-val bl">Latency / Throughput</div>
+    </div>
+    <div class="ff">
+      <div class="ff-lbl">Status</div>
+      <div class="ff-val or">Active</div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- Key insight -->
+  <div class="gfull">
+    <div class="panel inv">
+      <div class="plabel">00 // Core Principle</div>
+      <div class="ptitle or lg">Shape First. Cache Second. Parallelize Third.</div>
+      <div class="bar"></div>
+      <p>Token waste and latency compound -- every round trip that returns verbose data costs twice. Fix the shape of what you return before optimizing how often or how fast you return it. The Atlassian APIs are generous with verbosity; the MCP layer is where you enforce discipline.</p>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- SECTION 01: TOKEN ECONOMY -->
+
+  <div class="gcol gfull">
+    <div class="sec-idx">01 &nbsp; Tokens</div>
+    <div class="panel">
+      <div class="plabel">01 // Token Economy -- Overview</div>
+      <div class="ptitle or">Token Economy</div>
+      <div class="bar"></div>
+      <p>Every byte returned from the Atlassian API that reaches the context window costs tokens. Jira issue payloads are wide by default; Confluence storage format is pathologically verbose. The goal is a lean projection layer that delivers exactly what the model needs and nothing else.</p>
+    </div>
+  </div>
+
+  <div class="g2">
+    <!-- Deployed -->
+    <div class="panel al-or">
+      <div class="plabel">01A // Shipped</div>
+      <div class="ptitle" style="font-size:22px;">Deployed</div>
+      <div class="bar"></div>
+
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Tight Field Projection</div>
+          <div class="mrow-body">jira_search defaults to minimal field list -- key, summary, status, assignee, priority. Broad issue shape only on explicit request.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag or">Deployed</span></div>
+      </div>
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Binary Size Gating</div>
+          <div class="mrow-body">Oversized attachments and images are refused for inline return. Protects both server and context window from giant payload blowout.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag or">Deployed</span></div>
+      </div>
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Metadata TTL Cache</div>
+          <div class="mrow-body">Field lists and issue transitions cached in-process. Repeat operations stop paying the same metadata cost on every call.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag or">Deployed</span></div>
+      </div>
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Scoped Query Shaping</div>
+          <div class="mrow-body">Deployment scope filters injected without breaking trailing ORDER BY -- avoids malformed JQL/CQL retries and their token cost.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag or">Deployed</span></div>
+      </div>
+    </div>
+
+    <!-- Pipeline -->
+    <div class="panel al-bl">
+      <div class="plabel">01B // Pipeline</div>
+      <div class="ptitle bl" style="font-size:22px;">Candidates</div>
+      <div class="bar bl"></div>
+
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">ADF / Storage → Markdown</div>
+          <div class="mrow-body">Convert Atlassian Document Format and Confluence storage XML to clean Markdown before it hits the context. Raw ADF for a medium Confluence page is 5-10x the token count of its Markdown equivalent.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag bl">Candidate</span></div>
+      </div>
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Custom Field Resolution</div>
+          <div class="mrow-body">Cache the Jira field metadata endpoint (customfield_10024 → "Story Points"). Remap or filter field keys transparently -- the model should never see opaque field IDs.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag bl">Candidate</span></div>
+      </div>
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Account ID Resolution</div>
+          <div class="mrow-body">Every issue response is littered with accountId: "557058:abc...". Keep an in-process accountId → displayName map. Resolve transparently. Cuts "who is this person" follow-ups.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag bl">Candidate</span></div>
+      </div>
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Diff-Aware Page Edits</div>
+          <div class="mrow-body">For Confluence updates, model sends (section_id, new_content) instead of full body. Server fetches current, splices change, writes back. Avoids model emitting thousands of tokens it didn't change.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag bl">Candidate</span></div>
+      </div>
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Confluence Lazy Sections</div>
+          <div class="mrow-body">For large pages, return structural TOC (headings + section word counts) first. Model requests specific sections by heading. Avoids loading pages the model doesn't actually need.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag bl">Candidate</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- SECTION 02: SPEED / LATENCY -->
+
+  <div class="gcol gfull">
+    <div class="sec-idx">02 &nbsp; Speed</div>
+    <div class="panel">
+      <div class="plabel">02 // Speed + Latency -- Overview</div>
+      <div class="ptitle bl">Speed + Latency</div>
+      <div class="bar bl"></div>
+      <p>MCP round trips are synchronous from the model's perspective -- every blocked tool call stalls the chain. The surface area for wins: fewer API calls (composite tools, caching), faster API calls (parallelism, connection reuse), and smarter cache invalidation (webhooks over TTL guessing).</p>
+    </div>
+  </div>
+
+  <div class="g2">
+    <!-- Deployed -->
+    <div class="panel al-or">
+      <div class="plabel">02A // Shipped</div>
+      <div class="ptitle" style="font-size:22px;">Deployed</div>
+      <div class="bar"></div>
+
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Central HTTP Layer</div>
+          <div class="mrow-body">Auth, proxies, redirects, same-origin checks, bounded retries in one client. Eliminates inconsistent slow-path behavior across tools.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag or">Deployed</span></div>
+      </div>
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Server-Side Pagination</div>
+          <div class="mrow-body">Confluence attachment walks happen once inside the service. Model doesn't rediscover pagination behavior across repeated calls.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag or">Deployed</span></div>
+      </div>
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Optional Live Probes</div>
+          <div class="mrow-body">Startup auth probes available when needed but local users don't pay extra probe traffic every session startup.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag or">Deployed</span></div>
+      </div>
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Early Diagnostics</div>
+          <div class="mrow-body">Readiness, scope, auth mode, and profile state exposed upfront. Broken envs fail fast instead of burning tool calls discovering the problem mid-chain.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag or">Deployed</span></div>
+      </div>
+    </div>
+
+    <!-- Pipeline -->
+    <div class="panel al-bl">
+      <div class="plabel">02B // Pipeline</div>
+      <div class="ptitle bl" style="font-size:22px;">Candidates</div>
+      <div class="bar bl"></div>
+
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Parallel Fanout</div>
+          <div class="mrow-body">Composite tool handlers fire multiple Jira/Confluence requests concurrently via asyncio.gather. get_issue_full(key, include=["comments","transitions"]) -- one tool call, 3 parallel API requests, single response.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag bl">Candidate</span></div>
+      </div>
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Pagination Cursor Cache</div>
+          <div class="mrow-body">On first JQL search, fetch and cache the full result set server-side. Return a cursor/handle. Subsequent pages are served locally, no re-hit to Jira. Especially useful for long result scans.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag bl">Candidate</span></div>
+      </div>
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Webhook Cache Invalidation</div>
+          <div class="mrow-body">Register Jira/Confluence webhooks for issue_updated / page_updated events. Invalidate cache entries immediately on change. Makes aggressive TTLs viable without stale data risk.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag bl">Candidate</span></div>
+      </div>
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">JQL Validation Pre-Flight</div>
+          <div class="mrow-body">Validate JQL against Jira's autocomplete endpoint before firing the search. Return a structured error with suggestions on bad syntax. Eliminates retry round trips on malformed queries.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag bl">Candidate</span></div>
+      </div>
+      <div class="mrow">
+        <div>
+          <div class="mrow-key">Connection Pool Tuning</div>
+          <div class="mrow-body">aiohttp ClientSession with explicit keepalive limits and connector pool sizing. Atlassian Cloud supports persistent connections. Cold-start penalty on tool call 1 should not repeat on call 2.</div>
+        </div>
+        <div class="mrow-tags"><span class="tag bl">Candidate</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- SECTION 03: TOOL DESIGN / ARCHITECTURE -->
+
+  <div class="gcol gfull">
+    <div class="sec-idx">03 &nbsp; Tools</div>
+    <div class="panel">
+      <div class="plabel">03 // Tool Design + Architecture</div>
+      <div class="ptitle" style="font-size:26px;">Tool Shape + Novel Patterns</div>
+      <div class="bar dk"></div>
+      <p>The tool schema is part of the optimization surface. Poorly shaped tools force the model into sequential chains that could be parallelized, or return more than necessary because the caller has no way to ask for less. These patterns address tool design as a first-class concern.</p>
+    </div>
+  </div>
+
+  <div class="g3">
+    <div class="panel al-or">
+      <div class="plabel">03A // Composite Pattern</div>
+      <div class="ptitle" style="font-size:21px;">Issue Graph Tool</div>
+      <div class="bar"></div>
+      <p>get_issue_tree(key, depth=2) walks Epic → Stories → Subtasks in parallel requests and returns a compact hierarchy. Replaces 3-5 sequential tool calls with one. The model gets the whole picture in a single context addition.</p>
+      <div class="code-block or">
+        <div class="eq">get_issue_tree("PROJ-1", depth=2)</div>
+        <div class="cmt">// returns: {epic: {...}, stories: [{...subtasks}]}</div>
+        <div class="cmt">// 1 tool call = N parallel API requests</div>
+      </div>
+    </div>
+    <div class="panel al-bl">
+      <div class="plabel">03B // Hierarchy</div>
+      <div class="ptitle bl" style="font-size:21px;">Confluence Page Tree</div>
+      <div class="bar bl"></div>
+      <p>get_page_tree(page_id, depth=2) returns title + word count for the subtree. Model decides which pages are worth fetching before loading content. Avoids loading pages it doesn't need. Pairs well with lazy section loading.</p>
+      <div class="code-block bl">
+        <div class="eq">get_page_tree("123456", depth=2)</div>
+        <div class="cmt">// returns: [{title, id, word_count, children}]</div>
+        <div class="cmt">// model requests sections by id after scanning tree</div>
+      </div>
+    </div>
+    <div class="panel inset">
+      <div class="plabel">03C // MCP Primitives</div>
+      <div class="ptitle" style="font-size:21px;">Resource URIs</div>
+      <div class="bar dk"></div>
+      <p>Return MCP resource URIs (confluence://SPACE/page-title) instead of inline content for large pages. Clients that support resource subscriptions get change notifications without polling. Proper use of the MCP resource model vs cramming everything into tool results.</p>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="panel inset">
+      <div class="plabel">03D // Delta Pattern</div>
+      <div class="ptitle" style="font-size:21px;">Response Diffing</div>
+      <div class="bar dk"></div>
+      <p>For polling / watch scenarios ("tell me when this issue changes"), store a snapshot on first fetch. On subsequent calls, return only the delta -- changed fields, new comments, status transitions. Cuts token waste on repeated polls to near-zero when nothing changed.</p>
+      <div class="code-block">
+        <div class="eq">// call 1: full issue snapshot, cached</div>
+        <div class="cmt">// call 2: {changed: {status: "In Progress"}, new_comments: 1}</div>
+        <div class="cmt">// call 3: {changed: {}, new_comments: 0} -- "no change"</div>
+      </div>
+    </div>
+    <div class="panel inset">
+      <div class="plabel">03E // Exploration</div>
+      <div class="ptitle" style="font-size:21px;">FastMCP Source Mining</div>
+      <div class="bar dk"></div>
+      <p>FastMCP's tool registration, schema generation, and middleware pipeline are worth reading closely. Hook points for pre/post-processing exist in the handler chain -- that is the right place to insert projection, caching, and ADF conversion layers without cluttering individual tool implementations.</p>
+      <ul class="idea-list" style="margin-top: 10px;">
+        <li><strong>Tool middleware</strong> -- intercept before/after handler for caching + projection</li>
+        <li><strong>Schema inference</strong> -- see what FastMCP auto-generates vs what to override</li>
+        <li><strong>Lifespan hooks</strong> -- right place for session-scoped caches and connection pools</li>
+        <li><strong>Context object</strong> -- per-call state without global mutation</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- SECTION 04: SIGNAL SOURCES -->
+
+  <div class="gcol gfull">
+    <div class="sec-idx">04 &nbsp; Signal</div>
+    <div class="panel al-bl">
+      <div class="plabel">04 // Signal Sources -- Ideas Pull From</div>
+      <div class="ptitle bl" style="font-size:26px;">Where to Pull Ideas</div>
+      <div class="bar bl"></div>
+
+      <div class="g2" style="margin-top: 8px; gap: 12px;">
+        <div>
+          <div class="mrow">
+            <div class="mrow-key">wrapster</div>
+            <div class="mrow-body">Personal MCP server in Go. Transport-level experiments: output handles (buf_id paging), result content-addressing, SSE gzip, concurrent dispatch, host context pack. All applicable at the Python layer.</div>
+          </div>
+          <div class="mrow">
+            <div class="mrow-key">RTK Project</div>
+            <div class="mrow-body">Token optimization research. Contributed work on output compression and token reduction. Apply findings to Jira/Confluence response shaping.</div>
+          </div>
+          <div class="mrow">
+            <div class="mrow-key">fff.nvim</div>
+            <div class="mrow-body">Lazy indexing, early cutoff on results, fuzzy scoring. Translates to: JQL result ranking, early result truncation with cursor, relevance-first field ordering.</div>
+          </div>
+        </div>
+        <div>
+          <div class="mrow">
+            <div class="mrow-key">FastMCP Source</div>
+            <div class="mrow-body">Middleware pipeline, lifespan hooks, context object, schema inference. Read the source before building advanced middleware -- the hook points may already exist.</div>
+          </div>
+          <div class="mrow">
+            <div class="mrow-key">Atlassian REST API v3</div>
+            <div class="mrow-body">fields= parameter, expand= parameter, bulk issue fetch, JQL autocomplete endpoint, webhook registration API. Most token wins start with reading what the API already supports.</div>
+          </div>
+          <div class="mrow">
+            <div class="mrow-key">MCP Spec (2024-11-05)</div>
+            <div class="mrow-body">Resources, prompts, resource subscriptions -- the parts of MCP most servers ignore. Confluence pages as subscribable resources is an underexplored pattern.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- Closing note -->
+  <div class="gfull">
+    <div class="panel" style="border-left: 4px solid var(--rule);">
+      <div class="plabel">05 // Notes to Self</div>
+      <div class="mrow">
+        <div class="mrow-key">Server-Side Pagination</div>
+        <div class="mrow-body">Codex-generated pattern -- the service walks Confluence attachment pages internally so the model never rediscovers pagination. Worth fully understanding: how is state held across calls? Is it session-scoped or per-call? Could be a cursor/handle pattern.</div>
+      </div>
+      <div class="mrow">
+        <div class="mrow-key">Scoped Query Shaping</div>
+        <div class="mrow-body">Deployment filters inserted without breaking trailing ORDER BY. Understand how the JQL is parsed and where the filter injection happens -- this is a fragile surface if the parser is naive string manipulation vs actual AST.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>hed0rah // atlassian mcp optimization manifest</span>
+    <span>Rev. 2026-04</span>
+    <span>Bebas Neue + Space Mono</span>
+  </div>
+
+</body>
+</html>
