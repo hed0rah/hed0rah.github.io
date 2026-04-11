@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP Deep Dive // Under the Hood</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* masthead */
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+.masthead .companion {
+  margin-top: 14px;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 2px;
+}
+
+/* nav */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0;
+  white-space: nowrap;
+}
+.nav a {
+  display: block;
+  padding: 12px 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav a:hover { color: var(--orange); border-bottom-color: var(--orange); }
+.nav a.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+/* layout */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+  counter-reset: section;
+}
+section { padding: 52px 0; border-bottom: 1px solid var(--border2); counter-increment: section; }
+section:last-of-type { border-bottom: none; }
+section::before {
+  content: counter(section, decimal-leading-zero) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+/* headings */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--yellow); }
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+.section-bar.yl { background: var(--yellow); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+h3.cy { color: var(--cyan); }
+h3.yl { color: var(--yellow); }
+h3.rd { color: var(--red); }
+h4 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  margin: 20px 0 8px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+
+/* code */
+code {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--bright);
+}
+pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre.yl { border-left-color: var(--yellow); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .flag   { color: #7A7870; }
+
+/* diagrams */
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #8A8880;
+}
+.diagram.cy { border-left-color: var(--cyan); }
+.diagram.yl { border-left-color: var(--yellow); }
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .acc3 { color: #C8A030; }
+.diagram .dim  { color: #4A4942; }
+.diagram .hi   { color: #CCCBC4; }
+
+/* info boxes */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy    { border-left-color: var(--cyan); }
+.info-box.warn  { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; vertical-align: top; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; white-space: nowrap; }
+td.cy   { color: var(--cyan); }
+td.rd   { color: var(--red); }
+td.yl   { color: var(--yellow); }
+
+/* two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; align-items: stretch; }
+.two-col > div { display: flex; flex-direction: column; }
+.two-col > div > pre { flex: 1; margin-bottom: 0; }
+
+/* step list */
+.step-list { list-style: none; counter-reset: step; margin: 16px 0; }
+.step-list li {
+  counter-increment: step;
+  position: relative;
+  padding: 10px 0 10px 42px;
+  border-bottom: 1px dashed var(--border2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-list li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  width: 34px;
+}
+.step-list li strong { color: var(--bright); display: block; margin-bottom: 2px; }
+.step-list.cy li::before { color: var(--cyan); }
+
+/* footer */
+.footer {
+  border-top: 1px solid var(--border2);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+.footer a { color: var(--orange); text-decoration: none; }
+
+/* spine */
+.spine {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* responsive */
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .masthead { padding: 40px 20px 28px; }
+}
+@media (max-width: 1280px) { .spine { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- masthead -->
+<div class="masthead">
+  <h1>MCP <em>Deep</em> Dive</h1>
+  <div class="subtitle">
+    <span>Wire Format · Message Pump · State Machine · Internals</span>
+  </div>
+  <div class="companion">Companion to the MCP Cheatsheet // Spec 2024-11-05 / 2025-03-26</div>
+</div>
+
+<!-- nav -->
+<div class="nav">
+  <div class="nav-inner">
+    <a href="#intro">Intro</a>
+    <a href="#wire">Wire</a>
+    <a href="#pump">Message Pump</a>
+    <a href="#lifecycle">Lifecycle Trace</a>
+    <a href="#state">State Machine</a>
+    <a href="#cancel">Cancellation</a>
+    <a href="#schema">Schema Gen</a>
+    <a href="#prompt">Tools as Prompt</a>
+    <a href="#content">Content Blocks</a>
+    <a href="#convert">Text Conversion</a>
+    <a href="#further">Further</a>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- intro -->
+<section id="intro">
+  <h2>Beyond the <em class="or">Schema</em></h2>
+  <div class="section-bar"></div>
+  <p>The cheatsheet covers the surface: methods, schemas, primitives, what to call and what comes back. This covers what happens underneath. What the bytes look like on the wire. What the server process is actually doing while your tool runs. Why your cancel worked or didn't. How <code>@mcp.tool()</code> becomes a JSON Schema. How the schema becomes part of the model's prompt. The stuff that trips people up because nobody talks about it.</p>
+  <p>Scope: stdio transport (most common for local dev), FastMCP (Python) as the reference implementation, 2024-11-05 and 2025-03-26 spec versions. Where the two specs differ, called out explicitly.</p>
+
+  <div class="info-box cy">
+    <strong>How to read this</strong>
+    Each section is independent. If you only have 10 minutes, read Wire, Message Pump, and Cancellation. If you're debugging schema inference, jump to Schema Gen. If you're writing a converter, jump to Text Conversion. The diagrams are the load-bearing part, not the prose.
+  </div>
+</section>
+
+<!-- wire -->
+<section id="wire">
+  <h2><em class="or">Wire</em> &amp; Framing</h2>
+  <div class="section-bar"></div>
+  <p>MCP runs JSON-RPC 2.0 over a transport. The transport decides how messages are framed: how the reader knows where one message ends and the next begins. Getting the framing right is the difference between a working server and one that silently corrupts every other message.</p>
+
+  <h3>stdio: line-delimited JSON</h3>
+  <p>Each JSON-RPC message is a single line. One message per newline. No length prefix, no envelope, no header. The reader reads until <code>\n</code>, parses the accumulated bytes as JSON, dispatches.</p>
+
+  <pre><span class="label">stdio wire (bytes on the pipe)</span>
+<span class="cm">// client → server</span>
+<span class="key">{"jsonrpc":"2.0","id":1,"method":"initialize","params":{...}}</span>\n
+<span class="key">{"jsonrpc":"2.0","id":2,"method":"tools/list"}</span>\n
+<span class="key">{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{...}}</span>\n
+
+<span class="cm">// server → client</span>
+<span class="key">{"jsonrpc":"2.0","id":1,"result":{...}}</span>\n
+<span class="key">{"jsonrpc":"2.0","id":2,"result":{"tools":[...]}}</span>\n
+<span class="key">{"jsonrpc":"2.0","id":3,"result":{"content":[...],"isError":false}}</span>\n</pre>
+
+  <p>Why newline framing is safe: JSON does not permit raw newlines inside strings or values. A string containing a newline must encode it as <code>\n</code>. So splitting on raw <code>\n</code> gives clean message boundaries.</p>
+
+  <div class="info-box danger">
+    <strong>The number one stdio bug</strong>
+    Stdout is the protocol channel. Any debug print to stdout, any library that logs to stdout, any traceback to stdout, corrupts the stream. The client will try to parse your stack trace as JSON-RPC, fail, and disconnect. All logging must go to stderr. FastMCP's <code>ctx.info()</code> flows back as <code>notifications/message</code> which is the correct path.
+  </div>
+
+  <h3 class="cy">SSE: event stream framing</h3>
+  <p>The 2024-11-05 SSE transport uses two HTTP endpoints. The server maintains a long-lived GET for events flowing server-to-client. The client sends requests as POSTs to a separate endpoint. The POST response is a bare acknowledgement; the actual JSON-RPC response comes back over the open SSE stream, matched by id.</p>
+
+  <pre class="cy"><span class="label">SSE event framing</span>
+<span class="cm">// GET /sse  (server → client stream)</span>
+event: message
+data: {"jsonrpc":"2.0","id":1,"result":{...}}
+<span class="cm">// blank line terminates the event</span>
+
+event: message
+data: {"jsonrpc":"2.0","method":"notifications/progress","params":{...}}
+
+<span class="cm">// comments are allowed, prefixed with colon, often used as keepalive</span>
+: keepalive
+
+<span class="cm">// POST /messages  (client → server)</span>
+<span class="cm">// standard HTTP POST with JSON body, 202 Accepted response</span>
+POST /messages HTTP/1.1
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{...}}</pre>
+
+  <p>The asymmetric design surprises people. You POST a request, get a 202, then wait for the SSE stream to deliver the response. Your HTTP client is NOT waiting for the response on the POST socket. This matters for client implementations: you need a correlation table keyed by request id.</p>
+
+  <h3 class="cy">Streamable HTTP (2025-03-26+)</h3>
+  <p>The newer spec folds everything onto a single endpoint. Client POSTs to <code>/mcp</code>. The server can return one of two content types: <code>application/json</code> for a single immediate response, or <code>text/event-stream</code> if the server wants to stream events (progress, responses, notifications). Same endpoint handles both directions via session id headers for reconnection.</p>
+
+  <div class="info-box warn">
+    <strong>The gzip flush trap</strong>
+    If you gzip the SSE stream, you must call <code>gz.Flush()</code> with sync-flush semantics (deflate empty block marker) after every event, then flush the HTTP writer. Without this, your event sits in the gzip buffer and the client waits forever. Full-flush (which also resets the compression dictionary) works but costs compression ratio. Sync-flush is the right primitive.
+  </div>
+</section>
+
+<!-- message pump -->
+<section id="pump">
+  <h2>The <em class="or">Message Pump</em></h2>
+  <div class="section-bar"></div>
+  <p>Inside a working stdio server there's a specific architecture that everyone arrives at. A single reader, a dispatcher, parallel handlers, and a serialized writer. Miss any piece and you get a subtle bug.</p>
+
+  <pre class="diagram"><span class="dim">┌──────────────────────────────────────────────────────────────────────┐</span>
+<span class="dim">│</span>                         <span class="acc">MCP SERVER PROCESS</span>                           <span class="dim">│</span>
+<span class="dim">├──────────────────────────────────────────────────────────────────────┤</span>
+<span class="dim">│</span>                                                                      <span class="dim">│</span>
+<span class="dim">│</span>    stdin                                                    stdout   <span class="dim">│</span>
+<span class="dim">│</span>      <span class="acc2">│</span>                                                         <span class="acc">▲</span>      <span class="dim">│</span>
+<span class="dim">│</span>      <span class="acc2">▼</span>                                                         <span class="acc">│</span>      <span class="dim">│</span>
+<span class="dim">│</span>   <span class="hi">┌────────┐</span>    <span class="hi">┌──────────┐</span>   <span class="hi">┌────────────┐</span>        <span class="hi">┌───────────┐</span>  <span class="dim">│</span>
+<span class="dim">│</span>   <span class="hi">│</span> <span class="acc2">READ</span>   <span class="hi">│</span>───▶<span class="hi">│</span> <span class="acc2">PARSE</span>    <span class="hi">│</span>──▶<span class="hi">│</span> <span class="acc2">DISPATCH</span>   <span class="hi">│</span>───┐    <span class="hi">│</span> <span class="acc">ENCODE</span>    <span class="hi">│</span>  <span class="dim">│</span>
+<span class="dim">│</span>   <span class="hi">│</span> loop   <span class="hi">│</span>    <span class="hi">│</span> json-rpc <span class="hi">│</span>   <span class="hi">│</span>  router   <span class="hi">│</span>   │    <span class="hi">│</span> +mutex    <span class="hi">│</span>  <span class="dim">│</span>
+<span class="dim">│</span>   <span class="hi">└────────┘</span>    <span class="hi">└──────────┘</span>   <span class="hi">└─────┬──────┘</span>   │    <span class="hi">└─────▲─────┘</span>  <span class="dim">│</span>
+<span class="dim">│</span>                                       <span class="dim">│</span>          │          <span class="acc">│</span>        <span class="dim">│</span>
+<span class="dim">│</span>                                       <span class="dim">│ notifications</span>     <span class="acc">│</span>        <span class="dim">│</span>
+<span class="dim">│</span>                                       <span class="dim">│ (cancel, progress) </span> <span class="acc">│</span>        <span class="dim">│</span>
+<span class="dim">│</span>                                       <span class="dim">▼</span>          │          <span class="acc">│</span>        <span class="dim">│</span>
+<span class="dim">│</span>                              <span class="hi">┌─────────────────┐</span> │          <span class="acc">│</span>        <span class="dim">│</span>
+<span class="dim">│</span>                              <span class="hi">│</span> cancelRegistry  <span class="hi">│</span> │          <span class="acc">│</span>        <span class="dim">│</span>
+<span class="dim">│</span>                              <span class="hi">└─────────────────┘</span> │          <span class="acc">│</span>        <span class="dim">│</span>
+<span class="dim">│</span>                                                  ▼          <span class="acc">│</span>        <span class="dim">│</span>
+<span class="dim">│</span>                                       <span class="hi">┌─────────────────────┐</span>        <span class="dim">│</span>
+<span class="dim">│</span>                                       <span class="hi">│</span> <span class="acc3">HANDLER POOL</span>        <span class="hi">│</span>        <span class="dim">│</span>
+<span class="dim">│</span>                                       <span class="hi">│</span>  ┌──────────────┐   <span class="hi">│</span>        <span class="dim">│</span>
+<span class="dim">│</span>                                       <span class="hi">│</span>  │ tools/call   │──<span class="hi">┼</span>────────<span class="dim">┘</span>
+<span class="dim">│</span>                                       <span class="hi">│</span>  ├──────────────┤   <span class="hi">│</span>
+<span class="dim">│</span>                                       <span class="hi">│</span>  │ tools/call   │──<span class="hi">┼</span>────────<span class="dim">┐</span>
+<span class="dim">│</span>                                       <span class="hi">│</span>  ├──────────────┤   <span class="hi">│</span>        <span class="acc">│</span>
+<span class="dim">│</span>                                       <span class="hi">│</span>  │ resources/   │──<span class="hi">┼</span>────────<span class="hi">▶</span>┘
+<span class="dim">│</span>                                       <span class="hi">│</span>  │  read        │   <span class="hi">│</span>
+<span class="dim">│</span>                                       <span class="hi">│</span>  └──────────────┘   <span class="hi">│</span>
+<span class="dim">│</span>                                       <span class="hi">└─────────────────────┘</span>
+<span class="dim">│</span>
+<span class="dim">└──────────────────────────────────────────────────────────────────────┘</span></pre>
+
+  <h3>Why each piece exists</h3>
+
+  <table>
+    <tr><th>Component</th><th>Why</th><th>Bug if missing</th></tr>
+    <tr>
+      <td class="meth">Single reader</td>
+      <td>stdin is a byte stream. Only one goroutine / task should read it. Multiple readers = interleaved bytes, corrupted JSON.</td>
+      <td>Random parse errors</td>
+    </tr>
+    <tr>
+      <td class="meth">Dispatch</td>
+      <td>Tool calls can block for seconds. If the handler runs in the read loop, no other message arrives until it returns.</td>
+      <td>Cancellation deadlock, no concurrent tool calls</td>
+    </tr>
+    <tr>
+      <td class="meth">Handler pool</td>
+      <td>Multiple tool calls can be in flight simultaneously. Each runs in its own goroutine / task with its own context.</td>
+      <td>Serialized throughput, one slow call blocks all</td>
+    </tr>
+    <tr>
+      <td class="meth">cancelRegistry</td>
+      <td>Maps request id to a cancel function. The read loop uses it to cancel in-flight handlers when a notification arrives.</td>
+      <td>Cancellation silently no-ops</td>
+    </tr>
+    <tr>
+      <td class="meth">Write mutex</td>
+      <td>Multiple handlers may finish concurrently. Writes to stdout must be serialized so JSON objects don't interleave mid-byte.</td>
+      <td>Corrupted output stream</td>
+    </tr>
+    <tr>
+      <td class="meth">Notification fast path</td>
+      <td>Notifications (cancel, progress) don't go through dispatch. Read loop handles them inline or via a short-lived task.</td>
+      <td>Slow cancel response</td>
+    </tr>
+  </table>
+
+  <div class="info-box">
+    <strong>FastMCP's version of this</strong>
+    FastMCP uses Python's asyncio. The "single reader" is one coroutine awaiting <code>stdin.readline()</code>. "Dispatch" is <code>asyncio.create_task()</code> on the handler coroutine. The write mutex is an <code>asyncio.Lock()</code>. The cancelRegistry is implicit in asyncio task cancellation: when a <code>notifications/cancelled</code> arrives, FastMCP calls <code>task.cancel()</code> on the matching handler task, which raises <code>CancelledError</code> at the next await point inside your tool.
+  </div>
+</section>
+
+<!-- lifecycle trace -->
+<section id="lifecycle">
+  <h2>Request <em class="or">Lifecycle</em> Trace</h2>
+  <div class="section-bar"></div>
+  <p>One tool call. From the moment the model emits it to the moment the result lands back in its context. Every step and every place it can fail.</p>
+
+  <ol class="step-list">
+    <li>
+      <strong>Model emits tool_use</strong>
+      Inside the model's response, a structured tool_use block appears: function name, arguments. The host (Claude Desktop, your IDE plugin, your custom app) intercepts the block before rendering to the user.
+    </li>
+    <li>
+      <strong>Host routes to matching client</strong>
+      The host has N MCP clients (one per configured server). It looks up which client owns the tool by name. If two servers expose tools with the same name, the host has to disambiguate. Claude Desktop prefixes tool names with server name to avoid collision.
+    </li>
+    <li>
+      <strong>Client builds JSON-RPC envelope</strong>
+      Wraps as <code>{"jsonrpc":"2.0","id":N,"method":"tools/call","params":{"name":"...","arguments":{...}}}</code>. The id is a monotonically increasing integer per client.
+    </li>
+    <li>
+      <strong>Client writes to transport</strong>
+      For stdio: writes bytes + newline to the server's stdin pipe, flushes. For SSE: POSTs to <code>/messages</code>. For Streamable HTTP: POSTs to <code>/mcp</code> and starts reading the response.
+    </li>
+    <li>
+      <strong>Server read loop wakes</strong>
+      The stdin read blocks until data arrives. When the client writes, the read loop wakes, accumulates bytes until the newline, parses the JSON-RPC envelope.
+    </li>
+    <li>
+      <strong>Dispatch decision</strong>
+      Read loop checks the method. Is it a notification? Handle inline (e.g., <code>notifications/cancelled</code>). Is it a request? Build a handler task, register its cancel function in cancelRegistry[id], start the task, continue reading.
+    </li>
+    <li>
+      <strong>Handler parses params</strong>
+      The handler validates the arguments against the tool's inputSchema. In FastMCP, this is the Pydantic model generated from your function signature. Invalid args = InvalidParams response (-32602).
+    </li>
+    <li>
+      <strong>Tool function runs</strong>
+      Your code executes. Makes HTTP requests, queries databases, reads files. Uses the context parameter for cancellation, logging, progress reporting. This is the slow part -- anywhere from milliseconds to seconds.
+    </li>
+    <li>
+      <strong>Tool returns content blocks</strong>
+      Your function returns. The handler wraps the return value in the MCP envelope: <code>{content: [{type:"text", text:"..."}], isError: false}</code>. Exceptions become isError:true with the exception message. Transport errors become JSON-RPC errors.
+    </li>
+    <li>
+      <strong>Encode + write mutex</strong>
+      Handler acquires the write mutex, serializes the full JSON-RPC response, writes to stdout with a newline, flushes, releases the mutex, deregisters from cancelRegistry.
+    </li>
+    <li>
+      <strong>Client read loop matches response</strong>
+      The client's read loop parses the response, looks up id N in its pending-request table, resolves the awaiting caller with the result. The caller is a promise / future in the host.
+    </li>
+    <li>
+      <strong>Host appends to conversation</strong>
+      The host takes the result's content blocks and appends them to the model's conversation as a tool_result message. This becomes part of the context for the next turn.
+    </li>
+    <li>
+      <strong>Model continues reasoning</strong>
+      Next turn: the model sees the tool_result in its context. It can now reason about the result, call more tools, respond to the user, whatever the agent loop decides.
+    </li>
+  </ol>
+</section>
+
+<!-- state machine -->
+<section id="state">
+  <h2>Init <em class="or">State Machine</em></h2>
+  <div class="section-bar"></div>
+  <p>An MCP connection is a state machine with four states. Most servers don't enforce it explicitly, which means they quietly accept malformed init sequences and then break in weird ways later. Understanding the state machine lets you debug "my server responds to initialize but not to tools/list" kind of bugs.</p>
+
+  <pre class="diagram"><span class="dim">   ┌───────────────┐</span>
+<span class="dim">   │</span>   <span class="acc">CONNECTED</span>   <span class="dim">│</span>     socket open, no messages exchanged yet
+<span class="dim">   └───────┬───────┘</span>
+<span class="dim">           │</span>
+<span class="dim">           │</span>  client sends <span class="acc2">initialize</span>
+<span class="dim">           ▼</span>
+<span class="dim">   ┌───────────────┐</span>
+<span class="dim">   │</span> <span class="acc">INITIALIZING</span>  <span class="dim">│</span>     server processes initialize, returns capabilities
+<span class="dim">   └───────┬───────┘</span>     ONLY legal inbound method: <span class="acc2">initialize</span>
+<span class="dim">           │</span>
+<span class="dim">           │</span>  server responds
+<span class="dim">           │</span>  client sends <span class="acc2">notifications/initialized</span>
+<span class="dim">           ▼</span>
+<span class="dim">   ┌───────────────┐</span>
+<span class="dim">   │</span>     <span class="acc">READY</span>     <span class="dim">│</span>     all capability methods legal (tools/*, resources/*, prompts/*)
+<span class="dim">   └───────┬───────┘</span>     notifications/*: cancel, progress, list_changed, updated
+<span class="dim">           │</span>
+<span class="dim">           │</span>  transport closes OR fatal error
+<span class="dim">           ▼</span>
+<span class="dim">   ┌───────────────┐</span>
+<span class="dim">   │</span>   <span class="acc">SHUTDOWN</span>    <span class="dim">│</span>     connection closed, no further messages
+<span class="dim">   └───────────────┘</span></pre>
+
+  <h3>Legal operations by state</h3>
+  <table>
+    <tr><th>State</th><th>Legal inbound</th><th>Error on illegal</th></tr>
+    <tr>
+      <td class="meth">CONNECTED</td>
+      <td><code>initialize</code></td>
+      <td>-32600 invalid request</td>
+    </tr>
+    <tr>
+      <td class="meth">INITIALIZING</td>
+      <td>(waiting for server response)</td>
+      <td>client should not send more requests</td>
+    </tr>
+    <tr>
+      <td class="meth">READY</td>
+      <td>all declared capabilities + ping</td>
+      <td>-32601 method not found if tool/resource/prompt missing</td>
+    </tr>
+    <tr>
+      <td class="meth">SHUTDOWN</td>
+      <td>(none)</td>
+      <td>transport closed</td>
+    </tr>
+  </table>
+
+  <h3 class="cy">Capability negotiation inside initialize</h3>
+  <p>The initialize exchange is where client and server agree on what the server actually supports. The client advertises what it can consume (roots, sampling), the server advertises what it provides (tools, resources, prompts). Each capability can have sub-flags:</p>
+
+  <pre class="cy"><span class="label">server initialize response</span>
+{
+  <span class="key">"capabilities"</span>: {
+    <span class="key">"tools"</span>:     { <span class="key">"listChanged"</span>: <span class="kw">true</span> },
+    <span class="key">"resources"</span>: {
+      <span class="key">"subscribe"</span>:    <span class="kw">true</span>,
+      <span class="key">"listChanged"</span>:  <span class="kw">true</span>
+    },
+    <span class="key">"prompts"</span>:   { <span class="key">"listChanged"</span>: <span class="kw">false</span> },
+    <span class="key">"logging"</span>:   {},
+    <span class="key">"experimental"</span>: {
+      <span class="key">"wrapster.concurrent_dispatch"</span>: <span class="kw">true</span>,
+      <span class="key">"wrapster.output_handles"</span>: <span class="kw">true</span>
+    }
+  }
+}</pre>
+
+  <p>The presence of a key means "this server supports the feature." The sub-flags control optional behaviors. <code>listChanged: true</code> means the server will send <code>notifications/tools/list_changed</code> when its tool set changes. <code>subscribe: true</code> means resources support per-URI subscription. The <code>experimental</code> block is the escape hatch for non-standard extensions (which is where wrapster advertises its custom transport features).</p>
+
+  <div class="info-box cy">
+    <strong>The asymmetry that confuses people</strong>
+    Both sides can advertise capabilities but they mean different things. Client capabilities describe what the server can ask the client to do (sampling: the server can ask the client to make an LLM call on its behalf; roots: the server can query the client's filesystem boundaries). Server capabilities describe what tools/resources/prompts the server offers. They're not symmetric.
+  </div>
+</section>
+
+<!-- cancellation -->
+<section id="cancel">
+  <h2><em class="rd">Cancellation</em> Mechanics</h2>
+  <div class="section-bar rd"></div>
+  <p>The most common question after "how does tools/call work" is "how does cancel work" because every time someone tries to cancel a long-running tool call, it does nothing and they don't know why. Here is the actual mechanism.</p>
+
+  <h3 class="rd">The full flow</h3>
+  <pre class="diagram" style="border-left-color: #BF1020;"><span class="dim">CLIENT                                           SERVER</span>
+<span class="dim">  │                                                │</span>
+<span class="dim">  │</span>  tools/call <span class="acc3">{id: 42}</span>                        <span class="dim">│</span>
+<span class="dim">  │</span> ──────────────────────────────────────────────▶<span class="dim">│</span>
+<span class="dim">  │                                                │</span>
+<span class="dim">  │                                                │</span>  read loop parses, dispatches
+<span class="dim">  │                                                │</span>  <span class="hi">cancelRegistry[42] = cancel_fn</span>
+<span class="dim">  │                                                │</span>  handler task starts
+<span class="dim">  │                                                │</span>  handler awaits HTTP call to Jira
+<span class="dim">  │                                                │</span>
+<span class="dim">  │</span>  user hits Escape                              <span class="dim">│</span>
+<span class="dim">  │                                                │</span>
+<span class="dim">  │</span>  <span class="acc">notifications/cancelled {requestId: 42}</span>         <span class="dim">│</span>
+<span class="dim">  │</span> ──────────────────────────────────────────────▶<span class="dim">│</span>
+<span class="dim">  │                                                │</span>
+<span class="dim">  │                                                │</span>  read loop sees notification
+<span class="dim">  │                                                │</span>  looks up <span class="hi">cancelRegistry[42]</span>
+<span class="dim">  │                                                │</span>  calls <span class="hi">cancel_fn()</span>
+<span class="dim">  │                                                │</span>  handler's context becomes cancelled
+<span class="dim">  │                                                │</span>  HTTP client aborts the in-flight request
+<span class="dim">  │                                                │</span>  handler raises <span class="hi">CancelledError</span>
+<span class="dim">  │                                                │</span>  handler catches, returns isError:true
+<span class="dim">  │                                                │</span>  <span class="hi">del cancelRegistry[42]</span>
+<span class="dim">  │                                                │</span>
+<span class="dim">  │</span>  response <span class="acc3">{id: 42, error: "cancelled"}</span>        <span class="dim">│</span>
+<span class="dim">  │</span> ◀──────────────────────────────────────────────<span class="dim">│</span></pre>
+
+  <h3 class="rd">Why it fails</h3>
+  <table>
+    <tr><th>Bug</th><th>Cause</th><th>Fix</th></tr>
+    <tr>
+      <td>Cancel does nothing</td>
+      <td>Handler runs in read loop, so the notification is stuck behind it in the input queue</td>
+      <td>Dispatch handlers to separate tasks/goroutines so read loop stays free</td>
+    </tr>
+    <tr>
+      <td>Cancel races, handler already done</td>
+      <td>Notification arrives after handler deregistered. Registry lookup fails silently.</td>
+      <td>Not actually a bug. The response was already on its way.</td>
+    </tr>
+    <tr>
+      <td>Tool doesn't stop</td>
+      <td>Tool code doesn't use the context for cancellation. It's doing blocking work that can't be interrupted.</td>
+      <td>Pass context through to HTTP calls, subprocess.run, database queries</td>
+    </tr>
+    <tr>
+      <td>Registry grows forever</td>
+      <td>Handler never deregisters (exception path, forgot finally block)</td>
+      <td>Use try/finally around registration. Memory leak if you don't.</td>
+    </tr>
+  </table>
+
+  <h3 class="rd">FastMCP cancellation specifically</h3>
+  <p>In FastMCP, cancellation uses asyncio task cancellation. When <code>notifications/cancelled</code> arrives, FastMCP calls <code>.cancel()</code> on the matching handler task. This raises <code>asyncio.CancelledError</code> at the next <code>await</code> point inside your handler. For this to actually terminate your tool, your tool must:</p>
+
+  <ul style="margin-left: 20px; color: var(--text); font-size: 12px;">
+    <li>Use async libraries (aiohttp not requests, asyncpg not psycopg)</li>
+    <li>Actually hit an await point periodically. A tight CPU loop never yields and never sees the cancel.</li>
+    <li>Not swallow CancelledError in a broad <code>except Exception</code>. That's a bug that defeats cancellation entirely.</li>
+  </ul>
+
+  <div class="info-box danger">
+    <strong>The swallowed cancel bug</strong>
+    The single worst thing you can do in a tool handler is <code>try: ... except Exception: return "failed"</code>. <code>CancelledError</code> inherits from <code>BaseException</code> in Python 3.8+, so it's NOT caught by <code>except Exception</code>. Good. But in older code or if you catch <code>BaseException</code>, you swallow the cancel and the tool runs to completion while the client thinks it was cancelled. Always re-raise <code>CancelledError</code> explicitly if you catch broadly.
+  </div>
+</section>
+
+<!-- schema generation -->
+<section id="schema">
+  <h2>Schema <em class="or">Generation</em></h2>
+  <div class="section-bar"></div>
+  <p>What happens between <code>@mcp.tool()</code> and the JSON Schema that shows up in <code>tools/list</code>. The pipeline has four stages and each one can surprise you.</p>
+
+  <pre class="diagram"><span class="acc">┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐</span>
+<span class="acc">│</span>  <span class="hi">Python func</span>     <span class="acc">│</span>────▶<span class="acc">│</span>  <span class="hi">Pydantic model</span>  <span class="acc">│</span>────▶<span class="acc">│</span>  <span class="hi">JSON Schema</span>     <span class="acc">│</span>────▶<span class="acc">│</span>  <span class="hi">Tool envelope</span>   <span class="acc">│</span>
+<span class="acc">│</span>                  <span class="acc">│</span>     <span class="acc">│</span>                  <span class="acc">│</span>     <span class="acc">│</span>                  <span class="acc">│</span>     <span class="acc">│</span>                  <span class="acc">│</span>
+<span class="acc">│</span> type hints       <span class="acc">│</span>     <span class="acc">│</span> field defs       <span class="acc">│</span>     <span class="acc">│</span> properties       <span class="acc">│</span>     <span class="acc">│</span> name             <span class="acc">│</span>
+<span class="acc">│</span> defaults         <span class="acc">│</span>     <span class="acc">│</span> validators       <span class="acc">│</span>     <span class="acc">│</span> required         <span class="acc">│</span>     <span class="acc">│</span> description      <span class="acc">│</span>
+<span class="acc">│</span> docstring        <span class="acc">│</span>     <span class="acc">│</span> descriptions     <span class="acc">│</span>     <span class="acc">│</span> types            <span class="acc">│</span>     <span class="acc">│</span> inputSchema      <span class="acc">│</span>
+<span class="acc">└──────────────────┘     └──────────────────┘     └──────────────────┘     └──────────────────┘</span>
+    <span class="dim">inspect</span>                  <span class="dim">create_model()</span>            <span class="dim">model_json_schema()</span>         <span class="dim">wrap as MCP tool</span>
+    <span class="dim">docstring_parser</span>         <span class="dim">Field(..., description)</span>    <span class="dim">$defs resolution</span></pre>
+
+  <h3>Stage 1: Python function inspection</h3>
+  <pre><span class="label">source</span>
+<span class="kw">@mcp</span>.tool()
+<span class="kw">def</span> <span class="fn">search_jira</span>(
+    project: str,
+    jql: str,
+    max_results: int = <span class="num">50</span>,
+    include_subtasks: bool = <span class="kw">False</span>,
+) -> <span class="fn">list</span>[<span class="fn">dict</span>]:
+    <span class="st">"""Search Jira issues using JQL.
+
+    Args:
+        project: Jira project key, e.g. "PROJ"
+        jql: JQL query string
+        max_results: Maximum number of results
+        include_subtasks: Whether to include subtask issues
+
+    Returns:
+        List of issue dicts with key, summary, status
+    """</span>
+    ...</pre>
+
+  <p>FastMCP calls <code>inspect.signature()</code> on your function. Extracts parameter names, type annotations, default values. Parses the docstring via <code>docstring-parser</code> (supports Google, NumPy, Sphinx styles) to pull per-parameter descriptions and the top-level summary.</p>
+
+  <h3>Stage 2: Pydantic model synthesis</h3>
+  <p>FastMCP dynamically builds a Pydantic model from the inspected signature. Roughly equivalent to:</p>
+  <pre><span class="label">generated model</span>
+<span class="kw">class</span> <span class="fn">SearchJiraInput</span>(BaseModel):
+    project: str = <span class="fn">Field</span>(..., description=<span class="st">"Jira project key, e.g. PROJ"</span>)
+    jql: str = <span class="fn">Field</span>(..., description=<span class="st">"JQL query string"</span>)
+    max_results: int = <span class="fn">Field</span>(<span class="num">50</span>, description=<span class="st">"Maximum number of results"</span>)
+    include_subtasks: bool = <span class="fn">Field</span>(<span class="kw">False</span>, description=<span class="st">"Whether to include subtask issues"</span>)</pre>
+
+  <h3>Stage 3: JSON Schema generation</h3>
+  <p>Pydantic's <code>model_json_schema()</code> walks the model and emits draft-07 JSON Schema. Primitive types map directly. <code>Optional[X]</code> becomes <code>{type: [X, "null"]}</code> or excluded from required. <code>Literal["a", "b"]</code> becomes <code>{enum: ["a", "b"]}</code>. Nested Pydantic models become <code>$ref</code> to a <code>$defs</code> entry.</p>
+
+  <pre class="cy"><span class="label">resulting schema</span>
+{
+  <span class="key">"type"</span>: <span class="st">"object"</span>,
+  <span class="key">"properties"</span>: {
+    <span class="key">"project"</span>: {
+      <span class="key">"type"</span>:        <span class="st">"string"</span>,
+      <span class="key">"description"</span>: <span class="st">"Jira project key, e.g. PROJ"</span>,
+      <span class="key">"title"</span>:       <span class="st">"Project"</span>
+    },
+    <span class="key">"jql"</span>: {
+      <span class="key">"type"</span>:        <span class="st">"string"</span>,
+      <span class="key">"description"</span>: <span class="st">"JQL query string"</span>,
+      <span class="key">"title"</span>:       <span class="st">"Jql"</span>
+    },
+    <span class="key">"max_results"</span>: {
+      <span class="key">"type"</span>:        <span class="st">"integer"</span>,
+      <span class="key">"description"</span>: <span class="st">"Maximum number of results"</span>,
+      <span class="key">"default"</span>:     <span class="num">50</span>,
+      <span class="key">"title"</span>:       <span class="st">"Max Results"</span>
+    },
+    <span class="key">"include_subtasks"</span>: {
+      <span class="key">"type"</span>:        <span class="st">"boolean"</span>,
+      <span class="key">"description"</span>: <span class="st">"Whether to include subtask issues"</span>,
+      <span class="key">"default"</span>:     <span class="kw">false</span>,
+      <span class="key">"title"</span>:       <span class="st">"Include Subtasks"</span>
+    }
+  },
+  <span class="key">"required"</span>: [<span class="st">"project"</span>, <span class="st">"jql"</span>],
+  <span class="key">"title"</span>: <span class="st">"SearchJiraInputSchema"</span>
+}</pre>
+
+  <div class="info-box warn">
+    <strong>The title noise problem</strong>
+    Pydantic adds <code>title</code> fields to every property and to the root. The model doesn't use these and they waste tokens in the tool definition that gets rendered into the system prompt. At 30 tools with 5 parameters each, you're spending 150 title fields of noise per session. FastMCP has options to strip them; worth enabling in production.
+  </div>
+
+  <h3>Stage 4: Tool envelope</h3>
+  <p>Finally FastMCP wraps the schema with name and description to form the tool definition returned by <code>tools/list</code>. The tool name comes from the function name (or an explicit override). The description comes from the first line of the docstring (the summary), not the full docstring.</p>
+
+  <h3 class="cy">Things the inference does poorly</h3>
+  <table>
+    <tr><th>Python construct</th><th>What you get</th><th>Why it's bad</th></tr>
+    <tr>
+      <td><code>Union[A, B]</code></td>
+      <td><code>anyOf: [{$ref: A}, {$ref: B}]</code></td>
+      <td>Models struggle to decide which branch to construct</td>
+    </tr>
+    <tr>
+      <td>Nested models</td>
+      <td><code>$ref</code> into <code>$defs</code></td>
+      <td>Some clients don't resolve refs, some strip them</td>
+    </tr>
+    <tr>
+      <td>Recursive types</td>
+      <td>self-referential <code>$ref</code></td>
+      <td>Infinite expansion in naive renderers</td>
+    </tr>
+    <tr>
+      <td>Custom validators</td>
+      <td>not reflected in schema</td>
+      <td>Validation happens at runtime, model can't see the constraint</td>
+    </tr>
+    <tr>
+      <td>Sphinx docstrings</td>
+      <td>silently skipped</td>
+      <td>docstring-parser expects Google/NumPy style by default</td>
+    </tr>
+  </table>
+
+  <p>For tools called frequently or where schema clarity matters, bypass inference and write the <code>inputSchema</code> by hand. FastMCP accepts an explicit schema parameter on the decorator.</p>
+</section>
+
+<!-- tools as prompt -->
+<section id="prompt">
+  <h2>Tools as <em class="or">System Prompt</em></h2>
+  <div class="section-bar"></div>
+  <p>Here is the thing nobody tells you. When a client calls <code>tools/list</code> and gets back your tool definitions, the host doesn't just hand them to the model as "available functions." The host converts them into text and prepends that text to the model's system prompt. Your tool definitions ARE the prompt. Every tool description, every property description, every enum value is load-bearing prompt engineering.</p>
+
+  <h3>What the model actually sees</h3>
+  <p>The exact format depends on the host and the model, but the structure is approximately:</p>
+
+  <pre><span class="label">approximate system prompt injection</span>
+You have access to the following tools. Use them when appropriate
+to help the user. Each tool has a name, a description, and
+parameters you must provide.
+
+&lt;tool&gt;
+&lt;name&gt;search_jira&lt;/name&gt;
+&lt;description&gt;Search Jira issues using JQL.&lt;/description&gt;
+&lt;parameters&gt;
+  project (string, required): Jira project key, e.g. PROJ
+  jql (string, required): JQL query string
+  max_results (integer, optional, default 50): Maximum number of results
+  include_subtasks (boolean, optional, default false): Whether to include subtask issues
+&lt;/parameters&gt;
+&lt;/tool&gt;
+
+&lt;tool&gt;
+&lt;name&gt;get_issue&lt;/name&gt;
+&lt;description&gt;Retrieve a single Jira issue by key.&lt;/description&gt;
+&lt;parameters&gt;
+  ...
+&lt;/parameters&gt;
+&lt;/tool&gt;
+
+... (repeat for all N tools) ...</pre>
+
+  <p>This block is prepended to EVERY turn in the conversation. Not once at session start. Every single turn. The cost compounds.</p>
+
+  <h3 class="cy">Token cost estimation</h3>
+  <p>Rough math. A tool definition with a 2-sentence description and 5 parameters with moderate descriptions is about 150-250 tokens. For a moderate MCP server:</p>
+
+  <table>
+    <tr><th>Tool count</th><th>Avg tokens/tool</th><th>Tools block size</th><th>10-turn conversation cost</th></tr>
+    <tr><td class="meth">10</td><td>200</td><td>2,000 tok</td><td>20,000 tok</td></tr>
+    <tr><td class="meth">20</td><td>200</td><td>4,000 tok</td><td>40,000 tok</td></tr>
+    <tr><td class="meth">30</td><td>250</td><td>7,500 tok</td><td>75,000 tok</td></tr>
+    <tr><td class="meth">50</td><td>250</td><td>12,500 tok</td><td>125,000 tok</td></tr>
+  </table>
+
+  <p>For an Atlassian server with a rich API surface (Jira + Confluence + user management + attachments), 30+ tools is realistic. That's a nontrivial chunk of the model's context window spent on tool definitions before any actual work happens.</p>
+
+  <h3>Implications for writing tools</h3>
+  <ul style="margin-left: 20px; color: var(--text); font-size: 12px;">
+    <li><strong>Descriptions are prompts.</strong> Write "Use this when the user wants to..." not "This function does..."</li>
+    <li><strong>Tool names matter.</strong> The model uses them as function names. <code>search_jira</code> vs <code>query_atlassian_issues</code> changes how the model thinks about the tool.</li>
+    <li><strong>Property descriptions explain semantics, not types.</strong> "Jira project key, e.g. PROJ" not "A string value."</li>
+    <li><strong>Enums are self-documenting.</strong> <code>enum: ["open", "in_progress", "closed"]</code> tells the model the legal values without English explanation.</li>
+    <li><strong>Required fields force the model's hand.</strong> Required = "must construct." Optional = "include if relevant."</li>
+    <li><strong>Audit for bloat.</strong> Every word in a description costs tokens every turn. Long Pydantic Field descriptions that nobody needed add up fast.</li>
+  </ul>
+
+  <div class="info-box cy">
+    <strong>The path forward: dynamic tool filtering</strong>
+    Some hosts (and MCP spec work) are moving toward per-turn tool filtering. The model picks a category first, and only the relevant tools are injected for that turn. For an Atlassian server, this could mean "Jira mode" vs "Confluence mode" with different tool subsets. Not universally supported yet but worth watching -- it's the only real fix for the tool-count-vs-context-cost tradeoff.
+  </div>
+</section>
+
+<!-- content blocks -->
+<section id="content">
+  <h2>Content <em class="or">Block</em> Anatomy</h2>
+  <div class="section-bar"></div>
+  <p>The return value of a tool call is <code>{content: [ContentBlock], isError: bool}</code>. That <code>content</code> array is more interesting than people realize. You can return multiple blocks, mix types, and use the resource block type to avoid inlining content at all.</p>
+
+  <h3>The four types</h3>
+  <pre><span class="label">text block</span>
+{
+  <span class="key">"type"</span>: <span class="st">"text"</span>,
+  <span class="key">"text"</span>: <span class="st">"Hello world. This is plain text that lands in the context."</span>
+}</pre>
+
+  <pre class="cy"><span class="label">image block</span>
+{
+  <span class="key">"type"</span>:     <span class="st">"image"</span>,
+  <span class="key">"data"</span>:     <span class="st">"iVBORw0KGgoAAAANSUhEUgAA..."</span>,  <span class="cm">// base64-encoded bytes</span>
+  <span class="key">"mimeType"</span>: <span class="st">"image/png"</span>
+}</pre>
+
+  <pre class="yl"><span class="label">resource block (embedded)</span>
+{
+  <span class="key">"type"</span>: <span class="st">"resource"</span>,
+  <span class="key">"resource"</span>: {
+    <span class="key">"uri"</span>:      <span class="st">"confluence://TEAM/architecture-overview"</span>,
+    <span class="key">"mimeType"</span>: <span class="st">"text/markdown"</span>,
+    <span class="key">"text"</span>:     <span class="st">"# Architecture Overview\n\n..."</span>
+  }
+}</pre>
+
+  <pre><span class="label">audio block (2025-03-26+)</span>
+{
+  <span class="key">"type"</span>:     <span class="st">"audio"</span>,
+  <span class="key">"data"</span>:     <span class="st">"UklGRiQAAABXQVZF..."</span>,
+  <span class="key">"mimeType"</span>: <span class="st">"audio/wav"</span>
+}</pre>
+
+  <h3>Size tradeoffs</h3>
+  <table>
+    <tr><th>Block type</th><th>Wire overhead</th><th>Context cost</th><th>Notes</th></tr>
+    <tr>
+      <td class="meth">text</td>
+      <td>minimal (json escape)</td>
+      <td>~1 token per 4 chars</td>
+      <td>Best for small-to-medium content. 40KB = ~10K tokens.</td>
+    </tr>
+    <tr>
+      <td class="meth">image</td>
+      <td>+33% (base64)</td>
+      <td>model-specific vision tokens</td>
+      <td>Claude vision: ~1.5k tokens per 1024x1024 image regardless of file size</td>
+    </tr>
+    <tr>
+      <td class="meth">resource (inline)</td>
+      <td>minimal</td>
+      <td>same as text</td>
+      <td>Same cost as text but semantically addressable by uri</td>
+    </tr>
+    <tr>
+      <td class="meth">resource (reference)</td>
+      <td>near zero</td>
+      <td>near zero until fetched</td>
+      <td>Return just the uri, client fetches on demand via resources/read</td>
+    </tr>
+  </table>
+
+  <h3 class="cy">The multi-block pattern</h3>
+  <p>You can return multiple blocks in one tool result. This is underused. Example: a Jira search tool that returns a summary text block plus individual resource references for each matching issue.</p>
+
+  <pre class="cy"><span class="label">multi-block jira search result</span>
+{
+  <span class="key">"content"</span>: [
+    {
+      <span class="key">"type"</span>: <span class="st">"text"</span>,
+      <span class="key">"text"</span>: <span class="st">"Found 3 matching issues:"</span>
+    },
+    {
+      <span class="key">"type"</span>: <span class="st">"resource"</span>,
+      <span class="key">"resource"</span>: {
+        <span class="key">"uri"</span>:  <span class="st">"jira://PROJ-123"</span>,
+        <span class="key">"text"</span>: <span class="st">"PROJ-123: Login button broken - Status: Open - Assignee: Alice"</span>
+      }
+    },
+    {
+      <span class="key">"type"</span>: <span class="st">"resource"</span>,
+      <span class="key">"resource"</span>: {
+        <span class="key">"uri"</span>:  <span class="st">"jira://PROJ-124"</span>,
+        <span class="key">"text"</span>: <span class="st">"PROJ-124: Session expires - Status: In Progress - Assignee: Bob"</span>
+      }
+    },
+    {
+      <span class="key">"type"</span>: <span class="st">"resource"</span>,
+      <span class="key">"resource"</span>: {
+        <span class="key">"uri"</span>:  <span class="st">"jira://PROJ-125"</span>,
+        <span class="key">"text"</span>: <span class="st">"PROJ-125: 2FA errors - Status: Open - Assignee: Alice"</span>
+      }
+    }
+  ],
+  <span class="key">"isError"</span>: <span class="kw">false</span>
+}</pre>
+
+  <p>Advantages of this shape: the model sees a compact summary plus individually addressable items. If it wants full details for one issue, it can call <code>resources/read</code> with that uri instead of the server having pre-inlined 50KB of issue data for every match.</p>
+</section>
+
+<!-- text conversion -->
+<section id="convert">
+  <h2>Text <em class="yl">Conversion</em> (ADF · HTML · MD)</h2>
+  <div class="section-bar yl"></div>
+  <p>Atlassian is a useful case study here because the formats in play are a microcosm of every rich-text integration problem: a native tree structure, a legacy markup variant, and Markdown as the model's lingua franca. Round-tripping between them is harder than it looks because each format has features the others don't.</p>
+
+  <h3 class="yl">The formats</h3>
+  <table>
+    <tr><th>Format</th><th>Used by</th><th>Shape</th><th>Complexity</th></tr>
+    <tr>
+      <td class="yl">Jira REST v2</td>
+      <td>Jira Server / Data Center</td>
+      <td>Plain strings, wiki markup in description/comment bodies</td>
+      <td>Flat: bolded fields, minimal structure</td>
+    </tr>
+    <tr>
+      <td class="yl">Storage Format</td>
+      <td>Confluence Server / Data Center (and Cloud) page bodies</td>
+      <td>XHTML with ac: and ri: namespaces</td>
+      <td>Custom macros, layout cells, structured data</td>
+    </tr>
+    <tr>
+      <td class="yl">Wiki Markup</td>
+      <td>Legacy Confluence, Jira v2 rich text fields</td>
+      <td>Confluence wiki syntax (<code>h1.</code>, <code>{code}</code>, etc)</td>
+      <td>Still the common case on Server/DC</td>
+    </tr>
+    <tr>
+      <td class="yl">ADF</td>
+      <td>Jira Cloud (REST v3), Confluence Cloud (newer)</td>
+      <td>JSON tree of typed nodes</td>
+      <td>Rich: marks, tables, layouts, extensions</td>
+    </tr>
+    <tr>
+      <td class="yl">Markdown</td>
+      <td>Model input/output</td>
+      <td>CommonMark + GFM extensions</td>
+      <td>Lowest common denominator</td>
+    </tr>
+  </table>
+
+  <div class="info-box">
+    <strong>Server/DC vs Cloud note.</strong>
+    Jira Server and Data Center use REST API v2 and never emit ADF. Description and comment bodies come back either as plain text or as Confluence-style wiki markup, depending on the renderer query. ADF is Cloud-only and only on the v3 endpoint. The tree-walk pattern below still applies though: storage format is also a tree (XHTML), wiki markup parses into one, and all three formats hit the same class of round-trip hazards.
+  </div>
+
+  <h3 class="yl">ADF as a tree</h3>
+  <pre class="yl"><span class="label">adf document</span>
+{
+  <span class="key">"type"</span>: <span class="st">"doc"</span>,
+  <span class="key">"version"</span>: <span class="num">1</span>,
+  <span class="key">"content"</span>: [
+    {
+      <span class="key">"type"</span>: <span class="st">"paragraph"</span>,
+      <span class="key">"content"</span>: [
+        { <span class="key">"type"</span>: <span class="st">"text"</span>, <span class="key">"text"</span>: <span class="st">"Hello "</span> },
+        {
+          <span class="key">"type"</span>: <span class="st">"text"</span>,
+          <span class="key">"text"</span>: <span class="st">"world"</span>,
+          <span class="key">"marks"</span>: [{ <span class="key">"type"</span>: <span class="st">"strong"</span> }]
+        }
+      ]
+    },
+    {
+      <span class="key">"type"</span>: <span class="st">"bulletList"</span>,
+      <span class="key">"content"</span>: [
+        {
+          <span class="key">"type"</span>: <span class="st">"listItem"</span>,
+          <span class="key">"content"</span>: [
+            { <span class="key">"type"</span>: <span class="st">"paragraph"</span>, <span class="key">"content"</span>: [{ <span class="key">"type"</span>: <span class="st">"text"</span>, <span class="key">"text"</span>: <span class="st">"first"</span> }] }
+          ]
+        }
+      ]
+    },
+    {
+      <span class="key">"type"</span>:  <span class="st">"codeBlock"</span>,
+      <span class="key">"attrs"</span>: { <span class="key">"language"</span>: <span class="st">"python"</span> },
+      <span class="key">"content"</span>: [{ <span class="key">"type"</span>: <span class="st">"text"</span>, <span class="key">"text"</span>: <span class="st">"print('hi')"</span> }]
+    }
+  ]
+}</pre>
+
+  <p>Conversion is a tree walk. For each node type, emit the Markdown equivalent. Text nodes with marks become inline formatting. Lists and code blocks become block-level constructs. The algorithm is straightforward until you hit the edge cases.</p>
+
+  <h3 class="yl">Hard cases that break naive converters</h3>
+  <table>
+    <tr><th>Case</th><th>Why it breaks</th><th>Mitigation</th></tr>
+    <tr>
+      <td>Nested marks (bold + italic + link)</td>
+      <td>Markdown has limited nesting rules. <code>**_text_**</code> works in CommonMark but some parsers fail.</td>
+      <td>Emit strict order: link outermost, then strong, then em</td>
+    </tr>
+    <tr>
+      <td>Tables with block content</td>
+      <td>GFM tables don't support paragraphs or lists inside cells</td>
+      <td>Flatten cell content to single-line, or emit as HTML table</td>
+    </tr>
+    <tr>
+      <td>Code containing backticks</td>
+      <td>Single-backtick inline code can't contain backticks</td>
+      <td>Use variable-length fencing: wrap in enough backticks to avoid collision</td>
+    </tr>
+    <tr>
+      <td>Confluence panels (info, warning)</td>
+      <td>No Markdown equivalent</td>
+      <td>Emit blockquote with prefix: <code>&gt; [INFO] ...</code></td>
+    </tr>
+    <tr>
+      <td>Mentions (@user)</td>
+      <td>ADF has structured mention nodes with accountId</td>
+      <td>Resolve via user cache, emit <code>@displayName</code></td>
+    </tr>
+    <tr>
+      <td>Attachments / embedded media</td>
+      <td>ri:attachment references are context-sensitive</td>
+      <td>Resolve to absolute URL or keep as MCP resource URI</td>
+    </tr>
+    <tr>
+      <td>Layout cells (multi-column)</td>
+      <td>Markdown is single-column</td>
+      <td>Drop layout, concatenate content vertically</td>
+    </tr>
+    <tr>
+      <td>Status pills, dates, emojis</td>
+      <td>Structured nodes with attrs, no Markdown form</td>
+      <td>Render as text with emoji or bracketed label</td>
+    </tr>
+  </table>
+
+  <h3 class="yl">The round-trip problem</h3>
+  <p>You have two conversion directions:</p>
+
+  <pre class="yl"><span class="label">read path (server → model)</span>
+Atlassian API  →  ADF / Storage  →  <span class="hi">Markdown</span>  →  model context
+
+<span class="cm">// This direction is lossy on purpose. Drop features the model can't use.</span>
+<span class="cm">// Information loss is fine: the model never writes them back.</span></pre>
+
+  <pre class="yl"><span class="label">write path (model → server)</span>
+model output  →  <span class="hi">Markdown</span>  →  ADF / Storage  →  Atlassian API
+
+<span class="cm">// This direction synthesizes structure the model never saw.</span>
+<span class="cm">// You're upgrading MD to ADF. Only the features in MD are preserved.</span></pre>
+
+  <p>The problem is not MD → ADF → MD (stable, lossless for the MD subset). The problem is ADF → MD → ADF, which is lossy. If the model reads a page with panels and layouts, edits one paragraph, and writes it back, the panels and layouts are GONE.</p>
+
+  <div class="info-box warn">
+    <strong>Strategies for the round-trip loss</strong>
+    (1) <strong>Read-only for rich features.</strong> Convert ADF → MD on read, but for writes require the model to use a patch tool that updates specific sections rather than rewriting the whole page. The rich features stay because you never touched them. (2) <strong>Extended MD syntax.</strong> Invent custom syntax for panels (<code>::: info</code>) and round-trip it. Works if you control both sides. (3) <strong>Preserve-and-restore.</strong> On read, strip non-MD features and store a sidecar diff. On write, re-apply the sidecar. Complex but lossless.
+  </div>
+
+  <h3 class="yl">Debugging approach for conversion bugs</h3>
+  <ol class="step-list" style="counter-reset: step;">
+    <li>
+      <strong>Capture input and output verbatim.</strong>
+      Log the exact ADF JSON you received and the exact Markdown you produced. Conversion bugs hide when you're comparing mental models instead of actual bytes.
+    </li>
+    <li>
+      <strong>Build a minimal reproduction.</strong>
+      Strip the ADF tree down until you find the smallest subtree that breaks. Almost always a single node type with specific attrs.
+    </li>
+    <li>
+      <strong>Check for encoding issues.</strong>
+      Special chars in text nodes must be escaped for Markdown: <code>*</code>, <code>_</code>, <code>[</code>, <code>]</code>, backticks. Many converters forget.
+    </li>
+    <li>
+      <strong>Check whitespace normalization.</strong>
+      ADF preserves whitespace inside text nodes literally. Markdown collapses spaces. Newlines in ADF become paragraph breaks in MD only if nested in paragraph nodes.
+    </li>
+    <li>
+      <strong>Test round-trip on the MD subset.</strong>
+      Build an ADF tree that contains only MD-expressible features. Convert to MD, convert back, diff. If this round-trip fails, your converter has a bug in the MD-native path, not in the edge cases.
+    </li>
+  </ol>
+</section>
+
+<!-- further -->
+<section id="further">
+  <h2><em class="or">Further</em> Rabbit Holes</h2>
+  <div class="section-bar"></div>
+  <p>Things to read and experiment with to keep deepening. Each one leads to better questions.</p>
+
+  <table>
+    <tr><th>Topic</th><th>Why it matters</th><th>Where to start</th></tr>
+    <tr>
+      <td class="meth">FastMCP source</td>
+      <td>Understand the middleware pipeline, context object, schema generation internals</td>
+      <td><code>mcp/server/fastmcp/server.py</code> in the python-sdk repo</td>
+    </tr>
+    <tr>
+      <td class="meth">JSON-RPC batching</td>
+      <td>The spec allows batched requests. Most MCP servers don't handle them. Worth knowing what breaks.</td>
+      <td>JSON-RPC 2.0 spec, batch section</td>
+    </tr>
+    <tr>
+      <td class="meth">Resource subscriptions</td>
+      <td>The underused primitive. Server pushes updates when a resource changes. Critical for live data.</td>
+      <td>MCP spec resources section, implement one in wrapster</td>
+    </tr>
+    <tr>
+      <td class="meth">Sampling (server→client LLM calls)</td>
+      <td>Reverse direction: server asks client to do an LLM inference. Enables nested agent patterns.</td>
+      <td>MCP spec sampling section</td>
+    </tr>
+    <tr>
+      <td class="meth">Roots</td>
+      <td>Client advertises filesystem/workspace boundaries to the server. Constrains what a filesystem server can touch.</td>
+      <td>MCP spec roots section</td>
+    </tr>
+    <tr>
+      <td class="meth">Streamable HTTP auth (OAuth 2.1)</td>
+      <td>The 2025-03-26 transport adds proper auth. Essential for hosted MCP servers.</td>
+      <td>MCP spec auth section</td>
+    </tr>
+    <tr>
+      <td class="meth">Claude Desktop config internals</td>
+      <td>How tools are rendered, how prompts surface as slash commands, per-server tool filtering</td>
+      <td>claude_desktop_config.json + Desktop logs</td>
+    </tr>
+    <tr>
+      <td class="meth">The _meta field</td>
+      <td>Every request can carry a _meta object. progressToken lives here. Custom metadata lives here. Underutilized.</td>
+      <td>Grep the spec for "_meta"</td>
+    </tr>
+    <tr>
+      <td class="meth">Confluence storage format reference</td>
+      <td>The XHTML-with-namespaces format used by Server, DC, and Cloud page bodies. Tree walk target for most Confluence MCP tools.</td>
+      <td>confluence.atlassian.com/doc/confluence-storage-format</td>
+    </tr>
+    <tr>
+      <td class="meth">Confluence storage format</td>
+      <td>The XHTML dialect Confluence actually stores. Macros, layouts, attachments.</td>
+      <td>confluence.atlassian.com storage format documentation</td>
+    </tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>The meta-question to hold</strong>
+    Every time MCP feels magical, ask: what bytes went over the wire, and what state changed where. MCP is a thin protocol. There's no hidden layer. Every feature decomposes into JSON-RPC messages over a pipe. If you can't trace it to bytes, you don't understand it yet.
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<div class="footer">
+  <span>MCP DEEP DIVE // COMPANION TO CHEATSHEET // BYTES OVER PIPE</span>
+  <span><a href="https://modelcontextprotocol.io">modelcontextprotocol.io</a></span>
+</div>
+
+<div class="spine">// wire · pump · lifecycle · state · cancel · schema · prompt · content · convert //</div>
+
+<script>
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 80) current = s.id;
+  });
+  navLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+  });
+});
+</script>
+</body>
+</html>
