@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GitLab Runner vs Bamboo Cheat Sheet</title>
+  <style>
+    :root {
+      --bg: #c7c7c7;
+      --bg-deep: #b8b8b8;
+      --paper: #efefef;
+      --paper-2: #e3e3e3;
+      --paper-3: #d6d6d6;
+      --ink: #1f1f1f;
+      --muted: #555555;
+      --line: #7a7a7a;
+      --line-dark: #5c5c5c;
+      --line-light: #ffffff;
+      --accent: #cfd7df;
+      --accent-2: #dfe5ea;
+      --accent-deep: #9099a3;
+      --shadow: 2px 2px 0 rgba(0, 0, 0, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: linear-gradient(180deg, #d3d3d3 0%, var(--bg) 46%, var(--bg-deep) 100%);
+      font: 13px/1.54 "Geneva", "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    h1, h2, h3, .kicker, .stamp, th {
+      font-family: "Geneva", "Helvetica Neue", Arial, sans-serif;
+      font-weight: 600;
+    }
+
+    code, pre, .mono, .fact, .table-note {
+      font-family: "Monaco", "Courier New", monospace;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .wrap {
+      width: min(1200px, calc(100% - 24px));
+      margin: 18px auto 34px;
+    }
+
+    .hero {
+      border-top: 2px solid var(--line-light);
+      border-left: 2px solid var(--line-light);
+      border-right: 2px solid var(--line-dark);
+      border-bottom: 2px solid var(--line-dark);
+      background: linear-gradient(180deg, #f3f3f3 0%, #e3e3e3 100%);
+      box-shadow: var(--shadow);
+      padding: 16px 18px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      display: none;
+    }
+
+    .kicker {
+      display: inline-block;
+      padding: 2px 8px;
+      margin-bottom: 10px;
+      border-top: 1px solid var(--line-light);
+      border-left: 1px solid var(--line-light);
+      border-right: 1px solid var(--line-dark);
+      border-bottom: 1px solid var(--line-dark);
+      background: linear-gradient(180deg, #ececec 0%, #d7d7d7 100%);
+      letter-spacing: 0;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 900px;
+      font-size: clamp(24px, 4vw, 38px);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      text-transform: none;
+      font-weight: 600;
+    }
+
+    .hero p {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      margin: 10px 0 0;
+      font-size: 13px;
+      color: #444444;
+    }
+
+    .hero-grid,
+    .decision-grid,
+    .questions-grid,
+    .bottom-grid {
+      display: grid;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .hero-grid {
+      grid-template-columns: 1.05fr 0.95fr;
+      align-items: start;
+    }
+
+    .decision-grid,
+    .questions-grid,
+    .bottom-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .card {
+      border-top: 2px solid var(--line-light);
+      border-left: 2px solid var(--line-light);
+      border-right: 2px solid var(--line-dark);
+      border-bottom: 2px solid var(--line-dark);
+      background: linear-gradient(180deg, #f0f0f0 0%, var(--paper-2) 100%);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .card.alert {
+      background: linear-gradient(180deg, #f0f0f0 0%, #e4e4e4 100%);
+    }
+
+    .card.good {
+      background: linear-gradient(180deg, #f0f0f0 0%, #e4e4e4 100%);
+    }
+
+    .card.bad {
+      background: linear-gradient(180deg, #f0f0f0 0%, #e4e4e4 100%);
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      line-height: 1.2;
+      text-transform: none;
+      letter-spacing: -0.01em;
+      font-weight: 600;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      line-height: 1.2;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .facts {
+      display: grid;
+      gap: 10px;
+    }
+
+    .fact {
+      padding: 10px 12px;
+      border-top: 1px solid var(--line-light);
+      border-left: 1px solid var(--line-light);
+      border-right: 1px solid #8a8a8a;
+      border-bottom: 1px solid #8a8a8a;
+      background: linear-gradient(180deg, #f6f6f6 0%, #e5e5e5 100%);
+      font-size: 12px;
+    }
+
+    .stamp {
+      display: inline-block;
+      margin-bottom: 8px;
+      padding: 2px 6px;
+      border-top: 1px solid var(--line-light);
+      border-left: 1px solid var(--line-light);
+      border-right: 1px solid var(--line-dark);
+      border-bottom: 1px solid var(--line-dark);
+      background: linear-gradient(180deg, #ebebeb 0%, #d8d8d8 100%);
+      color: #4c4c4c;
+      letter-spacing: 0;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .stamp.blue {
+      background: linear-gradient(180deg, #eceff2 0%, #d8dde2 100%);
+      color: #444444;
+    }
+
+    .stamp.black {
+      background: linear-gradient(180deg, #e2e2e2 0%, #cecece 100%);
+      color: #404040;
+    }
+
+    .table-wrap {
+      margin-top: 18px;
+      border-top: 2px solid var(--line-light);
+      border-left: 2px solid var(--line-light);
+      border-right: 2px solid var(--line-dark);
+      border-bottom: 2px solid var(--line-dark);
+      box-shadow: var(--shadow);
+      overflow: auto;
+      background: var(--paper);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 860px;
+    }
+
+    th,
+    td {
+      border: 1px solid #8b8b8b;
+      padding: 10px 11px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: linear-gradient(180deg, #e2e2e2 0%, #cbcbcb 100%);
+      color: var(--ink);
+      font-size: 11px;
+      letter-spacing: 0;
+      text-transform: none;
+      font-weight: 600;
+    }
+
+    td {
+      background: #f3f3f3;
+    }
+
+    tr:nth-child(even) td {
+      background: #ececec;
+    }
+
+    ul {
+      margin: 8px 0 0 18px;
+      padding: 0;
+    }
+
+    li + li {
+      margin-top: 6px;
+    }
+
+    li {
+      font-size: 13px;
+    }
+
+    .code-panel {
+      margin-top: 12px;
+      border-top: 1px solid var(--line-light);
+      border-left: 1px solid var(--line-light);
+      border-right: 1px solid var(--line-dark);
+      border-bottom: 1px solid var(--line-dark);
+      background: #efefef;
+      color: #222222;
+      padding: 12px;
+      overflow: auto;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+    }
+
+    .matrix-note,
+    .footer-note {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-top: 2px solid var(--line-light);
+      border-left: 2px solid var(--line-light);
+      border-right: 2px solid var(--line-dark);
+      border-bottom: 2px solid var(--line-dark);
+      background: linear-gradient(180deg, #efefef 0%, #e1e1e1 100%);
+    }
+
+    .choice {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--line-light);
+      border-left: 1px solid var(--line-light);
+      border-right: 1px solid var(--line-dark);
+      border-bottom: 1px solid var(--line-dark);
+      background: linear-gradient(180deg, #f5f5f5 0%, #e4e4e4 100%);
+      font-weight: 700;
+    }
+
+    .choice.gitlab {
+      box-shadow: inset 4px 0 0 #9ba3ab;
+    }
+
+    .choice.bamboo {
+      box-shadow: inset 4px 0 0 #8f8f8f;
+    }
+
+    .footer-note {
+      background: linear-gradient(180deg, #efefef 0%, #dddddd 100%);
+    }
+
+    .small {
+      font-size: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .hero-grid,
+      .decision-grid,
+      .questions-grid,
+      .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .wrap {
+        width: min(100% - 18px, 1200px);
+      }
+
+      .hero::after {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div class="kicker">codex-skills / comparison</div>
+      <h1>GitLab CI + runner vs Bamboo</h1>
+      <p>
+        For this repo, the validator is simple. The real question is which platform already has a working execution path.
+      </p>
+    </div>
+
+    <div class="hero-grid">
+      <div class="card alert">
+        <div class="stamp">Layer check</div>
+        <h2>These are not the same layer</h2>
+        <p>
+          A <strong>GitLab runner</strong> is the worker that executes jobs. <strong>Bamboo</strong> is the CI system
+          that defines plans and sends work to agents. The real comparison is <strong>GitLab CI plus runner</strong>
+          versus <strong>Bamboo plus agent/plugin setup</strong>.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="stamp blue">Repo scope</div>
+        <h2>Execution need is minimal</h2>
+        <div class="facts">
+          <div class="fact">Main command: <code>bash scripts/validate-all-skills.sh</code></div>
+          <div class="fact">Needs: <code>bash</code> plus <code>python</code> on path</div>
+          <div class="fact">No artifact build, no deploy stage, no long dependency chain</div>
+          <div class="fact">Conclusion: infra fit matters more than job design</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>GitLab CI + Runner</th>
+            <th>Bamboo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Config lives in</strong></td>
+            <td><code>.gitlab-ci.yml</code> in the repo</td>
+            <td>Bamboo plan config, usually in Bamboo Specs YAML or Bamboo UI</td>
+          </tr>
+          <tr>
+            <td><strong>Worker model</strong></td>
+            <td>GitLab runner picks up jobs</td>
+            <td>Bamboo agent runs the plan, often with container plugins</td>
+          </tr>
+          <tr>
+            <td><strong>Simplest case</strong></td>
+            <td>A shared Docker-capable runner already exists and can run this repo with no extra coordination</td>
+            <td>Your org already has a Bamboo project, linked repo pattern, agent capacity, and approved container/runtime pattern</td>
+          </tr>
+          <tr>
+            <td><strong>Typical repo-side effort</strong></td>
+            <td>Very low. One small YAML file can run the validator.</td>
+            <td>Moderate. You need a plan, permissions, repo linkage, agent/runtime choices, and trigger setup.</td>
+          </tr>
+          <tr>
+            <td><strong>Typical infra blockers</strong></td>
+            <td>No runner, paused runner, wrong tags, or runner cannot handle <code>image:</code>-based jobs</td>
+            <td>No linked repo, no Bamboo agent capacity, missing permissions, missing image credentials, or webhook plumbing not finished</td>
+          </tr>
+          <tr>
+            <td><strong>Where jobs usually fail first</strong></td>
+            <td>Scheduling: the job never starts</td>
+            <td>Setup: the plan exists but repo linkage, agent execution, or container auth is incomplete</td>
+          </tr>
+          <tr>
+            <td><strong>Operational ownership</strong></td>
+            <td>Runner team or group-level GitLab CI admins</td>
+            <td>Bamboo admins plus whoever owns linked repos, credentials, and permissions</td>
+          </tr>
+          <tr>
+            <td><strong>Branch / MR ergonomics</strong></td>
+            <td>Usually cleaner if the org already trusts GitLab CI as the first-class path</td>
+            <td>Fine once established, but often involves more org-specific conventions</td>
+          </tr>
+          <tr>
+            <td><strong>Best fit for this repo</strong></td>
+            <td>Best if a runner already exists</td>
+            <td>Best if Bamboo is the standard paved road and GitLab runners are uncertain</td>
+          </tr>
+          <tr>
+            <td><strong>Fast answer</strong></td>
+            <td>Simple in the repo. Not simple if runner infra is missing.</td>
+            <td>Heavier upfront. Predictable if Bamboo infrastructure is already normalized.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="matrix-note small">
+      <strong>Rule of thumb:</strong> if a compatible GitLab runner already exists, GitLab is the lighter path.
+      If it does not, Bamboo can be the simpler operational path even though the config surface is larger.
+    </div>
+
+    <div class="decision-grid">
+      <div class="card good">
+        <div class="stamp black">Choose GitLab</div>
+        <h2>Use GitLab when</h2>
+        <ul>
+          <li>A runner already exists at the project or group level.</li>
+          <li>The runner is online and supports container-style jobs or has the needed tools preinstalled.</li>
+          <li>You want the entire CI definition to stay close to the repo in one small YAML file.</li>
+          <li>You want the lowest repo-side ceremony for a validator-only workflow.</li>
+        </ul>
+        <div class="choice gitlab">If the runner is already there, this is probably the shortest path.</div>
+      </div>
+
+      <div class="card bad">
+        <div class="stamp black">Choose Bamboo</div>
+        <h2>Use Bamboo when</h2>
+        <ul>
+          <li>Your organization already treats Bamboo as the standard CI control plane.</li>
+          <li>GitLab runners are unreliable, unavailable, or controlled by another team with slow turnaround.</li>
+          <li>You need Bamboo-native permissions, linked repositories, or existing internal container patterns.</li>
+          <li>You want to align with nearby repos that already use Bamboo conventions.</li>
+        </ul>
+        <div class="choice bamboo">If GitLab runner availability is the main uncertainty, Bamboo may be easier to get approved.</div>
+      </div>
+    </div>
+
+    <div class="questions-grid">
+      <div class="card">
+        <div class="stamp">Questions</div>
+        <h2>What to ask for GitLab</h2>
+        <ul>
+          <li>Is a runner attached to this project or parent group?</li>
+          <li>Is it online and permitted to pick up jobs?</li>
+          <li>Does it accept untagged jobs?</li>
+          <li>If not, what exact tags are required?</li>
+          <li>Does it support <code>image:</code>-based execution?</li>
+          <li>If no runner exists, who will own and maintain one?</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="stamp blue">Questions</div>
+        <h2>What to ask for Bamboo</h2>
+        <ul>
+          <li>Which Bamboo project should own the plan?</li>
+          <li>How will Bamboo link to the GitLab repository?</li>
+          <li>Which Bamboo agents can run the job?</li>
+          <li>Will the job run directly on the agent or inside a container plugin/runtime?</li>
+          <li>If a private image is used, what credentials will pull it?</li>
+          <li>Who sets plan permissions and any webhook trigger wiring?</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bottom-grid">
+      <div class="card">
+        <div class="stamp">Minimal GitLab Shape</div>
+        <h3>Small repo config</h3>
+        <div class="code-panel">
+          <pre>stages:
+  - validate
+
+default:
+  image: python:3.11-bookworm
+
+validate-skills:
+  stage: validate
+  script:
+    - bash scripts/validate-all-skills.sh</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="stamp blue">Minimal Bamboo Shape</div>
+        <h3>More moving parts</h3>
+        <div class="code-panel">
+          <pre>plan:
+  project-key: ...
+  key: ...
+  name: ...
+
+job:
+  - checkout repo
+  - choose agent/runtime
+  - pull image if needed
+  - run: bash scripts/validate-all-skills.sh
+  - set permissions
+  - wire triggers</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      <strong>Bottom line for this repo:</strong> the validator is already simple. Do not optimize the YAML shape first.
+      Optimize for the platform that already has a real worker behind it.
+    </div>
+  </div>
+</body>
+</html>
