@@ -1,0 +1,697 @@
+<!--
+  CONSTRUCTIVIST EDITORIAL // HED0RAH
+  Lissitzky / Rodchenko geometry + Jugend editorial voice
+  Bebas Neue + Space Mono + IM Fell English Italic
+  swap Bebas for NCLRekron-OutlineSlant or EXOBYTE via @font-face
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EDITORIAL // HED0RAH</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&family=IM+Fell+English:ital@1&display=swap" rel="stylesheet">
+<style>
+
+/*
+  palette:
+  --bg      #F0EFE9  off-white canvas
+  --ink     #0C0C0C  near-black
+  --mid     #4A4A4A  paragraph text
+  --dim     #8A8A8A  labels
+  --rule    #D0CFC8  hairlines
+  --red     #C8200A  constructivist red (Rodchenko / El Lissitzky)
+  --paper   #E8E6DF  inset surfaces
+  --warm    #F7F5F0  lightest surface
+
+  two-font juxtaposition:
+  Bebas Neue (or 2am font) -- mechanical, angular, technical
+  IM Fell English Italic    -- flowing, historical, editorial voice
+  Space Mono               -- body, labels, code
+
+  no scanlines. no glow. no neon.
+  the composition is the design.
+*/
+
+:root {
+  --bg:    #F0EFE9;
+  --ink:   #0C0C0C;
+  --mid:   #4A4A4A;
+  --dim:   #888880;
+  --rule:  #D0CFC8;
+  --red:   #C8200A;
+  --paper: #E8E6DF;
+  --warm:  #F7F5F0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.page {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 48px 40px 60px;
+}
+
+/* ══════════════════════════════════════════
+   MASTHEAD -- poster logic, not form logic
+   asymmetric: massive title left, index right
+   ══════════════════════════════════════════ */
+
+.mast {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  border-top: 6px solid var(--red);
+  padding-top: 18px;
+  margin-bottom: 0;
+  gap: 32px;
+}
+
+.mast-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 96px;
+  letter-spacing: 6px;
+  line-height: 0.9;
+  color: var(--ink);
+}
+.mast-title em { color: var(--red); font-style: normal; }
+.mast-title .sub {
+  font-size: 18px;
+  letter-spacing: 8px;
+  color: var(--dim);
+  display: block;
+  margin-top: 8px;
+}
+
+.mast-index {
+  text-align: right;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  line-height: 2.2;
+  padding-bottom: 4px;
+}
+.mast-index .vol {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 3px;
+  color: var(--ink);
+  display: block;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+/* thin rule under masthead */
+.mast-rule {
+  height: 1px;
+  background: var(--ink);
+  margin-bottom: 2px;
+}
+
+/* ══════════════════════════════════════════
+   MAIN COMPOSITION -- named grid areas
+   spine | article  | sidebar
+   spine | divider  | divider
+   spine | body     | body
+   ══════════════════════════════════════════ */
+
+.composition {
+  display: grid;
+  grid-template-columns: 72px 1fr 280px;
+  grid-template-rows: auto auto auto;
+  grid-template-areas:
+    "spine article sidebar"
+    "spine divider divider"
+    "spine lower   lower";
+  gap: 2px;
+}
+
+/* ── Spine: vertical structural column ──── */
+.spine {
+  grid-area: spine;
+  background: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0;
+  min-height: 500px;
+}
+
+.spine-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 120px;
+  color: var(--red);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  letter-spacing: -4px;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+.spine-label {
+  font-size: 8px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #444;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.spine-rule {
+  width: 1px;
+  flex: 1;
+  background: #2a2a2a;
+  margin: 12px 0;
+}
+
+/* ── Article: main content zone ─────────── */
+.article-zone {
+  grid-area: article;
+  background: var(--warm);
+  border: 1px solid var(--ink);
+  border-left: none;
+  padding: 24px 26px;
+}
+
+.a-label {
+  font-size: 8px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.a-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 42px;
+  letter-spacing: 3px;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.a-title.rd { color: var(--red); }
+
+.a-bar {
+  width: 36px;
+  height: 3px;
+  background: var(--red);
+  margin-bottom: 16px;
+}
+
+.a-body {
+  font-size: 13px;
+  color: var(--mid);
+  line-height: 1.75;
+  margin-bottom: 10px;
+}
+.a-body:last-child { margin-bottom: 0; }
+
+.hl  { color: var(--red); font-weight: 700; }
+.dim { color: var(--dim); }
+
+/* ── Sidebar ─────────────────────────────── */
+.sidebar-zone {
+  grid-area: sidebar;
+  border: 1px solid var(--ink);
+  border-left: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg);
+}
+
+.sb-block {
+  background: var(--warm);
+  border-bottom: 1px solid var(--rule);
+  padding: 16px 18px;
+  flex: 1;
+}
+.sb-block:last-child { border-bottom: none; }
+
+.sb-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 64px;
+  letter-spacing: 2px;
+  line-height: 1;
+  color: var(--ink);
+}
+.sb-num.rd { color: var(--red); }
+
+.sb-lbl {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-top: 4px;
+}
+
+/* ── Divider: the script juxtaposition ──── */
+.divider-zone {
+  grid-area: divider;
+  background: var(--ink);
+  padding: 32px 36px;
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* diagonal accent slash inside the divider */
+.divider-zone::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: 80px;
+  width: 3px;
+  height: calc(100% + 40px);
+  background: var(--red);
+  transform: rotate(8deg);
+  opacity: 0.6;
+}
+
+.pull-quote {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 28px;
+  color: #F0EFE9;
+  line-height: 1.45;
+  letter-spacing: 0.3px;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.pull-source {
+  text-align: right;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+.pull-source .ps-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #444;
+  display: block;
+  margin-bottom: 4px;
+}
+.pull-source .ps-ref {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: var(--red);
+}
+
+/* ── Lower content zone ──────────────────── */
+.lower-zone {
+  grid-area: lower;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+
+.lz-panel {
+  background: var(--warm);
+  border: 1px solid var(--ink);
+  border-top: none;
+  padding: 20px 22px;
+}
+.lz-panel.inset { background: var(--paper); }
+.lz-panel.al-rd { border-left: 4px solid var(--red); }
+
+/* tags */
+.tag {
+  display: inline-block;
+  border: 1px solid var(--rule);
+  padding: 2px 7px;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin: 2px 2px 2px 0;
+}
+.tag.rd  { border-color: var(--red); color: var(--red); }
+.tag.dk  { border-color: var(--ink); color: var(--ink); }
+
+/* data rows */
+.drow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 11px;
+  gap: 12px;
+}
+.drow:last-child { border-bottom: none; }
+.drow-k { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); flex-shrink: 0; }
+.drow-v { font-weight: 700; text-align: right; }
+.drow-v.rd { color: var(--red); }
+
+/* code block */
+.code-b {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--red);
+  padding: 12px 14px;
+  margin: 12px 0;
+  font-size: 11px;
+}
+.code-b .eq  { color: var(--red); font-weight: 700; }
+.code-b .cmt { color: var(--dim); font-size: 10px; margin-top: 4px; }
+
+/* ══════════════════════════════════════════
+   DIAGONAL SECTION BREAK
+   the slash that cuts between compositions
+   ══════════════════════════════════════════ */
+
+.slash-break {
+  height: 32px;
+  background: var(--ink);
+  margin: 2px -40px;
+  clip-path: polygon(0 0, 100% 0, 100% 40%, 0 100%);
+  position: relative;
+}
+
+/* ══════════════════════════════════════════
+   SECOND COMPOSITION BLOCK
+   different grid -- 2-col with a wide left
+   ══════════════════════════════════════════ */
+
+.composition-2 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.c2-main {
+  background: var(--warm);
+  border: 1px solid var(--ink);
+  padding: 24px 26px;
+}
+
+.c2-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.c2-aside-top {
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 20px;
+  flex: 0 0 auto;
+}
+.c2-aside-top .big-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 52px;
+  letter-spacing: 3px;
+  color: var(--red);
+  line-height: 1;
+  display: block;
+}
+.c2-aside-top .sub-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #444;
+  margin-top: 6px;
+}
+
+.c2-aside-mid {
+  background: var(--warm);
+  border: 1px solid var(--ink);
+  padding: 16px 18px;
+  flex: 1;
+}
+
+/* editorial script block (can appear anywhere for contrast) */
+.script-block {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 20px;
+  color: var(--ink);
+  line-height: 1.55;
+  border-left: 3px solid var(--red);
+  padding-left: 16px;
+  margin: 16px 0;
+}
+
+/* ══════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════ */
+
+.footer {
+  border-top: 1px solid var(--ink);
+  margin-top: 14px;
+  padding-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.footer .f-brand {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 4px;
+  color: var(--ink);
+}
+.footer .f-brand em { color: var(--red); font-style: normal; }
+
+/* ══════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════ */
+
+@media (max-width: 760px) {
+  .composition {
+    grid-template-columns: 48px 1fr;
+    grid-template-areas:
+      "spine article"
+      "spine sidebar"
+      "divider divider"
+      "lower lower";
+  }
+  .sidebar-zone { grid-area: sidebar; border-left: none; }
+  .mast-title   { font-size: 56px; }
+  .composition-2 { grid-template-columns: 1fr; }
+  .lower-zone    { grid-template-columns: 1fr; }
+  .slash-break   { margin: 2px -20px; }
+  .page          { padding: 28px 20px; }
+}
+
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ══════════════════════════════════════════
+     MASTHEAD
+     ══════════════════════════════════════════ -->
+<div class="mast">
+  <div>
+    <div class="mast-title">
+      <em>NEURAL</em><br>ARCHITECTURE
+      <span class="sub">A Technical Study in Five Parts</span>
+    </div>
+  </div>
+  <div class="mast-index">
+    <span class="vol">Vol. 04</span>
+    hed0rah.github.io<br>
+    Series: AI / ML Visuals<br>
+    Format: Editorial<br>
+    2026 — Ongoing
+  </div>
+</div>
+<div class="mast-rule"></div>
+
+<!-- ══════════════════════════════════════════
+     MAIN COMPOSITION
+     spine | article | sidebar
+     spine | divider
+     spine | lower
+     ══════════════════════════════════════════ -->
+<div class="composition">
+
+  <!-- SPINE -->
+  <div class="spine">
+    <div class="spine-num">04</div>
+    <div class="spine-rule"></div>
+    <div class="spine-label">Architecture</div>
+  </div>
+
+  <!-- ARTICLE -->
+  <div class="article-zone">
+    <div class="a-label">01 // Context</div>
+    <div class="a-title">The Weight Matrix<br>Problem</div>
+    <div class="a-bar"></div>
+    <p class="a-body">Every deep network is an act of compression. You take the vast, high-dimensional structure of the world and force it through increasingly narrow bottlenecks until you arrive at something your loss function will accept. The <span class="hl">weight matrix</span> is the instrument of this coercion.</p>
+    <p class="a-body">What Rosenblatt understood in 1958 and what every subsequent architecture has elaborated on: the network does not learn facts. It learns <span class="hl">transformations</span>. The distinction is not philosophical -- it is the entire engineering constraint.</p>
+    <p class="a-body">This distinction matters when you ask why a model fails. It does not fail because it lacks information. It fails because its transformations are miscalibrated to the manifold of data it was asked to compress.</p>
+    <div style="margin-top: 14px;">
+      <span class="tag rd">Transformers</span>
+      <span class="tag dk">Architecture</span>
+      <span class="tag">Attention</span>
+      <span class="tag">2024</span>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar-zone">
+    <div class="sb-block">
+      <div class="sb-num rd">512</div>
+      <div class="sb-lbl">d_model / embedding dim</div>
+    </div>
+    <div class="sb-block">
+      <div class="sb-num">3.2B</div>
+      <div class="sb-lbl">Parameters</div>
+    </div>
+    <div class="sb-block">
+      <div class="sb-num">96</div>
+      <div class="sb-lbl">Attention Heads</div>
+    </div>
+    <div class="sb-block" style="padding: 14px 18px;">
+      <div class="a-label" style="margin-bottom: 8px;">Spec</div>
+      <div class="drow">
+        <div class="drow-k">Layers</div>
+        <div class="drow-v">32</div>
+      </div>
+      <div class="drow">
+        <div class="drow-k">Context</div>
+        <div class="drow-v">128k</div>
+      </div>
+      <div class="drow">
+        <div class="drow-k">Precision</div>
+        <div class="drow-v rd">bfloat16</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIVIDER: script juxtaposition -->
+  <div class="divider-zone">
+    <p class="pull-quote">Every network is an act of compression against chaos -- a forced geometry imposed on a space that has no geometry of its own.</p>
+    <div class="pull-source">
+      <span class="ps-label">Section 01</span>
+      <span class="ps-ref">Weight Matrix<br>Problem</span>
+    </div>
+  </div>
+
+  <!-- LOWER: 2-col content -->
+  <div class="lower-zone">
+    <div class="lz-panel al-rd">
+      <div class="a-label">02 // Mechanism</div>
+      <div class="a-title" style="font-size: 26px;">Attention Is<br>Selection</div>
+      <div class="a-bar"></div>
+      <p class="a-body">Self-attention does not read the sequence. It votes on which parts of the sequence to attend to, then reweights the representation accordingly. The query, key, value decomposition is a learned routing system.</p>
+      <div class="code-b">
+        <div class="eq">Attn(Q,K,V) = softmax( QK&sup2; / sqrt(d_k) ) &middot; V</div>
+        <div class="cmt">// d_k: key dimension &nbsp; scale prevents vanishing softmax grad</div>
+      </div>
+    </div>
+
+    <div class="lz-panel inset">
+      <div class="a-label">03 // Failure Modes</div>
+      <div class="a-title" style="font-size: 26px; color: var(--red);">Where It Breaks</div>
+      <div class="a-bar"></div>
+      <div class="drow">
+        <div class="drow-k">Oversmoothing</div>
+        <div class="drow-v rd">O(L) attn depth</div>
+      </div>
+      <div class="drow">
+        <div class="drow-k">Position Bias</div>
+        <div class="drow-v">RoPE mitigates</div>
+      </div>
+      <div class="drow">
+        <div class="drow-k">KV Cache OOM</div>
+        <div class="drow-v rd">GQA required</div>
+      </div>
+      <div class="drow">
+        <div class="drow-k">Ctx Collapse</div>
+        <div class="drow-v">Lost-in-middle</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end .composition -->
+
+<!-- DIAGONAL SLASH BREAK -->
+<div class="slash-break"></div>
+
+<!-- ══════════════════════════════════════════
+     SECOND COMPOSITION BLOCK
+     wider main + right column
+     ══════════════════════════════════════════ -->
+<div class="composition-2">
+
+  <div class="c2-main">
+    <div class="a-label">04 // In Practice</div>
+    <div class="a-title">Implementation<br>Decisions</div>
+    <div class="a-bar"></div>
+    <p class="a-body">Production transformer deployment is not the model. It is the model plus the decisions made around it: quantization strategy, KV cache budget, batching logic, position encoding scheme. The architecture is a small fraction of what determines observed behavior.</p>
+
+    <!-- script juxtaposition mid-article -->
+    <div class="script-block">
+      The failure is rarely in the weights. It lives in the space between what the model was trained to do and what you are asking it to do.
+    </div>
+
+    <p class="a-body">Flash Attention resolves the memory bottleneck by reordering the matrix operations to exploit SRAM locality. The math is identical. The implementation is not. This is the kind of insight that cannot be derived from the paper alone -- it requires understanding the memory hierarchy of the hardware the model runs on.</p>
+    <div class="code-b">
+      <div class="eq">model = AutoModelForCausalLM.from_pretrained(ckpt, attn_implementation="flash_attention_2")</div>
+      <div class="cmt">// requires transformers >= 4.36 and flash-attn >= 2.0</div>
+    </div>
+  </div>
+
+  <div class="c2-aside">
+    <div class="c2-aside-top">
+      <span class="big-label">§ 05</span>
+      <div class="sub-label">Further Reading</div>
+    </div>
+    <div class="c2-aside-mid">
+      <div class="a-label">References</div>
+      <div class="drow" style="font-size: 10px;">
+        <div class="drow-k">2017</div>
+        <div class="drow-v" style="font-size: 10px;">Vaswani et al.</div>
+      </div>
+      <div class="drow" style="font-size: 10px;">
+        <div class="drow-k">2022</div>
+        <div class="drow-v" style="font-size: 10px;">Dao et al.</div>
+      </div>
+      <div class="drow" style="font-size: 10px;">
+        <div class="drow-k">2023</div>
+        <div class="drow-v rd" style="font-size: 10px;">Ainslie (GQA)</div>
+      </div>
+      <div class="drow" style="font-size: 10px;">
+        <div class="drow-k">2024</div>
+        <div class="drow-v" style="font-size: 10px;">Su (RoPE)</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <span class="f-brand">HED<em>0</em>RAH</span>
+  <span>hed0rah.github.io // AI-Visuals Series</span>
+  <span>Vol. 04 of 20</span>
+</div>
+
+</div><!-- end .page -->
+</body>
+</html>
