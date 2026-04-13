@@ -1,0 +1,2110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>k8s.101</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* ---- THEME: MANIFEST (default light) ---- */
+  :root {
+    --bg:        #F2F1EE;
+    --bg2:       #FFFFFF;
+    --bg3:       #F2F1EE;
+    --bg4:       #ECEAE6;
+    --border:    #D0CFC8;
+    --border2:   #C8C7C1;
+    --text:      #1A1A1A;
+    --text2:     #4A4A4A;
+    --text3:     #8A8A8A;
+    --accent:    #007870;
+    --accent2:   #005A54;
+    --green:     #287A38;
+    --yellow:    #906500;
+    --red:       #BF1020;
+    --purple:    #6A0080;
+    --orange:    #E85000;
+    --statusbar-bg: #1A1A1A;
+    --mono:      'Space Mono', monospace;
+    --sans:      'Space Mono', monospace;
+  }
+
+  /* ---- THEME: MINIMA (dark) ---- */
+  .theme-minima {
+    --bg:       #1a1b1e;
+    --bg2:      #141518;
+    --bg3:      #202227;
+    --bg4:      #252730;
+    --border:   #2e3038;
+    --border2:  #383c47;
+    --text:     #c9cdd6;
+    --text2:    #7b8194;
+    --text3:    #4e5263;
+    --accent:   #4fa3e3;
+    --accent2:  #2d7bbf;
+    --green:    #5ac47a;
+    --yellow:   #e0b84a;
+    --red:      #e05a5a;
+    --purple:   #a78bfa;
+    --orange:   #f0854a;
+    --statusbar-bg: #2d7bbf;
+    --mono:     'JetBrains Mono', monospace;
+    --sans:     'JetBrains Mono', monospace;
+  }
+
+  /* ---- THEME: OCEAN (dark blue) ---- */
+  .theme-ocean {
+    --bg:       #001e3c;
+    --bg2:      #001428;
+    --bg3:      #002a54;
+    --bg4:      #003366;
+    --border:   #0a3a6e;
+    --border2:  #0d4a8a;
+    --text:     #d4e8f5;
+    --text2:    #7aadcc;
+    --text3:    #3d6a8a;
+    --accent:   #6bc0c5;
+    --accent2:  #4aa0a5;
+    --green:    #6bc0c5;
+    --yellow:   #f0c050;
+    --red:      #ec503a;
+    --purple:   #6bc0c5;
+    --orange:   #ec503a;
+    --statusbar-bg: #002a54;
+  }
+
+  /* ---- THEME: COAST (light blue) ---- */
+  .theme-coast {
+    --bg:       #eef5fb;
+    --bg2:      #ddeaf5;
+    --bg3:      #ffffff;
+    --bg4:      #cfe0ef;
+    --border:   #b0cfe6;
+    --border2:  #8fb5d8;
+    --text:     #002a54;
+    --text2:    #0067a3;
+    --text3:    #5599bb;
+    --accent:   #0067a3;
+    --accent2:  #002a54;
+    --green:    #1a8a6e;
+    --yellow:   #b07820;
+    --red:      #ec503a;
+    --purple:   #0067a3;
+    --orange:   #d04020;
+    --statusbar-bg: #0067a3;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg2);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* TOP BAR */
+  #topbar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    height: 38px;
+    flex-shrink: 0;
+    padding: 0 12px;
+    user-select: none;
+  }
+  #topbar .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    margin-right: 24px;
+  }
+  #topbar .logo span { color: var(--text2); font-weight: 300; }
+  .tab-group {
+    display: flex;
+    height: 100%;
+    align-items: stretch;
+  }
+  .tab {
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    border-right: 1px solid var(--border);
+    cursor: pointer;
+    gap: 6px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .tab:hover { color: var(--text); background: var(--bg3); }
+  .tab.active { color: var(--accent); background: var(--bg3); }
+  .tab .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text3);
+  }
+  .tab.active .dot { background: var(--accent); }
+  .spacer { flex: 1; }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+  .btn-sm {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 4px 10px;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text2);
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .btn-sm:hover { color: var(--text); border-color: var(--text3); }
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+
+  /* MAIN LAYOUT */
+  #main {
+    display: grid;
+    grid-template-columns: 220px 1fr 1fr;
+    flex: 1;
+    overflow: hidden;
+  }
+  #form-panel, #raw-panel {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+  #output-panel {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  /* LEFT SIDEBAR */
+  #sidebar {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+  .sidebar-section {
+    margin-bottom: 2px;
+  }
+  .sidebar-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 8px 14px 4px;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    transition: all 0.1s;
+    border-left: 2px solid transparent;
+  }
+  .sidebar-item:hover { background: var(--bg3); color: var(--text); }
+  .sidebar-item.active {
+    background: var(--bg3);
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+  .sidebar-item .si-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--text3); flex-shrink: 0;
+  }
+  .sidebar-item.active .si-dot { background: var(--accent); }
+  .sidebar-item .si-tag {
+    margin-left: auto;
+    font-size: 9px;
+    color: var(--text3);
+    background: var(--bg4);
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+  .sidebar-item.active .si-tag { color: var(--accent); background: rgba(107,192,197,0.12); }
+
+  /* CENTER FORM PANEL */
+  #form-panel {
+    background: var(--bg3);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    height: 34px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .panel-title span { color: var(--text2); }
+  .form-body { padding: 12px 16px; flex: 1; }
+
+  /* FIELD ROWS */
+  .field-group {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .field-group:last-child { border-bottom: none; }
+  .field-group-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 8px;
+  }
+  .field-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    text-align: right;
+  }
+  .field-label .req { color: var(--accent); margin-left: 2px; }
+  input[type="text"], input[type="number"], select, textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 2px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+  }
+  select {
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237b8194'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 24px;
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  .field-hint {
+    grid-column: 2;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: -2px;
+    margin-bottom: 4px;
+  }
+
+  /* Toggle / checkbox style */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .toggle {
+    position: relative;
+    width: 28px; height: 14px;
+    flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; inset: 0;
+    background: var(--border2);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle-slider::after {
+    content: '';
+    position: absolute;
+    left: 2px; top: 2px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--text3);
+    transition: all 0.2s;
+  }
+  .toggle input:checked + .toggle-slider { background: var(--accent); }
+  .toggle input:checked + .toggle-slider::after { left: 16px; background: #fff; }
+  .toggle-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    cursor: pointer;
+  }
+
+  /* Key-value pairs */
+  .kv-list { margin-top: 4px; }
+  .kv-row {
+    display: flex; gap: 4px; margin-bottom: 4px; align-items: center;
+  }
+  .kv-row input { flex: 1; }
+  .kv-row input:first-child { color: var(--green); }
+  .kv-sep {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    flex-shrink: 0;
+  }
+  .btn-icon {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 14px;
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    border-radius: 2px;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .btn-icon:hover { color: var(--text); border-color: var(--text3); }
+  .btn-icon.add { color: var(--green); border-color: var(--green); }
+  .btn-icon.add:hover { background: rgba(90,196,122,0.1); }
+  .btn-icon.remove { color: var(--red); }
+  .btn-icon.remove:hover { background: rgba(224,90,90,0.1); border-color: var(--red); }
+
+  /* Container blocks */
+  .container-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .container-block-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .container-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--purple);
+    background: rgba(167,139,250,0.1);
+    padding: 1px 6px;
+    border-radius: 2px;
+  }
+  .container-name-input {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    outline: none;
+    width: 130px;
+    padding: 2px 0;
+  }
+  .container-name-input:focus { border-bottom-color: var(--accent); }
+
+  /* RIGHT: YAML OUTPUT */
+  #output-panel {
+    background: var(--bg2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #yaml-output {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.65;
+    white-space: pre;
+    color: var(--text);
+  }
+  /* YAML syntax highlight */
+  .y-key    { color: var(--accent); }
+  .y-val    { color: var(--text); }
+  .y-str    { color: var(--green); }
+  .y-num    { color: var(--yellow); }
+  .y-bool   { color: var(--orange); }
+  .y-null   { color: var(--text3); }
+  .y-com    { color: var(--text3); font-style: italic; }
+  .y-dash   { color: var(--text2); }
+  .y-indent { display: inline-block; }
+
+  .output-actions {
+    display: flex;
+    gap: 6px;
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+  .copy-flash {
+    color: var(--green) !important;
+    border-color: var(--green) !important;
+  }
+
+  /* STATUS BAR */
+  #statusbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 22px;
+    background: var(--statusbar-bg);
+    padding: 0 12px;
+    flex-shrink: 0;
+  }
+  .status-item {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: rgba(255,255,255,0.8);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .status-item .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+  }
+  .status-item.ok .dot { background: #7dff9e; }
+  #status-lines { margin-left: auto; }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  /* RAW EDITOR */
+  #raw-editor-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+  #raw-editor {
+    flex: 1;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.65;
+    border: none;
+    outline: none;
+    resize: none;
+    padding: 14px 16px;
+    width: 100%;
+    tab-size: 2;
+    white-space: pre;
+    overflow: auto;
+  }
+  #raw-editor-actions {
+    display: flex;
+    gap: 6px;
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+    align-items: center;
+  }
+  #raw-editor-actions .raw-hint {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    margin-left: auto;
+  }
+
+  /* PASSTHROUGH BADGE */
+  .passthrough-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    background: rgba(224,184,74,0.15);
+    color: var(--yellow);
+    border: 1px solid rgba(224,184,74,0.3);
+    padding: 2px 7px;
+    border-radius: 2px;
+    margin-left: 8px;
+  }
+  .passthrough-badge .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--yellow);
+    flex-shrink: 0;
+  }
+  #toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    background: var(--bg4);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 7px 16px;
+    border-radius: 2px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  #toast.error { border-color: var(--red); color: var(--red); }
+  #toast.success { border-color: var(--green); color: var(--green); }
+
+  /* DRAG OVERLAY */
+  #drop-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 998;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+  }
+  #drop-overlay.active { display: flex; }
+  #drop-overlay .drop-box {
+    border: 2px dashed var(--accent);
+    border-radius: 4px;
+    padding: 48px 80px;
+    text-align: center;
+  }
+  #drop-overlay .drop-title {
+    font-family: var(--mono);
+    font-size: 16px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  #drop-overlay .drop-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  /* Port row */
+  .port-row { display: flex; gap: 4px; margin-bottom: 4px; align-items: center; }
+  .port-row input { flex: 1; }
+  .port-proto {
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--orange);
+    padding: 4px 6px;
+    border-radius: 2px;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    width: 64px;
+  }
+  .port-label { font-family: var(--mono); font-size: 10px; color: var(--text3); min-width: 14px; text-align: right; }
+
+  /* YAML output: always dark terminal regardless of theme */
+  #output-panel { background: #1A1918 !important; }
+  #output-panel .panel-header { background: #141210 !important; border-color: #2E2C28 !important; }
+  #output-panel .panel-title { color: #5A5952 !important; }
+  #output-panel .panel-title span { color: #7A7870 !important; }
+  #yaml-output { background: #1A1918 !important; color: #C9CDD6 !important; }
+  #output-panel .output-actions { background: #141210 !important; border-color: #2E2C28 !important; }
+  #output-panel .btn-sm { background: #1A1918 !important; border-color: #2E2C28 !important; color: #7A7870 !important; }
+  #output-panel .btn-sm:hover { color: #C9CDD6 !important; }
+
+  /* sidebar-item active tag: teal tint in manifest */
+  .sidebar-item.active .si-tag { color: var(--accent); background: rgba(0,120,112,0.10); }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <a class="logo" href="https://hed0rah.github.io" style="text-decoration:none">k8s<span>.101</span></a>
+  <div class="tab-group">
+    <div class="tab active" onclick="switchResource('Deployment')">
+      <div class="dot"></div>Deployment
+    </div>
+    <div class="tab" onclick="switchResource('Service')">
+      <div class="dot"></div>Service
+    </div>
+    <div class="tab" onclick="switchResource('ConfigMap')">
+      <div class="dot"></div>ConfigMap
+    </div>
+    <div class="tab" onclick="switchResource('Ingress')">
+      <div class="dot"></div>Ingress
+    </div>
+    <div class="tab" onclick="switchResource('CronJob')">
+      <div class="dot"></div>CronJob
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="topbar-right">
+    <a class="btn-sm" href="https://hed0rah.github.io" target="_blank" style="text-decoration:none">site</a>
+    <a class="btn-sm" href="https://github.com/hed0rah" target="_blank" style="text-decoration:none">github</a>
+    <button class="btn-sm" id="theme-btn" onclick="cycleTheme()">theme: manifest</button>
+    <label class="btn-sm" id="load-btn" style="cursor:pointer">load .yaml<input type="file" accept=".yaml,.yml" style="display:none" onchange="loadYamlFile(event)"></label>
+    <button class="btn-sm btn-primary" onclick="downloadYaml()">export .yaml</button>
+  </div>
+</div>
+
+<div id="main">
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">resource type</div>
+      <div class="sidebar-item active" onclick="switchSection('metadata')">
+        <div class="si-dot"></div>Metadata<div class="si-tag">core</div>
+      </div>
+      <div class="sidebar-item" onclick="switchSection('spec')">
+        <div class="si-dot"></div>Spec<div class="si-tag">core</div>
+      </div>
+      <div class="sidebar-item" onclick="switchSection('containers')">
+        <div class="si-dot"></div>Containers<div class="si-tag">array</div>
+      </div>
+      <div class="sidebar-item" onclick="switchSection('ports')">
+        <div class="si-dot"></div>Ports
+      </div>
+      <div class="sidebar-item" onclick="switchSection('env')">
+        <div class="si-dot"></div>Env Vars
+      </div>
+      <div class="sidebar-item" onclick="switchSection('resources')">
+        <div class="si-dot"></div>Resources
+      </div>
+      <div class="sidebar-item" onclick="switchSection('probes')">
+        <div class="si-dot"></div>Probes
+      </div>
+      <div class="sidebar-item" onclick="switchSection('volumes')">
+        <div class="si-dot"></div>Volumes
+      </div>
+      <div class="sidebar-item" onclick="switchSection('labels')">
+        <div class="si-dot"></div>Labels &amp; Annotations
+      </div>
+      <div class="sidebar-item" onclick="switchSection('affinity')">
+        <div class="si-dot"></div>Affinity
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">tools</div>
+      <div class="sidebar-item" onclick="validateYaml()">
+        <div class="si-dot"></div>Validate
+      </div>
+      <div class="sidebar-item" onclick="resetForm()">
+        <div class="si-dot"></div>Reset
+      </div>
+      <div class="sidebar-item" id="raw-sidebar-btn" onclick="switchSection('raw')">
+        <div class="si-dot"></div>Raw Editor<div class="si-tag">esc</div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">presets</div>
+      <div class="sidebar-item" onclick="loadPreset('nginx')">
+        <div class="si-dot"></div>nginx<div class="si-tag">web</div>
+      </div>
+      <div class="sidebar-item" onclick="loadPreset('postgres')">
+        <div class="si-dot"></div>postgres<div class="si-tag">db</div>
+      </div>
+      <div class="sidebar-item" onclick="loadPreset('redis')">
+        <div class="si-dot"></div>redis<div class="si-tag">cache</div>
+      </div>
+      <div class="sidebar-item" onclick="loadPreset('api')">
+        <div class="si-dot"></div>generic api<div class="si-tag">app</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER FORM -->
+  <div id="form-panel">
+    <div class="panel-header">
+      <div class="panel-title">CONFIGURATION <span id="resource-label">/ Deployment</span></div>
+      <span id="passthrough-badge" class="passthrough-badge" style="display:none">
+        <span class="dot"></span>passthrough
+      </span>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-family:var(--mono);font-size:10px;color:var(--text3)" title="Pod-level unknown fields (initContainers, securityContext, topologySpreadConstraints, custom affinity) are preserved. Container arrays are replaced wholesale, so per-container unknowns like startupProbe or securityContext will not survive.">
+          <input type="checkbox" id="passthrough-toggle" style="width:12px;height:12px;accent-color:var(--yellow)" onchange="togglePassthrough(this.checked)">
+          preserve unknown fields
+        </label>
+      </div>
+    </div>
+    <div class="form-body" id="form-body">
+      <!-- dynamically rendered -->
+    </div>
+  </div>
+
+  <!-- RAW EDITOR PANEL (alternate center, shown when raw section active) -->
+  <div id="raw-panel" style="display:none;background:var(--bg3);border-right:1px solid var(--border);flex-direction:column;overflow:hidden;">
+    <div class="panel-header">
+      <div class="panel-title">RAW EDITOR <span style="color:var(--yellow)">/ escape hatch</span></div>
+      <div style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)">unknown fields preserved on apply</div>
+    </div>
+    <div id="raw-editor-wrap">
+      <textarea id="raw-editor" spellcheck="false"></textarea>
+      <div id="raw-editor-actions">
+        <button class="btn-sm btn-primary" onclick="applyRawEditor()">apply</button>
+        <button class="btn-sm" onclick="syncRawFromState()">reset to current</button>
+        <span class="raw-hint">apply re-parses into form state &nbsp;|&nbsp; use tab key for indent</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT OUTPUT -->
+  <div id="output-panel">
+    <div class="panel-header">
+      <div class="panel-title">YAML OUTPUT</div>
+    </div>
+    <div id="yaml-output"></div>
+    <div class="output-actions">
+      <button class="btn-sm" id="copy-btn" onclick="copyYaml()">copy</button>
+      <button class="btn-sm" onclick="downloadYaml()">save .yaml</button>
+    </div>
+  </div>
+</div>
+
+<div id="drop-overlay">
+  <div class="drop-box">
+    <div class="drop-title">drop .yaml to load</div>
+    <div class="drop-sub">Deployment · Service · ConfigMap · Ingress · CronJob</div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<div id="statusbar">
+  <div class="status-item ok"><div class="dot"></div>valid yaml</div>
+  <div class="status-item"><div class="dot"></div>Deployment</div>
+  <div class="status-item"><div class="dot"></div>apps/v1</div>
+  <div class="status-item" id="status-lines">0 lines</div>
+</div>
+
+<script>
+// ---- STATE ----
+const state = {
+  resource: 'Deployment',
+  // Metadata
+  name: 'my-app',
+  namespace: 'default',
+  // Spec
+  replicas: 1,
+  strategy: 'RollingUpdate',
+  maxSurge: '25%',
+  maxUnavailable: '25%',
+  serviceAccountName: '',
+  hostNetwork: false,
+  dnsPolicy: 'ClusterFirst',
+  restartPolicy: 'Always',
+  // Labels
+  labels: [['app', 'my-app']],
+  annotations: [],
+  // Containers
+  containers: [
+    {
+      name: 'main',
+      image: 'nginx',
+      tag: 'latest',
+      pullPolicy: 'IfNotPresent',
+      ports: [{ containerPort: 80, protocol: 'TCP', name: '' }],
+      env: [],
+      requestsCPU: '100m',
+      requestsMem: '128Mi',
+      limitsCPU: '500m',
+      limitsMem: '512Mi',
+      liveness: false,
+      livenessPath: '/healthz',
+      livenessPort: 80,
+      livenessDelay: 10,
+      readiness: false,
+      readinessPath: '/ready',
+      readinessPort: 80,
+      readinessDelay: 5,
+    }
+  ],
+  // Volumes
+  volumes: [],
+  // Affinity
+  podAntiAffinity: false,
+  topologyKey: 'kubernetes.io/hostname',
+  // Service (when in Service mode)
+  serviceType: 'ClusterIP',
+  servicePorts: [{ port: 80, targetPort: 80, protocol: 'TCP', name: 'http' }],
+  // Ingress
+  ingressHost: 'example.com',
+  ingressPath: '/',
+  ingressClass: 'nginx',
+  ingressServiceName: 'my-app',
+  ingressServicePort: 80,
+  tlsEnabled: false,
+  tlsSecret: 'my-app-tls',
+  // ConfigMap
+  configMapData: [['key', 'value']],
+  // CronJob
+  schedule: '0 * * * *',
+  concurrencyPolicy: 'Forbid',
+  successfulJobsLimit: 3,
+  failedJobsLimit: 1,
+};
+
+// ---- PASSTHROUGH STATE ----
+// When passthrough mode is on and a file was loaded, we keep the original
+// parsed doc here and deep-merge our generated fields back into it on export.
+let passthroughDoc   = null;   // original parsed object from loaded file
+let passthroughText  = null;   // original raw text (for raw editor baseline)
+let passthroughMode  = false;
+
+function togglePassthrough(enabled) {
+  passthroughMode = enabled;
+  document.getElementById('passthrough-badge').style.display = enabled && passthroughDoc ? 'inline-flex' : 'none';
+  updateOutput();
+}
+
+// Deep-merge src into dst in-place, preserving keys in dst not present in src.
+function deepMerge(dst, src) {
+  if (typeof src !== 'object' || src === null) return;
+  for (const key of Object.keys(src)) {
+    if (Array.isArray(src[key])) {
+      dst[key] = src[key];
+    } else if (typeof src[key] === 'object' && src[key] !== null && typeof dst[key] === 'object' && dst[key] !== null && !Array.isArray(dst[key])) {
+      deepMerge(dst[key], src[key]);
+    } else {
+      dst[key] = src[key];
+    }
+  }
+}
+
+// Re-serialize a plain JS object back to YAML string.
+function serializeYaml(obj, indent) {
+  indent = indent || 0;
+  const sp  = '  '.repeat(indent);
+  const sp1 = '  '.repeat(indent + 1);
+  if (obj === null || obj === undefined) return 'null';
+  if (typeof obj === 'boolean') return obj.toString();
+  if (typeof obj === 'number') return obj.toString();
+  if (typeof obj === 'string') {
+    const s = obj;
+    if (/[:{}\[\],&*?|<>=!%@`#\n\\]/.test(s) || s === '' ||
+        s === 'true' || s === 'false' || s === 'null' || s === '~' ||
+        /^-?\d+(\.\d+)?$/.test(s) ||
+        (/^\d[\d.]*\d$/.test(s) && s.split('.').length > 2) ||
+        /[^\x00-\x7F]/.test(s) ||
+        /^\s/.test(s) || /\s$/.test(s)) {
+      return '"' + s.replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n') + '"';
+    }
+    return s;
+  }
+  if (Array.isArray(obj)) {
+    if (obj.length === 0) return '[]';
+    return obj.map(item => {
+      if (typeof item === 'object' && item !== null) {
+        // render the mapping at indent+1, then replace the leading spaces of
+        // the first line with "- " to produce correct YAML sequence syntax
+        const inner = serializeYaml(item, indent + 1);
+        const lines = inner.split('\n');
+        // first line: swap indent+1 spaces for indent spaces + "- "
+        lines[0] = sp + '- ' + lines[0].slice(sp1.length);
+        return lines.join('\n');
+      }
+      return sp + '- ' + serializeYaml(item, 0);
+    }).join('\n');
+  }
+  // object/mapping
+  const keys = Object.keys(obj);
+  if (keys.length === 0) return '{}';
+  return keys.map(k => {
+    const v = obj[k];
+    if (typeof v === 'object' && v !== null && !Array.isArray(v) && Object.keys(v).length > 0) {
+      return sp + k + ':\n' + serializeYaml(v, indent + 1);
+    }
+    if (Array.isArray(v) && v.length > 0) {
+      return sp + k + ':\n' + serializeYaml(v, indent + 1);
+    }
+    return sp + k + ': ' + serializeYaml(v, 0);
+  }).join('\n');
+}
+
+// Build the passthrough-merged YAML: start from original doc, deep-merge
+// our freshly generated fields, re-serialize.
+function generatePassthroughYaml() {
+  if (!passthroughDoc) return generateYaml();
+  // deep clone original
+  const merged = JSON.parse(JSON.stringify(passthroughDoc));
+  // parse our clean generated yaml into an object
+  let ours;
+  try { ours = parseYaml(generateYaml()); } catch(e) { return generateYaml(); }
+  deepMerge(merged, ours);
+  return serializeYaml(merged) + '\n';
+}
+
+// ---- SECTIONS ----
+const SECTIONS = ['metadata','spec','containers','ports','env','resources','probes','volumes','labels','affinity'];
+
+function switchSection(sec) {
+  document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  const isRaw = sec === 'raw';
+  document.getElementById('form-panel').style.display = isRaw ? 'none' : '';
+  document.getElementById('raw-panel').style.display  = isRaw ? 'flex' : 'none';
+
+  if (isRaw) {
+    syncRawFromState();
+  } else {
+    renderForm(sec);
+  }
+}
+
+function switchResource(r) {
+  state.resource = r;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('resource-label').textContent = '/ ' + r;
+  document.querySelectorAll('.status-item')[1].innerHTML = '<div class="dot"></div>' + r;
+  // if raw panel was open, close it and restore form panel
+  document.getElementById('raw-panel').style.display  = 'none';
+  document.getElementById('form-panel').style.display = '';
+  document.querySelectorAll('.sidebar-item').forEach((el,i) => el.classList.toggle('active', i === 0));
+  renderForm('metadata');
+  updateOutput();
+}
+
+// ---- FORM RENDER ----
+function renderForm(section) {
+  const el = document.getElementById('form-body');
+  const r = state.resource;
+  el.innerHTML = '';
+
+  if (section === 'metadata' || !section) {
+    el.appendChild(makeGroup('Metadata', [
+      makeField('name', 'Name', 'text', state.name, v => state.name = v, true),
+      makeField('namespace', 'Namespace', 'text', state.namespace, v => state.namespace = v),
+    ]));
+    if (r === 'Service') {
+      el.appendChild(makeGroup('Service', [
+        makeSelect('serviceType', 'Type', ['ClusterIP','NodePort','LoadBalancer','ExternalName'], state.serviceType, v => state.serviceType = v),
+      ]));
+    }
+    if (r === 'Ingress') {
+      el.appendChild(makeGroup('Ingress', [
+        makeField('ingressHost', 'Host', 'text', state.ingressHost, v => state.ingressHost = v),
+        makeField('ingressPath', 'Path', 'text', state.ingressPath, v => state.ingressPath = v),
+        makeField('ingressClass', 'Class', 'text', state.ingressClass, v => state.ingressClass = v),
+        makeField('ingressServiceName', 'Backend Svc', 'text', state.ingressServiceName, v => state.ingressServiceName = v),
+        makeField('ingressServicePort', 'Backend Port', 'number', state.ingressServicePort, v => state.ingressServicePort = parseInt(v)||80),
+        makeToggle('tlsEnabled', 'TLS enabled', state.tlsEnabled, v => state.tlsEnabled = v),
+        state.tlsEnabled ? makeField('tlsSecret', 'TLS Secret', 'text', state.tlsSecret, v => state.tlsSecret = v) : null,
+      ].filter(Boolean)));
+    }
+    if (r === 'ConfigMap') {
+      el.appendChild(makeGroup('Data', []));
+      el.lastChild.appendChild(makeKVEditor('configMapData', state.configMapData));
+    }
+    if (r === 'CronJob') {
+      el.appendChild(makeGroup('Schedule', [
+        makeField('schedule', 'Cron Expr', 'text', state.schedule, v => state.schedule = v),
+        makeSelect('concurrencyPolicy', 'Concurrency', ['Forbid','Allow','Replace'], state.concurrencyPolicy, v => state.concurrencyPolicy = v),
+        makeField('successfulJobsLimit', 'Keep Success', 'number', state.successfulJobsLimit, v => state.successfulJobsLimit = parseInt(v)||3),
+        makeField('failedJobsLimit', 'Keep Failed', 'number', state.failedJobsLimit, v => state.failedJobsLimit = parseInt(v)||1),
+      ]));
+    }
+  }
+
+  if (section === 'spec' && (r === 'Deployment' || r === 'CronJob')) {
+    el.appendChild(makeGroup('Replicas & Strategy', [
+      r !== 'CronJob' ? makeField('replicas', 'Replicas', 'number', state.replicas, v => state.replicas = parseInt(v)||1, true) : null,
+      makeSelect('strategy', 'Update Strategy', ['RollingUpdate','Recreate'], state.strategy, v => state.strategy = v),
+      state.strategy === 'RollingUpdate' ? makeField('maxSurge', 'Max Surge', 'text', state.maxSurge, v => state.maxSurge = v) : null,
+      state.strategy === 'RollingUpdate' ? makeField('maxUnavailable', 'Max Unavail.', 'text', state.maxUnavailable, v => state.maxUnavailable = v) : null,
+    ].filter(Boolean)));
+    el.appendChild(makeGroup('Pod Spec', [
+      makeField('serviceAccountName', 'SvcAccount', 'text', state.serviceAccountName, v => state.serviceAccountName = v),
+      makeSelect('dnsPolicy', 'DNS Policy', ['ClusterFirst','Default','None','ClusterFirstWithHostNet'], state.dnsPolicy, v => state.dnsPolicy = v),
+      makeToggle('hostNetwork', 'Host network', state.hostNetwork, v => state.hostNetwork = v),
+    ]));
+  }
+
+  if (section === 'containers') {
+    state.containers.forEach((c, i) => {
+      const block = document.createElement('div');
+      block.className = 'container-block';
+      block.innerHTML = `
+        <div class="container-block-header">
+          <span class="container-tag">container[${i}]</span>
+          <input class="container-name-input" value="${c.name}" placeholder="name" oninput="state.containers[${i}].name=this.value;updateOutput()">
+          ${state.containers.length > 1 ? `<button class="btn-icon remove" onclick="removeContainer(${i})" style="margin-left:auto">-</button>` : ''}
+        </div>
+      `;
+      block.appendChild(makeGroup('Image', [
+        makeField(`img${i}`, 'Image', 'text', c.image, v => { state.containers[i].image = v; }),
+        makeField(`tag${i}`, 'Tag', 'text', c.tag, v => { state.containers[i].tag = v; }),
+        makeSelect(`pull${i}`, 'Pull Policy', ['IfNotPresent','Always','Never'], c.pullPolicy, v => state.containers[i].pullPolicy = v),
+      ]));
+      el.appendChild(block);
+    });
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn-sm';
+    addBtn.textContent = '+ add container';
+    addBtn.onclick = addContainer;
+    el.appendChild(addBtn);
+  }
+
+  if (section === 'ports') {
+    state.containers.forEach((c, ci) => {
+      const grp = makeGroup(`${c.name || 'container['+ci+']'}: ports`, []);
+      const portList = document.createElement('div');
+      c.ports.forEach((p, pi) => {
+        portList.appendChild(makePortRow(ci, pi, p));
+      });
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn-icon add';
+      addBtn.textContent = '+';
+      addBtn.title = 'add port';
+      addBtn.onclick = () => { state.containers[ci].ports.push({containerPort:8080,protocol:'TCP',name:''}); renderForm('ports'); updateOutput(); };
+      portList.appendChild(addBtn);
+      grp.appendChild(portList);
+      el.appendChild(grp);
+    });
+  }
+
+  if (section === 'env') {
+    state.containers.forEach((c, ci) => {
+      const grp = makeGroup(`${c.name || 'container['+ci+']'}: env vars`, []);
+      grp.appendChild(makeKVEditor(`containers[${ci}].env`, c.env, true));
+      el.appendChild(grp);
+    });
+  }
+
+  if (section === 'resources') {
+    state.containers.forEach((c, ci) => {
+      el.appendChild(makeGroup(`${c.name}: resource limits`, [
+        makeField(`rcpu${ci}`, 'Req CPU', 'text', c.requestsCPU, v => state.containers[ci].requestsCPU = v),
+        makeField(`rmem${ci}`, 'Req Memory', 'text', c.requestsMem, v => state.containers[ci].requestsMem = v),
+        makeField(`lcpu${ci}`, 'Limit CPU', 'text', c.limitsCPU, v => state.containers[ci].limitsCPU = v),
+        makeField(`lmem${ci}`, 'Limit Memory', 'text', c.limitsMem, v => state.containers[ci].limitsMem = v),
+      ]));
+    });
+  }
+
+  if (section === 'probes') {
+    state.containers.forEach((c, ci) => {
+      el.appendChild(makeGroup(`${c.name}: liveness probe`, [
+        makeToggle(`lv${ci}`, 'Enable liveness', c.liveness, v => { state.containers[ci].liveness = v; renderForm('probes'); }),
+        c.liveness ? makeField(`lvp${ci}`, 'HTTP Path', 'text', c.livenessPath, v => state.containers[ci].livenessPath = v) : null,
+        c.liveness ? makeField(`lvport${ci}`, 'Port', 'number', c.livenessPort, v => state.containers[ci].livenessPort = parseInt(v)||80) : null,
+        c.liveness ? makeField(`lvd${ci}`, 'Initial Delay', 'number', c.livenessDelay, v => state.containers[ci].livenessDelay = parseInt(v)||10) : null,
+      ].filter(Boolean)));
+      el.appendChild(makeGroup(`${c.name}: readiness probe`, [
+        makeToggle(`rd${ci}`, 'Enable readiness', c.readiness, v => { state.containers[ci].readiness = v; renderForm('probes'); }),
+        c.readiness ? makeField(`rdp${ci}`, 'HTTP Path', 'text', c.readinessPath, v => state.containers[ci].readinessPath = v) : null,
+        c.readiness ? makeField(`rdport${ci}`, 'Port', 'number', c.readinessPort, v => state.containers[ci].readinessPort = parseInt(v)||80) : null,
+        c.readiness ? makeField(`rdd${ci}`, 'Initial Delay', 'number', c.readinessDelay, v => state.containers[ci].readinessDelay = parseInt(v)||5) : null,
+      ].filter(Boolean)));
+    });
+  }
+
+  if (section === 'volumes') {
+    const grp = makeGroup('Volumes', []);
+    state.volumes.forEach((v, vi) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:4px;margin-bottom:6px;align-items:center';
+      row.innerHTML = `
+        <input type="text" value="${v.name}" placeholder="vol name" style="flex:1" oninput="state.volumes[${vi}].name=this.value;updateOutput()">
+        <select style="flex:1" onchange="state.volumes[${vi}].type=this.value;updateOutput()">
+          ${['emptyDir','configMap','secret','persistentVolumeClaim','hostPath'].map(t=>`<option${v.type===t?' selected':''}>${t}</option>`).join('')}
+        </select>
+        <input type="text" value="${v.ref||''}" placeholder="ref name" style="flex:1" oninput="state.volumes[${vi}].ref=this.value;updateOutput()">
+        <button class="btn-icon remove" onclick="state.volumes.splice(${vi},1);renderForm('volumes');updateOutput()">-</button>
+      `;
+      grp.appendChild(row);
+    });
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn-sm';
+    addBtn.textContent = '+ add volume';
+    addBtn.style.marginTop = '4px';
+    addBtn.onclick = () => { state.volumes.push({name:'vol0',type:'emptyDir',ref:''}); renderForm('volumes'); updateOutput(); };
+    grp.appendChild(addBtn);
+    el.appendChild(grp);
+  }
+
+  if (section === 'labels') {
+    const grp1 = makeGroup('Labels', []);
+    grp1.appendChild(makeKVEditor('labels', state.labels));
+    el.appendChild(grp1);
+    const grp2 = makeGroup('Annotations', []);
+    grp2.appendChild(makeKVEditor('annotations', state.annotations));
+    el.appendChild(grp2);
+    if (state.resource === 'Service') {
+      const grp3 = makeGroup('Service Ports', []);
+      state.servicePorts.forEach((p, pi) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:4px;margin-bottom:6px;align-items:center';
+        row.innerHTML = `
+          <input type="text" value="${p.name}" placeholder="name" style="width:60px" oninput="state.servicePorts[${pi}].name=this.value;updateOutput()">
+          <input type="number" value="${p.port}" placeholder="port" style="width:60px" oninput="state.servicePorts[${pi}].port=parseInt(this.value)||80;updateOutput()">
+          <span class="kv-sep">:</span>
+          <input type="number" value="${p.targetPort}" placeholder="targetPort" style="width:60px" oninput="state.servicePorts[${pi}].targetPort=parseInt(this.value)||80;updateOutput()">
+          <select class="port-proto" onchange="state.servicePorts[${pi}].protocol=this.value;updateOutput()">
+            ${['TCP','UDP','SCTP'].map(t=>`<option${p.protocol===t?' selected':''}>${t}</option>`).join('')}
+          </select>
+          <button class="btn-icon remove" onclick="state.servicePorts.splice(${pi},1);renderForm('labels');updateOutput()">-</button>
+        `;
+        grp3.appendChild(row);
+      });
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn-sm';
+      addBtn.textContent = '+ add port';
+      addBtn.onclick = () => { state.servicePorts.push({port:80,targetPort:80,protocol:'TCP',name:'http'}); renderForm('labels'); updateOutput(); };
+      grp3.appendChild(addBtn);
+      el.appendChild(grp3);
+    }
+  }
+
+  if (section === 'affinity') {
+    el.appendChild(makeGroup('Pod Anti-Affinity', [
+      makeToggle('podAntiAffinity', 'Prefer pod spread', state.podAntiAffinity, v => state.podAntiAffinity = v),
+      state.podAntiAffinity ? makeField('topologyKey', 'Topology Key', 'text', state.topologyKey, v => state.topologyKey = v) : null,
+    ].filter(Boolean)));
+  }
+
+  updateOutput();
+}
+
+// ---- HELPERS ----
+function makeGroup(title, fields) {
+  const div = document.createElement('div');
+  div.className = 'field-group';
+  const t = document.createElement('div');
+  t.className = 'field-group-title';
+  t.textContent = title;
+  div.appendChild(t);
+  fields.forEach(f => f && div.appendChild(f));
+  return div;
+}
+
+function makeField(id, label, type, value, onChange, required) {
+  const row = document.createElement('div');
+  row.className = 'field-row';
+  const lbl = document.createElement('div');
+  lbl.className = 'field-label';
+  lbl.innerHTML = label + (required ? '<span class="req">*</span>' : '');
+  const inp = document.createElement('input');
+  inp.type = type;
+  inp.id = id;
+  inp.value = value;
+  inp.oninput = () => { onChange(inp.value); updateOutput(); };
+  row.appendChild(lbl);
+  row.appendChild(inp);
+  return row;
+}
+
+function makeSelect(id, label, options, value, onChange) {
+  const row = document.createElement('div');
+  row.className = 'field-row';
+  const lbl = document.createElement('div');
+  lbl.className = 'field-label';
+  lbl.textContent = label;
+  const sel = document.createElement('select');
+  sel.id = id;
+  options.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o;
+    opt.textContent = o;
+    opt.selected = o === value;
+    sel.appendChild(opt);
+  });
+  sel.onchange = () => { onChange(sel.value); updateOutput(); };
+  row.appendChild(lbl);
+  row.appendChild(sel);
+  return row;
+}
+
+function makeToggle(id, label, value, onChange) {
+  const row = document.createElement('div');
+  row.className = 'toggle-row';
+  const toggle = document.createElement('label');
+  toggle.className = 'toggle';
+  const inp = document.createElement('input');
+  inp.type = 'checkbox';
+  inp.checked = value;
+  inp.onchange = () => { onChange(inp.checked); updateOutput(); };
+  const slider = document.createElement('span');
+  slider.className = 'toggle-slider';
+  toggle.appendChild(inp);
+  toggle.appendChild(slider);
+  const lbl = document.createElement('span');
+  lbl.className = 'toggle-label';
+  lbl.textContent = label;
+  lbl.onclick = () => { inp.click(); };
+  row.appendChild(toggle);
+  row.appendChild(lbl);
+  return row;
+}
+
+function makeKVEditor(key, arr, isEnv) {
+  const wrap = document.createElement('div');
+  wrap.className = 'kv-list';
+  const render = () => {
+    wrap.innerHTML = '';
+    arr.forEach((pair, i) => {
+      const row = document.createElement('div');
+      row.className = 'kv-row';
+      const k = document.createElement('input');
+      k.type = 'text';
+      k.value = pair[0];
+      k.placeholder = isEnv ? 'ENV_KEY' : 'key';
+      k.oninput = () => { arr[i][0] = k.value; updateOutput(); };
+      const sep = document.createElement('span');
+      sep.className = 'kv-sep';
+      sep.textContent = isEnv ? '=' : ':';
+      const v = document.createElement('input');
+      v.type = 'text';
+      v.value = pair[1];
+      v.placeholder = isEnv ? 'value' : 'value';
+      v.oninput = () => { arr[i][1] = v.value; updateOutput(); };
+      const rm = document.createElement('button');
+      rm.className = 'btn-icon remove';
+      rm.textContent = '-';
+      rm.onclick = () => { arr.splice(i, 1); render(); updateOutput(); };
+      row.appendChild(k); row.appendChild(sep); row.appendChild(v); row.appendChild(rm);
+      wrap.appendChild(row);
+    });
+    const add = document.createElement('button');
+    add.className = 'btn-icon add';
+    add.textContent = '+';
+    add.onclick = () => { arr.push(['','']); render(); updateOutput(); };
+    wrap.appendChild(add);
+  };
+  render();
+  return wrap;
+}
+
+function makePortRow(ci, pi, p) {
+  const row = document.createElement('div');
+  row.className = 'port-row';
+  row.innerHTML = `
+    <span class="port-label">${pi}.</span>
+    <input type="number" value="${p.containerPort}" placeholder="port" style="width:70px" oninput="state.containers[${ci}].ports[${pi}].containerPort=parseInt(this.value)||80;updateOutput()">
+    <select class="port-proto" onchange="state.containers[${ci}].ports[${pi}].protocol=this.value;updateOutput()">
+      ${['TCP','UDP','SCTP'].map(t=>`<option${p.protocol===t?' selected':''}>${t}</option>`).join('')}
+    </select>
+    <input type="text" value="${p.name||''}" placeholder="name (opt.)" oninput="state.containers[${ci}].ports[${pi}].name=this.value;updateOutput()">
+    ${state.containers[ci].ports.length > 1 ? `<button class="btn-icon remove" onclick="state.containers[${ci}].ports.splice(${pi},1);renderForm('ports');updateOutput()">-</button>` : ''}
+  `;
+  return row;
+}
+
+function addContainer() {
+  state.containers.push({
+    name:'container'+state.containers.length,
+    image:'nginx', tag:'latest', pullPolicy:'IfNotPresent',
+    ports:[{containerPort:8080,protocol:'TCP',name:''}],
+    env:[],
+    requestsCPU:'100m',requestsMem:'128Mi',limitsCPU:'500m',limitsMem:'512Mi',
+    liveness:false,livenessPath:'/healthz',livenessPort:8080,livenessDelay:10,
+    readiness:false,readinessPath:'/ready',readinessPort:8080,readinessDelay:5,
+  });
+  renderForm('containers');
+  updateOutput();
+}
+
+function removeContainer(i) {
+  state.containers.splice(i, 1);
+  renderForm('containers');
+  updateOutput();
+}
+
+// ---- YAML GENERATION ----
+function generateYaml() {
+  const r = state.resource;
+  const labelsObj = Object.fromEntries(state.labels.filter(([k]) => k));
+  const annotationsObj = Object.fromEntries(state.annotations.filter(([k]) => k));
+
+  if (r === 'ConfigMap') {
+    const data = Object.fromEntries(state.configMapData.filter(([k]) => k));
+    return buildConfigMap(data, labelsObj, annotationsObj);
+  }
+  if (r === 'Service') return buildService(labelsObj, annotationsObj);
+  if (r === 'Ingress') return buildIngress(labelsObj, annotationsObj);
+  if (r === 'CronJob') return buildCronJob(labelsObj, annotationsObj);
+  return buildDeployment(labelsObj, annotationsObj);
+}
+
+function ind(n) { return '  '.repeat(n); }
+
+// Quote a scalar value for YAML output.
+// Strings that look like numbers, booleans, null, or contain special chars must be quoted.
+function q(v) {
+  const s = String(v);
+  // always quote if it contains YAML special characters
+  if (/[:{}\[\],&*?|<>=!%@`#\n\\]/.test(s)) return `"${s.replace(/\\/g,'\\\\').replace(/"/g,'\\"')}"`;
+  // quote if it parses as a non-string YAML scalar
+  if (s === '' || s === 'true' || s === 'false' || s === 'null' || s === '~') return `"${s}"`;
+  if (/^-?\d+(\.\d+)?$/.test(s)) return `"${s}"`;  // pure integer or float
+  // quote version strings like 2.4.1 that look numeric but aren't
+  if (/^\d[\d.]*\d$/.test(s) && s.split('.').length > 2) return `"${s}"`;
+  // quote non-ASCII (catches em dash, smart quotes, etc.)
+  if (/[^\x00-\x7F]/.test(s)) return `"${s.replace(/"/g,'\\"')}"`;
+  return s;
+}
+
+function buildContainerSpec(c, baseIndent) {
+  // baseIndent: number of indent levels this container block sits at
+  // e.g. under spec.containers = 3 levels deep in a Deployment
+  const b = '  '.repeat(baseIndent);
+  const b1 = '  '.repeat(baseIndent + 1);
+  const b2 = '  '.repeat(baseIndent + 2);
+  const b3 = '  '.repeat(baseIndent + 3);
+  let out = '';
+  out += `${b}- name: ${c.name}\n`;
+  out += `${b1}image: ${c.image}:${c.tag}\n`;
+  out += `${b1}imagePullPolicy: ${c.pullPolicy}\n`;
+  if (c.ports.length) {
+    out += `${b1}ports:\n`;
+    c.ports.forEach(p => {
+      out += `${b1}- containerPort: ${p.containerPort}\n`;
+      out += `${b2}protocol: ${p.protocol}\n`;
+      if (p.name) out += `${b2}name: ${p.name}\n`;
+    });
+  }
+  if (c.env.length) {
+    out += `${b1}env:\n`;
+    c.env.filter(([k])=>k).forEach(([k,v]) => {
+      out += `${b1}- name: ${k}\n`;
+      out += `${b2}value: ${q(v)}\n`;
+    });
+  }
+  out += `${b1}resources:\n`;
+  out += `${b2}requests:\n`;
+  out += `${b3}cpu: ${c.requestsCPU}\n`;
+  out += `${b3}memory: ${c.requestsMem}\n`;
+  out += `${b2}limits:\n`;
+  out += `${b3}cpu: ${c.limitsCPU}\n`;
+  out += `${b3}memory: ${c.limitsMem}\n`;
+  if (c.liveness) {
+    out += `${b1}livenessProbe:\n`;
+    out += `${b2}httpGet:\n`;
+    out += `${b3}path: ${c.livenessPath}\n`;
+    out += `${b3}port: ${c.livenessPort}\n`;
+    out += `${b2}initialDelaySeconds: ${c.livenessDelay}\n`;
+    out += `${b2}periodSeconds: 10\n`;
+  }
+  if (c.readiness) {
+    out += `${b1}readinessProbe:\n`;
+    out += `${b2}httpGet:\n`;
+    out += `${b3}path: ${c.readinessPath}\n`;
+    out += `${b3}port: ${c.readinessPort}\n`;
+    out += `${b2}initialDelaySeconds: ${c.readinessDelay}\n`;
+    out += `${b2}periodSeconds: 5\n`;
+  }
+  return out;
+}
+
+function buildPodSpec(podIndent) {
+  // podIndent: indent level of the pod spec keys (e.g. 3 inside a Deployment)
+  podIndent = podIndent || 0;
+  const p  = '  '.repeat(podIndent);
+  const p1 = '  '.repeat(podIndent + 1);
+  const p2 = '  '.repeat(podIndent + 2);
+  const p3 = '  '.repeat(podIndent + 3);
+  const p4 = '  '.repeat(podIndent + 4);
+  const p5 = '  '.repeat(podIndent + 5);
+  let out = '';
+  if (state.serviceAccountName) out += `${p}serviceAccountName: ${state.serviceAccountName}\n`;
+  if (state.hostNetwork) out += `${p}hostNetwork: true\n`;
+  out += `${p}dnsPolicy: ${state.dnsPolicy}\n`;
+  if (state.podAntiAffinity) {
+    out += `${p}affinity:\n`;
+    out += `${p1}podAntiAffinity:\n`;
+    out += `${p2}preferredDuringSchedulingIgnoredDuringExecution:\n`;
+    out += `${p2}- weight: 100\n`;
+    out += `${p3}podAffinityTerm:\n`;
+    out += `${p4}labelSelector:\n`;
+    out += `${p5}matchExpressions:\n`;
+    out += `${p5}- key: app\n`;
+    out += `${p5}  operator: In\n`;
+    out += `${p5}  values:\n`;
+    out += `${p5}  - ${state.name}\n`;
+    out += `${p4}topologyKey: ${state.topologyKey}\n`;
+  }
+  out += `${p}containers:\n`;
+  state.containers.forEach(c => {
+    out += buildContainerSpec(c, podIndent);
+  });
+  if (state.volumes.length) {
+    out += `${p}volumes:\n`;
+    state.volumes.forEach(v => {
+      out += `${p}- name: ${v.name}\n`;
+      if (v.type === 'emptyDir')                out += `${p1}emptyDir: {}\n`;
+      else if (v.type === 'configMap')           out += `${p1}configMap:\n${p2}name: ${v.ref||'my-configmap'}\n`;
+      else if (v.type === 'secret')              out += `${p1}secret:\n${p2}secretName: ${v.ref||'my-secret'}\n`;
+      else if (v.type === 'persistentVolumeClaim') out += `${p1}persistentVolumeClaim:\n${p2}claimName: ${v.ref||'my-pvc'}\n`;
+      else if (v.type === 'hostPath')            out += `${p1}hostPath:\n${p2}path: ${v.ref||'/tmp'}\n`;
+    });
+  }
+  return out;
+}
+
+function buildDeployment(labels, annotations) {
+  const sel = Object.keys(labels).length ? labels : {app: state.name};
+  let out = `apiVersion: apps/v1\nkind: Deployment\nmetadata:\n`;
+  out += `  name: ${state.name}\n`;
+  out += `  namespace: ${state.namespace}\n`;
+  if (Object.keys(labels).length) { out += `  labels:\n`; for(const[k,v] of Object.entries(labels)) out += `    ${k}: ${q(v)}\n`; }
+  if (Object.keys(annotations).length) { out += `  annotations:\n`; for(const[k,v] of Object.entries(annotations)) out += `    ${k}: ${q(v)}\n`; }
+  out += `spec:\n  replicas: ${state.replicas}\n`;
+  out += `  selector:\n    matchLabels:\n`;
+  for(const[k,v] of Object.entries(sel)) out += `      ${k}: ${q(v)}\n`;
+  out += `  strategy:\n    type: ${state.strategy}\n`;
+  if (state.strategy === 'RollingUpdate') {
+    out += `    rollingUpdate:\n      maxSurge: ${q(state.maxSurge)}\n      maxUnavailable: ${q(state.maxUnavailable)}\n`;
+  }
+  out += `  template:\n    metadata:\n      labels:\n`;
+  for(const[k,v] of Object.entries(sel)) out += `        ${k}: ${q(v)}\n`;
+  out += `    spec:\n`;
+  // pod spec keys sit at indent level 3 (apiVersion=0, spec=1, template.spec=3)
+  out += buildPodSpec(3);
+  return out.trimEnd() + '\n';
+}
+
+function buildService(labels, annotations) {
+  let out = `apiVersion: v1\nkind: Service\nmetadata:\n`;
+  out += `  name: ${state.name}\n  namespace: ${state.namespace}\n`;
+  if(Object.keys(labels).length){out+=`  labels:\n`;for(const[k,v] of Object.entries(labels))out+=`    ${k}: ${q(v)}\n`;}
+  if(Object.keys(annotations).length){out+=`  annotations:\n`;for(const[k,v] of Object.entries(annotations))out+=`    ${k}: ${q(v)}\n`;}
+  out += `spec:\n  type: ${state.serviceType}\n  selector:\n`;
+  const sel = Object.keys(labels).length ? labels : {app: state.name};
+  for(const[k,v] of Object.entries(sel)) out += `    ${k}: ${q(v)}\n`;
+  out += `  ports:\n`;
+  state.servicePorts.forEach(p => {
+    out += `  - name: ${p.name||'port'}\n    port: ${p.port}\n    targetPort: ${p.targetPort}\n    protocol: ${p.protocol}\n`;
+  });
+  return out.trimEnd()+'\n';
+}
+
+function buildIngress(labels, annotations) {
+  let out = `apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n`;
+  out += `  name: ${state.name}\n  namespace: ${state.namespace}\n`;
+  out += `  annotations:\n    kubernetes.io/ingress.class: ${state.ingressClass}\n`;
+  for(const[k,v] of Object.entries(annotations)) out += `    ${k}: ${q(v)}\n`;
+  if(Object.keys(labels).length){out+=`  labels:\n`;for(const[k,v] of Object.entries(labels))out+=`    ${k}: ${q(v)}\n`;}
+  out += `spec:\n`;
+  if(state.tlsEnabled){
+    out += `  tls:\n  - hosts:\n    - ${state.ingressHost}\n    secretName: ${state.tlsSecret}\n`;
+  }
+  out += `  rules:\n  - host: ${state.ingressHost}\n    http:\n      paths:\n`;
+  out += `      - path: ${state.ingressPath}\n        pathType: Prefix\n`;
+  out += `        backend:\n          service:\n            name: ${state.ingressServiceName}\n`;
+  out += `            port:\n              number: ${state.ingressServicePort}\n`;
+  return out.trimEnd()+'\n';
+}
+
+function buildConfigMap(data, labels, annotations) {
+  let out = `apiVersion: v1\nkind: ConfigMap\nmetadata:\n`;
+  out += `  name: ${state.name}\n  namespace: ${state.namespace}\n`;
+  if(Object.keys(labels).length){out+=`  labels:\n`;for(const[k,v] of Object.entries(labels))out+=`    ${k}: ${q(v)}\n`;}
+  out += `data:\n`;
+  for(const[k,v] of Object.entries(data)) out += `  ${k}: ${q(v)}\n`;
+  return out.trimEnd()+'\n';
+}
+
+function buildCronJob(labels, annotations) {
+  let out = `apiVersion: batch/v1\nkind: CronJob\nmetadata:\n`;
+  out += `  name: ${state.name}\n  namespace: ${state.namespace}\n`;
+  if(Object.keys(labels).length){out+=`  labels:\n`;for(const[k,v] of Object.entries(labels))out+=`    ${k}: ${q(v)}\n`;}
+  out += `spec:\n  schedule: ${q(state.schedule)}\n`;
+  out += `  concurrencyPolicy: ${state.concurrencyPolicy}\n`;
+  out += `  successfulJobsHistoryLimit: ${state.successfulJobsLimit}\n`;
+  out += `  failedJobsHistoryLimit: ${state.failedJobsLimit}\n`;
+  out += `  jobTemplate:\n    spec:\n      template:\n        metadata:\n          labels:\n`;
+  const sel = Object.keys(labels).length ? labels : {app: state.name};
+  for(const[k,v] of Object.entries(sel)) out += `            ${k}: ${q(v)}\n`;
+  out += `        spec:\n          restartPolicy: OnFailure\n`;
+  // pod spec keys at indent 5 (jobTemplate.spec.template.spec)
+  out += buildPodSpec(5);
+  return out.trimEnd()+'\n';
+}
+
+// ---- SYNTAX HIGHLIGHT ----
+function highlight(yaml) {
+  const lines = yaml.split('\n');
+  return lines.map(line => {
+    if (/^\s*#/.test(line)) return `<span class="y-com">${esc(line)}</span>`;
+    // key: value
+    const m = line.match(/^(\s*)(- )?([\w./\-]+)(:)(\s*)(.*)$/);
+    if (m) {
+      const [, sp, dash, key, colon, sp2, val] = m;
+      let valHtml = '';
+      if (val === '') valHtml = '';
+      else if (/^(true|false)$/.test(val)) valHtml = `<span class="y-bool">${esc(val)}</span>`;
+      else if (/^\d+(\.\d+)?$/.test(val)) valHtml = `<span class="y-num">${esc(val)}</span>`;
+      else if (/^null$/.test(val)) valHtml = `<span class="y-null">null</span>`;
+      else if (/^["']/.test(val)) valHtml = `<span class="y-str">${esc(val)}</span>`;
+      else valHtml = `<span class="y-val">${esc(val)}</span>`;
+      return `${esc(sp)}${dash ? `<span class="y-dash">- </span>` : ''}<span class="y-key">${esc(key)}:</span>${esc(sp2)}${valHtml}`;
+    }
+    // bare "- item"
+    if (/^\s*-\s*\w/.test(line)) {
+      return line.replace(/^(\s*)(- )(.*)$/, (_, sp, d, rest) =>
+        `${esc(sp)}<span class="y-dash">- </span><span class="y-str">${esc(rest)}</span>`
+      );
+    }
+    return esc(line);
+  }).join('\n');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ---- RAW EDITOR ----
+function syncRawFromState() {
+  const yaml = passthroughMode && passthroughDoc ? generatePassthroughYaml() : generateYaml();
+  const ta = document.getElementById('raw-editor');
+  ta.value = yaml;
+}
+
+function applyRawEditor() {
+  const text = document.getElementById('raw-editor').value;
+  ingestYaml(text, true); // true = stay on raw panel
+}
+
+// Tab key inserts 2 spaces in raw editor
+document.addEventListener('keydown', e => {
+  if (e.key === 'Tab' && document.activeElement.id === 'raw-editor') {
+    e.preventDefault();
+    const ta = document.activeElement;
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    ta.value = ta.value.slice(0, start) + '  ' + ta.value.slice(end);
+    ta.selectionStart = ta.selectionEnd = start + 2;
+  }
+});
+
+// ---- OUTPUT ----
+function updateOutput() {
+  const yaml = passthroughMode && passthroughDoc ? generatePassthroughYaml() : generateYaml();
+  const el = document.getElementById('yaml-output');
+  el.innerHTML = highlight(yaml);
+  const lines = yaml.split('\n').length;
+  document.getElementById('status-lines').innerHTML = `<div class="dot"></div>${lines} lines`;
+  // keep raw editor in sync if it's visible
+  if (document.getElementById('raw-panel').style.display !== 'none') {
+    document.getElementById('raw-editor').value = yaml;
+  }
+}
+
+// ---- PRESETS ----
+const PRESETS = {
+  nginx: { name:'nginx', namespace:'default', replicas:2, containers:[{name:'nginx',image:'nginx',tag:'1.25',pullPolicy:'IfNotPresent',ports:[{containerPort:80,protocol:'TCP',name:'http'}],env:[],requestsCPU:'50m',requestsMem:'64Mi',limitsCPU:'200m',limitsMem:'128Mi',liveness:true,livenessPath:'/',livenessPort:80,livenessDelay:5,readiness:true,readinessPath:'/',readinessPort:80,readinessDelay:3}], labels:[['app','nginx']] },
+  postgres: { name:'postgres', namespace:'default', replicas:1, containers:[{name:'postgres',image:'postgres',tag:'15',pullPolicy:'IfNotPresent',ports:[{containerPort:5432,protocol:'TCP',name:'pg'}],env:[['POSTGRES_DB','mydb'],['POSTGRES_USER','admin'],['POSTGRES_PASSWORD','secret']],requestsCPU:'250m',requestsMem:'512Mi',limitsCPU:'1000m',limitsMem:'1Gi',liveness:false,livenessPath:'/healthz',livenessPort:5432,livenessDelay:30,readiness:false,readinessPath:'/',readinessPort:5432,readinessDelay:5}], labels:[['app','postgres']] },
+  redis: { name:'redis', namespace:'default', replicas:1, containers:[{name:'redis',image:'redis',tag:'7-alpine',pullPolicy:'IfNotPresent',ports:[{containerPort:6379,protocol:'TCP',name:'redis'}],env:[],requestsCPU:'50m',requestsMem:'64Mi',limitsCPU:'200m',limitsMem:'256Mi',liveness:false,livenessPath:'/healthz',livenessPort:6379,livenessDelay:10,readiness:false,readinessPath:'/',readinessPort:6379,readinessDelay:5}], labels:[['app','redis']] },
+  api: { name:'api-server', namespace:'default', replicas:3, containers:[{name:'api',image:'your-org/api',tag:'latest',pullPolicy:'Always',ports:[{containerPort:8080,protocol:'TCP',name:'http'},{containerPort:9090,protocol:'TCP',name:'metrics'}],env:[['LOG_LEVEL','info'],['PORT','8080']],requestsCPU:'100m',requestsMem:'128Mi',limitsCPU:'500m',limitsMem:'512Mi',liveness:true,livenessPath:'/healthz',livenessPort:8080,livenessDelay:15,readiness:true,readinessPath:'/ready',readinessPort:8080,readinessDelay:5}], labels:[['app','api-server'],['tier','backend']] },
+};
+
+function loadPreset(name) {
+  const p = PRESETS[name];
+  if (!p) return;
+  Object.assign(state, p);
+  state.resource = 'Deployment';
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===0));
+  document.getElementById('resource-label').textContent = '/ Deployment';
+  document.querySelectorAll('.sidebar-item').forEach((el,i) => el.classList.toggle('active', i===0));
+  renderForm('metadata');
+  updateOutput();
+}
+
+function resetForm() {
+  passthroughDoc  = null;
+  passthroughText = null;
+  document.getElementById('passthrough-badge').style.display = 'none';
+  state.name='my-app'; state.namespace='default'; state.replicas=1;
+  state.labels=[['app','my-app']]; state.annotations=[];
+  state.containers=[{name:'main',image:'nginx',tag:'latest',pullPolicy:'IfNotPresent',ports:[{containerPort:80,protocol:'TCP',name:''}],env:[],requestsCPU:'100m',requestsMem:'128Mi',limitsCPU:'500m',limitsMem:'512Mi',liveness:false,livenessPath:'/healthz',livenessPort:80,livenessDelay:10,readiness:false,readinessPath:'/ready',readinessPort:80,readinessDelay:5}];
+  state.volumes=[];state.podAntiAffinity=false;
+  renderForm('metadata');
+  updateOutput();
+}
+
+function validateYaml() {
+  const y = generateYaml();
+  // basic structural check
+  const lines = y.split('\n').filter(l=>l.trim());
+  let ok = lines.some(l => l.trim().startsWith('apiVersion:'));
+  const statusEl = document.querySelectorAll('.status-item')[0];
+  statusEl.innerHTML = ok
+    ? '<div class="dot" style="background:#7dff9e"></div>valid yaml'
+    : '<div class="dot" style="background:#e05a5a"></div>check yaml';
+  setTimeout(() => { statusEl.innerHTML = '<div class="dot" style="background:#7dff9e"></div>valid yaml'; }, 2000);
+}
+
+function copyYaml() {
+  const yaml = passthroughMode && passthroughDoc ? generatePassthroughYaml() : generateYaml();
+  navigator.clipboard.writeText(yaml).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.classList.add('copy-flash');
+    btn.textContent = 'copied!';
+    setTimeout(() => { btn.classList.remove('copy-flash'); btn.textContent = 'copy'; }, 1500);
+  });
+}
+
+function downloadYaml() {
+  const yaml = passthroughMode && passthroughDoc ? generatePassthroughYaml() : generateYaml();
+  const blob = new Blob([yaml], {type:'text/yaml'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${state.name}.yaml`;
+  a.click();
+}
+
+const THEMES = ['manifest', 'minima', 'ocean', 'coast'];
+const THEME_LABELS = { 'manifest': 'manifest', 'minima': 'minima', 'ocean': 'ocean', 'coast': 'coast' };
+let themeIndex = 0;
+
+function cycleTheme() {
+  themeIndex = (themeIndex + 1) % THEMES.length;
+  const t = THEMES[themeIndex];
+  document.body.classList.remove('theme-manifest', 'theme-minima', 'theme-ocean', 'theme-coast');
+  if (t !== 'manifest') document.body.classList.add('theme-' + t);
+  document.getElementById('theme-btn').textContent = 'theme: ' + THEME_LABELS[t];
+}
+
+// ---- YAML PARSER ----
+// Minimal indentation-aware parser. No external deps.
+// Handles: scalars, block mappings, block sequences, quoted strings, inline {} and [].
+function parseYaml(text) {
+  const lines = text.split('\n');
+  const stack = [{ indent: -1, obj: {} }];
+  let i = 0;
+
+  function top() { return stack[stack.length - 1]; }
+
+  function parseScalar(s) {
+    s = s.trim();
+    if (s === 'true')  return true;
+    if (s === 'false') return false;
+    if (s === 'null' || s === '~') return null;
+    if (/^-?\d+$/.test(s)) return parseInt(s, 10);
+    if (/^-?\d+\.\d+$/.test(s)) return parseFloat(s);
+    // strip quotes
+    if (/^["']/.test(s) && s[0] === s[s.length-1]) return s.slice(1,-1);
+    return s;
+  }
+
+  function getIndent(line) {
+    const m = line.match(/^(\s*)/);
+    return m ? m[1].length : 0;
+  }
+
+  function setVal(parent, key, val) {
+    if (Array.isArray(parent.obj)) {
+      if (typeof parent.obj[parent.obj.length-1] === 'object' && parent.obj[parent.obj.length-1] !== null && key !== null) {
+        parent.obj[parent.obj.length-1][key] = val;
+      } else {
+        parent.obj.push(val);
+      }
+    } else {
+      parent.obj[key] = val;
+    }
+  }
+
+  while (i < lines.length) {
+    const raw = lines[i];
+    const stripped = raw.replace(/#.*$/, '').trimEnd();
+    i++;
+    if (!stripped.trim()) continue;
+
+    const indent = getIndent(stripped);
+    const line = stripped.trim();
+
+    // pop stack to current indent level
+    while (stack.length > 1 && indent <= top().indent) stack.pop();
+
+    // sequence item
+    if (line.startsWith('- ') || line === '-') {
+      const rest = line.startsWith('- ') ? line.slice(2).trim() : '';
+      // ensure parent has array
+      const par = top();
+      if (!Array.isArray(par.obj[par.currentKey])) {
+        par.obj[par.currentKey] = [];
+      }
+      const arr = par.obj[par.currentKey];
+      if (rest.includes(': ') || rest === '') {
+        // mapping item
+        const item = {};
+        arr.push(item);
+        stack.push({ indent, obj: item, isSeqItem: true });
+        if (rest) {
+          // inline first key of mapping
+          const ci = rest.indexOf(': ');
+          if (ci !== -1) {
+            const k = rest.slice(0, ci);
+            const v = rest.slice(ci+2).trim();
+            if (v) item[k] = parseScalar(v);
+            else stack.push({ indent: indent+2, obj: item, currentKey: k });
+          }
+        }
+      } else {
+        // scalar item
+        arr.push(parseScalar(rest));
+      }
+      continue;
+    }
+
+    // key: value
+    const colonIdx = line.indexOf(': ');
+    const isKeyOnly = line.endsWith(':');
+    if (colonIdx !== -1 || isKeyOnly) {
+      const key = isKeyOnly ? line.slice(0,-1) : line.slice(0, colonIdx);
+      const valStr = isKeyOnly ? '' : line.slice(colonIdx+2).trim();
+
+      const par = top();
+      par.currentKey = key;
+
+      if (!valStr || valStr === '|' || valStr === '>') {
+        // next lines are either a nested block or block scalar
+        if (Array.isArray(par.obj)) {
+          const lastItem = par.obj[par.obj.length-1];
+          if (typeof lastItem === 'object' && lastItem !== null) {
+            lastItem[key] = {};
+            stack.push({ indent, obj: lastItem[key], currentKey: null });
+          }
+        } else {
+          par.obj[key] = {};
+          stack.push({ indent, obj: par.obj[key], currentKey: null });
+        }
+      } else if (valStr === '{}') {
+        if (Array.isArray(par.obj)) {
+          const last = par.obj[par.obj.length-1];
+          if (typeof last === 'object') last[key] = {};
+        } else {
+          par.obj[key] = {};
+        }
+      } else if (valStr.startsWith('[')) {
+        // inline array
+        const inner = valStr.slice(1, valStr.lastIndexOf(']'));
+        const arr = inner.split(',').map(s => parseScalar(s.trim())).filter(s => s !== '');
+        if (Array.isArray(par.obj)) {
+          const last = par.obj[par.obj.length-1];
+          if (typeof last === 'object') last[key] = arr;
+        } else {
+          par.obj[key] = arr;
+        }
+      } else {
+        const parsed = parseScalar(valStr);
+        if (Array.isArray(par.obj)) {
+          const last = par.obj[par.obj.length-1];
+          if (typeof last === 'object' && last !== null) last[key] = parsed;
+        } else {
+          par.obj[key] = parsed;
+        }
+      }
+      continue;
+    }
+  }
+
+  return stack[0].obj;
+}
+
+// ---- RESOURCE MAPPERS ----
+function defaultContainer() {
+  return {
+    name:'main', image:'nginx', tag:'latest', pullPolicy:'IfNotPresent',
+    ports:[{containerPort:80, protocol:'TCP', name:''}], env:[],
+    requestsCPU:'100m', requestsMem:'128Mi', limitsCPU:'500m', limitsMem:'512Mi',
+    liveness:false, livenessPath:'/healthz', livenessPort:80, livenessDelay:10,
+    readiness:false, readinessPath:'/ready', readinessPort:80, readinessDelay:5,
+  };
+}
+
+function mapContainerSpec(raw) {
+  const c = defaultContainer();
+  if (!raw) return c;
+  c.name = raw.name || c.name;
+  const imgParts = (raw.image || 'nginx:latest').split(':');
+  c.image = imgParts[0];
+  c.tag   = imgParts[1] || 'latest';
+  c.pullPolicy = raw.imagePullPolicy || c.pullPolicy;
+
+  if (Array.isArray(raw.ports)) {
+    c.ports = raw.ports.map(p => ({
+      containerPort: p.containerPort || 80,
+      protocol: p.protocol || 'TCP',
+      name: p.name || '',
+    }));
+  }
+  if (Array.isArray(raw.env)) {
+    c.env = raw.env.map(e => [e.name||'', String(e.value||e.valueFrom||'')]);
+  }
+  const req = raw.resources?.requests || {};
+  const lim = raw.resources?.limits   || {};
+  c.requestsCPU = req.cpu    || c.requestsCPU;
+  c.requestsMem = req.memory || c.requestsMem;
+  c.limitsCPU   = lim.cpu    || c.limitsCPU;
+  c.limitsMem   = lim.memory || c.limitsMem;
+
+  const lv = raw.livenessProbe;
+  if (lv) {
+    c.liveness      = true;
+    c.livenessPath  = lv.httpGet?.path  || c.livenessPath;
+    c.livenessPort  = lv.httpGet?.port  || c.livenessPort;
+    c.livenessDelay = lv.initialDelaySeconds || c.livenessDelay;
+  }
+  const rd = raw.readinessProbe;
+  if (rd) {
+    c.readiness      = true;
+    c.readinessPath  = rd.httpGet?.path  || c.readinessPath;
+    c.readinessPort  = rd.httpGet?.port  || c.readinessPort;
+    c.readinessDelay = rd.initialDelaySeconds || c.readinessDelay;
+  }
+  return c;
+}
+
+function mapPodSpec(podSpec) {
+  if (!podSpec) return;
+  state.serviceAccountName = podSpec.serviceAccountName || '';
+  state.hostNetwork = podSpec.hostNetwork || false;
+  state.dnsPolicy   = podSpec.dnsPolicy   || 'ClusterFirst';
+
+  if (Array.isArray(podSpec.containers)) {
+    state.containers = podSpec.containers.map(mapContainerSpec);
+  }
+
+  if (Array.isArray(podSpec.volumes)) {
+    state.volumes = podSpec.volumes.map(v => {
+      if (v.emptyDir !== undefined)           return { name: v.name, type: 'emptyDir',               ref: '' };
+      if (v.configMap)                        return { name: v.name, type: 'configMap',               ref: v.configMap.name || '' };
+      if (v.secret)                           return { name: v.name, type: 'secret',                  ref: v.secret.secretName || '' };
+      if (v.persistentVolumeClaim)            return { name: v.name, type: 'persistentVolumeClaim',   ref: v.persistentVolumeClaim.claimName || '' };
+      if (v.hostPath)                         return { name: v.name, type: 'hostPath',                ref: v.hostPath.path || '' };
+      return { name: v.name, type: 'emptyDir', ref: '' };
+    });
+  }
+
+  const paa = podSpec.affinity?.podAntiAffinity;
+  if (paa) {
+    state.podAntiAffinity = true;
+    const terms = paa.preferredDuringSchedulingIgnoredDuringExecution;
+    if (Array.isArray(terms) && terms[0]) {
+      state.topologyKey = terms[0].podAffinityTerm?.topologyKey || state.topologyKey;
+    }
+  }
+}
+
+function mapMeta(meta) {
+  state.name      = meta?.name      || 'my-app';
+  state.namespace = meta?.namespace || 'default';
+  state.labels      = Object.entries(meta?.labels      || {});
+  state.annotations = Object.entries(meta?.annotations || {});
+}
+
+function mapDeployment(doc) {
+  mapMeta(doc.metadata);
+  const spec = doc.spec || {};
+  state.replicas = spec.replicas || 1;
+  const strat = spec.strategy || {};
+  state.strategy       = strat.type || 'RollingUpdate';
+  state.maxSurge       = strat.rollingUpdate?.maxSurge       || '25%';
+  state.maxUnavailable = strat.rollingUpdate?.maxUnavailable || '25%';
+  mapPodSpec(spec.template?.spec);
+}
+
+function mapService(doc) {
+  mapMeta(doc.metadata);
+  const spec = doc.spec || {};
+  state.serviceType = spec.type || 'ClusterIP';
+  if (Array.isArray(spec.ports)) {
+    state.servicePorts = spec.ports.map(p => ({
+      name: p.name || 'port',
+      port: p.port || 80,
+      targetPort: p.targetPort || p.port || 80,
+      protocol: p.protocol || 'TCP',
+    }));
+  }
+}
+
+function mapIngress(doc) {
+  mapMeta(doc.metadata);
+  const spec = doc.spec || {};
+  const rule = spec.rules?.[0] || {};
+  const path = rule.http?.paths?.[0] || {};
+  state.ingressHost        = rule.host || 'example.com';
+  state.ingressPath        = path.path || '/';
+  state.ingressClass       = doc.metadata?.annotations?.['kubernetes.io/ingress.class'] || 'nginx';
+  state.ingressServiceName = path.backend?.service?.name || 'my-app';
+  state.ingressServicePort = path.backend?.service?.port?.number || 80;
+  const tls = spec.tls?.[0];
+  if (tls) {
+    state.tlsEnabled = true;
+    state.tlsSecret  = tls.secretName || '';
+  }
+}
+
+function mapConfigMap(doc) {
+  mapMeta(doc.metadata);
+  state.configMapData = Object.entries(doc.data || {});
+}
+
+function mapCronJob(doc) {
+  mapMeta(doc.metadata);
+  const spec = doc.spec || {};
+  state.schedule            = spec.schedule            || '0 * * * *';
+  state.concurrencyPolicy   = spec.concurrencyPolicy   || 'Forbid';
+  state.successfulJobsLimit = spec.successfulJobsHistoryLimit ?? 3;
+  state.failedJobsLimit     = spec.failedJobsHistoryLimit     ?? 1;
+  mapPodSpec(spec.jobTemplate?.spec?.template?.spec);
+}
+
+// ---- LOADER ----
+function toast(msg, type='success', dur=2800) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { el.className = ''; }, dur);
+}
+
+function ingestYaml(text, stayOnRaw) {
+  let doc;
+  try {
+    doc = parseYaml(text);
+  } catch(e) {
+    toast('parse error: ' + e.message, 'error'); return;
+  }
+
+  const kind = doc.kind;
+  const RESOURCE_MAP = {
+    'Deployment': 'Deployment',
+    'Service':    'Service',
+    'ConfigMap':  'ConfigMap',
+    'Ingress':    'Ingress',
+    'CronJob':    'CronJob',
+  };
+  const r = RESOURCE_MAP[kind];
+  if (!r) {
+    toast(`unsupported kind: ${kind || '(none found)'}`, 'error'); return;
+  }
+
+  // store original for passthrough. save before resetForm() which would null it
+  const savedDoc  = JSON.parse(JSON.stringify(doc));
+  const savedText = text;
+
+  resetForm();
+  state.resource = r;
+
+  // restore after reset
+  passthroughDoc  = savedDoc;
+  passthroughText = savedText;
+
+  if (passthroughMode) {
+    document.getElementById('passthrough-badge').style.display = 'inline-flex';
+  }
+
+  try {
+    if (r === 'Deployment') mapDeployment(doc);
+    if (r === 'Service')    mapService(doc);
+    if (r === 'ConfigMap')  mapConfigMap(doc);
+    if (r === 'Ingress')    mapIngress(doc);
+    if (r === 'CronJob')    mapCronJob(doc);
+  } catch(e) {
+    toast('mapping error: ' + e.message, 'error'); return;
+  }
+
+  // sync UI
+  const tabIndex = ['Deployment','Service','ConfigMap','Ingress','CronJob'].indexOf(r);
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i === tabIndex));
+  document.getElementById('resource-label').textContent = '/ ' + r;
+  document.querySelectorAll('.status-item')[1].innerHTML = '<div class="dot"></div>' + r;
+
+  if (!stayOnRaw) {
+    // return to metadata form view
+    document.getElementById('raw-panel').style.display  = 'none';
+    document.getElementById('form-panel').style.display = '';
+    document.querySelectorAll('.sidebar-item').forEach((el,i) => el.classList.toggle('active', i === 0));
+    renderForm('metadata');
+  } else {
+    renderForm('metadata'); // still need state synced even if we stay on raw
+  }
+
+  updateOutput();
+  toast(`loaded ${r}: ${state.name}`, 'success');
+}
+
+function loadYamlFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => ingestYaml(e.target.result);
+  reader.readAsText(file);
+  event.target.value = ''; // reset so same file can be re-loaded
+}
+
+// ---- DRAG AND DROP ----
+document.addEventListener('dragover', e => {
+  e.preventDefault();
+  document.getElementById('drop-overlay').classList.add('active');
+});
+document.addEventListener('dragleave', e => {
+  if (e.relatedTarget === null) {
+    document.getElementById('drop-overlay').classList.remove('active');
+  }
+});
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  document.getElementById('drop-overlay').classList.remove('active');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  if (!/\.(yaml|yml)$/i.test(file.name)) {
+    toast('not a .yaml file', 'error'); return;
+  }
+  const reader = new FileReader();
+  reader.onload = ev => ingestYaml(ev.target.result);
+  reader.readAsText(file);
+});
+
+// ---- INIT ----
+renderForm('metadata');
+updateOutput();
+</script>
+</body>
+</html>
