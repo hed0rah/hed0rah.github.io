@@ -6,28 +6,21 @@
 <title>K8S REF</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
-
 :root {
-  /* Kill ENGN + perceptron brutalist palette */
-  --bg:     #0a0a0a;
-  --bg2:    #111111;
-  --bg3:    #0d0d0d;
-  --bg4:    #141414;
-  --b1:     #1e1e1e;
-  --b2:     #2a2a2a;
-  --b3:     #333333;
-  --cyan:   #00ffe9;   /* Kill ENGN teal -- primary accent */
-  --green:  #39ff14;   /* hot green */
-  --yellow: #ffe900;   /* Kill ENGN yellow */
-  --red:    #ff2d55;   /* Kill ENGN magenta-red */
-  --purple: #e900ff;   /* Kill ENGN magenta */
-  --orange: #ff9500;
-  --blue:   #00ffe9;   /* alias cyan for blue slots */
-  --pink:   #ff2d55;   /* alias red for pink slots */
-  --t1:     #cccccc;
-  --t2:     #666666;
-  --t3:     #3a3a3a;
-  --t4:     #1e1e1e;
+  --bg:      #F2F1EE;
+  --surface: #FFFFFF;
+  --border:  #1A1A1A;
+  --border2: #D0CFC8;
+  --cyan:    #007870;
+  --yellow:  #906500;
+  --red:     #BF1020;
+  --orange:  #E85000;
+  --green:   #287A38;
+  --purple:  #6A0080;
+  --dim:     #8A8A8A;
+  --dim2:    #AAAAAA;
+  --text:    #4A4A4A;
+  --bright:  #1A1A1A;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,17 +29,9 @@ html, body {
   height: 100%;
   overflow: hidden;
   background: var(--bg);
-  color: var(--t1);
+  color: var(--text);
   font-family: 'Space Mono', monospace;
   font-size: 12px;
-}
-
-/* ── grain overlay ── */
-body::after {
-  content: '';
-  position: fixed; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events: none; z-index: 9999; mix-blend-mode: overlay;
 }
 
 /* ── layout ── */
@@ -55,41 +40,41 @@ body::after {
 /* ── header ── */
 .hdr {
   display: flex; align-items: stretch;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--b2);
-  flex-shrink: 0; height: 46px;
+  background: var(--surface);
+  border-top: 5px solid var(--cyan);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .logo {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 26px; letter-spacing: 5px;
-  color: var(--cyan);
+  color: var(--bright);
   padding: 0 22px;
   display: flex; align-items: center;
-  border-right: 1px solid var(--b2);
-  text-shadow: 0 0 20px rgba(0,255,233,.3);
+  border-right: 1px solid var(--border2);
   flex-shrink: 0;
 }
+.logo em { color: var(--cyan); font-style: normal; }
 
 .search-wrap {
   display: flex; align-items: center;
   padding: 0 14px; gap: 8px;
-  border-right: 1px solid var(--b2);
+  border-right: 1px solid var(--border2);
   flex-shrink: 0;
 }
-
-.search-wrap svg { color: var(--t3); flex-shrink: 0; }
+.search-wrap svg { color: var(--dim2); flex-shrink: 0; }
 
 #search {
   background: none; border: none; outline: none;
-  color: var(--t1);
+  color: var(--bright);
   font-family: 'Space Mono', monospace;
   font-size: 11px; width: 200px;
 }
-#search::placeholder { color: var(--t3); }
+#search::placeholder { color: var(--dim2); }
 
 #search-count {
-  font-size: 9px; color: var(--t3); letter-spacing: .5px;
+  font-size: 9px; color: var(--dim); letter-spacing: .5px;
   padding: 0 10px; white-space: nowrap;
   display: flex; align-items: center;
 }
@@ -104,15 +89,15 @@ body::after {
 .tab {
   display: flex; align-items: center; gap: 7px;
   padding: 0 18px; cursor: pointer;
-  color: var(--t3); font-size: 10px; letter-spacing: 1.5px;
+  color: var(--dim); font-size: 10px; letter-spacing: 1.5px;
   text-transform: uppercase; white-space: nowrap;
-  border-right: 1px solid var(--b1);
+  border-right: 1px solid var(--border2);
   border-bottom: 3px solid transparent;
   transition: color .1s, border-color .1s;
   position: relative;
 }
-.tab:hover { color: var(--t2); }
-.tab.active { color: var(--t1); border-bottom-color: var(--tc, var(--cyan)); }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--bright); border-bottom-color: var(--tc, var(--cyan)); }
 
 .tab-pip {
   width: 5px; height: 5px; border-radius: 50%;
@@ -131,10 +116,10 @@ body::after {
 .panel.active { opacity: 1; pointer-events: all; }
 
 .panel-bar {
-  font-size: 9px; color: var(--t2); letter-spacing: 2px;
+  font-size: 9px; color: var(--dim); letter-spacing: 2px;
   text-transform: uppercase;
   padding: 5px 16px;
-  background: var(--bg2); border-bottom: 1px solid var(--b1);
+  background: var(--surface); border-bottom: 1px solid var(--border2);
   border-left: 3px solid var(--cyan);
   flex-shrink: 0;
 }
@@ -146,13 +131,13 @@ body::after {
   grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
   align-content: start;
   scrollbar-width: thin;
-  scrollbar-color: var(--b2) transparent;
+  scrollbar-color: var(--border2) transparent;
 }
 
 /* ── section ── */
 .sec {
-  border-right: 1px solid var(--b1);
-  border-bottom: 1px solid var(--b1);
+  border-right: 1px solid var(--border2);
+  border-bottom: 1px solid var(--border2);
   min-width: 0;
 }
 .sec.wide { grid-column: 1 / -1; }
@@ -160,32 +145,31 @@ body::after {
 .sec-hd {
   display: flex; align-items: center; gap: 8px;
   padding: 7px 14px;
-  background: var(--bg2); border-bottom: 1px solid var(--b1);
+  background: var(--surface); border-bottom: 1px solid var(--border2);
   font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
-  color: var(--t2); position: sticky; top: 0; z-index: 20;
+  color: var(--dim); position: sticky; top: 0; z-index: 20;
 }
-.sec-hd-bar { width: 4px; height: 11px; border-radius: 0; flex-shrink: 0; }
+.sec-hd-bar { width: 4px; height: 11px; flex-shrink: 0; }
 
 /* ── command row ── */
 .cmd {
   display: flex; flex-direction: column;
-  border-bottom: 1px solid var(--b1);
-  transition: background .07s;
-  min-width: 0;
+  border-bottom: 1px solid var(--border2);
+  border-left: 3px solid transparent;
 }
 .cmd:last-child { border-bottom: none; }
-.cmd:hover { background: var(--bg3); }
-.cmd.hi { background: rgba(0,255,233,.05); }
+.cmd:hover { background: #ECEAE6; }
+.cmd.hi { background: rgba(0,120,112,0.06); border-left-color: var(--cyan); }
 
-/* the actual command line -- uses pre to guarantee no wrap */
 .cmd-row {
   display: flex; align-items: baseline;
-  padding: 6px 14px 5px;
+  padding: 7px 14px 5px;
   gap: 0; min-width: 0; overflow: hidden;
+  position: relative; cursor: pointer;
 }
 
 .cmd-ps {
-  color: var(--t3); flex-shrink: 0;
+  color: var(--cyan); flex-shrink: 0;
   margin-right: 8px; user-select: none;
   font-size: 11px; line-height: 1.5;
 }
@@ -193,105 +177,99 @@ body::after {
 .cmd-pre {
   font-family: 'Space Mono', monospace;
   font-size: 11px; line-height: 1.5;
-  white-space: pre;          /* THE key rule -- no wrapping ever */
-  overflow: hidden;          /* clips if too long */
-  text-overflow: ellipsis;   /* show ... if clipped */
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
   min-width: 0; flex: 1;
-  color: var(--green);
+  color: var(--bright);
 }
 
-/* colour tokens inside pre -- done via data-html trick, rendered into a span */
-.cmd-pre .f { color: var(--yellow); }   /* flags like -n -o */
-.cmd-pre .v { color: var(--cyan); }     /* placeholders like [name] */
-.cmd-pre .o { color: var(--t2); }       /* optional args */
-.cmd-pre .p { color: var(--orange); }   /* pipe | */
-.cmd-pre .s { color: var(--purple); }   /* strings */
-.cmd-pre .k { color: var(--pink); }     /* keywords */
+/* token colours -- tuned for light ground */
+.cmd-pre .f { color: var(--yellow); }  /* flags: -n -f --output */
+.cmd-pre .v { color: var(--cyan); }    /* placeholders: [name] [ns] */
+.cmd-pre .o { color: var(--dim); }     /* optional / dim args */
+.cmd-pre .p { color: var(--dim2); }    /* pipe | */
+.cmd-pre .s { color: var(--yellow); }  /* strings */
+.cmd-pre .k { color: var(--orange); }  /* keywords */
 
-/* note line below command */
+/* note -- always visible, italic, understated */
 .cmd-note {
-  padding: 0 14px 5px 33px;
-  font-size: 10px; color: var(--t3); line-height: 1.4;
-  display: none;
+  padding: 2px 14px 6px 33px;
+  font-size: 10px; color: var(--dim); line-height: 1.4;
+  font-style: italic;
 }
-.cmd-note em { color: var(--t2); font-style: normal; }
-.cmd-note code { color: var(--yellow); background: var(--bg4); padding: 0 3px; border-radius: 2px; }
-.cmd-note.warn { color: #cc7700; }
+.cmd-note em { color: var(--text); font-style: normal; font-weight: 700; }
+.cmd-note code {
+  color: var(--bright); font-style: normal;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 0 3px;
+}
+.cmd-note.warn { color: var(--red); }
 
 /* ── example dropdown ── */
 .cmd-ex-toggle {
   display: flex; align-items: center; gap: 5px;
-  padding: 3px 14px 3px 33px;
+  padding: 2px 14px 5px 33px;
   cursor: pointer; user-select: none;
-  font-size: 9px; color: var(--t3); letter-spacing: .5px;
-  border-top: 1px solid transparent;
+  font-size: 9px; color: var(--dim2); letter-spacing: .5px;
   transition: color .1s;
 }
-.cmd-ex-toggle:hover { color: var(--t2); }
-.cmd-ex-toggle svg {
-  transition: transform .15s;
-  flex-shrink: 0;
-}
+.cmd-ex-toggle:hover { color: var(--cyan); }
+.cmd-ex-toggle svg { transition: transform .15s; flex-shrink: 0; }
 .cmd-ex-toggle.open svg { transform: rotate(90deg); }
-.cmd-ex-toggle.open { color: var(--cyan); border-top-color: var(--b1); }
+.cmd-ex-toggle.open { color: var(--cyan); }
 
+/* dark terminal -- only for example output blocks */
 .cmd-ex-body {
   display: none;
-  padding: 8px 14px 10px 33px;
-  background: rgba(0,255,233,0.03);
-  border-top: 1px solid var(--b1);
+  padding: 10px 14px 12px 33px;
+  background: #1A1918;
+  border-top: 1px solid #2E2D2A;
   border-left: 3px solid var(--cyan);
-  margin-left: 0;
+  margin-left: 3px;
 }
 .cmd-ex-body.open { display: block; }
-
 .cmd-ex-body pre {
   font-family: 'Space Mono', monospace;
-  font-size: 10px; line-height: 1.7;
-  color: var(--t2); white-space: pre;
+  font-size: 10px; line-height: 1.75;
+  color: #7A7870; white-space: pre;
   overflow-x: auto;
 }
-.cmd-ex-body pre .eg-c { color: var(--green); }   /* example command */
-.cmd-ex-body pre .eg-o { color: var(--yellow); }  /* example output */
-.cmd-ex-body pre .eg-m { color: var(--t3); }      /* comment */
+.cmd-ex-body pre .eg-c { color: #3AB8AC; }
+.cmd-ex-body pre .eg-o { color: #C8A030; }
+.cmd-ex-body pre .eg-m { color: #5A5952; }
 .cmd-ex-label {
-  font-size: 9px; color: var(--t3); letter-spacing: 1px;
+  font-size: 9px; color: var(--dim2); letter-spacing: 1px;
   text-transform: uppercase; margin-bottom: 6px;
 }
 
 /* ── reference table ── */
 .rtbl { width: 100%; border-collapse: collapse; }
 .rtbl td {
-  padding: 5px 14px; border-bottom: 1px solid var(--b1);
+  padding: 5px 14px; border-bottom: 1px solid var(--border2);
   font-size: 11px; vertical-align: top; line-height: 1.4;
 }
-.rtbl td:first-child { color: var(--yellow); width: 38%; white-space: nowrap; }
-.rtbl td:last-child  { color: var(--t2); }
+.rtbl td:first-child { color: var(--orange); width: 38%; white-space: nowrap; }
+.rtbl td:last-child  { color: var(--text); }
 .rtbl tr:last-child td { border-bottom: none; }
-.rtbl tr:hover td { background: var(--bg3); }
+.rtbl tr:hover td { background: rgba(0,0,0,0.02); }
 
 /* ── sub-divider ── */
 .sdiv {
   padding: 4px 14px; font-size: 9px; letter-spacing: 1.5px;
-  color: var(--t3); text-transform: uppercase;
-  background: rgba(0,0,0,.25); border-bottom: 1px solid var(--b1);
+  color: var(--dim2); text-transform: uppercase;
+  background: var(--bg); border-bottom: 1px solid var(--border2);
 }
 
 /* ── command intent classes ── */
-/* read-only: no tint, default */
-/* mutate: very subtle yellow-left edge */
-.cmd.mutate .cmd-ps { color: var(--yellow); opacity: 0.5; }
-.cmd.mutate { border-left: 2px solid rgba(255,233,0,0.18); }
-.cmd.mutate:hover { background: rgba(255,233,0,0.04); }
+.cmd.mutate              { border-left-color: var(--yellow); }
+.cmd.mutate .cmd-ps      { color: var(--yellow); }
+.cmd.mutate:hover        { background: rgba(144,101,0,0.05); }
 
-/* danger: subtle red edge, orange on hover */
-.cmd.danger .cmd-ps { color: var(--orange); opacity: 0.7; }
-.cmd.danger { border-left: 2px solid rgba(255,107,0,0.25); }
-.cmd.danger:hover {
-  background: rgba(255,107,0,0.06);
-}
-.cmd.danger:hover .cmd-pre { color: var(--orange); }
-.cmd.danger:hover .cmd-ps  { color: var(--orange); opacity: 1; }
+.cmd.danger              { border-left-color: var(--red); }
+.cmd.danger .cmd-ps      { color: var(--red); }
+.cmd.danger:hover        { background: rgba(191,16,32,0.05); }
 
 /* copy flash */
 @keyframes flash { 0%,100%{opacity:1} 50%{opacity:.35} }
@@ -308,16 +286,16 @@ body::after {
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--cyan);
-  border: 1px solid rgba(0,255,233,0.35);
-  background: rgba(0,255,233,0.08);
+  border: 1px solid rgba(0,120,112,0.35);
+  background: rgba(0,120,112,0.1);
   padding: 2px 6px;
   pointer-events: none;
   animation: badgein .08s ease, badgeout .3s ease 0.9s forwards;
 }
 .cmd.danger .copy-badge {
-  color: var(--orange);
-  border-color: rgba(255,107,0,0.4);
-  background: rgba(255,107,0,0.08);
+  color: var(--red);
+  border-color: rgba(191,16,32,0.4);
+  background: rgba(191,16,32,0.08);
 }
 @keyframes badgein  { from { opacity:0; } to { opacity:1; } }
 @keyframes badgeout { from { opacity:1; } to { opacity:0; } }
@@ -325,14 +303,14 @@ body::after {
 /* scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 </style>
 </head>
 <body>
 <div class="app">
 
   <div class="hdr">
-    <div class="logo">K8S REF</div>
+    <div class="logo"><em>K8S</em> REF</div>
     <div class="search-wrap">
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input id="search" placeholder="/ search..." autocomplete="off" spellcheck="false">
@@ -349,21 +327,8 @@ body::after {
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Tokenise a command string into coloured spans.
-// Conventions:
-//   [placeholder]  -> cyan
-//   {-flag}        -> yellow
-//   `literal`      -> dim (opt)
-//   |pipe|         -> orange
-//   "string"       -> purple
-// Everything else stays green.
 function tok(raw) {
-  // Process markup BEFORE escaping HTML so we can use real span tags.
-  // Order matters: replace markup tokens first, then escape only the
-  // non-span portions so the span tags survive intact.
-  // Strategy: split into [markup, literal] segments, process each.
   let out = '';
-  // We'll tokenise character by character with a simple state machine.
   let i = 0, s = raw;
   const len = s.length;
   while (i < len) {
@@ -417,13 +382,8 @@ function esc(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Build a single command row.
-// sig   = command signature string (tokenised for colour)
-// note  = short description (plain text, supports *warn* and `code`)
-// ex    = example object { lines: [{type:'cmd'|'out'|'comment', text}] }
 let _uid = 0;
 function cmd(sig, note, ex, type) {
-  // handle cmd(sig, note, 'm') shorthand where type lands in ex position
   if (typeof ex === 'string') { type = ex; ex = null; }
   const id = 'ex' + (_uid++);
   const noteHtml = note
@@ -451,10 +411,7 @@ function cmd(sig, note, ex, type) {
     bodyHtml = `<div class="cmd-ex-body" id="b${id}"><pre>${preLines}</pre></div>`;
   }
 
-  // Store plain text for copy/search
   const plain = sig.replace(/[[\]{}`|"]/g,'').replace(/\s+/g,' ').trim();
-
-  // type: 'r'=read (default), 'm'=mutate, 'd'=danger
   const cls = type==='m' ? ' mutate' : type==='d' ? ' danger' : '';
 
   return `<div class="cmd${cls}" data-plain="${plain.replace(/"/g,'&quot;')}">
@@ -500,11 +457,11 @@ function sdiv(t) { return `<div class="sdiv">${t}</div>`; }
 const TABS = [
 
 // ══════════════════════════════════════════════════════════════════════════════
-{ id:'kubectl', label:'kubectl', color:'#00d4ff',
+{ id:'kubectl', label:'kubectl', color:'#007870',
   desc:'contexts, get, apply, delete, describe, patch',
   content: () => `
 
-${sec('context + cluster','#00d4ff',`
+${sec('context + cluster','#007870',`
 ${cmd('kubectl config get-contexts','list all configured contexts',
   [{t:'c',text:'kubectl config get-contexts'},
    {t:'o',text:'CURRENT   NAME         CLUSTER      AUTHINFO     NAMESPACE'},
@@ -521,7 +478,7 @@ ${cmd('kubectl describe node [name]','capacity, allocatable, conditions, taints,
 ${cmd('kubectl version {--short}','client and server versions')}
 `)}
 
-${sec('namespaces','#00d4ff',`
+${sec('namespaces','#007870',`
 ${cmd('kubectl get namespaces','')}
 ${cmd('kubectl create namespace [ns]','',
   [{t:'c',text:'kubectl create namespace staging'}],'m')}
@@ -530,7 +487,7 @@ ${cmd('kubectl get all {-n [ns]}','all resources in a namespace')}
 ${cmd('kubectl get all {-A}','all resources across every namespace')}
 `)}
 
-${sec('get resources','#4488ff',`
+${sec('get resources','#1A50A0',`
 ${cmd('kubectl get [resource] {-n [ns]}','',
   [{t:'c',text:'kubectl get pods -n demo'},
    {t:'o',text:'NAME                     READY   STATUS    RESTARTS   AGE'},
@@ -555,7 +512,7 @@ ${tbl([
 ])}
 `)}
 
-${sec('apply + delete','#00ff88',`
+${sec('apply + delete','#287A38',`
 ${cmd('kubectl apply {-f} [file.yaml]','create or update — idempotent',
   [{t:'c',text:'kubectl apply -f deployment.yaml'},
    {t:'o',text:'deployment.apps/my-app configured'}],'m')}
@@ -569,7 +526,7 @@ ${cmd('kubectl delete [resource] {-l app=[name]} {-n [ns]}','delete by label','d
 ${cmd('kubectl delete pod [name] {--grace-period=0} {--force}','!last resort — force delete stuck pod','d')}
 `)}
 
-${sec('describe + events','#ffcc00',`
+${sec('describe + events','#906500',`
 ${cmd('kubectl describe [resource] [name] {-n [ns]}','*full detail + events — start here when debugging*',
   [{t:'m',text:'look at the Events section at the bottom — it tells you what went wrong'},
    {t:'c',text:'kubectl describe pod my-app-abc123 -n demo'}])}
@@ -578,7 +535,7 @@ ${cmd('kubectl get events {-A} {--sort-by=.lastTimestamp} | tail -30','recent ev
 ${cmd('kubectl get events {-n [ns]} {--field-selector=type=Warning}','warnings only')}
 `)}
 
-${sec('edit + patch','#ff7a2f',`
+${sec('edit + patch','#E85000',`
 ${cmd('kubectl edit [resource] [name] {-n [ns]}','open in $EDITOR — save to apply immediately','m')}
 ${cmd('kubectl patch [resource] [name] {-p} "{"spec":{"replicas":3}}"','JSON merge patch',
   [{t:'c',text:'kubectl patch deployment my-app -p \'{"spec":{"replicas":3}}\''},
@@ -595,11 +552,11 @@ ${cmd('kubectl taint node [name] [key]-','remove taint (trailing -)','m')}
 `},
 
 // ══════════════════════════════════════════════════════════════════════════════
-{ id:'pods', label:'pods + exec', color:'#00ff88',
+{ id:'pods', label:'pods + exec', color:'#287A38',
   desc:'pod status, logs, exec, debug, port-forward, top',
   content: () => `
 
-${sec('pod status reference','#00ff88',`
+${sec('pod status reference','#287A38',`
 ${tbl([
   ['Pending',           'waiting to schedule or image pulling'],
   ['Running',           'at least one container up — check READY column'],
@@ -616,7 +573,7 @@ ${tbl([
 ])}
 `)}
 
-${sec('logs','#00ff88',`
+${sec('logs','#287A38',`
 ${cmd('kubectl logs [pod] {-n [ns]}','',
   [{t:'c',text:'kubectl logs my-app-abc123 -n demo'}])}
 ${cmd('kubectl logs [pod] {-n [ns]} {-f}','follow — like tail -f')}
@@ -630,7 +587,7 @@ ${cmd('kubectl logs {-l app=[name]} {-n [ns]} {--prefix}','logs from all pods ma
 ${cmd('kubectl logs [pod] {-n [ns]} | grep ERROR','pipe to grep')}
 `)}
 
-${sec('exec into pod','#00ff88',`
+${sec('exec into pod','#287A38',`
 ${cmd('kubectl exec {-it} [pod] {-n [ns]} -- /bin/sh','interactive shell',
   [{t:'c',text:'kubectl exec -it my-app-abc123 -n demo -- /bin/sh'},
    {t:'o',text:'/ #'}])}
@@ -651,7 +608,7 @@ ${cmd('kubectl exec [pod] -- nslookup [service].[ns]','test DNS resolution from 
 ${cmd('kubectl exec [pod] -- curl http://[svc].[ns].svc.cluster.local','test service reachability')}
 `)}
 
-${sec('debug pods','#ffcc00',`
+${sec('debug pods','#906500',`
 ${cmd('kubectl run debug {--image=busybox} {--rm} {-it} {--restart=Never} -- /bin/sh','throwaway debug pod — deleted on exit',
   [{t:'c',text:'kubectl run debug --image=busybox --rm -it --restart=Never -- /bin/sh'},
    {t:'o',text:'If you don\'t see a command prompt, try pressing enter.'},
@@ -664,7 +621,7 @@ ${cmd('kubectl run debug {-n [ns]} {--image=busybox} {--rm} {-it} {--restart=Nev
 ${cmd('kubectl debug [pod] {-it} {--image=busybox} {--copy-to=debug-pod}','k8s 1.23+ ephemeral container — attach to running pod')}
 `)}
 
-${sec('port forward','#4488ff',`
+${sec('port forward','#1A50A0',`
 ${cmd('kubectl port-forward [pod] [local]:[remote] {-n [ns]}','bypass ingress for direct pod access','m')}
 ${cmd('kubectl port-forward service/[name] [local]:[remote] {-n [ns]}','forward to a service',
   [{t:'c',text:'kubectl port-forward service/argocd-server 8080:80 -n argocd'},
@@ -674,7 +631,7 @@ ${cmd('kubectl port-forward service/nginx `8888:80` {-n demo}','','m')}
 ${cmd('kubectl port-forward deployment/[name] [local]:[remote]','','m')}
 `)}
 
-${sec('resource usage','#a855f7',`
+${sec('resource usage','#6A0080',`
 ${cmd('kubectl top nodes','CPU + memory per node',
   [{t:'c',text:'kubectl top nodes'},
    {t:'o',text:'NAME     CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%'},
@@ -685,7 +642,7 @@ ${cmd('kubectl top pods {-n [ns]} {--containers}','per-container breakdown')}
 ${cmd('kubectl top pods {-n [ns]} {--sort-by=memory}','')}
 `)}
 
-${sec('one-liners','#ff4da6',`
+${sec('one-liners','#A0005A',`
 ${cmd('kubectl get pods {-A} {--field-selector=status.phase!=Running} | grep -v Completed','all non-running pods')}
 ${cmd('kubectl get pods {-A} {--sort-by=".status.containerStatuses[0].restartCount"}','sorted by restart count — find crashlooping pods')}
 ${cmd('kubectl get pods {-A} {--field-selector=spec.nodeName=[node]}','all pods on a specific node')}
@@ -697,11 +654,11 @@ ${cmd('kubectl get pods {-n [ns]} {-l app=[name]} {-o name} | xargs -I{} kubectl
 `},
 
 // ══════════════════════════════════════════════════════════════════════════════
-{ id:'deployments', label:'deployments', color:'#4488ff',
+{ id:'deployments', label:'deployments', color:'#1A50A0',
   desc:'deployments, rollouts, rollback, services, ingress, configmaps',
   content: () => `
 
-${sec('deployments','#4488ff',`
+${sec('deployments','#1A50A0',`
 ${cmd('kubectl get deployments {-n [ns]}','',
   [{t:'c',text:'kubectl get deployments -n demo'},
    {t:'o',text:'NAME       READY   UP-TO-DATE   AVAILABLE   AGE'},
@@ -719,7 +676,7 @@ ${cmd('kubectl edit deployment [name] {-n [ns]}','live edit in $EDITOR','m')}
 ${cmd('kubectl delete deployment [name] {-n [ns]}','','d')}
 `)}
 
-${sec('rollouts','#00d4ff',`
+${sec('rollouts','#007870',`
 ${cmd('kubectl rollout status deployment/[name] {-n [ns]}','watch until rollout completes',
   [{t:'c',text:'kubectl rollout status deployment/api -n demo'},
    {t:'o',text:'Waiting for deployment "api" rollout to finish: 1 out of 2 updated...'},
@@ -735,7 +692,7 @@ ${cmd('kubectl rollout pause deployment/[name] {-n [ns]}','pause mid-rollout','m
 ${cmd('kubectl rollout resume deployment/[name] {-n [ns]}','resume paused rollout','m')}
 `)}
 
-${sec('services','#00ff88',`
+${sec('services','#287A38',`
 ${cmd('kubectl get services {-n [ns]}','',
   [{t:'c',text:'kubectl get services -n demo'},
    {t:'o',text:'NAME       TYPE        CLUSTER-IP      PORT(S)   AGE'},
@@ -756,14 +713,14 @@ ${tbl([
 ])}
 `)}
 
-${sec('ingress','#a855f7',`
+${sec('ingress','#6A0080',`
 ${cmd('kubectl get ingress {-A}','')}
 ${cmd('kubectl describe ingress [name] {-n [ns]}','show rules, TLS, backend services')}
 ${cmd('kubectl logs {-n kube-system} {-l app.kubernetes.io/name=traefik}','traefik logs — routing errors')}
 ${cmd('kubectl port-forward service/traefik `9000:9000` {-n kube-system}','traefik dashboard at localhost:9000/dashboard/','m')}
 `)}
 
-${sec('configmaps + secrets','#ff7a2f',`
+${sec('configmaps + secrets','#E85000',`
 ${cmd('kubectl get configmaps {-n [ns]}','')}
 ${cmd('kubectl get configmap [name] {-n [ns]} {-o yaml}','see all data')}
 ${cmd('kubectl create configmap [name] {--from-file=[path]}','from file — key = filename','m')}
@@ -779,11 +736,11 @@ ${cmd('kubectl create secret docker-registry regcred {--docker-server=[reg]} {--
 `},
 
 // ══════════════════════════════════════════════════════════════════════════════
-{ id:'storage', label:'storage + RBAC', color:'#ff7a2f',
+{ id:'storage', label:'storage + RBAC', color:'#E85000',
   desc:'PV, PVC, StorageClass, ServiceAccounts, RBAC, node ops',
   content: () => `
 
-${sec('persistent volumes','#ff7a2f',`
+${sec('persistent volumes','#E85000',`
 ${cmd('kubectl get pv','cluster-scoped — not namespaced',
   [{t:'c',text:'kubectl get pv'},
    {t:'o',text:'NAME       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM'},
@@ -806,7 +763,7 @@ ${tbl([
 ])}
 `)}
 
-${sec('volume types (inline pod spec)','#ff7a2f',`
+${sec('volume types (inline pod spec)','#E85000',`
 ${tbl([
   ['emptyDir: {}',                          'scratch — lives and dies with pod'],
   ['emptyDir: {medium: Memory}',            'RAM-backed tmpfs — fast, counts against limits'],
@@ -818,7 +775,7 @@ ${tbl([
 ])}
 `)}
 
-${sec('serviceaccounts + RBAC','#a855f7',`
+${sec('serviceaccounts + RBAC','#6A0080',`
 ${cmd('kubectl get serviceaccounts {-n [ns]}','')}
 ${cmd('kubectl create serviceaccount [name] {-n [ns]}','')}
 ${cmd('kubectl patch sa default {-n [ns]} {-p} "{"imagePullSecrets":[{"name":"regcred"}]}"','attach pull secret to SA','m')}
@@ -833,7 +790,7 @@ ${cmd('kubectl create role [name] {--verb=get,list} {--resource=pods} {-n [ns]}'
 ${cmd('kubectl create rolebinding [name] {--role=[role]} {--serviceaccount=[ns]:[sa]}','')}
 `)}
 
-${sec('node operations','#00d4ff',`
+${sec('node operations','#007870',`
 ${cmd('kubectl cordon [node]','mark unschedulable — no new pods scheduled here','m')}
 ${cmd('kubectl uncordon [node]','re-enable scheduling','m')}
 ${cmd('kubectl drain [node] {--ignore-daemonsets} {--delete-emptydir-data}','evict all pods — use before node maintenance',
@@ -847,11 +804,11 @@ ${cmd('kubectl label node [node] [key]=[val]','add label for nodeSelector affini
 `},
 
 // ══════════════════════════════════════════════════════════════════════════════
-{ id:'docker', label:'docker', color:'#00d4ff',
+{ id:'docker', label:'docker', color:'#007870',
   desc:'build, tag, push, run, inspect, registry workflow',
   content: () => `
 
-${sec('build','#00d4ff',`
+${sec('build','#007870',`
 ${cmd('docker build {-t} [image]:[tag] .','build from Dockerfile in current directory',
   [{t:'c',text:'docker build -t my-app:2.0 .'},
    {t:'o',text:'[+] Building 4.2s (10/10) FINISHED'},
@@ -865,7 +822,7 @@ ${cmd('docker build {--progress=plain} {-t} [image]:[tag] .','verbose output wit
 ${cmd('docker buildx build {--platform linux/amd64,linux/arm64} {-t} [image]:[tag] {--push} .','multi-arch build + push in one step','m')}
 `)}
 
-${sec('tag + push','#00ff88',`
+${sec('tag + push','#287A38',`
 ${cmd('docker tag [image]:[tag] [registry]/[image]:[tag]','',
   [{t:'c',text:'docker tag my-app:2.0 192.168.1.187:32000/my-app:2.0'}],'m')}
 ${cmd('docker tag [image]:[tag] `192.168.1.187:32000`/[image]:[tag]','tag for ersatz registry','m')}
@@ -876,7 +833,7 @@ ${cmd('docker pull [registry]/[image]:[tag]','','m')}
 ${cmd('docker login [registry]','authenticate — prompts for username/password','m')}
 `)}
 
-${sec('images','#ffcc00',`
+${sec('images','#906500',`
 ${cmd('docker images','list local images',
   [{t:'c',text:'docker images | grep my-app'},
    {t:'o',text:'REPOSITORY   TAG    IMAGE ID       CREATED        SIZE'},
@@ -895,7 +852,7 @@ ${cmd('docker system df','disk usage — images, containers, volumes, build cach
 ${cmd('docker system prune {-a}','remove all unused resources — recovers disk space','d')}
 `)}
 
-${sec('run + exec','#00d4ff',`
+${sec('run + exec','#007870',`
 ${cmd('docker run {-d} {-p 8080:3000} {--name} [name] [image]:[tag]','detached, port mapped, named',
   [{t:'c',text:'docker run -d -p 8080:3000 --name api my-app:2.0'},
    {t:'o',text:'7f3c2a1b9e4d...'}],'m')}
@@ -911,7 +868,7 @@ ${cmd('docker stats','live CPU + memory for all containers')}
 ${cmd('docker cp [container]:[path] [local-path]','copy file out of container','m')}
 `)}
 
-${sec('registry query','#a855f7',`
+${sec('registry query','#6A0080',`
 ${cmd('curl http://[registry]/v2/_catalog','list all images in registry',
   [{t:'c',text:'curl http://192.168.1.187:32000/v2/_catalog'},
    {t:'o',text:'{"repositories":["my-app","nginx","postgres"]}'}])}
@@ -926,11 +883,11 @@ ${cmd('crictl rmi [image]','remove from containerd image cache','m')}
 `},
 
 // ══════════════════════════════════════════════════════════════════════════════
-{ id:'argocd', label:'argocd', color:'#a855f7',
+{ id:'argocd', label:'argocd', color:'#6A0080',
   desc:'login, apps, sync, rollback, repos, status reference',
   content: () => `
 
-${sec('login','#a855f7',`
+${sec('login','#6A0080',`
 ${cmd('kubectl get secret argocd-initial-admin-secret {-n argocd} {-o jsonpath=`{.data.password}`} | base64 -d','get initial admin password',
   [{t:'c',text:'kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d'},
    {t:'o',text:'T4k3M3H0me'}])}
@@ -944,7 +901,7 @@ ${cmd('argocd account update-password','change admin password','m')}
 ${cmd('argocd logout [server]','','m')}
 `)}
 
-${sec('apps','#a855f7',`
+${sec('apps','#6A0080',`
 ${cmd('argocd app list','list all applications with sync + health status',
   [{t:'c',text:'argocd app list'},
    {t:'o',text:'NAME      CLUSTER    NAMESPACE   PROJECT   STATUS   HEALTH'},
@@ -967,7 +924,7 @@ ${cmd('argocd app delete [app]','delete ArgoCD app — resources stay in cluster
 ${cmd('argocd app delete [app] {--cascade}','delete app AND all its cluster resources','d')}
 `)}
 
-${sec('sync control','#00ff88',`
+${sec('sync control','#287A38',`
 ${cmd('argocd app set [app] {--sync-policy} automated','enable auto-sync','m')}
 ${cmd('argocd app set [app] {--self-heal}','auto-revert manual kubectl changes','m')}
 ${cmd('argocd app set [app] {--auto-prune}','delete resources removed from git','m')}
@@ -976,7 +933,7 @@ ${cmd('argocd app set [app] {--self-heal=false}','*disable self-heal for manual 
   [{t:'m',text:'re-enable after: argocd app set [app] --self-heal'}],'m')}
 `)}
 
-${sec('repos','#ffcc00',`
+${sec('repos','#906500',`
 ${cmd('argocd repo list','list connected repositories')}
 ${cmd('argocd repo add [url]','public repo','m')}
 ${cmd('argocd repo add [url] {--username} [u] {--password} [token]','private HTTPS — use token not password','m')}
@@ -984,7 +941,7 @@ ${cmd('argocd repo add [url] {--ssh-private-key-path} ~/.ssh/id_rsa','SSH key au
 ${cmd('argocd repo rm [url]','','d')}
 `)}
 
-${sec('create app (CLI)','#a855f7',`
+${sec('create app (CLI)','#6A0080',`
 ${cmd('argocd app create [name] {--repo} [url] {--path} [dir] {--dest-server} https://kubernetes.default.svc {--dest-namespace} [ns]','basic',
   [{t:'c',text:'argocd app create demo-app \\'},
    {t:'c',text:'  --repo https://github.com/myorg/k8s-config \\'},
@@ -994,7 +951,7 @@ ${cmd('argocd app create [name] {--repo} [url] {--path} [dir] {--dest-server} ht
 ${cmd('argocd app create [name] {--repo} [url] {--path} [dir] {--dest-namespace} [ns] {--sync-policy} automated {--auto-prune} {--self-heal}','full auto-sync setup','m')}
 `)}
 
-${sec('status reference','#ffcc00',`
+${sec('status reference','#906500',`
 ${tbl([
   ['Synced',       'cluster state == git state — all good'],
   ['OutOfSync',    'drift detected — run app diff to see what changed'],
@@ -1010,11 +967,11 @@ ${tbl([
 `},
 
 // ══════════════════════════════════════════════════════════════════════════════
-{ id:'cluster', label:'k3s + ops', color:'#ff4da6',
+{ id:'cluster', label:'k3s + ops', color:'#A0005A',
   desc:'k3s, Helm, Kustomize, Rancher, resource QoS',
   content: () => `
 
-${sec('k3s service','#ff4da6',`
+${sec('k3s service','#A0005A',`
 ${cmd('sudo systemctl status k3s','service status',
   [{t:'c',text:'sudo systemctl status k3s'},
    {t:'o',text:'● k3s.service - Lightweight Kubernetes'},
@@ -1027,7 +984,7 @@ ${cmd('cat /etc/rancher/k3s/k3s.yaml','kubeconfig location')}
 ${cmd('sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config && sudo chown $USER ~/.kube/config','copy kubeconfig to user')}
 `)}
 
-${sec('k3s registry config','#ff7a2f',`
+${sec('k3s registry config','#E85000',`
 ${cmd('cat /etc/rancher/k3s/registries.yaml','view mirror + insecure registry config',
   [{t:'m',text:'example registries.yaml:'},
    {t:'o',text:'mirrors:'},
@@ -1040,14 +997,14 @@ ${cmd('cat /etc/rancher/k3s/registries.yaml','view mirror + insecure registry co
 ${cmd('sudo systemctl restart k3s','apply registry changes','m')}
 `)}
 
-${sec('kustomize','#00d4ff',`
+${sec('kustomize','#007870',`
 ${cmd('kubectl apply {-k} [directory/]','apply kustomization',
   [{t:'c',text:'kubectl apply -k overlays/staging/'}])}
 ${cmd('kubectl diff {-k} [directory/]','preview changes')}
 ${cmd('kustomize build [directory/] | kubectl apply {-f} -','render + pipe to kubectl','m')}
 `)}
 
-${sec('resource QoS classes','#ff4da6',`
+${sec('resource QoS classes','#A0005A',`
 ${tbl([
   ['Guaranteed', 'requests == limits on all containers — highest eviction priority'],
   ['Burstable',  'requests < limits, or partial — evicted after BestEffort'],
@@ -1061,11 +1018,11 @@ ${cmd('kubectl get resourcequota {-n [ns]}','namespace quota')}
 `},
 
 // ══════════════════════════════════════════════════════════════════════════════
-{ id:'debug', label:'debugging', color:'#ff3c5a',
+{ id:'debug', label:'debugging', color:'#BF1020',
   desc:'systematic diagnosis — CrashLoop, OOM, ImagePull, Pending, DNS, networking',
   content: () => `
 
-${sec('first moves','#ff3c5a',`
+${sec('first moves','#BF1020',`
 ${cmd('kubectl get pods {-n [ns]}','1. what is the status?')}
 ${cmd('kubectl describe pod [pod] {-n [ns]}','2. *check Events section — this is almost always the answer*')}
 ${cmd('kubectl logs [pod] {-n [ns]} {--previous}','3. what did it say before crashing?')}
@@ -1073,7 +1030,7 @@ ${cmd('kubectl logs [pod] {-n [ns]}','4. what is it saying right now?')}
 ${cmd('kubectl get events {-n [ns]} {--sort-by=.lastTimestamp} | tail -20','5. recent cluster events')}
 `)}
 
-${sec('CrashLoopBackOff','#ff3c5a',`
+${sec('CrashLoopBackOff','#BF1020',`
 ${cmd('kubectl logs [pod] {-n [ns]} {--previous}','*most important command — logs from before the crash*')}
 ${cmd('kubectl describe pod [pod] {-n [ns]}','look at: Last State, Exit Code, Reason')}
 ${tbl([
@@ -1085,7 +1042,7 @@ ${tbl([
 ])}
 `)}
 
-${sec('OOMKilled','#ff3c5a',`
+${sec('OOMKilled','#BF1020',`
 ${cmd('kubectl describe pod [pod] {-n [ns]}','look for OOMKilled in Last State section',
   [{t:'o',text:'Last State:  Terminated'},
    {t:'o',text:'  Reason:    OOMKilled'},
@@ -1093,14 +1050,14 @@ ${cmd('kubectl describe pod [pod] {-n [ns]}','look for OOMKilled in Last State s
 ${cmd('kubectl top pod [pod] {-n [ns]} {--containers}','current memory usage vs limits')}
 `)}
 
-${sec('ImagePullBackOff','#ff3c5a',`
+${sec('ImagePullBackOff','#BF1020',`
 ${cmd('kubectl describe pod [pod] {-n [ns]}','Events will show the exact containerd error')}
 ${cmd('curl http://[registry]/v2/[image]/tags/list','does the tag exist in the registry?')}
 ${cmd('crictl pull [image]:[tag]','test pull directly on the node','m')}
 ${cmd('cat /etc/rancher/k3s/registries.yaml','check mirror config')}
 `)}
 
-${sec('pod stuck Pending','#ffcc00',`
+${sec('pod stuck Pending','#906500',`
 ${cmd('kubectl describe pod [pod] {-n [ns]}','Events explain why it cannot be scheduled','m')}
 ${tbl([
   ['Insufficient cpu/memory',  'reduce requests or add nodes'],
@@ -1111,7 +1068,7 @@ ${tbl([
 ])}
 `)}
 
-${sec('service not routing','#ff3c5a',`
+${sec('service not routing','#BF1020',`
 ${cmd('kubectl get endpoints [svc] {-n [ns]}','*if ADDRESS column is empty, selector matches no pods*',
   [{t:'c',text:'kubectl get endpoints demo-app -n demo'},
    {t:'o',text:'NAME       ENDPOINTS   AGE'},
@@ -1121,7 +1078,7 @@ ${cmd('kubectl get pods {-n [ns]} {--show-labels}','do pod labels match the sele
 ${cmd('kubectl run t {--image=busybox} {--rm} {-it} {--restart=Never} -- wget -qO- http://[svc].[ns]','test from inside cluster','m')}
 `)}
 
-${sec('DNS not resolving','#ff3c5a',`
+${sec('DNS not resolving','#BF1020',`
 ${cmd('kubectl run dns {--image=busybox} {--rm} {-it} {--restart=Never} -- nslookup [svc].[ns].svc.cluster.local','',
   [{t:'c',text:'kubectl run dns --image=busybox --rm -it --restart=Never -- nslookup nginx.demo.svc.cluster.local'},
    {t:'o',text:'Server:    10.43.0.10'},
@@ -1131,7 +1088,7 @@ ${cmd('kubectl get pods {-n kube-system} {-l k8s-app=kube-dns}','is CoreDNS runn
 ${cmd('kubectl logs {-n kube-system} {-l k8s-app=kube-dns}','CoreDNS logs')}
 `)}
 
-${sec('ingress errors','#ff3c5a',`
+${sec('ingress errors','#BF1020',`
 ${tbl([
   ['404','rule does not match — check host, path, ingressClassName'],
   ['502','rule matched but backend pod is down — check endpoints'],
@@ -1143,7 +1100,7 @@ ${cmd('kubectl get endpoints [backend-svc] {-n [ns]}','')}
 ${cmd('kubectl logs {-n kube-system} {-l app.kubernetes.io/name=traefik}','traefik routing log')}
 `)}
 
-${sec('deployment rollout stuck','#ffcc00',`
+${sec('deployment rollout stuck','#906500',`
 ${cmd('kubectl rollout status deployment/[name] {-n [ns]}','what is it waiting on?')}
 ${cmd('kubectl get replicasets {-n [ns]}','new RS should scale up, old scale down')}
 ${tbl([
@@ -1154,7 +1111,7 @@ ${tbl([
 ])}
 `)}
 
-${sec('node pressure','#ff3c5a',`
+${sec('node pressure','#BF1020',`
 ${tbl([
   ['MemoryPressure', 'low memory — BestEffort pods evicted first'],
   ['DiskPressure',   'low disk — images GC\'d, then pods evicted'],
@@ -1169,11 +1126,11 @@ ${cmd('kubectl delete pods {-A} {--field-selector=status.phase=Failed}','clean u
 `},
 
 // ══════════════════════════════════════════════════════════════════════════════
-{ id:'network', label:'networking', color:'#ffcc00',
+{ id:'network', label:'networking', color:'#906500',
   desc:'DNS patterns, service discovery, port ranges, NetworkPolicy',
   content: () => `
 
-${sec('DNS naming','#ffcc00',`
+${sec('DNS naming','#906500',`
 ${tbl([
   ['[svc]',                                  'within same namespace only'],
   ['[svc].[ns]',                             'cross-namespace shortform'],
@@ -1189,7 +1146,7 @@ ${cmd('kubectl run dns {--image=busybox} {--rm} {-it} {--restart=Never} -- nsloo
    {t:'o',text:'Address:   10.43.0.1'}],'m')}
 `)}
 
-${sec('port ranges','#ffcc00',`
+${sec('port ranges','#906500',`
 ${tbl([
   ['1-1023',     'privileged — requires root inside container'],
   ['1024-29999', 'unprivileged — use here for app ports (8080, 3000, etc)'],
@@ -1202,7 +1159,7 @@ ${tbl([
 ])}
 `)}
 
-${sec('NetworkPolicy','#ff7a2f',`
+${sec('NetworkPolicy','#E85000',`
 ${cmd('kubectl get networkpolicies {-n [ns]}','')}
 ${cmd('kubectl describe networkpolicy [name] {-n [ns]}','')}
 ${tbl([
@@ -1216,7 +1173,7 @@ ${tbl([
 ${cmd('kubectl run sniff {--image=nicolaka/netshoot} {--rm} {-it} {--restart=Never} -- tcpdump {-i eth0}','capture traffic in a throwaway pod','m')}
 `)}
 
-${sec('curl service from pod','#00ff88',`
+${sec('curl service from pod','#287A38',`
 ${cmd('kubectl exec [pod] -- curl http://[svc].[ns].svc.cluster.local','',
   [{t:'c',text:'kubectl exec my-app-abc123 -- curl http://nginx.demo.svc.cluster.local'},
    {t:'o',text:'<!DOCTYPE html><html>...'}])}
@@ -1224,7 +1181,7 @@ ${cmd('kubectl exec [pod] -- wget -qO- http://[svc]','within same namespace')}
 ${cmd('kubectl run c {--image=curlimages/curl} {--rm} {-it} {--restart=Never} -- curl http://[svc].[ns]','from throwaway pod','m')}
 `)}
 
-${sec('port forward + proxy','#4488ff',`
+${sec('port forward + proxy','#1A50A0',`
 ${cmd('kubectl port-forward service/[svc] [local]:[remote] {-n [ns]}','',
   [{t:'c',text:'kubectl port-forward service/argocd-server 8080:80 -n argocd'},
    {t:'m',text:'then open http://localhost:8080'}],'m')}
@@ -1235,11 +1192,11 @@ ${cmd('curl http://localhost:8001/api/v1/namespaces/[ns]/services/[svc]/proxy/',
 `},
 
 // ══════════════════════════════════════════════════════════════════════════════
-{ id:'registry', label:'registries', color:'#ff8c42',
+{ id:'registry', label:'registries', color:'#CC5010',
   desc:'stub, mirror, pull-through, air-gapped — containerd config, registry API',
   content: () => `
 
-${sec('registry patterns','#ff8c42',`
+${sec('registry patterns','#CC5010',`
 ${tbl([
   ['Simple private',   'you push, cluster pulls — no upstream dependency for your own images'],
   ['Pull-through cache','proxy to upstream (Docker Hub) — caches on first pull, faster after'],
@@ -1248,7 +1205,7 @@ ${tbl([
 ])}
 `)}
 
-${sec('how a pull works','#ff8c42',`
+${sec('how a pull works','#CC5010',`
 ${tbl([
   ['1. client contacts registry',    'GET /v2/[image]/manifests/[tag]'],
   ['2. registry returns manifest',   'JSON describing layers + config digest'],
@@ -1269,7 +1226,7 @@ ${cmd('curl http://[registry]/v2/[image]/manifests/[tag]','fetch image manifest'
   [{t:'m',text:'add -H "Accept: application/vnd.docker.distribution.manifest.v2+json" for v2 manifest'}])}
 `)}
 
-${sec('run a local registry','#ff8c42',`
+${sec('run a local registry','#CC5010',`
 ${cmd('docker run {-d} {--name} registry {--restart} always {-p 5000:5000} registry:2','minimal — no auth, no TLS',
   [{t:'c',text:'docker run -d --name registry --restart always -p 5000:5000 registry:2'}],'m')}
 ${cmd('docker run {-d} {-p 5000:5000} {-v} /data/registry:/var/lib/registry {--name} registry registry:2','with persistent storage on host','m')}
@@ -1277,7 +1234,7 @@ ${cmd('docker tag [image]:[tag] localhost:5000/[image]:[tag]','tag for local reg
 ${cmd('docker push localhost:5000/[image]:[tag]','push to local registry','m')}
 `)}
 
-${sec('k3s containerd config','#ff7a2f',`
+${sec('k3s containerd config','#E85000',`
 ${cmd('cat /etc/rancher/k3s/registries.yaml','view current config',
   [{t:'m',text:'example — private registry + docker.io pull-through:'},
    {t:'o',text:'mirrors:'},
@@ -1292,7 +1249,7 @@ ${cmd('sudo systemctl restart k3s','apply after editing registries.yaml','m')}
 ${cmd('sudo crictl pull [image]:[tag]','test pull from node after config change','m')}
 `)}
 
-${sec('stub registry patterns','#ff3c5a',`
+${sec('stub registry patterns','#BF1020',`
 ${tbl([
   ['True stub',         'serves only pre-loaded images — returns 404 on anything else'],
   ['Pull-through stub', 'tries upstream on miss — useful when some images are external'],
@@ -1306,7 +1263,7 @@ ${cmd('curl http://[stub]/v2/[image]/tags/list','check if image is in stub',
    {t:'o',text:'{"errors":[{"code":"NAME_UNKNOWN","message":"repository name not known to registry"}]}'}])}
 `)}
 
-${sec('air-gapped image transfer','#ff8c42',`
+${sec('air-gapped image transfer','#CC5010',`
 ${cmd('docker save [image]:[tag] {-o} [file.tar]','export image to tarball',
   [{t:'c',text:'docker save nginx:1.25 postgres:15 redis:7 -o images.tar'},
    {t:'m',text:'multiple images can be saved to one tar'}],'m')}
@@ -1322,7 +1279,7 @@ ${cmd('crane copy [src] [dst]','copy image between registries without local pull
   [{t:'c',text:'crane copy docker.io/nginx:1.25 192.168.1.187:32000/nginx:1.25'}])}
 `)}
 
-${sec('imagePullSecret','#a855f7',`
+${sec('imagePullSecret','#6A0080',`
 ${cmd('kubectl create secret docker-registry regcred {--docker-server=[reg]} {--docker-username=[u]} {--docker-password=[p]} {-n [ns]}','create pull secret',
   [{t:'c',text:'kubectl create secret docker-registry regcred \\'},
    {t:'c',text:'  --docker-server=192.168.1.187:32000 \\'},
@@ -1333,7 +1290,7 @@ ${cmd('kubectl patch sa default {-n [ns]} {-p} `{"imagePullSecrets":[{"name":"re
 ${cmd('kubectl get secret regcred {-n [ns]} {-o jsonpath=`{.data.\\.dockerconfigjson}`} | base64 -d','inspect pull secret contents')}
 `)}
 
-${sec('containerd crictl (on node)','#00d4ff',`
+${sec('containerd crictl (on node)','#007870',`
 ${cmd('sudo crictl images','list all images in containerd cache')}
 ${cmd('sudo crictl pull [image]:[tag]','pull directly via containerd — tests mirror config',
   [{t:'c',text:'sudo crictl pull 192.168.1.187:32000/my-app:2.0'},
@@ -1343,7 +1300,7 @@ ${cmd('sudo crictl info | grep -A5 registry','show containerd registry config')}
 ${cmd('sudo cat /var/lib/rancher/k3s/agent/etc/containerd/config.toml','k3s generated containerd config')}
 `)}
 
-${sec('image naming','#ffcc00',`
+${sec('image naming','#906500',`
 ${tbl([
   ['nginx',                           'docker.io/library/nginx:latest (implied)'],
   ['nginx:1.25',                      'docker.io/library/nginx:1.25'],
@@ -1358,11 +1315,11 @@ ${tbl([
 `},
 
 // ══════════════════════════════════════════════════════════════════════════════
-{ id:'helm', label:'helm', color:'#00ffe9',
+{ id:'helm', label:'helm', color:'#007870',
   desc:'repos, install, upgrade, rollback, inspect, template, plugins',
   content: () => `
 
-${sec('concepts','#00ffe9',`
+${sec('concepts','#007870',`
 ${tbl([
   ['Chart',    'a package — templates + default values + metadata'],
   ['Release',  'a deployed instance of a chart — one chart, many releases'],
@@ -1373,7 +1330,7 @@ ${tbl([
 ])}
 `)}
 
-${sec('repos','#00ffe9',`
+${sec('repos','#007870',`
 ${cmd('helm repo add [name] [url]','add a chart repository',
   [{t:'c',text:'helm repo add bitnami https://charts.bitnami.com/bitnami'},
    {t:'c',text:'helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx'}],'m')}
@@ -1392,7 +1349,7 @@ ${cmd('helm search repo [keyword] {--versions}','all available versions')}
 ${cmd('helm search hub [keyword]','search Artifact Hub — public index of all public charts')}
 `)}
 
-${sec('install','#00ffe9',`
+${sec('install','#007870',`
 ${cmd('helm install [release] [chart]','install with all defaults',
   [{t:'c',text:'helm install my-nginx ingress-nginx/ingress-nginx -n ingress --create-namespace'}],'m')}
 ${cmd('helm install [release] [chart] {-f values.yaml} {-n [ns]}','install with custom values file','m')}
@@ -1406,7 +1363,7 @@ ${cmd('helm install [release] [chart] {--version [ver]} {-n [ns]}','pin to a spe
 ${cmd('helm install [release] ./[local-chart-dir]','install from local chart directory','m')}
 `)}
 
-${sec('upgrade + rollback','#ffe900',`
+${sec('upgrade + rollback','#906500',`
 ${cmd('helm upgrade [release] [chart] {-n [ns]}','upgrade to latest chart version','m')}
 ${cmd('helm upgrade {--install} [release] [chart] {-f values.yaml} {-n [ns]}','install if not present, upgrade if it is — idempotent deploy pattern',
   [{t:'m',text:'the standard CI/CD command — works whether release exists or not'},
@@ -1425,7 +1382,7 @@ ${cmd('helm rollback [release] 0 {-n [ns]}','rollback to the previous revision (
 ${cmd('helm rollback [release] [revision] {--cleanup-on-fail} {-n [ns]}','delete newly created resources if rollback fails','d')}
 `)}
 
-${sec('inspect releases','#00ffe9',`
+${sec('inspect releases','#007870',`
 ${cmd('helm list {-n [ns]}','releases in a namespace',
   [{t:'c',text:'helm list -A'},
    {t:'o',text:'NAME       NAMESPACE    REVISION   STATUS     CHART             APP VERSION'},
@@ -1457,7 +1414,7 @@ ${cmd('helm get manifest [release] {-n [ns]}','rendered k8s manifests that were 
 ${cmd('helm get notes [release] {-n [ns]}','post-install notes (connection strings, next steps)')}
 `)}
 
-${sec('templates + dry-run','#00ffe9',`
+${sec('templates + dry-run','#007870',`
 ${cmd('helm template [release] [chart] {-f values.yaml}','render all templates locally — no cluster contact',
   [{t:'m',text:'essential for debugging chart issues before installing'},
    {t:'c',text:'helm template my-app ./chart -f values.yaml | kubectl apply --dry-run=server -f -'}])}
@@ -1470,7 +1427,7 @@ ${cmd('helm lint [chart-dir]','check chart for errors and best practices',
    {t:'o',text:'1 chart(s) linted, 0 chart(s) failed'}])}
 `)}
 
-${sec('values workflow','#ffe900',`
+${sec('values workflow','#906500',`
 ${cmd('helm show values [chart]','print all default values for a chart',
   [{t:'c',text:'helm show values bitnami/postgresql | head -60'},
    {t:'m',text:'pipe to a file to use as your base: helm show values chart > values.yaml'}])}
@@ -1479,14 +1436,14 @@ ${cmd('helm show chart [chart]','show chart metadata — name, version, descript
 ${cmd('helm show readme [chart]','show chart README')}
 `)}
 
-${sec('uninstall','#ff6b00',`
+${sec('uninstall','#E85000',`
 ${cmd('helm uninstall [release] {-n [ns]}','remove release — deletes all k8s resources it created',
   [{t:'c',text:'helm uninstall my-app -n demo'},
    {t:'o',text:'release "my-app" uninstalled'}],'d')}
 ${cmd('helm uninstall [release] {--keep-history} {-n [ns]}','delete resources but keep release history for audit','d')}
 `)}
 
-${sec('packaging + local dev','#3a3a3a',`
+${sec('packaging + local dev','#5A5A5A',`
 ${cmd('helm pull [chart]','download chart tarball locally — inspect before installing',
   [{t:'c',text:'helm pull bitnami/postgresql'},
    {t:'o',text:'postgresql-13.2.0.tgz'}],'m')}
@@ -1523,7 +1480,6 @@ const tabsEl    = document.getElementById('tabs');
 const contentEl = document.getElementById('content');
 
 TABS.forEach((tab, i) => {
-  // tab button
   const t = document.createElement('div');
   t.className = 'tab' + (i===0 ? ' active' : '');
   t.dataset.id = tab.id;
@@ -1532,7 +1488,6 @@ TABS.forEach((tab, i) => {
   t.addEventListener('click', () => activate(tab.id));
   tabsEl.appendChild(t);
 
-  // panel
   const p = document.createElement('div');
   p.className = 'panel' + (i===0 ? ' active' : '');
   p.id = 'panel-' + tab.id;
@@ -1579,13 +1534,11 @@ function doSearch() {
       const vis = [...s.querySelectorAll('.cmd')].some(r=>r.style.display!=='none');
       s.style.display = vis ? '' : 'none';
     });
-    // also check rtbl rows
     panel.querySelectorAll('.rtbl tr').forEach(r => {
       r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
   });
 
-  // switch to first panel with results
   const activePanel = document.querySelector('.panel.active');
   const activeHits  = [...(activePanel?.querySelectorAll('.cmd')||[])].some(r=>r.style.display!=='none');
   if (!activeHits && hits > 0) {
@@ -1620,7 +1573,6 @@ function copyCmd(el) {
   const txt = isDanger ? '# ' + raw : raw;
   navigator.clipboard.writeText(txt).catch(()=>{});
 
-  // show tiny "copied" badge
   const existing = el.querySelector('.copy-badge');
   if (existing) existing.remove();
   const badge = document.createElement('span');
