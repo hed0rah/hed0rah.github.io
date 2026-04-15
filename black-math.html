@@ -99,7 +99,9 @@ main { flex: 1 1 0; display: grid; grid-template-columns: 1fr 1px 1fr; min-heigh
 #preview {
   flex: 1 1 0; min-height: 0; overflow-y: auto;
   scrollbar-width: thin; scrollbar-color: var(--rule) transparent;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.25s;
+  transform: rotate(var(--rot,0deg)) scaleX(var(--sx,1)) scaleY(var(--sy,1));
+  transform-origin: center center;
 }
 #preview::-webkit-scrollbar { width: 2px; }
 #preview::-webkit-scrollbar-thumb { background: var(--rule); }
@@ -166,7 +168,10 @@ body.fs .block { padding: 2rem 0; }
   body.invert { background: #000 !important; }
   main { display: block !important; height: auto !important; overflow: visible !important; }
   .pane-preview { display: block !important; overflow: visible !important; height: auto !important; padding: 1cm 1.5cm !important; }
-  #preview { overflow: visible !important; height: auto !important; columns: unset !important; }
+  #preview { overflow: visible !important; height: auto !important; columns: unset !important;
+    transform: rotate(var(--rot,0deg)) scaleX(var(--sx,1)) scaleY(var(--sy,1)) !important;
+    transform-origin: center top !important;
+  }
   #preview.cols-2 { columns: 2 !important; }
   #preview.cols-3 { columns: 3 !important; }
   #preview.bleed { position: static !important; }
@@ -206,6 +211,11 @@ body.fs .block { padding: 2rem 0; }
   <div class="modes-sep"></div>
   <button class="mbtn" id="btn-gen"    onclick="generateBlocks()" title="generate random blocks">⚄</button>
   <div class="modes-sep"></div>
+  <button class="mbtn" id="btn-mh"  onclick="toggleMirrorH()" title="mirror horizontal">↔</button>
+  <button class="mbtn" id="btn-mv"  onclick="toggleMirrorV()" title="mirror vertical">↕</button>
+  <button class="mbtn" id="btn-rot" onclick="cycleRotate()"   title="rotate 90°">↻</button>
+  <span   class="mval" id="val-rot" style="display:none">90</span>
+  <div class="modes-sep"></div>
   <input type="range" id="font-sz" min="0.4" max="3.5" step="0.05" value="1" title="font size">
 </div>
 
@@ -233,6 +243,38 @@ let modeCols   = 1;
 let modeBleed  = false;
 let modePoster = false;
 let posterTarget = null;
+let mirrorH  = false;
+let mirrorV  = false;
+let rotation = 0;
+
+function applyTransform() {
+  preview.style.setProperty('--rot', rotation + 'deg');
+  preview.style.setProperty('--sx', mirrorH ? -1 : 1);
+  preview.style.setProperty('--sy', mirrorV ? -1 : 1);
+  const pane = document.querySelector('.pane-preview');
+  pane.style.overflow = (rotation === 90 || rotation === 270) ? 'visible' : 'hidden';
+}
+
+function toggleMirrorH() {
+  mirrorH = !mirrorH;
+  document.getElementById('btn-mh').classList.toggle('on', mirrorH);
+  applyTransform();
+}
+
+function toggleMirrorV() {
+  mirrorV = !mirrorV;
+  document.getElementById('btn-mv').classList.toggle('on', mirrorV);
+  applyTransform();
+}
+
+function cycleRotate() {
+  rotation = (rotation + 90) % 360;
+  const v = document.getElementById('val-rot');
+  const b = document.getElementById('btn-rot');
+  if (rotation === 0) { v.style.display = 'none'; b.classList.remove('on'); }
+  else { v.textContent = rotation + '°'; v.style.display = ''; b.classList.add('on'); }
+  applyTransform();
+}
 
 // ---- SEED ----
 const SEED = `$$
