@@ -1,0 +1,631 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>black-math</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [], displayMath: [] },
+  startup: { typeset: false },
+  options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@200&family=Space+Mono&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --paper: #f5f3ee;
+  --ink: #111;
+  --dim: #aaa;
+  --rule: #e0ddd8;
+  --ks: 1em;
+}
+
+html, body { height: 100vh; overflow: hidden; background: var(--paper); color: var(--ink); }
+body { display: flex; flex-direction: column; }
+
+/* ---- header ---- */
+header {
+  flex: 0 0 auto; height: 36px;
+  border-bottom: 1px solid var(--rule);
+  display: flex; align-items: center;
+  padding: 0 1.5rem; gap: 1.2rem;
+}
+.h-title { font-family: 'Space Mono', monospace; font-size: 0.62rem; letter-spacing: 0.18em; color: var(--ink); white-space: nowrap; }
+.h-sym   { font-family: 'Noto Serif JP', serif; font-size: 0.85rem; color: var(--dim); letter-spacing: 0.06em; user-select: none; overflow: hidden; white-space: nowrap; }
+.h-btns  { margin-left: auto; display: flex; gap: 1.1rem; align-items: center; flex-shrink: 0; }
+
+/* ---- modes bar ---- */
+.modes {
+  flex: 0 0 auto; height: 26px;
+  border-bottom: 1px solid var(--rule);
+  display: flex; align-items: center;
+  padding: 0 1.5rem; gap: 1.4rem;
+}
+.modes-sep { width: 1px; height: 12px; background: var(--rule); }
+
+/* ---- buttons (shared) ---- */
+.btn, .mbtn {
+  font-family: 'Space Mono', monospace; font-size: 0.7rem;
+  color: var(--dim); background: none; border: none;
+  cursor: pointer; padding: 0; line-height: 1;
+  transition: color 0.1s; user-select: none;
+}
+.btn:hover, .mbtn:hover { color: var(--ink); }
+.mbtn.on { color: var(--ink); border-bottom: 1px solid var(--ink); padding-bottom: 1px; }
+
+.mval {
+  font-family: 'Space Mono', monospace; font-size: 0.55rem;
+  color: var(--dim); letter-spacing: 0.05em; cursor: default;
+}
+
+/* font size slider */
+#font-sz {
+  -webkit-appearance: none; appearance: none;
+  width: 52px; height: 1px;
+  background: var(--rule); outline: none; cursor: pointer; border: none;
+}
+#font-sz::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 7px; height: 7px;
+  background: var(--dim); border-radius: 50%;
+}
+#font-sz:hover::-webkit-slider-thumb { background: var(--ink); }
+
+.status { font-family: 'Space Mono', monospace; font-size: 0.55rem; color: var(--dim); letter-spacing: 0.08em; min-width: 3.5rem; text-align: right; }
+
+/* ---- layout ---- */
+main { flex: 1 1 0; display: grid; grid-template-columns: 1fr 1px 1fr; min-height: 0; }
+.pane { min-height: 0; display: flex; flex-direction: column; padding: 1.2rem 1.5rem; overflow: hidden; }
+.divider { background: var(--rule); }
+
+#editor {
+  flex: 1 1 0; min-height: 0; border: none; outline: none; resize: none;
+  background: transparent; font-family: 'Space Mono', monospace;
+  font-size: 0.72rem; line-height: 1.9; color: var(--ink); caret-color: var(--ink);
+  overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--rule) transparent;
+}
+#editor::placeholder { color: var(--dim); }
+#editor::-webkit-scrollbar { width: 2px; }
+#editor::-webkit-scrollbar-thumb { background: var(--rule); }
+
+#preview {
+  flex: 1 1 0; min-height: 0; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--rule) transparent;
+  transition: background 0.2s;
+}
+#preview::-webkit-scrollbar { width: 2px; }
+#preview::-webkit-scrollbar-thumb { background: var(--rule); }
+
+.block {
+  padding: 1.4rem 0; border-bottom: 1px solid var(--rule);
+  text-align: center; overflow-x: visible;
+  transition: opacity 0.2s, background 0.2s;
+}
+.block:last-child { border-bottom: none; }
+.katex-display { margin: 0 !important; }
+.katex { font-size: var(--ks) !important; }
+.block svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+
+.err { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: #a03020; }
+@keyframes blink { 0%,100%{opacity:0.3} 50%{opacity:1} }
+.pending { animation: blink 1.2s ease-in-out infinite; }
+
+/* ---- MODE: invert ---- */
+body.invert { --paper: #111; --ink: #eee; --dim: #444; --rule: #222; }
+body.invert .katex { filter: invert(1) !important; }
+body.invert .block svg { filter: invert(1) !important; }
+body.invert .pane-preview { background: #111; }
+
+/* ---- MODE: columns ---- */
+#preview.cols-2 { columns: 2; column-gap: 0; }
+#preview.cols-3 { columns: 3; column-gap: 0; }
+#preview.cols-2 .block,
+#preview.cols-3 .block { break-inside: avoid; }
+
+/* ---- MODE: bleed ---- */
+#preview.bleed { position: relative; }
+#preview.bleed .block {
+  position: absolute; width: 100%; top: 1.5rem; left: 0;
+  border: none; opacity: 0.18; mix-blend-mode: multiply;
+}
+body.invert #preview.bleed .block { mix-blend-mode: screen; }
+
+/* ---- MODE: poster ---- */
+body.poster-mode #preview .block { display: none; }
+body.poster-mode #preview .block.poster-target {
+  display: flex; align-items: center; justify-content: center;
+  min-height: calc(100vh - 90px);
+  border: none;
+}
+body.poster-mode #preview .block.poster-target .katex { font-size: calc(var(--ks) * 2.8) !important; }
+body.poster-mode #preview .block.poster-target svg { transform: scale(2.8); transform-origin: center; }
+
+/* ---- MODE: tile (applied via JS grid wrapping) ---- */
+.tile-grid { display: grid; gap: 0; }
+.tile-cell { overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 0.3rem; }
+.tile-cell .katex-display { margin: 0 !important; }
+
+/* ---- fullscreen ---- */
+body.fs main { grid-template-columns: 0 0 1fr; }
+body.fs .pane-edit, body.fs .divider { display: none; }
+body.fs .pane-preview { padding: 2.5rem 6rem; }
+body.fs .block { padding: 2rem 0; }
+
+/* ---- print ---- */
+@media print {
+  header, .modes, .pane-edit, .divider { display: none !important; }
+  html, body { height: auto !important; overflow: visible !important; }
+  body.invert { background: #000 !important; }
+  main { display: block !important; height: auto !important; overflow: visible !important; }
+  .pane-preview { display: block !important; overflow: visible !important; height: auto !important; padding: 1cm 1.5cm !important; }
+  #preview { overflow: visible !important; height: auto !important; columns: unset !important; }
+  #preview.cols-2 { columns: 2 !important; }
+  #preview.cols-3 { columns: 3 !important; }
+  #preview.bleed { position: static !important; }
+  #preview.bleed .block { position: static !important; opacity: 0.18 !important; }
+  .block { overflow: visible !important; break-inside: avoid; border-bottom: 1px solid #ccc; padding: 0.8rem 0; }
+  body.invert .block { border-bottom-color: #333 !important; }
+  body.poster-mode #preview .block.poster-target { min-height: 22cm !important; }
+  ::-webkit-scrollbar { display: none !important; }
+  * { scrollbar-width: none !important; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="h-title">black-math</span>
+  <span class="h-sym">∮ ∇ ⊗ ℵ Ω ∂ ∏ √ ∑ ξ Ψ ∞ ⊕ ∧ ∨ ℜ ℑ ∀ ∃ ∄ Γ Δ Λ Ξ Σ Φ</span>
+  <div class="h-btns">
+    <button class="btn" onclick="clearAll()"   title="clear">✕</button>
+    <button class="btn" onclick="copySource()" title="copy latex">⎘</button>
+    <button class="btn" onclick="saveTxt()"    title="save .txt">↓</button>
+    <button class="btn" onclick="exportSvg()"  title="export svg">▱</button>
+    <button class="btn" onclick="printView()"  title="print">⎙</button>
+    <button class="btn" onclick="toggleFs()" id="fs-btn" title="fullscreen">⤢</button>
+    <span class="status" id="status"></span>
+  </div>
+</header>
+
+<div class="modes">
+  <button class="mbtn" id="btn-inv"    onclick="toggleInvert()"  title="invert">⬛</button>
+  <button class="mbtn" id="btn-tile"   onclick="cycleTile()"     title="tile repeat">⊞</button>
+  <span   class="mval" id="val-tile"   style="display:none">2</span>
+  <button class="mbtn" id="btn-cols"   onclick="cycleCols()"     title="columns">▤</button>
+  <span   class="mval" id="val-cols">1</span>
+  <button class="mbtn" id="btn-bleed"  onclick="toggleBleed()"   title="bleed/overlap">⫰</button>
+  <button class="mbtn" id="btn-poster" onclick="togglePoster()"  title="click block to poster">◻</button>
+  <div class="modes-sep"></div>
+  <button class="mbtn" id="btn-gen"    onclick="generateBlocks()" title="generate random blocks">⚄</button>
+  <div class="modes-sep"></div>
+  <input type="range" id="font-sz" min="0.4" max="3.5" step="0.05" value="1" title="font size">
+</div>
+
+<main>
+  <div class="pane pane-edit">
+    <textarea id="editor" spellcheck="false" placeholder="$$ ... $$"></textarea>
+  </div>
+  <div class="divider"></div>
+  <div class="pane pane-preview">
+    <div id="preview"></div>
+  </div>
+</main>
+
+<script>
+const editor  = document.getElementById('editor');
+const preview = document.getElementById('preview');
+const status  = document.getElementById('status');
+const fsbtn   = document.getElementById('fs-btn');
+let timer = null;
+
+// mode state
+let modeInvert = false;
+let modeTile   = 0;   // 0=off, 2,3,4
+let modeCols   = 1;
+let modeBleed  = false;
+let modePoster = false;
+let posterTarget = null;
+
+// ---- SEED ----
+const SEED = `$$
+\\begin{vmatrix} \\aleph_{\\aleph_{\\aleph}} & \\Omega^{\\Omega^{\\Omega}} & \\aleph_{\\aleph_{\\aleph}} & \\Omega^{\\Omega^{\\Omega}} & \\aleph_{\\aleph_{\\aleph}} \\\\ \\Omega^{\\Omega^{\\Omega}} & \\aleph_{\\aleph_{\\aleph}} & \\Omega^{\\Omega^{\\Omega}} & \\aleph_{\\aleph_{\\aleph}} & \\Omega^{\\Omega^{\\Omega}} \\\\ \\aleph_{\\aleph_{\\aleph}} & \\Omega^{\\Omega^{\\Omega}} & \\aleph_{\\aleph_{\\aleph}} & \\Omega^{\\Omega^{\\Omega}} & \\aleph_{\\aleph_{\\aleph}} \\\\ \\Omega^{\\Omega^{\\Omega}} & \\aleph_{\\aleph_{\\aleph}} & \\Omega^{\\Omega^{\\Omega}} & \\aleph_{\\aleph_{\\aleph}} & \\Omega^{\\Omega^{\\Omega}} \\\\ \\aleph_{\\aleph_{\\aleph}} & \\Omega^{\\Omega^{\\Omega}} & \\aleph_{\\aleph_{\\aleph}} & \\Omega^{\\Omega^{\\Omega}} & \\aleph_{\\aleph_{\\aleph}} \\end{vmatrix}^{\\begin{vmatrix} \\aleph_{\\aleph} & \\Omega^{\\Omega} & \\aleph_{\\aleph} \\\\ \\Omega^{\\Omega} & \\aleph_{\\aleph} & \\Omega^{\\Omega} \\\\ \\aleph_{\\aleph} & \\Omega^{\\Omega} & \\aleph_{\\aleph} \\end{vmatrix}^{\\begin{vmatrix} \\aleph & \\Omega \\\\ \\Omega & \\aleph \\end{vmatrix}^{\\cdots}}}
+$$
+
+$$
+\\underbrace{\\overbrace{\\underbrace{\\overbrace{\\underbrace{\\overbrace{\\underbrace{\\overbrace{\\underbrace{\\overbrace{\\Xi\\otimes\\Xi\\otimes\\Xi\\otimes\\Xi\\otimes\\Xi\\otimes\\Xi\\otimes\\Xi\\otimes\\Xi}^{\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega}}_{\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph}}^{\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega}}_{\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph}}^{\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega}}_{\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph}}^{\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega}}_{\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph}}^{\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega\\Omega}}_{\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph\\aleph}
+$$
+
+$$
+\\sqrt{\\sqrt{\\sqrt{\\sqrt{\\sqrt{\\sqrt{\\sqrt{\\sqrt{\\sqrt{\\sqrt{\\sqrt{\\sqrt{\\oint\\oint\\oint\\oint\\oint\\oint\\oint\\oint\\oint\\oint\\oint\\oint\\oint\\oint\\oint\\oint}}}}}}}}}}}}
+$$
+
+$$
+\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}}}}}}}}} \\otimes \\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}}}}}}}}} \\otimes \\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}_{\\ddot{\\hat{\\tilde{\\bar{\\vec{\\mathfrak{X}}}}}}}}}}}}}}
+$$`;
+
+// ---- RENDER PIPELINE ----
+function extractBlocks(src) {
+  const out = [];
+  const re = /\$\$([\s\S]*?)\$\$/g;
+  let m;
+  while ((m = re.exec(src)) !== null) out.push(m[1].trim());
+  return out;
+}
+
+function tryKatex(latex, el) {
+  for (const maxExpand of [1000, 5000, 25000, 100000]) {
+    try {
+      katex.render(latex, el, { displayMode: true, throwOnError: true, strict: false, maxExpand, maxSize: Infinity });
+      return true;
+    } catch(e) {
+      if (!e.message || !/expand|limit|recur/i.test(e.message)) break;
+    }
+  }
+  return false;
+}
+
+async function mjxRender(latex, el) {
+  if (!window.MathJax) return false;
+  try {
+    await MathJax.startup.promise;
+    const node = await MathJax.tex2svgPromise(latex, { display: true });
+    const svg = node.querySelector('svg');
+    if (svg) {
+      svg.style.maxWidth = '100%'; svg.style.display = 'block'; svg.style.margin = '0 auto';
+      el.innerHTML = ''; el.appendChild(svg);
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+async function render() {
+  const src = editor.value.trim();
+  if (!src) { preview.innerHTML = ''; status.textContent = ''; return; }
+  const blocks = extractBlocks(src);
+  if (!blocks.length) { preview.innerHTML = '<div class="err">no $$ blocks</div>'; return; }
+
+  preview.innerHTML = '';
+  posterTarget = null;
+  document.body.classList.remove('poster-mode');
+  let mjxPending = 0;
+
+  blocks.forEach((latex, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'block';
+    wrap.dataset.latex = latex;
+
+    const ok = tryKatex(latex, wrap);
+    if (!ok) {
+      wrap.innerHTML = `<span class="pending" style="font-family:'Space Mono',monospace;font-size:0.6rem;color:var(--dim);">…</span>`;
+      mjxPending++;
+      mjxRender(latex, wrap).then(rendered => {
+        if (!rendered) wrap.innerHTML = `<span class="err">! ${i+1}</span>`;
+        mjxPending--;
+        if (mjxPending === 0) { applyModes(); updateStatus(); }
+      });
+    }
+    preview.appendChild(wrap);
+
+    if (modePoster) {
+      wrap.style.cursor = 'crosshair';
+      wrap.addEventListener('click', () => activatePoster(wrap));
+    }
+  });
+
+  applyModes();
+  updateStatus();
+}
+
+function applyModes() {
+  // columns
+  preview.classList.remove('cols-2','cols-3');
+  if (modeCols === 2) preview.classList.add('cols-2');
+  if (modeCols === 3) preview.classList.add('cols-3');
+
+  // bleed
+  preview.classList.toggle('bleed', modeBleed);
+
+  // tile - wrap each block's content in a repeat grid
+  if (modeTile >= 2) {
+    preview.querySelectorAll('.block').forEach(b => {
+      if (b.querySelector('.pending') || b.querySelector('.err')) return;
+      const inner = b.innerHTML;
+      let grid = `<div class="tile-grid" style="grid-template-columns:repeat(${modeTile},1fr);">`;
+      for (let i = 0; i < modeTile * modeTile; i++) {
+        grid += `<div class="tile-cell">${inner}</div>`;
+      }
+      grid += '</div>';
+      b.innerHTML = grid;
+    });
+  }
+}
+
+function updateStatus() {
+  const total = preview.querySelectorAll('.block').length;
+  const errs  = preview.querySelectorAll('.err').length;
+  const pend  = preview.querySelectorAll('.pending').length;
+  status.textContent = total + (errs ? ` !${errs}` : '') + (pend ? ` ·${pend}` : '');
+}
+
+editor.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(render, 300); });
+
+// ---- MODE CONTROLS ----
+function toggleInvert() {
+  modeInvert = !modeInvert;
+  document.body.classList.toggle('invert', modeInvert);
+  document.getElementById('btn-inv').classList.toggle('on', modeInvert);
+}
+
+function cycleTile() {
+  const seq = [0,2,3,4];
+  modeTile = seq[(seq.indexOf(modeTile) + 1) % seq.length];
+  const v = document.getElementById('val-tile');
+  const b = document.getElementById('btn-tile');
+  if (modeTile === 0) { v.style.display = 'none'; b.classList.remove('on'); }
+  else { v.textContent = modeTile; v.style.display = ''; b.classList.add('on'); }
+  render();
+}
+
+function cycleCols() {
+  modeCols = (modeCols % 3) + 1;
+  document.getElementById('val-cols').textContent = modeCols;
+  document.getElementById('btn-cols').classList.toggle('on', modeCols > 1);
+  applyModes();
+}
+
+function toggleBleed() {
+  modeBleed = !modeBleed;
+  document.getElementById('btn-bleed').classList.toggle('on', modeBleed);
+  applyModes();
+}
+
+function togglePoster() {
+  modePoster = !modePoster;
+  document.getElementById('btn-poster').classList.toggle('on', modePoster);
+  if (!modePoster) {
+    document.body.classList.remove('poster-mode');
+    preview.querySelectorAll('.block').forEach(b => {
+      b.classList.remove('poster-target');
+      b.style.cursor = '';
+    });
+    posterTarget = null;
+  } else {
+    preview.querySelectorAll('.block').forEach(b => {
+      b.style.cursor = 'crosshair';
+      b.addEventListener('click', function handler() {
+        activatePoster(b);
+      }, { once: false });
+    });
+  }
+}
+
+function activatePoster(blockEl) {
+  if (!modePoster) return;
+  preview.querySelectorAll('.block').forEach(b => b.classList.remove('poster-target'));
+  blockEl.classList.add('poster-target');
+  document.body.classList.add('poster-mode');
+  posterTarget = blockEl;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && modePoster) {
+    document.body.classList.remove('poster-mode');
+    preview.querySelectorAll('.block').forEach(b => b.classList.remove('poster-target'));
+  }
+});
+
+document.getElementById('font-sz').addEventListener('input', e => {
+  document.documentElement.style.setProperty('--ks', e.target.value + 'em');
+});
+
+// ---- RANDOM GENERATOR ----
+const SYMS  = ['\\aleph','\\Omega','\\nabla','\\Xi','\\Psi','\\Gamma','\\partial','\\varnothing','\\oint','\\heartsuit','\\diamondsuit','\\mathfrak{X}','\\mathfrak{Z}','\\mathfrak{W}'];
+const BINOP = ['\\otimes','\\oplus','\\wedge','\\circ','\\star','\\cdot'];
+const MTYPES = ['vmatrix','pmatrix','bmatrix'];
+
+function rnd(a,b)  { return Math.floor(Math.random()*(b-a+1))+a; }
+function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+function rep(s,n)  { return Array(n).fill(s).join(''); }
+function repJ(s,n,j) { return Array(n).fill(s).join(j); }
+
+function gMatrix(r,c,s1,s2,type) {
+  type = type || pick(MTYPES);
+  let body = '';
+  for (let i=0;i<r;i++) {
+    let row=[];
+    for (let j=0;j<c;j++) row.push((i+j)%2===0?s1:s2);
+    body += row.join(' & ');
+    if (i<r-1) body += ' \\\\ ';
+  }
+  return `\\begin{${type}} ${body} \\end{${type}}`;
+}
+
+function gSubTower(s,d) {
+  if(d<=0) return s;
+  return `${s}_{${gSubTower(s,d-1)}}`;
+}
+
+function gSupTower(s,d) {
+  if(d<=0) return s;
+  return `${s}^{${gSupTower(s,d-1)}}`;
+}
+
+function gSqrt(fill,d) {
+  if(d<=0) return fill;
+  return `\\sqrt{${gSqrt(fill,d-1)}}`;
+}
+
+function gUO(body,label,d) {
+  if(d<=0) return body;
+  const inner = gUO(body,label,d-1);
+  return d%2===0 ? `\\overbrace{${inner}}^{${label}}` : `\\underbrace{${inner}}_{${label}}`;
+}
+
+function gFrac(s,d) {
+  if(d<=0) return s;
+  const i = gFrac(s,d-1);
+  return `\\frac{${i}}{${i}}`;
+}
+
+function gProdTower(base,s,d) {
+  if(d<=0) return `${base}_{x}^{\\infty} ${s}`;
+  return `${base}_{${gProdTower(base,s,d-1)}}^{\\infty}`;
+}
+
+function generateBlocks() {
+  const count = rnd(1,3);
+  const newBlocks = [];
+
+  for (let b=0; b<count; b++) {
+    const s1=pick(SYMS), s2=pick(SYMS), op=pick(BINOP);
+    const type = rnd(0,8);
+    let latex = '';
+
+    switch(type) {
+      case 0: {
+        // matrix^matrix^matrix fractal
+        const m1=gMatrix(rnd(5,8),rnd(5,8),s1,s2);
+        const m2=gMatrix(rnd(3,5),rnd(3,5),s1,s2);
+        const m3=gMatrix(2,2,s1,s2);
+        latex = `${m1}^{${m2}^{${m3}^{\\cdots}}}`;
+        break;
+      }
+      case 1: {
+        // deep subscript towers side by side
+        const d=rnd(8,12);
+        latex = `${gSubTower(s1,d)} ${op} ${gSubTower(s2,d)} ${op} ${gSubTower(s1,d)}`;
+        break;
+      }
+      case 2: {
+        // underbrace/overbrace tower
+        const lbl = rep(s2,rnd(6,10));
+        const body = repJ(`${s1}${op}${s2}`, rnd(6,10), op);
+        latex = gUO(body, lbl, rnd(6,10));
+        break;
+      }
+      case 3: {
+        // sqrt chain filled with oint repeats
+        const fill = rep('\\oint', rnd(12,20));
+        latex = gSqrt(fill, rnd(10,18));
+        break;
+      }
+      case 4: {
+        // frac tree
+        latex = `\\frac{${gFrac(s1,4)}}{${gFrac(s2,4)}}{${s1}}`;
+        break;
+      }
+      case 5: {
+        // matrix with nested cell symbols
+        const r=rnd(5,8), c=rnd(5,8);
+        const mt=pick(MTYPES);
+        let body='';
+        for(let i=0;i<r;i++){
+          let row=[];
+          for(let j=0;j<c;j++){
+            row.push((i+j)%2===0
+              ? `${s1}^{${s2}_{${s1}^{${s2}}}}`
+              : `${s2}_{${s1}^{${s2}_{${s1}}}}`);
+          }
+          body+=row.join(' & ');
+          if(i<r-1) body+=' \\\\ ';
+        }
+        latex=`\\begin{${mt}} ${body} \\end{${mt}}`;
+        break;
+      }
+      case 6: {
+        // prod/sum tower
+        const base=pick(['\\prod','\\sum','\\bigotimes','\\bigoplus']);
+        latex = `${gProdTower(base,s1,6)} \\qquad ${gProdTower(base,s2,6)}`;
+        break;
+      }
+      case 7: {
+        // sup tower × 3
+        const d=rnd(8,12);
+        latex = `${gSupTower(s1,d)} \\qquad ${gSupTower(s2,d)} \\qquad ${gSupTower(s1,d)}`;
+        break;
+      }
+      case 8: {
+        // horizontal chain with matrix exponent
+        const chain = Array(rnd(5,8)).fill(null)
+          .map(() => `${pick(SYMS)}_{${pick(SYMS)}^{${pick(SYMS)}}}`)
+          .join(` ${op} `);
+        const mat = gMatrix(3,3,s1,s2);
+        latex = `\\underbrace{${chain}}_{${mat}}`;
+        break;
+      }
+    }
+
+    newBlocks.push(`$$\n${latex}\n$$`);
+  }
+
+  const sep = editor.value.trim() ? '\n\n' : '';
+  editor.value = editor.value.trimEnd() + sep + newBlocks.join('\n\n');
+  render();
+
+  // flash the button
+  const btn = document.getElementById('btn-gen');
+  btn.style.color = 'var(--ink)';
+  setTimeout(() => { btn.style.color = ''; }, 300);
+}
+
+// ---- UTILITY BUTTONS ----
+function flash(msg) { status.textContent = msg; setTimeout(() => render(), 1400); }
+function clearAll()   { editor.value=''; preview.innerHTML=''; status.textContent=''; }
+function copySource() { navigator.clipboard.writeText(editor.value).then(() => flash('⎘')); }
+function printView()  { window.print(); }
+function toggleFs()   {
+  document.body.classList.toggle('fs');
+  fsbtn.textContent = document.body.classList.contains('fs') ? '⤡' : '⤢';
+}
+function saveTxt() {
+  const b = new Blob([editor.value], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b); a.download = `bm-${Date.now()}.txt`; a.click();
+  flash('↓');
+}
+
+function exportSvg() {
+  const blocks = preview.querySelectorAll('.block');
+  if (!blocks.length) return;
+  const W=900, pad=48; let y=pad, parts='';
+  let css='';
+  for (const sheet of document.styleSheets) {
+    if (sheet.href && sheet.href.includes('katex')) {
+      try { css=Array.from(sheet.cssRules).map(r=>r.cssText).join(' '); } catch(e) {}
+      break;
+    }
+  }
+  const bg = modeInvert ? '#111' : '#f5f3ee';
+  blocks.forEach(b => {
+    const h = b.scrollHeight+56;
+    parts += `<foreignObject x="${pad}" y="${y}" width="${W-pad*2}" height="${h}">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="text-align:center;font-size:14px;${modeInvert?'filter:invert(1);background:#111;':''}">
+        ${b.innerHTML}
+      </div></foreignObject>
+    <line x1="${pad}" y1="${y+h}" x2="${W-pad}" y2="${y+h}" stroke="${modeInvert?'#333':'#ddd'}" stroke-width="0.5"/>`;
+    y += h+8;
+  });
+  const H=y+pad;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+<defs><style>${css}</style></defs>
+<rect width="${W}" height="${H}" fill="${bg}"/>
+${parts}</svg>`;
+  const blob=new Blob([svg],{type:'image/svg+xml'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=`bm-${Date.now()}.svg`; a.click();
+  flash('▱');
+}
+
+window.addEventListener('load', () => { editor.value = SEED; render(); });
+</script>
+</body>
+</html>
