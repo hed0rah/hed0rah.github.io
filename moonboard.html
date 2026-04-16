@@ -1,6 +1,6 @@
 <!--
   BRUTALIST TERMINAL // HED0RAH DESIGN SYSTEM
-  MOONBOARD v1.1
+  MOONBOARD v1.2
   Space Mono + Bebas Neue // #0A0A0A // #00FFE9
 -->
 <!DOCTYPE html>
@@ -8,7 +8,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MOONBOARD v1.1</title>
+<title>MOONBOARD v1.2</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
 /* ---- DARK THEME (default) ---- */
@@ -65,9 +65,12 @@ body {
   transition: background 0.2s, color 0.2s;
 }
 
-body::before {
+/* scanline overlay -- covers sidebar/UI only, NOT the canvas */
+.sidebar::before {
   content: '';
-  position: fixed; inset: 0;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 280px;
   background: repeating-linear-gradient(
     0deg,
     transparent, transparent 2px,
@@ -144,6 +147,7 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  position: relative;
 }
 
 /* ---- PANELS ---- */
@@ -222,6 +226,17 @@ button.term-btn.danger:hover {
   background: var(--red);
   color: var(--bright);
   border-color: var(--red);
+  opacity: 1;
+}
+button.term-btn.accent {
+  color: var(--yellow);
+  border-color: var(--yellow);
+  opacity: 0.7;
+}
+button.term-btn.accent:hover {
+  background: var(--yellow);
+  color: var(--bg);
+  border-color: var(--yellow);
   opacity: 1;
 }
 
@@ -336,10 +351,34 @@ select.term-select:focus { border-color: var(--cyan); }
 .slider-row .slider-val { font-size: 9px; color: var(--cyan); width: 32px; text-align: right; flex-shrink: 0; }
 
 /* ---- BG SWATCHES ---- */
-.bg-options { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin-top: 6px; margin-bottom: 6px; }
+.bg-options { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 6px; margin-bottom: 6px; }
 .bg-swatch { height: 20px; border: 1px solid transparent; cursor: pointer; transition: all 0.1s; }
 .bg-swatch:hover { border-color: var(--border2); transform: scaleY(1.1); }
 .bg-swatch.active { border-color: var(--cyan); box-shadow: 0 0 6px var(--shadow); }
+
+/* transparent checkerboard swatch */
+.bg-swatch.transparent-swatch {
+  background-image:
+    linear-gradient(45deg, #808080 25%, transparent 25%),
+    linear-gradient(-45deg, #808080 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #808080 75%),
+    linear-gradient(-45deg, transparent 75%, #808080 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+  background-color: #ccc;
+}
+
+/* custom color input wrapper */
+.color-pick-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.color-pick-row label { font-size: 8px; color: var(--dim); letter-spacing: 1px; text-transform: uppercase; opacity: 0.6; }
+input.term-color {
+  appearance: none; -webkit-appearance: none;
+  width: 28px; height: 20px; border: 1px solid var(--border); background: var(--surface2);
+  cursor: pointer; padding: 0;
+}
+input.term-color::-webkit-color-swatch-wrapper { padding: 1px; }
+input.term-color::-webkit-color-swatch { border: none; }
+input.term-color:hover { border-color: var(--border2); }
 
 /* ---- TINT ROW ---- */
 .tint-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
@@ -357,7 +396,29 @@ select.term-select:focus { border-color: var(--cyan); }
   background: var(--surface2);
   border: 1px solid var(--border);
   box-shadow: 0 4px 24px var(--inset);
+  position: relative;
 }
+
+/* checkerboard behind canvas for transparent BG indication */
+.canvas-container.transparent-bg {
+  background-image:
+    linear-gradient(45deg, #333 25%, transparent 25%),
+    linear-gradient(-45deg, #333 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #333 75%),
+    linear-gradient(-45deg, transparent 75%, #333 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+  background-color: #444;
+}
+[data-theme="light"] .canvas-container.transparent-bg {
+  background-image:
+    linear-gradient(45deg, #ccc 25%, transparent 25%),
+    linear-gradient(-45deg, #ccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ccc 75%),
+    linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-color: #eee;
+}
+
 #moonboard-canvas { display: block; width: 100%; height: auto; }
 
 /* ---- STATUS BAR ---- */
@@ -390,9 +451,9 @@ input.term-input:focus { border-color: var(--cyan); }
 <div class="masthead">
   <h1>MOON<em>BOARD</em></h1>
   <div class="masthead-right">
-    <button id="theme-toggle">◑ LIGHT</button>
+    <button id="theme-toggle">&#9685; LIGHT</button>
     <div class="masthead-meta">
-      <strong>v1.1</strong>
+      <strong>v1.2</strong>
       <a href="https://hed0rah.github.io/" style="color:inherit;text-decoration:none;">HED0RAH</a> // MOODBOARD
     </div>
   </div>
@@ -417,12 +478,12 @@ input.term-input:focus { border-color: var(--cyan); }
     <!-- 02 LAYOUT -->
     <div class="panel">
       <div class="plabel">02 // Layout</div>
-      <div class="sec-label">UNIFORM GRID — cols × rows</div>
+      <div class="sec-label">UNIFORM GRID -- cols x rows</div>
       <div class="grid-selector" id="grid-selector"></div>
 
       <div class="divider"></div>
       <div class="sec-label">CONSTELLATIONS</div>
-      <div class="const-grid">
+      <div class="const-grid" id="const-grid">
 
         <!-- Row 1 -->
         <div class="const-btn" data-layout="diptych">
@@ -520,7 +581,7 @@ input.term-input:focus { border-color: var(--cyan); }
           <div class="const-name">Column 4</div>
         </div>
 
-        <!-- Row 7 — NEW -->
+        <!-- Row 7 -->
         <div class="const-btn" data-layout="podium">
           <div class="ep" style="grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 2fr;">
             <div style="grid-column:1; grid-row:2;"></div>
@@ -539,7 +600,7 @@ input.term-input:focus { border-color: var(--cyan); }
           <div class="const-name">Banner</div>
         </div>
 
-        <!-- Row 8 — NEW -->
+        <!-- Row 8 -->
         <div class="const-btn" data-layout="lateral">
           <div class="ep" style="grid-template-columns:3fr 2fr; grid-template-rows:1fr;">
             <div></div><div style="align-self:center;"></div>
@@ -554,7 +615,7 @@ input.term-input:focus { border-color: var(--cyan); }
           <div class="const-name">Film</div>
         </div>
 
-        <!-- Row 9 — NEW -->
+        <!-- Row 9 -->
         <div class="const-btn" data-layout="spotlight">
           <div class="ep" style="grid-template-columns:1fr 2fr 1fr;">
             <div></div><div></div><div></div>
@@ -573,7 +634,7 @@ input.term-input:focus { border-color: var(--cyan); }
           <div class="const-name">Feature 5</div>
         </div>
 
-        <!-- Row 10 — NEW -->
+        <!-- Row 10 -->
         <div class="const-btn" data-layout="panorama">
           <div class="ep" style="grid-template-columns:1fr 1fr 1fr 1fr; grid-template-rows:2fr 1fr;">
             <div style="grid-column:1/5; grid-row:1;"></div>
@@ -592,19 +653,93 @@ input.term-input:focus { border-color: var(--cyan); }
           <div class="const-name">Cascade</div>
         </div>
 
+        <!-- Row 11 -- NEW v1.2 -->
+        <div class="const-btn" data-layout="magazine6">
+          <div class="ep" style="grid-template-columns:2fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr;">
+            <div style="grid-column:1; grid-row:1/3;"></div>
+            <div style="grid-column:2; grid-row:1;"></div>
+            <div style="grid-column:3; grid-row:1;"></div>
+            <div style="grid-column:2/4; grid-row:2;"></div>
+            <div style="grid-column:1; grid-row:3;"></div>
+            <div style="grid-column:2/4; grid-row:3;"></div>
+          </div>
+          <div class="const-name">Magazine 6</div>
+        </div>
+
+        <div class="const-btn" data-layout="mosaic7">
+          <div class="ep" style="grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr;">
+            <div style="grid-column:1/3; grid-row:1;"></div>
+            <div style="grid-column:3; grid-row:1/3;"></div>
+            <div style="grid-column:1; grid-row:2;"></div>
+            <div style="grid-column:2; grid-row:2;"></div>
+            <div style="grid-column:1; grid-row:3;"></div>
+            <div style="grid-column:2; grid-row:3;"></div>
+            <div style="grid-column:3; grid-row:3;"></div>
+          </div>
+          <div class="const-name">Mosaic 7</div>
+        </div>
+
+        <!-- Row 12 -->
+        <div class="const-btn" data-layout="gallery8">
+          <div class="ep" style="grid-template-columns:1fr 1fr 1fr 1fr; grid-template-rows:1fr 1fr;">
+            <div style="grid-column:1/3; grid-row:1;"></div>
+            <div></div><div></div>
+            <div></div><div></div><div></div><div></div>
+          </div>
+          <div class="const-name">Gallery 8</div>
+        </div>
+
+        <div class="const-btn" data-layout="editorial6">
+          <div class="ep" style="grid-template-columns:1fr 1fr; grid-template-rows:2fr 1fr 1fr;">
+            <div style="grid-column:1/3; grid-row:1;"></div>
+            <div></div><div></div>
+            <div></div><div></div>
+          </div>
+          <div class="const-name">Editorial 6</div>
+        </div>
+
+        <!-- Row 13 -->
+        <div class="const-btn" data-layout="wall9">
+          <div class="ep" style="grid-template-columns:1fr 2fr 1fr; grid-template-rows:1fr 1fr 1fr;">
+            <div></div><div style="grid-row:1/3;"></div><div></div>
+            <div></div><div></div>
+            <div></div><div></div><div></div>
+          </div>
+          <div class="const-name">Wall 9</div>
+        </div>
+
+        <div class="const-btn" data-layout="tower8">
+          <div class="ep" style="grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr 1fr;">
+            <div style="grid-column:1; grid-row:1/3;"></div>
+            <div style="grid-column:2; grid-row:1;"></div>
+            <div style="grid-column:3; grid-row:1;"></div>
+            <div style="grid-column:2; grid-row:2/4;"></div>
+            <div style="grid-column:3; grid-row:2;"></div>
+            <div style="grid-column:1; grid-row:3;"></div>
+            <div style="grid-column:3; grid-row:3/5;"></div>
+            <div style="grid-column:1/3; grid-row:4;"></div>
+          </div>
+          <div class="const-name">Tower 8</div>
+        </div>
+
+      </div>
+
+      <div style="display:flex; gap:2px; margin-bottom:8px;">
+        <button class="term-btn accent" id="random-const-btn" style="width:50%;">Random</button>
+        <button class="term-btn accent" id="reroll-btn" style="width:50%;">Re-roll</button>
       </div>
 
       <div class="divider"></div>
       <div class="sec-label">Canvas Size</div>
       <select class="term-select" id="canvas-size">
-        <option value="1080x1080">1080 × 1080 (1:1)</option>
-        <option value="1920x1080">1920 × 1080 (16:9)</option>
-        <option value="2560x1440">2560 × 1440 (QHD)</option>
-        <option value="3840x2160">3840 × 2160 (4K)</option>
-        <option value="1200x900">1200 × 900 (4:3)</option>
-        <option value="1200x628">1200 × 628 (OG)</option>
-        <option value="2480x3508">2480 × 3508 (A4 Portrait)</option>
-        <option value="3508x2480">3508 × 2480 (A4 Landscape)</option>
+        <option value="1080x1080">1080 x 1080 (1:1)</option>
+        <option value="1920x1080">1920 x 1080 (16:9)</option>
+        <option value="2560x1440">2560 x 1440 (QHD)</option>
+        <option value="3840x2160">3840 x 2160 (4K)</option>
+        <option value="1200x900">1200 x 900 (4:3)</option>
+        <option value="1200x628">1200 x 628 (OG)</option>
+        <option value="2480x3508">2480 x 3508 (A4 Portrait)</option>
+        <option value="3508x2480">3508 x 2480 (A4 Landscape)</option>
       </select>
     </div>
 
@@ -636,6 +771,12 @@ input.term-input:focus { border-color: var(--cyan); }
         <div class="bg-swatch" style="background:#1a1a2e;" data-color="#1a1a2e"></div>
         <div class="bg-swatch" style="background:#2d1b00;" data-color="#2d1b00"></div>
         <div class="bg-swatch" style="background:#0d1a0d;" data-color="#0d1a0d"></div>
+        <div class="bg-swatch transparent-swatch" data-color="transparent" title="Transparent"></div>
+      </div>
+      <div class="color-pick-row">
+        <label>Custom</label>
+        <input type="color" class="term-color" id="bg-custom-color" value="#0a0a0a">
+        <button class="term-btn" id="bg-custom-apply" style="width:auto; padding:3px 8px; font-size:8px; margin:0;">Apply</button>
       </div>
 
       <div class="divider"></div>
@@ -649,6 +790,11 @@ input.term-input:focus { border-color: var(--cyan); }
         <div class="tint-swatch" style="background:rgba(0,0,0,0.35);"      data-tint="rgba(0,0,0,0.35)"      title="Dark"></div>
         <div class="tint-swatch" style="background:rgba(255,255,255,0.2);" data-tint="rgba(255,255,255,0.2)" title="Light"></div>
         <span style="font-size:8px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-left:2px; opacity:0.6;">per-image</span>
+      </div>
+      <div class="color-pick-row" style="margin-top:4px;">
+        <label>Custom</label>
+        <input type="color" class="term-color" id="tint-custom-color" value="#ff00ff">
+        <button class="term-btn" id="tint-custom-apply" style="width:auto; padding:3px 8px; font-size:8px; margin:0;">Apply</button>
       </div>
 
       <div class="divider"></div>
@@ -671,7 +817,7 @@ input.term-input:focus { border-color: var(--cyan); }
     <div class="panel">
       <div class="plabel">04 // Tools</div>
       <p style="font-size:8px; color:var(--dim); margin-bottom:8px; opacity:0.6;">// select image in list first</p>
-      <button class="term-btn" id="rotate-btn">Rotate 90°</button>
+      <button class="term-btn" id="rotate-btn">Rotate 90</button>
       <button class="term-btn" id="flip-h-btn">Flip Horizontal</button>
       <button class="term-btn" id="flip-v-btn">Flip Vertical</button>
       <button class="term-btn" id="apply-tint-btn">Apply Tint to Selected</button>
@@ -702,7 +848,7 @@ input.term-input:focus { border-color: var(--cyan); }
 
   <!-- CANVAS -->
   <div>
-    <div class="canvas-container">
+    <div class="canvas-container" id="canvas-container">
       <canvas id="moonboard-canvas"></canvas>
     </div>
     <div class="status-bar">
@@ -730,19 +876,21 @@ const state = {
   canvasW: 1080,
   canvasH: 1080,
   watermark: false,
+  randomCells: null, // stored cells from random layout generator
 };
 
 let uid = 0;
 const canvas = document.getElementById('moonboard-canvas');
 const ctx = canvas.getContext('2d');
 const thumbList = document.getElementById('thumb-list');
+const canvasContainer = document.getElementById('canvas-container');
 
 // ---- THEME TOGGLE ----
 const themeToggle = document.getElementById('theme-toggle');
 themeToggle.addEventListener('click', () => {
   const isLight = document.documentElement.dataset.theme === 'light';
   document.documentElement.dataset.theme = isLight ? 'dark' : 'light';
-  themeToggle.textContent = isLight ? '◑ LIGHT' : '◐ DARK';
+  themeToggle.textContent = isLight ? '\u25D1 LIGHT' : '\u25D0 DARK';
 });
 
 // ---- 9x9 GRID PICKER ----
@@ -762,6 +910,7 @@ for (let r = 1; r <= 9; r++) {
       state.layoutType = 'grid';
       state.gridCols = +this.dataset.cols;
       state.gridRows = +this.dataset.rows;
+      state.randomCells = null;
       render();
     });
     gridSel.appendChild(btn);
@@ -776,25 +925,86 @@ document.querySelectorAll('.const-btn').forEach(btn => {
     this.classList.add('active');
     state.layoutType = 'constellation';
     state.constellation = this.dataset.layout;
+    state.randomCells = null;
     render();
   });
+});
+
+// ---- RANDOM CONSTELLATION (BSP) ----
+function generateRandomLayout(n, W, H, pad, gap) {
+  // binary space partitioning
+  function subdivide(rect, count) {
+    if (count <= 1) return [rect];
+    // bias split direction based on aspect ratio of the rect
+    const horizontal = rect.h > rect.w ? (Math.random() > 0.3) : (Math.random() > 0.7);
+    const ratio = 0.3 + Math.random() * 0.4;
+    const leftCount = Math.max(1, Math.round(count * ratio));
+    const rightCount = count - leftCount;
+
+    let r1, r2;
+    if (horizontal) {
+      const splitH = rect.h * ratio;
+      r1 = { x: rect.x, y: rect.y, w: rect.w, h: splitH - gap / 2 };
+      r2 = { x: rect.x, y: rect.y + splitH + gap / 2, w: rect.w, h: rect.h - splitH - gap / 2 };
+    } else {
+      const splitW = rect.w * ratio;
+      r1 = { x: rect.x, y: rect.y, w: splitW - gap / 2, h: rect.h };
+      r2 = { x: rect.x + splitW + gap / 2, y: rect.y, w: rect.w - splitW - gap / 2, h: rect.h };
+    }
+
+    return [...subdivide(r1, leftCount), ...subdivide(r2, rightCount)];
+  }
+
+  return subdivide({ x: pad, y: pad, w: W - pad * 2, h: H - pad * 2 }, n);
+}
+
+document.getElementById('random-const-btn').addEventListener('click', () => {
+  const n = state.images.length || Math.floor(Math.random() * 7) + 2;
+  document.querySelectorAll('.grid-cell-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.const-btn').forEach(b => b.classList.remove('active'));
+  state.layoutType = 'random';
+  state.randomCells = generateRandomLayout(n, state.canvasW, state.canvasH, state.padding, state.gap);
+  render();
+});
+
+document.getElementById('reroll-btn').addEventListener('click', () => {
+  const n = state.images.length || Math.floor(Math.random() * 7) + 2;
+  document.querySelectorAll('.grid-cell-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.const-btn').forEach(b => b.classList.remove('active'));
+  state.layoutType = 'random';
+  state.randomCells = generateRandomLayout(n, state.canvasW, state.canvasH, state.padding, state.gap);
+  render();
 });
 
 // ---- CANVAS SIZE ----
 document.getElementById('canvas-size').addEventListener('change', function () {
   const [w, h] = this.value.split('x').map(Number);
-  state.canvasW = w; state.canvasH = h; render();
+  state.canvasW = w; state.canvasH = h;
+  // regenerate random cells if in random mode
+  if (state.layoutType === 'random') {
+    const n = state.images.length || 4;
+    state.randomCells = generateRandomLayout(n, w, h, state.padding, state.gap);
+  }
+  render();
 });
 
 // ---- SLIDERS ----
 document.getElementById('gap-slider').addEventListener('input', function () {
   state.gap = +this.value;
   document.getElementById('gap-val').textContent = state.gap + 'px';
+  if (state.layoutType === 'random') {
+    const n = state.images.length || 4;
+    state.randomCells = generateRandomLayout(n, state.canvasW, state.canvasH, state.padding, state.gap);
+  }
   render();
 });
 document.getElementById('pad-slider').addEventListener('input', function () {
   state.padding = +this.value;
   document.getElementById('pad-val').textContent = state.padding + 'px';
+  if (state.layoutType === 'random') {
+    const n = state.images.length || 4;
+    state.randomCells = generateRandomLayout(n, state.canvasW, state.canvasH, state.padding, state.gap);
+  }
   render();
 });
 document.getElementById('opacity-slider').addEventListener('input', function () {
@@ -810,8 +1020,26 @@ document.getElementById('bg-options').addEventListener('click', function (e) {
   document.querySelectorAll('.bg-swatch').forEach(x => x.classList.remove('active'));
   s.classList.add('active');
   state.bgColor = s.dataset.color;
+  updateTransparentBg();
   render();
 });
+
+// custom BG color
+document.getElementById('bg-custom-apply').addEventListener('click', () => {
+  const color = document.getElementById('bg-custom-color').value;
+  document.querySelectorAll('.bg-swatch').forEach(x => x.classList.remove('active'));
+  state.bgColor = color;
+  updateTransparentBg();
+  render();
+});
+
+function updateTransparentBg() {
+  if (state.bgColor === 'transparent') {
+    canvasContainer.classList.add('transparent-bg');
+  } else {
+    canvasContainer.classList.remove('transparent-bg');
+  }
+}
 
 // ---- TINT SWATCHES ----
 document.getElementById('tint-options').addEventListener('click', function (e) {
@@ -820,6 +1048,18 @@ document.getElementById('tint-options').addEventListener('click', function (e) {
   document.querySelectorAll('.tint-swatch').forEach(x => x.classList.remove('active'));
   s.classList.add('active');
   state.activeTint = s.dataset.tint;
+});
+
+// custom tint color
+document.getElementById('tint-custom-apply').addEventListener('click', () => {
+  const hex = document.getElementById('tint-custom-color').value;
+  // convert hex to rgba with 0.18 opacity
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  const tintVal = 'rgba(' + r + ',' + g + ',' + b + ',0.18)';
+  document.querySelectorAll('.tint-swatch').forEach(x => x.classList.remove('active'));
+  state.activeTint = tintVal;
 });
 
 // ---- FIT + GRAY ----
@@ -979,6 +1219,11 @@ function getCells(n, W, H) {
   const ox = pad, oy = pad;
   const cells = [];
 
+  // RANDOM (BSP)
+  if (state.layoutType === 'random' && state.randomCells) {
+    return state.randomCells.slice(0, n);
+  }
+
   // UNIFORM GRID
   if (state.layoutType === 'grid') {
     const cols = state.gridCols, rows = state.gridRows;
@@ -994,7 +1239,7 @@ function getCells(n, W, H) {
 
   const cn = state.constellation;
 
-  // ---- EXISTING CONSTELLATIONS ----
+  // ---- CONSTELLATIONS ----
 
   if (cn === 'diptych') {
     const cw = (w - gap) / 2;
@@ -1018,7 +1263,6 @@ function getCells(n, W, H) {
   }
 
   if (cn === 'hero-left') {
-    // index 0 = big left hero, 1+2 = small right panels
     const big = (w - gap) * 0.6, sm = w - big - gap, hh = (h - gap) / 2;
     return [
       { x: ox, y: oy, w: big, h },
@@ -1028,7 +1272,6 @@ function getCells(n, W, H) {
   }
 
   if (cn === 'hero-right') {
-    // index 0 = big right hero, 1+2 = small left panels
     const big = (w - gap) * 0.6, sm = w - big - gap, hh = (h - gap) / 2;
     return [
       { x: ox + sm + gap, y: oy, w: big, h },
@@ -1038,7 +1281,6 @@ function getCells(n, W, H) {
   }
 
   if (cn === 'hero-top') {
-    // index 0 = big top hero, 1-3 = small bottom panels
     const th = (h - gap) * 0.55, bh = h - th - gap, cw3 = (w - gap * 2) / 3;
     cells.push({ x: ox, y: oy, w, h: th });
     for (let i = 0; i < 3; i++) cells.push({ x: ox + i*(cw3+gap), y: oy + th + gap, w: cw3, h: bh });
@@ -1046,7 +1288,6 @@ function getCells(n, W, H) {
   }
 
   if (cn === 'hero-bottom') {
-    // index 0 = big bottom hero, 1-3 = small top panels
     const bh = (h - gap) * 0.5, th = h - bh - gap, cw3 = (w - gap * 2) / 3;
     cells.push({ x: ox, y: oy + th + gap, w, h: bh });
     for (let i = 0; i < 3; i++) cells.push({ x: ox + i*(cw3+gap), y: oy, w: cw3, h: th });
@@ -1108,10 +1349,7 @@ function getCells(n, W, H) {
     ].slice(0, Math.min(n, 3));
   }
 
-  // ---- NEW CONSTELLATIONS ----
-
   if (cn === 'podium') {
-    // index 0 = center hero (full height), 1 = left flank, 2 = right flank
     const cw = (w - gap * 2) / 3;
     const podH = h * 0.68;
     const podY = oy + h - podH;
@@ -1123,7 +1361,6 @@ function getCells(n, W, H) {
   }
 
   if (cn === 'banner') {
-    // index 0 = wide top banner hero, 1+2 = equal panels below
     const banH = (h - gap) * 0.38;
     const botH = h - banH - gap;
     const cw2 = (w - gap) / 2;
@@ -1135,7 +1372,6 @@ function getCells(n, W, H) {
   }
 
   if (cn === 'lateral') {
-    // index 0 = wide left (full height), 1 = narrow right (75% height, centered)
     const lw = (w - gap) * 0.62;
     const rw = w - lw - gap;
     const rh = h * 0.75;
@@ -1147,7 +1383,6 @@ function getCells(n, W, H) {
   }
 
   if (cn === 'film') {
-    // 4 equal horizontal rows (portrait film strip)
     const rh = (h - gap * 3) / 4;
     return [0,1,2,3].map(i => ({
       x: ox, y: oy + i * (rh + gap), w, h: rh
@@ -1155,7 +1390,6 @@ function getCells(n, W, H) {
   }
 
   if (cn === 'spotlight') {
-    // index 0 = wide center hero, 1 = left flank, 2 = right flank (both full height)
     const fw = (w - gap * 2) * 0.22;
     const cw = w - fw * 2 - gap * 2;
     return [
@@ -1166,7 +1400,6 @@ function getCells(n, W, H) {
   }
 
   if (cn === 'feature5') {
-    // index 0 = large left half hero, 1-4 = four equal panels stacked right
     const lw = (w - gap) * 0.52;
     const rw = w - lw - gap;
     const rh = (h - gap * 3) / 4;
@@ -1180,7 +1413,6 @@ function getCells(n, W, H) {
   }
 
   if (cn === 'panorama') {
-    // index 0 = wide top hero, 1-4 = four equal columns below
     const topH = (h - gap) * 0.45;
     const botH = h - topH - gap;
     const cw4 = (w - gap * 3) / 4;
@@ -1190,7 +1422,6 @@ function getCells(n, W, H) {
   }
 
   if (cn === 'cascade') {
-    // 4 cells: overlapping staircase left-to-right, top-to-bottom
     const cw = (w - gap * 2) / 3;
     const ch = (h - gap * 2) / 3;
     return [
@@ -1199,6 +1430,104 @@ function getCells(n, W, H) {
       { x: ox + (cw + gap) * 2, y: oy, w: cw, h: ch },
       { x: ox + (cw + gap) * 2, y: oy + (ch + gap) * 2, w: cw, h: ch }
     ].slice(0, Math.min(n, 4));
+  }
+
+  // ---- NEW v1.2 CONSTELLATIONS ----
+
+  if (cn === 'magazine6') {
+    // big hero top-left, varied panels
+    const cw3 = (w - gap * 2) / 3;
+    const rh3 = (h - gap * 2) / 3;
+    const heroW = cw3 * 1.3;
+    const sideW = (w - heroW - gap * 2) / 2;
+    return [
+      { x: ox, y: oy, w: heroW, h: rh3 * 2 + gap },
+      { x: ox + heroW + gap, y: oy, w: sideW, h: rh3 },
+      { x: ox + heroW + sideW + gap * 2, y: oy, w: sideW, h: rh3 },
+      { x: ox + heroW + gap, y: oy + rh3 + gap, w: sideW * 2 + gap, h: rh3 },
+      { x: ox, y: oy + (rh3 + gap) * 2, w: heroW, h: rh3 },
+      { x: ox + heroW + gap, y: oy + (rh3 + gap) * 2, w: sideW * 2 + gap, h: rh3 }
+    ].slice(0, Math.min(n, 6));
+  }
+
+  if (cn === 'mosaic7') {
+    // 3x3 grid with merged regions
+    const cw3 = (w - gap * 2) / 3;
+    const rh3 = (h - gap * 2) / 3;
+    return [
+      { x: ox, y: oy, w: cw3 * 2 + gap, h: rh3 },
+      { x: ox + (cw3 + gap) * 2, y: oy, w: cw3, h: rh3 * 2 + gap },
+      { x: ox, y: oy + rh3 + gap, w: cw3, h: rh3 },
+      { x: ox + cw3 + gap, y: oy + rh3 + gap, w: cw3, h: rh3 },
+      { x: ox, y: oy + (rh3 + gap) * 2, w: cw3, h: rh3 },
+      { x: ox + cw3 + gap, y: oy + (rh3 + gap) * 2, w: cw3, h: rh3 },
+      { x: ox + (cw3 + gap) * 2, y: oy + (rh3 + gap) * 2, w: cw3, h: rh3 }
+    ].slice(0, Math.min(n, 7));
+  }
+
+  if (cn === 'gallery8') {
+    // top row: 2 wide + 2 narrow, bottom row: 4 equal
+    const cw4 = (w - gap * 3) / 4;
+    const topH = (h - gap) * 0.55;
+    const botH = h - topH - gap;
+    const wideW = cw4 * 2 + gap;
+    return [
+      { x: ox, y: oy, w: wideW, h: topH },
+      { x: ox + wideW + gap, y: oy, w: cw4, h: topH },
+      { x: ox + wideW + cw4 + gap * 2, y: oy, w: cw4, h: topH },
+      { x: ox, y: oy + topH + gap, w: cw4, h: botH },
+      { x: ox + cw4 + gap, y: oy + topH + gap, w: cw4, h: botH },
+      { x: ox + (cw4 + gap) * 2, y: oy + topH + gap, w: cw4, h: botH },
+      { x: ox + (cw4 + gap) * 3, y: oy + topH + gap, w: cw4, h: botH },
+    ].slice(0, Math.min(n, 7));
+  }
+
+  if (cn === 'editorial6') {
+    // big hero top, 2x2 grid below
+    const topH = (h - gap * 2) * 0.45;
+    const botH = (h - topH - gap * 2) / 2;
+    const cw2 = (w - gap) / 2;
+    return [
+      { x: ox, y: oy, w, h: topH },
+      { x: ox, y: oy + topH + gap, w: cw2, h: botH },
+      { x: ox + cw2 + gap, y: oy + topH + gap, w: cw2, h: botH },
+      { x: ox, y: oy + topH + botH + gap * 2, w: cw2, h: botH },
+      { x: ox + cw2 + gap, y: oy + topH + botH + gap * 2, w: cw2, h: botH }
+    ].slice(0, Math.min(n, 5));
+  }
+
+  if (cn === 'wall9') {
+    // center hero with 8 panels surrounding
+    const cw3 = (w - gap * 2) / 3;
+    const rh3 = (h - gap * 2) / 3;
+    const centerW = cw3 * 1.4;
+    const sideW = (w - centerW - gap * 2) / 2;
+    return [
+      { x: ox + sideW + gap, y: oy, w: centerW, h: rh3 * 2 + gap },
+      { x: ox, y: oy, w: sideW, h: rh3 },
+      { x: ox, y: oy + rh3 + gap, w: sideW, h: rh3 },
+      { x: ox + sideW + centerW + gap * 2, y: oy, w: sideW, h: rh3 },
+      { x: ox + sideW + centerW + gap * 2, y: oy + rh3 + gap, w: sideW, h: rh3 },
+      { x: ox, y: oy + (rh3 + gap) * 2, w: cw3, h: rh3 },
+      { x: ox + cw3 + gap, y: oy + (rh3 + gap) * 2, w: cw3, h: rh3 },
+      { x: ox + (cw3 + gap) * 2, y: oy + (rh3 + gap) * 2, w: cw3, h: rh3 }
+    ].slice(0, Math.min(n, 8));
+  }
+
+  if (cn === 'tower8') {
+    // interlocking tower pattern
+    const cw3 = (w - gap * 2) / 3;
+    const rh4 = (h - gap * 3) / 4;
+    return [
+      { x: ox, y: oy, w: cw3, h: rh4 * 2 + gap },
+      { x: ox + cw3 + gap, y: oy, w: cw3, h: rh4 },
+      { x: ox + (cw3 + gap) * 2, y: oy, w: cw3, h: rh4 },
+      { x: ox + cw3 + gap, y: oy + rh4 + gap, w: cw3, h: rh4 * 2 + gap },
+      { x: ox + (cw3 + gap) * 2, y: oy + rh4 + gap, w: cw3, h: rh4 },
+      { x: ox, y: oy + (rh4 + gap) * 2, w: cw3, h: rh4 },
+      { x: ox + (cw3 + gap) * 2, y: oy + (rh4 + gap) * 2, w: cw3, h: rh4 * 2 + gap },
+      { x: ox, y: oy + (rh4 + gap) * 3, w: cw3 * 2 + gap, h: rh4 }
+    ].slice(0, Math.min(n, 8));
   }
 
   return cells;
@@ -1252,8 +1581,13 @@ function drawCell(entry, cell) {
 function render() {
   const W = state.canvasW, H = state.canvasH;
   canvas.width = W; canvas.height = H;
-  ctx.fillStyle = state.bgColor;
-  ctx.fillRect(0, 0, W, H);
+
+  if (state.bgColor === 'transparent') {
+    ctx.clearRect(0, 0, W, H);
+  } else {
+    ctx.fillStyle = state.bgColor;
+    ctx.fillRect(0, 0, W, H);
+  }
 
   if (state.images.length === 0) {
     ctx.fillStyle = '#1e1e1e';
@@ -1280,9 +1614,14 @@ function render() {
     ctx.fillText('MOONBOARD', W - state.padding - 6, H - state.padding - 6);
   }
 
-  const label = state.layoutType === 'grid'
-    ? state.gridCols + 'x' + state.gridRows + ' GRID'
-    : state.constellation.toUpperCase();
+  let label;
+  if (state.layoutType === 'grid') {
+    label = state.gridCols + 'x' + state.gridRows + ' GRID';
+  } else if (state.layoutType === 'random') {
+    label = 'RANDOM';
+  } else {
+    label = state.constellation.toUpperCase();
+  }
   setStatus('// ' + state.images.length + ' IMG // ' + label, W + 'x' + H);
 }
 
