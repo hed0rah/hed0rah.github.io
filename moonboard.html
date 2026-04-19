@@ -821,6 +821,7 @@ input.term-input:focus { border-color: var(--cyan); }
       <button class="term-btn" id="flip-v-btn">Flip Vertical</button>
       <button class="term-btn" id="apply-tint-btn">Apply Tint to Selected</button>
       <button class="term-btn" id="apply-gray-btn">Toggle Gray Selected</button>
+      <button class="term-btn" id="cycle-fit-btn">Cycle Fit (selected)</button>
       <div class="divider"></div>
       <div class="hint">// reorders images within current layout</div>
       <button class="term-btn" id="shuffle-btn">Shuffle Images</button>
@@ -838,6 +839,7 @@ input.term-input:focus { border-color: var(--cyan); }
         <label for="watermark-toggle">Stamp MOONBOARD watermark</label>
       </div>
       <button class="term-btn export-btn" id="export-btn">Export PNG</button>
+      <button class="term-btn export-btn" id="clipboard-btn">Copy to Clipboard</button>
       <button class="term-btn danger" id="clear-btn">Clear All</button>
     </div>
 
@@ -1334,7 +1336,7 @@ function loadFiles(files) {
           name: file.name.length > 20 ? file.name.slice(0, 17) + '...' : file.name,
           dataUrl, img,
           rot: 0, flipH: false, flipV: false,
-          tint: null, gray: false,
+          tint: null, gray: false, fit: null,
         });
         addThumb(state.images[state.images.length - 1]);
         updateStatus();
@@ -1431,6 +1433,24 @@ document.getElementById('flip-v-btn').addEventListener('click',     () => modSel
 document.getElementById('apply-tint-btn').addEventListener('click', () => modSel(e => ({ ...e, tint: state.activeTint === 'none' ? null : state.activeTint })));
 document.getElementById('apply-gray-btn').addEventListener('click', () => modSel(e => ({ ...e, gray: !e.gray })));
 
+// cycle per-image fit: null (global) -> cover -> contain -> stretch -> null
+document.getElementById('cycle-fit-btn').addEventListener('click', () => {
+  const cycle = [null, 'cover', 'contain', 'stretch'];
+  modSel(e => {
+    const idx = cycle.indexOf(e.fit);
+    const next = cycle[(idx + 1) % cycle.length];
+    return { ...e, fit: next };
+  });
+  // show current fit in status
+  if (state.selected) {
+    const entry = state.images.find(i => i.id === state.selected);
+    if (entry) {
+      const label = entry.fit ? entry.fit.toUpperCase() : 'GLOBAL (' + state.fitMode.toUpperCase() + ')';
+      setStatus('// FIT: ' + label, 'PER-IMAGE');
+    }
+  }
+});
+
 document.getElementById('clear-btn').addEventListener('click', () => {
   state.images = []; state.selected = null;
   thumbList.innerHTML = '';
@@ -1445,6 +1465,19 @@ document.getElementById('export-btn').addEventListener('click', () => {
   a.href = dataUrl; a.download = fname;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setStatus('// EXPORTED // ' + fname, 'SAVED');
+});
+
+document.getElementById('clipboard-btn').addEventListener('click', () => {
+  if (state.images.length === 0) { setStatus('// NO IMAGES TO COPY', 'ABORT'); return; }
+  canvas.toBlob(blob => {
+    if (!blob) { setStatus('// COPY FAILED', 'ERROR'); return; }
+    const item = new ClipboardItem({ 'image/png': blob });
+    navigator.clipboard.write([item]).then(() => {
+      setStatus('// COPIED TO CLIPBOARD', 'PASTE AWAY');
+    }).catch(err => {
+      setStatus('// CLIPBOARD ERROR', err.message ? err.message.slice(0, 20).toUpperCase() : 'DENIED');
+    });
+  }, 'image/png');
 });
 
 function modSel(fn) {
@@ -1741,10 +1774,11 @@ function drawCell(entry, cell) {
   if (flipV) ctx.scale(1, -1);
 
   const iw = img.naturalWidth, ih = img.naturalHeight;
+  const fit = entry.fit || state.fitMode;
   let sw, sh;
-  if (state.fitMode === 'cover')        { const sc = Math.max(w/iw, h/ih); sw = iw*sc; sh = ih*sc; }
-  else if (state.fitMode === 'contain') { const sc = Math.min(w/iw, h/ih); sw = iw*sc; sh = ih*sc; }
-  else                                  { sw = w; sh = h; }
+  if (fit === 'cover')        { const sc = Math.max(w/iw, h/ih); sw = iw*sc; sh = ih*sc; }
+  else if (fit === 'contain') { const sc = Math.min(w/iw, h/ih); sw = iw*sc; sh = ih*sc; }
+  else                        { sw = w; sh = h; }
 
   ctx.drawImage(source, -sw/2, -sh/2, sw, sh);
 
