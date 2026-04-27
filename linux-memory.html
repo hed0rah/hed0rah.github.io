@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linux Memory Management</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* MASTHEAD */
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead h1 .cy { color: var(--cyan); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+
+/* STICKY NAV */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0;
+  white-space: nowrap;
+}
+.nav a {
+  display: block;
+  padding: 12px 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav a:hover { color: var(--orange); border-bottom-color: var(--orange); }
+
+/* LAYOUT */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+  counter-reset: section;
+}
+section {
+  padding: 52px 0;
+  border-bottom: 1px solid var(--border2);
+  counter-increment: section;
+}
+section:last-of-type { border-bottom: none; }
+section::before {
+  content: counter(section, decimal-leading-zero) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+/* HEADINGS */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--yellow); }
+h2 .htag {
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 400;
+  padding: 2px 8px;
+  border: 1px solid var(--border2);
+  vertical-align: middle;
+  margin-left: 10px;
+  position: relative;
+  top: -3px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+.section-bar.yl { background: var(--yellow); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+h3.cy { color: var(--cyan); }
+h3.rd { color: var(--red); }
+h4 {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--bright);
+  margin: 18px 0 8px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+strong { color: var(--bright); font-weight: 700; }
+em { color: var(--cyan); font-style: italic; }
+ul, ol { margin: 10px 0 14px 22px; }
+li { margin-bottom: 4px; max-width: 74ch; }
+li::marker { color: var(--orange); }
+hr { border: none; border-top: 1px dashed var(--border2); margin: 28px 0; }
+
+/* PRIMITIVE CARDS */
+.prim-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  margin: 24px 0;
+}
+.prim-grid.two { grid-template-columns: repeat(2, 1fr); }
+.prim-grid.four { grid-template-columns: repeat(4, 1fr); }
+.prim-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 22px 20px;
+  transition: border-color 0.2s;
+}
+.prim-card:hover { border-color: var(--orange); }
+.prim-card[data-type="or"] { border-left: 3px solid var(--orange); }
+.prim-card[data-type="cy"] { border-left: 3px solid var(--cyan); }
+.prim-card[data-type="yl"] { border-left: 3px solid var(--yellow); }
+.prim-card[data-type="rd"] { border-left: 3px solid var(--red); }
+.prim-card[data-type="gr"] { border-left: 3px solid var(--green); }
+.prim-card[data-type="mg"] { border-left: 3px solid var(--magenta); }
+.prim-card .p-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--bright);
+  margin-bottom: 4px;
+}
+.prim-card .p-method {
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.prim-card[data-type="or"] .p-method { color: var(--orange); }
+.prim-card[data-type="cy"] .p-method { color: var(--cyan); }
+.prim-card[data-type="yl"] .p-method { color: var(--yellow); }
+.prim-card[data-type="rd"] .p-method { color: var(--red); }
+.prim-card[data-type="gr"] .p-method { color: var(--green); }
+.prim-card[data-type="mg"] .p-method { color: var(--magenta); }
+.prim-card .p-desc {
+  font-size: 11px;
+  color: var(--dim);
+  line-height: 1.65;
+  margin-bottom: 10px;
+}
+.prim-card .p-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.prim-card .p-row {
+  font-size: 10px;
+  color: var(--text);
+  padding: 3px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  letter-spacing: 0.5px;
+}
+.prim-card .p-row span { color: var(--dim); float: right; }
+
+/* CODE */
+code {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--bright);
+}
+pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre.yl { border-left-color: var(--yellow); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .ty     { color: #3AB8AC; }
+pre .pp     { color: #B85A6A; }
+pre .out    { color: #5A5952; }
+pre .hl     { color: #F09030; font-weight: 700; }
+
+/* TABLES */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; vertical-align: top; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; }
+td.cy   { color: var(--cyan); font-weight: 700; }
+td.rd   { color: var(--red); font-weight: 700; }
+td.yl   { color: var(--yellow); font-weight: 700; }
+td.gr   { color: var(--green); font-weight: 700; }
+td.mg   { color: var(--magenta); font-weight: 700; }
+td.hex  { color: var(--orange); font-weight: 700; }
+
+/* INFO BOXES */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 14px 18px;
+  margin: 14px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy     { border-left-color: var(--cyan); }
+.info-box.warn   { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ASCII / SVG DIAGRAM */
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #5A5952;
+}
+.diagram.cy { border-left-color: var(--cyan); }
+.diagram.yl { border-left-color: var(--yellow); }
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .dim  { color: #5A5952; }
+.diagram .yl   { color: #C8A030; }
+.diagram .rd   { color: #B85A6A; }
+.diagram .mg   { color: #B07AB8; }
+
+.svg-plate {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 22px 20px;
+  margin: 14px 0;
+  overflow-x: auto;
+}
+.svg-plate.cy { border-left-color: var(--cyan); }
+.svg-plate svg { display: block; max-width: 100%; height: auto; }
+.svg-plate .cap {
+  font-size: 9px;
+  color: #5A5952;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-align: right;
+  margin-top: 12px;
+}
+
+/* TWO COL */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 14px 0; align-items: stretch; }
+.two-col > div { display: flex; flex-direction: column; }
+.two-col > div > pre { flex: 1; margin-bottom: 0; }
+
+/* FLOW DIAGRAM */
+.flow {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+  overflow-x: auto;
+  padding: 12px 0;
+}
+.flow-step {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 10px 14px;
+  min-width: 110px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.flow-step .step-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 2px;
+  margin-bottom: 3px;
+}
+.flow-step .step-name { font-weight: 700; font-size: 11px; color: var(--bright); }
+.flow-step .step-detail { font-size: 9px; color: var(--orange); margin-top: 2px; }
+.flow-step.cy .step-detail { color: var(--cyan); }
+.flow-step.yl .step-detail { color: var(--yellow); }
+.flow-arrow { font-size: 16px; color: var(--dim2); padding: 0 4px; flex-shrink: 0; }
+
+/* KV PAIRS */
+.kv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 2px;
+  margin: 16px 0;
+}
+.kv {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 10px 14px;
+}
+.kv .k {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.kv .v { font-size: 12px; color: var(--bright); font-weight: 700; }
+.kv .v .hex { color: var(--orange); }
+
+/* SPINE */
+.spine {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* FOOTER */
+.footer {
+  border-top: 1px solid var(--border2);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.footer a { color: var(--orange); text-decoration: none; }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .prim-grid, .prim-grid.two, .prim-grid.four { grid-template-columns: 1fr; }
+  .two-col { grid-template-columns: 1fr; }
+  .flow { flex-direction: column; }
+  .flow-arrow { transform: rotate(90deg); }
+  .masthead { padding: 40px 20px 28px; }
+  .container { padding: 0 18px; }
+}
+@media (max-width: 1280px) { .spine { display: none; } }
+</style>
+</head>
+<body>
+
+<div class="spine">LINUX // MM // VAS // PTE // BUDDY // SLAB // OOM // NUMA // 2026</div>
+
+<div class="masthead">
+  <h1>Linux <em>Memory</em> <span class="cy">Management</span></h1>
+  <div class="subtitle">
+    <span>VAS · Page Tables · MMU · Allocators</span> // x86_64 // Kernel 6.x
+  </div>
+</div>
+
+<div class="nav">
+  <div class="nav-inner">
+    <a href="#two">Two Memories</a>
+    <a href="#vas">Address Space</a>
+    <a href="#maps">/proc/maps</a>
+    <a href="#pgtbl">Page Tables</a>
+    <a href="#mmu">MMU / TLB</a>
+    <a href="#fault">Page Faults</a>
+    <a href="#brk">brk vs mmap</a>
+    <a href="#malloc">malloc</a>
+    <a href="#mmap">mmap</a>
+    <a href="#cow">fork / COW</a>
+    <a href="#kern">Kernel Allocators</a>
+    <a href="#oom">Pressure / OOM</a>
+    <a href="#numa">NUMA</a>
+    <a href="#tools">Tooling</a>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═════ 01 TWO MEMORIES ═════ -->
+<section id="two">
+  <h2>The <em class="or">Two</em> Memories <span class="htag">virtual · physical</span></h2>
+  <div class="section-bar"></div>
+  <p>Every running process believes it owns the entire machine. It opens at the same addresses as every other process, references the same symbols, walks the same stack-pointer values. The trick that makes this work is <em>virtual memory</em>: the process sees a flat private address space, and the kernel plus the CPU's Memory Management Unit lazily map regions of that virtual space onto the physical DRAM that actually exists.</p>
+
+  <p>Three things fall out of this for free.</p>
+
+  <div class="prim-grid">
+    <div class="prim-card" data-type="or">
+      <div class="p-name">Isolation</div>
+      <div class="p-method">memory protection</div>
+      <div class="p-desc">Process A cannot see B's memory because A's page tables don't include B's mappings. A bug in one process can't trash another.</div>
+    </div>
+    <div class="prim-card" data-type="cy">
+      <div class="p-name">Larger than RAM</div>
+      <div class="p-method">256 TiB user space</div>
+      <div class="p-desc">The virtual space is decoupled from physical capacity. You can address far more memory than you have, and the kernel pages in only what's touched.</div>
+    </div>
+    <div class="prim-card" data-type="yl">
+      <div class="p-name">Lazy Backing</div>
+      <div class="p-method">demand paging</div>
+      <div class="p-desc">Pages get backed by physical frames only on first access. malloc(1 GiB) costs almost nothing until you touch it.</div>
+    </div>
+  </div>
+
+  <p>Two shapes to keep in your head: <em>page</em> (virtual, 4 KiB by default on x86_64) and <em>page frame</em> (physical, the same 4 KiB chunk of DRAM). Translation happens at page granularity. Anything finer is the allocator's problem.</p>
+
+  <div class="svg-plate cy">
+    <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono">
+      <defs>
+        <pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="6" stroke="#2E2D2A" stroke-width="2"/>
+        </pattern>
+      </defs>
+
+      <rect x="20" y="20" width="180" height="170" fill="#231F1C" stroke="#3AB8AC" stroke-width="1.2"/>
+      <text x="110" y="40" text-anchor="middle" fill="#3AB8AC" font-family="Bebas Neue" font-size="16" letter-spacing="2">PROCESS A</text>
+      <text x="110" y="56" text-anchor="middle" fill="#5A5952" font-size="9" letter-spacing="2">VIRTUAL ADDR SPACE</text>
+      <rect x="40" y="72" width="140" height="20" fill="#1A1918" stroke="#F09030" stroke-width="0.8"/>
+      <text x="110" y="86" text-anchor="middle" fill="#F09030" font-size="9">stack</text>
+      <rect x="40" y="98" width="140" height="20" fill="#1A1918" stroke="#B07AB8" stroke-width="0.8"/>
+      <text x="110" y="112" text-anchor="middle" fill="#B07AB8" font-size="9">heap</text>
+      <rect x="40" y="124" width="140" height="20" fill="#1A1918" stroke="#C8A030" stroke-width="0.8"/>
+      <text x="110" y="138" text-anchor="middle" fill="#C8A030" font-size="9">.data</text>
+      <rect x="40" y="150" width="140" height="20" fill="#1A1918" stroke="#3AB8AC" stroke-width="0.8"/>
+      <text x="110" y="164" text-anchor="middle" fill="#3AB8AC" font-size="9">.text</text>
+
+      <rect x="20" y="210" width="180" height="100" fill="#231F1C" stroke="#3AB8AC" stroke-width="1.2"/>
+      <text x="110" y="230" text-anchor="middle" fill="#3AB8AC" font-family="Bebas Neue" font-size="16" letter-spacing="2">PROCESS B</text>
+      <text x="110" y="246" text-anchor="middle" fill="#5A5952" font-size="9" letter-spacing="2">VIRTUAL ADDR SPACE</text>
+      <rect x="40" y="262" width="140" height="20" fill="#1A1918" stroke="#F09030" stroke-width="0.8"/>
+      <text x="110" y="276" text-anchor="middle" fill="#F09030" font-size="9">stack</text>
+      <rect x="40" y="288" width="140" height="18" fill="#1A1918" stroke="#3AB8AC" stroke-width="0.8"/>
+      <text x="110" y="301" text-anchor="middle" fill="#3AB8AC" font-size="9">.text</text>
+
+      <rect x="290" y="60" width="140" height="240" fill="url(#hatch)" stroke="#3A3936" stroke-width="0.8"/>
+      <text x="280" y="40" fill="#5A5952" font-size="9" letter-spacing="2">PAGE TABLES</text>
+      <text x="360" y="180" text-anchor="middle" fill="#B85A6A" font-family="Bebas Neue" font-size="20" transform="rotate(-90 360 180)" letter-spacing="2">MMU + KERNEL</text>
+
+      <line x1="200" y1="108" x2="290" y2="108" stroke="#3AB8AC" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="200" y1="160" x2="290" y2="160" stroke="#3AB8AC" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="200" y1="298" x2="290" y2="298" stroke="#3AB8AC" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="430" y1="108" x2="520" y2="80" stroke="#F09030" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="430" y1="160" x2="520" y2="180" stroke="#C8A030" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="430" y1="298" x2="520" y2="80" stroke="#C8A030" stroke-width="1" stroke-dasharray="3,2"/>
+
+      <rect x="520" y="20" width="260" height="290" fill="#231F1C" stroke="#B85A6A" stroke-width="1.2"/>
+      <text x="650" y="40" text-anchor="middle" fill="#B85A6A" font-family="Bebas Neue" font-size="16" letter-spacing="2">PHYSICAL RAM</text>
+      <text x="650" y="56" text-anchor="middle" fill="#5A5952" font-size="9" letter-spacing="2">4 KiB FRAMES</text>
+
+      <g font-size="9" fill="#CCCBC4">
+        <rect x="540" y="68" width="50" height="16" fill="#F09030" opacity="0.25" stroke="#F09030" stroke-width="0.5"/>
+        <text x="565" y="79" text-anchor="middle">A:stk</text>
+        <rect x="595" y="68" width="60" height="16" fill="#3AB8AC" opacity="0.25" stroke="#3AB8AC" stroke-width="0.5"/>
+        <text x="625" y="79" text-anchor="middle">A.txt + B.txt</text>
+        <rect x="660" y="68" width="40" height="16" fill="#1A1918" stroke="#3A3936" stroke-width="0.5"/>
+        <text x="680" y="79" text-anchor="middle" fill="#5A5952">free</text>
+        <rect x="705" y="68" width="50" height="16" fill="#B07AB8" opacity="0.25" stroke="#B07AB8" stroke-width="0.5"/>
+        <text x="730" y="79" text-anchor="middle">A:heap</text>
+
+        <rect x="540" y="89" width="50" height="16" fill="#1A1918" stroke="#3A3936" stroke-width="0.5"/>
+        <text x="565" y="100" text-anchor="middle" fill="#5A5952">free</text>
+        <rect x="595" y="89" width="50" height="16" fill="#F09030" opacity="0.25" stroke="#F09030" stroke-width="0.5"/>
+        <text x="620" y="100" text-anchor="middle">B:stk</text>
+        <rect x="650" y="89" width="50" height="16" fill="#1A1918" stroke="#3A3936" stroke-width="0.5"/>
+        <text x="675" y="100" text-anchor="middle" fill="#5A5952">free</text>
+        <rect x="705" y="89" width="50" height="16" fill="#C8A030" opacity="0.25" stroke="#C8A030" stroke-width="0.5"/>
+        <text x="730" y="100" text-anchor="middle">A:.data</text>
+
+        <rect x="540" y="110" width="215" height="160" fill="#1A1918" stroke="#3A3936" stroke-width="0.5"/>
+        <text x="647" y="195" text-anchor="middle" fill="#5A5952" font-size="10">free / page cache / kernel slabs</text>
+
+        <rect x="540" y="276" width="215" height="22" fill="#B85A6A" opacity="0.18" stroke="#B85A6A" stroke-width="0.5"/>
+        <text x="647" y="291" text-anchor="middle" fill="#B85A6A" font-size="10">kernel image / direct map</text>
+      </g>
+    </svg>
+    <div class="cap">FIG_01 // VIRT-TO-PHYS INDIRECTION</div>
+  </div>
+</section>
+
+<!-- ═════ 02 ADDRESS SPACE ═════ -->
+<section id="vas">
+  <h2>The <em class="or">x86_64</em> Virtual Address Space <span class="htag">canonical · 48 bits</span></h2>
+  <div class="section-bar"></div>
+  <p>x86_64 hardware uses 48-bit virtual addresses (5-level paging extends this to 57, but most kernels still ship 4-level). The high 16 bits must be a sign-extension of bit 47 — addresses must be <em>canonical</em>. Anything else faults. This carves the 64-bit space into two halves with a giant unmappable hole in the middle.</p>
+
+  <div class="kv-grid">
+    <div class="kv"><div class="k">Page size</div><div class="v">4 KiB <span class="hex">(0x1000)</span></div></div>
+    <div class="kv"><div class="k">Virt bits used</div><div class="v">48 / 57</div></div>
+    <div class="kv"><div class="k">User max</div><div class="v"><span class="hex">0x00007FFF.FFFF.FFFF</span></div></div>
+    <div class="kv"><div class="k">Kernel min</div><div class="v"><span class="hex">0xFFFF8000.0000.0000</span></div></div>
+    <div class="kv"><div class="k">User space</div><div class="v">128 TiB</div></div>
+    <div class="kv"><div class="k">Kernel space</div><div class="v">128 TiB</div></div>
+  </div>
+
+  <h3>Layout of a typical user process</h3>
+
+  <div class="svg-plate">
+    <svg viewBox="0 0 760 600" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono">
+      <text x="180" y="20" text-anchor="end" fill="#5A5952" font-size="10" letter-spacing="2">HIGH ADDRESSES</text>
+      <text x="180" y="585" text-anchor="end" fill="#5A5952" font-size="10" letter-spacing="2">LOW ADDRESSES</text>
+
+      <rect x="200" y="30" width="380" height="50" fill="#231F1C" stroke="#B85A6A" stroke-width="1.2"/>
+      <text x="390" y="52" text-anchor="middle" fill="#B85A6A" font-family="Bebas Neue" font-size="17" letter-spacing="2">KERNEL SPACE</text>
+      <text x="390" y="68" text-anchor="middle" fill="#5A5952" font-size="10">unmapped from user CR3 entries</text>
+      <text x="190" y="40" text-anchor="end" fill="#F09030" font-size="10">0xFFFF.FFFF.FFFF.FFFF</text>
+      <text x="190" y="78" text-anchor="end" fill="#F09030" font-size="10">0xFFFF.8000.0000.0000</text>
+
+      <rect x="200" y="90" width="380" height="40" fill="url(#hatch2)" stroke="#3A3936" stroke-width="0.8" stroke-dasharray="4,3"/>
+      <text x="390" y="113" text-anchor="middle" fill="#5A5952" font-size="11" letter-spacing="2">NON-CANONICAL  /  FAULTS  /  64 - 48 BIT GAP</text>
+      <defs>
+        <pattern id="hatch2" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="6" stroke="#2E2D2A" stroke-width="2"/>
+        </pattern>
+      </defs>
+      <text x="190" y="100" text-anchor="end" fill="#F09030" font-size="10">0xFFFF.7FFF.FFFF.FFFF</text>
+      <text x="190" y="128" text-anchor="end" fill="#F09030" font-size="10">0x0000.8000.0000.0000</text>
+
+      <rect x="200" y="140" width="380" height="48" fill="#231F1C" stroke="#F09030" stroke-width="1.2"/>
+      <text x="390" y="162" text-anchor="middle" fill="#F09030" font-family="Bebas Neue" font-size="17" letter-spacing="2">STACK   ↓  GROWS DOWN</text>
+      <text x="390" y="178" text-anchor="middle" fill="#5A5952" font-size="10">argv / envp / auxv / locals / saved RBP / RIP</text>
+      <text x="190" y="150" text-anchor="end" fill="#F09030" font-size="10">0x0000.7FFF.FFFF.FFFF</text>
+      <text x="190" y="186" text-anchor="end" fill="#5A5952" font-size="10">RLIMIT_STACK below</text>
+
+      <rect x="200" y="195" width="380" height="20" fill="#1A1918" stroke="#2E2D2A"/>
+      <text x="390" y="208" text-anchor="middle" fill="#5A5952" font-size="9" letter-spacing="2">UNMAPPED GAP / GUARD</text>
+
+      <rect x="200" y="220" width="380" height="100" fill="#231F1C" stroke="#B07AB8" stroke-width="1.2"/>
+      <text x="390" y="245" text-anchor="middle" fill="#B07AB8" font-family="Bebas Neue" font-size="17" letter-spacing="2">MMAP REGION  ↓  GROWS DOWN</text>
+      <text x="390" y="265" text-anchor="middle" fill="#CCCBC4" font-size="10">shared libraries (libc, libm, ld.so)</text>
+      <text x="390" y="280" text-anchor="middle" fill="#CCCBC4" font-size="10">large malloc() chunks (&gt; M_MMAP_THRESHOLD)</text>
+      <text x="390" y="295" text-anchor="middle" fill="#CCCBC4" font-size="10">file mappings, shared memory, anonymous</text>
+      <text x="390" y="312" text-anchor="middle" fill="#5A5952" font-size="10">ASLR randomizes base on each exec</text>
+
+      <rect x="200" y="325" width="380" height="20" fill="#1A1918" stroke="#2E2D2A"/>
+      <text x="390" y="338" text-anchor="middle" fill="#5A5952" font-size="9" letter-spacing="2">VARIABLE GAP</text>
+
+      <rect x="200" y="350" width="380" height="60" fill="#231F1C" stroke="#C8A030" stroke-width="1.2"/>
+      <text x="390" y="372" text-anchor="middle" fill="#C8A030" font-family="Bebas Neue" font-size="17" letter-spacing="2">HEAP  ↑  GROWS UP</text>
+      <text x="390" y="390" text-anchor="middle" fill="#CCCBC4" font-size="10">brk()-extended region, malloc small allocations</text>
+      <text x="390" y="404" text-anchor="middle" fill="#5A5952" font-size="10">program break = end of heap</text>
+
+      <rect x="200" y="415" width="380" height="34" fill="#231F1C" stroke="#3AB8AC" stroke-width="1.2"/>
+      <text x="390" y="437" text-anchor="middle" fill="#3AB8AC" font-family="Bebas Neue" font-size="17" letter-spacing="2">.BSS  /  ZERO-INIT GLOBALS</text>
+
+      <rect x="200" y="453" width="380" height="34" fill="#231F1C" stroke="#3AB8AC" stroke-width="1.2"/>
+      <text x="390" y="475" text-anchor="middle" fill="#3AB8AC" font-family="Bebas Neue" font-size="17" letter-spacing="2">.DATA  /  INIT GLOBALS</text>
+
+      <rect x="200" y="491" width="380" height="34" fill="#231F1C" stroke="#3AB8AC" stroke-width="1.2"/>
+      <text x="390" y="513" text-anchor="middle" fill="#3AB8AC" font-family="Bebas Neue" font-size="17" letter-spacing="2">.RODATA  /  CONST + STRINGS</text>
+
+      <rect x="200" y="529" width="380" height="34" fill="#231F1C" stroke="#3AB8AC" stroke-width="1.2"/>
+      <text x="390" y="551" text-anchor="middle" fill="#3AB8AC" font-family="Bebas Neue" font-size="17" letter-spacing="2">.TEXT  /  EXECUTABLE CODE</text>
+      <text x="190" y="540" text-anchor="end" fill="#F09030" font-size="10">0x0000.0000.0040.0000</text>
+      <text x="190" y="560" text-anchor="end" fill="#5A5952" font-size="9">(PIE will randomize)</text>
+
+      <rect x="200" y="567" width="380" height="20" fill="#1A1918" stroke="#B85A6A" stroke-width="0.8" stroke-dasharray="3,2"/>
+      <text x="390" y="581" text-anchor="middle" fill="#B85A6A" font-size="11" letter-spacing="2">NULL PAGE  /  UNMAPPED  /  SIGSEGV</text>
+      <text x="190" y="582" text-anchor="end" fill="#F09030" font-size="10">0x0000.0000.0000.0000</text>
+
+      <g transform="translate(605, 140)">
+        <text x="0" y="0" fill="#5A5952" font-size="10" letter-spacing="2">PERMS</text>
+        <rect x="0" y="10" width="14" height="10" fill="#F09030" opacity="0.3" stroke="#F09030"/>
+        <text x="20" y="19" fill="#CCCBC4" font-size="10">rw- stack</text>
+        <rect x="0" y="28" width="14" height="10" fill="#B07AB8" opacity="0.3" stroke="#B07AB8"/>
+        <text x="20" y="37" fill="#CCCBC4" font-size="10">varies</text>
+        <rect x="0" y="46" width="14" height="10" fill="#C8A030" opacity="0.3" stroke="#C8A030"/>
+        <text x="20" y="55" fill="#CCCBC4" font-size="10">rw- heap</text>
+        <rect x="0" y="64" width="14" height="10" fill="#3AB8AC" opacity="0.3" stroke="#3AB8AC"/>
+        <text x="20" y="73" fill="#CCCBC4" font-size="10">rw- bss/data</text>
+        <rect x="0" y="82" width="14" height="10" fill="#3AB8AC" opacity="0.3" stroke="#3AB8AC"/>
+        <text x="20" y="91" fill="#CCCBC4" font-size="10">r-- rodata</text>
+        <rect x="0" y="100" width="14" height="10" fill="#3AB8AC" opacity="0.3" stroke="#3AB8AC"/>
+        <text x="20" y="109" fill="#CCCBC4" font-size="10">r-x .text</text>
+      </g>
+    </svg>
+    <div class="cap">FIG_02 // x86_64 USER VAS  /  4-LEVEL PAGING</div>
+  </div>
+
+  <h3 class="cy">What lives in each segment</h3>
+
+  <table>
+    <tr><th>Segment</th><th>Source</th><th>Perms</th><th>Backed by</th><th>Notes</th></tr>
+    <tr><td class="cy">.text</td><td>ELF LOAD</td><td>r-x</td><td>file (private)</td><td>shared between procs of same binary</td></tr>
+    <tr><td class="cy">.rodata</td><td>ELF LOAD</td><td>r--</td><td>file</td><td>string literals, const tables</td></tr>
+    <tr><td class="cy">.data</td><td>ELF LOAD</td><td>rw-</td><td>file (COW)</td><td>initialized globals/statics</td></tr>
+    <tr><td class="cy">.bss</td><td>kernel</td><td>rw-</td><td>anonymous (zero)</td><td>no file bytes; zeroed on first touch</td></tr>
+    <tr><td class="yl">heap</td><td>brk/sbrk</td><td>rw-</td><td>anonymous</td><td>extended in pages, never released piecemeal</td></tr>
+    <tr><td class="mg">mmap</td><td>mmap()</td><td>varies</td><td>file or anon</td><td>unmappable individually via munmap()</td></tr>
+    <tr><td class="meth">stack</td><td>kernel (auto)</td><td>rw-</td><td>anonymous</td><td>grows on fault, capped by RLIMIT_STACK</td></tr>
+    <tr><td class="rd">vDSO/vvar</td><td>kernel</td><td>r-x / r--</td><td>shared kernel</td><td>fast-path syscalls (gettimeofday, etc.)</td></tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>ASLR // address space layout randomization</strong>
+    With PIE binaries (default on most modern distros), the kernel randomizes the base of the executable, the mmap region, the stack top, and the heap start on every <code>execve()</code>. Two runs of the same binary won't share addresses for anything except shared <code>.text</code> pages of the underlying ELF, which the kernel happily deduplicates in the page cache.
+  </div>
+</section>
+
+<!-- ═════ 03 PROC MAPS ═════ -->
+<section id="maps">
+  <h2>Walking <em class="or">/proc/self/maps</em> <span class="htag">VMA list</span></h2>
+  <div class="section-bar"></div>
+  <p>The kernel exposes the live VMA list (Virtual Memory Areas — the kernel's internal representation of contiguous mapped regions) through procfs. Each line is one VMA. Compile and run this:</p>
+
+<pre><span class="label">C // dump_maps.c</span><span class="pp">#define _GNU_SOURCE</span>
+<span class="pp">#include &lt;stdio.h&gt;</span>
+<span class="pp">#include &lt;stdlib.h&gt;</span>
+<span class="pp">#include &lt;unistd.h&gt;</span>
+
+<span class="ty">char</span>  initialized_global[] = <span class="st">"hello"</span>;     <span class="cm">/* .data   */</span>
+<span class="ty">char</span>  zero_global[<span class="num">4096</span>];                       <span class="cm">/* .bss    */</span>
+<span class="kw">const</span> <span class="ty">char</span> *ro_string = <span class="st">"read me only"</span>;       <span class="cm">/* .rodata */</span>
+
+<span class="ty">int</span> <span class="fn">main</span>(<span class="ty">int</span> argc, <span class="ty">char</span> **argv) {
+    <span class="ty">int</span>   on_stack = <span class="num">42</span>;
+    <span class="ty">char</span> *on_heap  = <span class="fn">malloc</span>(<span class="num">128</span>);
+    <span class="ty">char</span> *big_heap = <span class="fn">malloc</span>(<span class="num">8</span> * <span class="num">1024</span> * <span class="num">1024</span>);    <span class="cm">/* &gt; mmap threshold */</span>
+
+    <span class="fn">printf</span>(<span class="st">"main()         = %p   .text\n"</span>,        (<span class="ty">void</span>*)<span class="fn">main</span>);
+    <span class="fn">printf</span>(<span class="st">"ro_string      = %p   .rodata\n"</span>,      (<span class="ty">void</span>*)ro_string);
+    <span class="fn">printf</span>(<span class="st">"init_global    = %p   .data\n"</span>,        (<span class="ty">void</span>*)initialized_global);
+    <span class="fn">printf</span>(<span class="st">"zero_global    = %p   .bss\n"</span>,         (<span class="ty">void</span>*)zero_global);
+    <span class="fn">printf</span>(<span class="st">"on_heap (sml)  = %p   heap (brk)\n"</span>,   (<span class="ty">void</span>*)on_heap);
+    <span class="fn">printf</span>(<span class="st">"big_heap (lrg) = %p   mmap region\n"</span>,  (<span class="ty">void</span>*)big_heap);
+    <span class="fn">printf</span>(<span class="st">"on_stack       = %p   stack\n"</span>,        (<span class="ty">void</span>*)&amp;on_stack);
+
+    <span class="ty">FILE</span> *m = <span class="fn">fopen</span>(<span class="st">"/proc/self/maps"</span>, <span class="st">"r"</span>);
+    <span class="ty">char</span> line[<span class="num">512</span>];
+    <span class="kw">while</span> (<span class="fn">fgets</span>(line, <span class="kw">sizeof</span> line, m)) <span class="fn">fputs</span>(line, stdout);
+    <span class="fn">fclose</span>(m);
+    <span class="kw">return</span> <span class="num">0</span>;
+}</pre>
+
+  <p>Sample output (truncated, addresses shown in low form for clarity):</p>
+
+<pre class="cy"><span class="label">stdout</span><span class="cm">main()         = 0x55b2c4a01169   .text</span>
+<span class="cm">ro_string      = 0x55b2c4a02008   .rodata</span>
+<span class="cm">init_global    = 0x55b2c4a04010   .data</span>
+<span class="cm">zero_global    = 0x55b2c4a04020   .bss</span>
+<span class="cm">on_heap (sml)  = 0x55b2c5e7a2a0   heap (brk)</span>
+<span class="cm">big_heap (lrg) = 0x7f3e9b800010   mmap region</span>
+<span class="cm">on_stack       = 0x7ffd4f3a8b8c   stack</span>
+
+<span class="hl">55b2c4a00000-55b2c4a01000</span> <span class="key">r--p</span>  00000000  fd:00  123  /home/u/dump_maps   <span class="cm"># ELF header</span>
+<span class="hl">55b2c4a01000-55b2c4a02000</span> <span class="key">r-xp</span>  00001000  fd:00  123  /home/u/dump_maps   <span class="cm"># .text</span>
+<span class="hl">55b2c4a02000-55b2c4a03000</span> <span class="key">r--p</span>  00002000  fd:00  123  /home/u/dump_maps   <span class="cm"># .rodata</span>
+<span class="hl">55b2c4a03000-55b2c4a04000</span> <span class="key">rw-p</span>  00003000  fd:00  123  /home/u/dump_maps   <span class="cm"># .data</span>
+<span class="hl">55b2c4a04000-55b2c4a05000</span> <span class="key">rw-p</span>  00000000  00:00  0    <span class="cm"># .bss (anon)</span>
+<span class="hl">55b2c5e7a000-55b2c5e9b000</span> <span class="key">rw-p</span>  00000000  00:00  0    <span class="val">[heap]</span>
+<span class="hl">7f3e9b7ff000-7f3e9c000000</span> <span class="key">rw-p</span>  00000000  00:00  0    <span class="cm"># 8 MiB anon mmap</span>
+<span class="hl">7f3e9c1a0000-7f3e9c1c8000</span> <span class="key">r--p</span>  00000000  fd:00  456  /usr/lib64/libc.so.6
+<span class="hl">7f3e9c1c8000-7f3e9c34f000</span> <span class="key">r-xp</span>  00028000  fd:00  456  /usr/lib64/libc.so.6
+<span class="hl">7ffd4f389000-7ffd4f3aa000</span> <span class="key">rw-p</span>  00000000  00:00  0    <span class="val">[stack]</span>
+<span class="hl">7ffd4f3d4000-7ffd4f3d8000</span> <span class="key">r--p</span>  00000000  00:00  0    <span class="val">[vvar]</span>
+<span class="hl">7ffd4f3d8000-7ffd4f3da000</span> <span class="key">r-xp</span>  00000000  00:00  0    <span class="val">[vdso]</span></pre>
+
+  <h3>Decoding a maps line</h3>
+  <p>Each row is <code>start-end perms offset dev inode pathname</code>. Permissions are <code>rwxp</code> or <code>rwxs</code> (private vs shared). A private writable file mapping starts as a copy-on-write of the file pages — the moment you write, the kernel hands you a private anon page and forgets about the file for that location.</p>
+
+  <p>Want richer info? <code>/proc/[pid]/smaps</code> breaks down each VMA's RSS, PSS, swap, anon vs file pages, hugepage backing, locked status.</p>
+</section>
+
+<!-- ═════ 04 PAGE TABLES ═════ -->
+<section id="pgtbl">
+  <h2>Page Tables / The <em class="or">4-Level</em> Walk <span class="htag">9 + 9 + 9 + 9 + 12</span></h2>
+  <div class="section-bar"></div>
+  <p>A virtual address is not a number that gets added to a base register. It's a structured key into a multi-level radix tree. On x86_64 with 4-level paging, a 48-bit virtual address breaks into five fields:</p>
+
+  <div class="svg-plate">
+    <svg viewBox="0 0 820 220" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono">
+      <text x="410" y="20" text-anchor="middle" fill="#5A5952" font-size="10" letter-spacing="2">VIRTUAL ADDRESS  /  64 BITS  /  HIGH 16 SIGN-EXTENDED</text>
+
+      <g transform="translate(50, 35)">
+        <rect x="0" y="0" width="120" height="40" fill="#231F1C" stroke="#B85A6A"/>
+        <text x="60" y="18" text-anchor="middle" fill="#B85A6A" font-size="11">63 : 48</text>
+        <text x="60" y="34" text-anchor="middle" fill="#5A5952" font-size="9">sign-ext</text>
+
+        <rect x="120" y="0" width="120" height="40" fill="#231F1C" stroke="#3AB8AC"/>
+        <text x="180" y="18" text-anchor="middle" fill="#3AB8AC" font-size="11">47 : 39</text>
+        <text x="180" y="34" text-anchor="middle" fill="#CCCBC4" font-size="9">PGD idx (9b)</text>
+
+        <rect x="240" y="0" width="120" height="40" fill="#231F1C" stroke="#C8A030"/>
+        <text x="300" y="18" text-anchor="middle" fill="#C8A030" font-size="11">38 : 30</text>
+        <text x="300" y="34" text-anchor="middle" fill="#CCCBC4" font-size="9">PUD idx (9b)</text>
+
+        <rect x="360" y="0" width="120" height="40" fill="#231F1C" stroke="#F09030"/>
+        <text x="420" y="18" text-anchor="middle" fill="#F09030" font-size="11">29 : 21</text>
+        <text x="420" y="34" text-anchor="middle" fill="#CCCBC4" font-size="9">PMD idx (9b)</text>
+
+        <rect x="480" y="0" width="120" height="40" fill="#231F1C" stroke="#B07AB8"/>
+        <text x="540" y="18" text-anchor="middle" fill="#B07AB8" font-size="11">20 : 12</text>
+        <text x="540" y="34" text-anchor="middle" fill="#CCCBC4" font-size="9">PTE idx (9b)</text>
+
+        <rect x="600" y="0" width="120" height="40" fill="#231F1C" stroke="#7AC890"/>
+        <text x="660" y="18" text-anchor="middle" fill="#7AC890" font-size="11">11 : 0</text>
+        <text x="660" y="34" text-anchor="middle" fill="#CCCBC4" font-size="9">offset (12b)</text>
+      </g>
+
+      <g transform="translate(30, 100)">
+        <rect x="0" y="20" width="80" height="36" fill="#231F1C" stroke="#B85A6A"/>
+        <text x="40" y="34" text-anchor="middle" fill="#B85A6A" font-family="Bebas Neue" font-size="14">CR3</text>
+        <text x="40" y="48" text-anchor="middle" fill="#CCCBC4" font-size="9">phys ptr</text>
+
+        <line x1="80" y1="38" x2="120" y2="38" stroke="#B85A6A" stroke-width="1.2"/>
+        <polygon points="120,38 114,34 114,42" fill="#B85A6A"/>
+
+        <rect x="120" y="20" width="100" height="36" fill="#231F1C" stroke="#3AB8AC"/>
+        <text x="170" y="34" text-anchor="middle" fill="#3AB8AC" font-family="Bebas Neue" font-size="14">PGD</text>
+        <text x="170" y="48" text-anchor="middle" fill="#CCCBC4" font-size="9">512 entries</text>
+
+        <line x1="220" y1="38" x2="260" y2="38" stroke="#3AB8AC" stroke-width="1.2"/>
+        <polygon points="260,38 254,34 254,42" fill="#3AB8AC"/>
+
+        <rect x="260" y="20" width="100" height="36" fill="#231F1C" stroke="#C8A030"/>
+        <text x="310" y="34" text-anchor="middle" fill="#C8A030" font-family="Bebas Neue" font-size="14">PUD</text>
+        <text x="310" y="48" text-anchor="middle" fill="#CCCBC4" font-size="9">512 entries</text>
+
+        <line x1="360" y1="38" x2="400" y2="38" stroke="#C8A030" stroke-width="1.2"/>
+        <polygon points="400,38 394,34 394,42" fill="#C8A030"/>
+
+        <rect x="400" y="20" width="100" height="36" fill="#231F1C" stroke="#F09030"/>
+        <text x="450" y="34" text-anchor="middle" fill="#F09030" font-family="Bebas Neue" font-size="14">PMD</text>
+        <text x="450" y="48" text-anchor="middle" fill="#CCCBC4" font-size="9">512 entries</text>
+
+        <line x1="500" y1="38" x2="540" y2="38" stroke="#F09030" stroke-width="1.2"/>
+        <polygon points="540,38 534,34 534,42" fill="#F09030"/>
+
+        <rect x="540" y="20" width="100" height="36" fill="#231F1C" stroke="#B07AB8"/>
+        <text x="590" y="34" text-anchor="middle" fill="#B07AB8" font-family="Bebas Neue" font-size="14">PTE</text>
+        <text x="590" y="48" text-anchor="middle" fill="#CCCBC4" font-size="9">512 entries</text>
+
+        <line x1="640" y1="38" x2="680" y2="38" stroke="#7AC890" stroke-width="1.2"/>
+        <polygon points="680,38 674,34 674,42" fill="#7AC890"/>
+
+        <rect x="680" y="10" width="80" height="56" fill="#231F1C" stroke="#7AC890"/>
+        <text x="720" y="32" text-anchor="middle" fill="#7AC890" font-family="Bebas Neue" font-size="14">FRAME</text>
+        <text x="720" y="48" text-anchor="middle" fill="#CCCBC4" font-size="9">+ offset</text>
+        <text x="720" y="60" text-anchor="middle" fill="#5A5952" font-size="9">4 KiB</text>
+
+        <text x="380" y="90" text-anchor="middle" fill="#5A5952" font-size="10" letter-spacing="2">EACH ENTRY = 8 BYTES  /  TABLE = 4 KiB  /  WALK = 4 LOADS</text>
+      </g>
+    </svg>
+    <div class="cap">FIG_03 // 4-LEVEL PAGE TABLE WALK</div>
+  </div>
+
+  <p>Each level is a 4 KiB table of 512 64-bit entries. The CPU walks the tree on every translation that misses the TLB.</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="step-label">STEP 1</div>
+      <div class="step-name">Read CR3</div>
+      <div class="step-detail">phys ptr to PGD</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step cy">
+      <div class="step-label">STEP 2</div>
+      <div class="step-name">Index PGD</div>
+      <div class="step-detail">bits 47:39</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="step-label">STEP 3</div>
+      <div class="step-name">Index PUD</div>
+      <div class="step-detail">bits 38:30</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step cy">
+      <div class="step-label">STEP 4</div>
+      <div class="step-name">Index PMD</div>
+      <div class="step-detail">bits 29:21</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="step-label">STEP 5</div>
+      <div class="step-name">Index PTE</div>
+      <div class="step-detail">bits 20:12</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step cy">
+      <div class="step-label">RESULT</div>
+      <div class="step-name">PFN + offset</div>
+      <div class="step-detail">phys address</div>
+    </div>
+  </div>
+
+  <h3>Anatomy of a PTE (x86_64)</h3>
+
+  <table>
+    <tr><th>Bit</th><th>Name</th><th>Meaning</th></tr>
+    <tr><td class="hex">0</td><td class="cy">P</td><td>present — if 0, fault on access (other bits may still be meaningful to the kernel)</td></tr>
+    <tr><td class="hex">1</td><td class="cy">R/W</td><td>writable when 1, read-only when 0</td></tr>
+    <tr><td class="hex">2</td><td class="cy">U/S</td><td>user accessible when 1, kernel-only when 0</td></tr>
+    <tr><td class="hex">3</td><td class="meth">PWT</td><td>write-through caching</td></tr>
+    <tr><td class="hex">4</td><td class="meth">PCD</td><td>cache disable</td></tr>
+    <tr><td class="hex">5</td><td class="yl">A</td><td>accessed — set by hardware on read/write, cleared by kernel for LRU</td></tr>
+    <tr><td class="hex">6</td><td class="yl">D</td><td>dirty — set by hardware on write, used for writeback</td></tr>
+    <tr><td class="hex">7</td><td class="rd">PS</td><td>page size — if 1 at PMD level, this is a 2 MiB hugepage; at PUD, a 1 GiB page</td></tr>
+    <tr><td class="hex">8</td><td class="cy">G</td><td>global — not flushed from TLB on CR3 reload (kernel mappings)</td></tr>
+    <tr><td class="hex">12-51</td><td class="meth">PFN</td><td>physical page frame number, shifted left 12 bits gives physical address</td></tr>
+    <tr><td class="hex">63</td><td class="rd">NX</td><td>no-execute — faults on instruction fetch when set</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>Why 9 + 9 + 9 + 9 + 12?</strong>
+    A 4 KiB table holds 4096 / 8 = 512 entries, and 512 = 2<sup>9</sup>. So each level consumes 9 bits of address. Four levels give 36 bits of indexing, plus 12 bits of in-page offset = <strong>48 bits</strong> total. That's where the 256 TiB user space comes from: 2<sup>47</sup> = 128 TiB on each half.
+  </div>
+
+  <h3 class="cy">Hugepages skip levels</h3>
+  <p>If the PMD entry has bit 7 (PS) set, the walk stops there: bits 20:0 of the virtual address become a 21-bit offset into a 2 MiB hugepage. Same idea one level up gives 1 GiB pages. Hugepages dramatically reduce TLB pressure for workloads with large working sets — one TLB entry covers 512x or 262144x more memory.</p>
+</section>
+
+<!-- ═════ 05 MMU / TLB ═════ -->
+<section id="mmu">
+  <h2>The <em class="or">MMU</em> and <em class="cy">TLB</em> <span class="htag">translation cache</span></h2>
+  <div class="section-bar"></div>
+  <p>The Memory Management Unit is hardware. Every load and store goes through it. The page-table walk above costs four serial DRAM loads, which is obscenely slow at modern clock rates — so the MMU caches recent translations in the <em>Translation Lookaside Buffer</em>.</p>
+
+  <div class="kv-grid">
+    <div class="kv"><div class="k">L1 TLB size</div><div class="v">~64 entries</div></div>
+    <div class="kv"><div class="k">L2 TLB size</div><div class="v">~1500 entries</div></div>
+    <div class="kv"><div class="k">TLB miss cost</div><div class="v">50-200 cycles</div></div>
+    <div class="kv"><div class="k">TLB hit cost</div><div class="v">~1 cycle</div></div>
+    <div class="kv"><div class="k">Walk on miss</div><div class="v">4 cache-line loads</div></div>
+    <div class="kv"><div class="k">Flush on</div><div class="v">CR3 write</div></div>
+  </div>
+
+  <h3>Context switches and TLB shootdowns</h3>
+  <p>Loading <code>CR3</code> with a new process's PGD physical address invalidates every non-global TLB entry. Kernel mappings have the <em>G</em> bit set so they survive context switches.</p>
+
+  <p>If a kernel changes a page-table entry on one CPU, it needs to invalidate the cached translation on every CPU that might have it — this is a <em>TLB shootdown</em>, implemented via inter-processor interrupts. They're expensive. Workloads that munmap or mprotect aggressively pay for them visibly.</p>
+
+  <div class="info-box cy">
+    <strong>PCID / ASID // process-context identifiers</strong>
+    Modern x86_64 CPUs support PCIDs, which tag TLB entries with the address space they belong to. Linux enables this when available, allowing the kernel to switch CR3 without flushing the TLB for short-lived switches (KPTI being a notable consumer).
+  </div>
+</section>
+
+<!-- ═════ 06 PAGE FAULTS ═════ -->
+<section id="fault">
+  <h2><em class="rd">Page</em> Faults <span class="htag">minor · major · invalid</span></h2>
+  <div class="section-bar rd"></div>
+  <p>A page fault is the CPU's way of telling the kernel "I tried to translate an address and the PTE didn't satisfy the access." It's <em>not</em> always an error — faults are how Linux implements demand paging, copy-on-write, lazy stack growth, and swap-in.</p>
+
+  <div class="prim-grid">
+    <div class="prim-card" data-type="gr">
+      <div class="p-name">Minor</div>
+      <div class="p-method">microseconds</div>
+      <div class="p-desc">PTE empty but VMA exists. Kernel allocates a frame (or finds a cached one), wires up the PTE, retries the instruction. Includes first-touch of .bss, fresh anon mmap, stack growth.</div>
+    </div>
+    <div class="prim-card" data-type="yl">
+      <div class="p-name">Major</div>
+      <div class="p-method">milliseconds</div>
+      <div class="p-desc">Page lives on disk — either swapped out or never read in from a file mapping. Kernel issues a block I/O, sleeps the process, retries on completion.</div>
+    </div>
+    <div class="prim-card" data-type="rd">
+      <div class="p-name">Invalid</div>
+      <div class="p-method">SIGSEGV / SIGBUS</div>
+      <div class="p-desc">No VMA covers the address, or the access violates VMA permissions (write to r--, exec from rw-). Kernel sends a signal. Process death by default.</div>
+    </div>
+  </div>
+
+  <h3>Watch faults happen</h3>
+
+<pre><span class="label">C // demand_paging.c</span><span class="pp">#define _GNU_SOURCE</span>
+<span class="pp">#include &lt;stdio.h&gt;</span>
+<span class="pp">#include &lt;sys/resource.h&gt;</span>
+<span class="pp">#include &lt;sys/mman.h&gt;</span>
+
+<span class="kw">static</span> <span class="ty">void</span> <span class="fn">show</span>(<span class="kw">const</span> <span class="ty">char</span> *tag) {
+    <span class="kw">struct</span> rusage r;
+    <span class="fn">getrusage</span>(RUSAGE_SELF, &amp;r);
+    <span class="fn">printf</span>(<span class="st">"%-14s minflt=%-8ld majflt=%-4ld maxrss=%ld KiB\n"</span>,
+           tag, r.ru_minflt, r.ru_majflt, r.ru_maxrss);
+}
+
+<span class="ty">int</span> <span class="fn">main</span>(<span class="ty">void</span>) {
+    <span class="ty">size_t</span> N = <span class="num">256</span> * <span class="num">1024</span> * <span class="num">1024</span>;     <span class="cm">/* 256 MiB */</span>
+    <span class="fn">show</span>(<span class="st">"baseline"</span>);
+
+    <span class="ty">char</span> *p = <span class="fn">mmap</span>(<span class="kw">NULL</span>, N, PROT_READ | PROT_WRITE,
+                   MAP_PRIVATE | MAP_ANONYMOUS, -<span class="num">1</span>, <span class="num">0</span>);
+    <span class="fn">show</span>(<span class="st">"after mmap"</span>);                <span class="cm">/* still ~0 RSS, no faults */</span>
+
+    <span class="kw">for</span> (<span class="ty">size_t</span> i = <span class="num">0</span>; i &lt; N; i += <span class="num">4096</span>)
+        p[i] = <span class="num">1</span>;                       <span class="cm">/* one fault per page */</span>
+    <span class="fn">show</span>(<span class="st">"after touch"</span>);
+    <span class="kw">return</span> <span class="num">0</span>;
+}</pre>
+
+<pre class="cy"><span class="label">stdout</span><span class="cm">baseline       minflt=92       majflt=0    maxrss=2944 KiB</span>
+<span class="cm">after mmap     minflt=92       majflt=0    maxrss=2944 KiB</span>
+<span class="cm">after touch    minflt=65628    majflt=0    maxrss=265728 KiB</span></pre>
+
+  <p>The mmap itself is virtually free. The 256 MiB only gets paid for when you touch it — one minor fault per 4 KiB page (65536 of them). No major faults, because nothing comes from disk. Anonymous pages are filled from the kernel's zero page on first read, then COW'd on first write.</p>
+</section>
+
+<!-- ═════ 07 BRK VS MMAP ═════ -->
+<section id="brk">
+  <h2><em class="or">brk()</em> vs <em class="cy">mmap()</em> <span class="htag">how kernels hand you memory</span></h2>
+  <div class="section-bar"></div>
+  <p>Two syscalls actually create new VMAs in user space. Everything else — <code>malloc</code>, <code>calloc</code>, <code>new</code>, the garbage collector in your runtime — is a library on top of these.</p>
+
+  <h3>brk() — the program break</h3>
+  <p>Each process has a single contiguous heap whose end is the <em>program break</em>. <code>brk(addr)</code> sets it; <code>sbrk(delta)</code> is the SysV-style relative variant. The heap can only grow or shrink contiguously — you cannot poke a hole in the middle. This is why classic free lists in <code>malloc</code> rarely actually return memory to the OS: you can't free the middle of the heap, only the tail.</p>
+
+<pre><span class="label">C // brk_demo.c</span><span class="pp">#include &lt;stdio.h&gt;</span>
+<span class="pp">#include &lt;unistd.h&gt;</span>
+
+<span class="ty">int</span> <span class="fn">main</span>(<span class="ty">void</span>) {
+    <span class="ty">void</span> *initial = <span class="fn">sbrk</span>(<span class="num">0</span>);                <span class="cm">/* current break */</span>
+    <span class="fn">printf</span>(<span class="st">"initial brk = %p\n"</span>, initial);
+
+    <span class="ty">void</span> *grown = <span class="fn">sbrk</span>(<span class="num">4096</span>);                  <span class="cm">/* extend by 1 page */</span>
+    <span class="fn">printf</span>(<span class="st">"grown brk   = %p (got back %p)\n"</span>, <span class="fn">sbrk</span>(<span class="num">0</span>), grown);
+
+    <span class="ty">char</span> *p = (<span class="ty">char</span>*)grown;
+    p[<span class="num">0</span>] = <span class="st">'X'</span>;                              <span class="cm">/* triggers minor fault */</span>
+    <span class="fn">sbrk</span>(-<span class="num">4096</span>);                              <span class="cm">/* return the page */</span>
+    <span class="kw">return</span> <span class="num">0</span>;
+}</pre>
+
+  <h3 class="cy">mmap() — arbitrary mappings, anywhere</h3>
+  <p><code>mmap</code> creates a fresh VMA at any free address in the mmap region (the kernel picks unless you pass <code>MAP_FIXED</code>). Each call yields a region you can independently <code>munmap</code>. This is what glibc's <code>malloc</code> uses for any allocation above <code>M_MMAP_THRESHOLD</code> (default 128 KiB, but it's adaptive — grows up to 32 MiB based on observed usage).</p>
+
+  <table>
+    <tr><th>Feature</th><th>brk / sbrk</th><th>mmap</th></tr>
+    <tr><td class="meth">VMA shape</td><td>single, contiguous, grows/shrinks at end</td><td>any number, anywhere in mmap region</td></tr>
+    <tr><td class="meth">Per-call cost</td><td>cheap syscall</td><td>cheap syscall + VMA insertion</td></tr>
+    <tr><td class="meth">Returnable</td><td>only the tail</td><td>per-mapping via munmap</td></tr>
+    <tr><td class="meth">Best for</td><td>many small short-lived allocs</td><td>large, long-lived, or shareable allocs</td></tr>
+    <tr><td class="meth">File-backed?</td><td>no</td><td>yes</td></tr>
+  </table>
+</section>
+
+<!-- ═════ 08 MALLOC ═════ -->
+<section id="malloc">
+  <h2><em class="or">malloc()</em> Internals <span class="htag">ptmalloc2 // glibc</span></h2>
+  <div class="section-bar"></div>
+  <p>Glibc's <code>malloc</code> is <em>ptmalloc2</em>, a heap allocator derived from Doug Lea's dlmalloc. It carves <code>brk</code>/<code>mmap</code> regions into <em>chunks</em>, organizes free chunks into <em>bins</em>, and serves user requests with metadata-prefixed pointers.</p>
+
+  <h3>Chunk layout</h3>
+
+<pre class="yl"><span class="label">malloc chunk</span>+----------------------+ &lt;- chunk start
+| <span class="key">prev_size</span>            |   only valid if prev is free
++----------------------+
+| <span class="key">size</span> | A | M | P     |   bottom 3 bits = flags
++----------------------+ &lt;- pointer returned to user
+| user data ...        |
+|                      |
+| (when freed: fd, bk, |
+|  fd_nextsize, bk_..) |
++----------------------+
+| chunk N+1 prev_size  |
++----------------------+
+
+flags:  <span class="val">P</span> = PREV_INUSE   (1 if prev chunk is in use)
+        <span class="val">M</span> = IS_MMAPPED   (1 if chunk came from mmap)
+        <span class="val">A</span> = NON_MAIN_ARENA</pre>
+
+  <p>The user pointer is just past the size header. <code>free(p)</code> reads <code>p[-8]</code> to find size and flags. This is why writing past the end of a buffer corrupts the <em>next</em> chunk's header — the classic heap overflow.</p>
+
+  <h3 class="cy">Bins — where free chunks live</h3>
+
+  <table>
+    <tr><th>Bin type</th><th>Sizes</th><th>Structure</th><th>Notes</th></tr>
+    <tr><td class="gr">tcache</td><td>per-thread, ≤ 0x420 default</td><td>singly-linked, 7 entries each, 64 sizes</td><td>fastest path, no locks, glibc 2.26+</td></tr>
+    <tr><td class="yl">fastbins</td><td>16-160 bytes default</td><td>LIFO singly-linked</td><td>no coalescing on free</td></tr>
+    <tr><td class="meth">unsorted bin</td><td>any</td><td>doubly-linked</td><td>recently freed; first stop on alloc</td></tr>
+    <tr><td class="meth">smallbins</td><td>16 ... 1008 bytes</td><td>62 bins, FIFO doubly-linked</td><td>exact-size match per bin</td></tr>
+    <tr><td class="meth">largebins</td><td>1024+ bytes</td><td>63 bins, sorted by size</td><td>best-fit search within bin</td></tr>
+    <tr><td class="mg">top chunk</td><td>tail of arena</td><td>single chunk</td><td>extended via brk/mmap when too small</td></tr>
+  </table>
+
+  <h3>Arenas — per-thread heaps</h3>
+  <p>The <em>main arena</em> sits on the <code>brk</code> heap. Additional threads get their own arenas (mmap'd 64 MiB regions on x86_64 by default), reducing lock contention. Each arena has its own bin structure. The number caps at <code>8 * ncpu</code> for 64-bit systems — beyond that, threads share.</p>
+
+  <div class="flow">
+    <div class="flow-step"><div class="step-label">1</div><div class="step-name">tcache</div><div class="step-detail">O(1), no lock</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step cy"><div class="step-label">2</div><div class="step-name">fastbin</div><div class="step-detail">O(1) per size</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step yl"><div class="step-label">3</div><div class="step-name">unsorted</div><div class="step-detail">cleanup pass</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="step-label">4</div><div class="step-name">small/large bins</div><div class="step-detail">scan + coalesce</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step cy"><div class="step-label">5</div><div class="step-name">top chunk</div><div class="step-detail">grow heap</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step yl"><div class="step-label">6</div><div class="step-name">mmap</div><div class="step-detail">if &gt; threshold</div></div>
+  </div>
+
+  <h3 class="cy">Watch the threshold flip</h3>
+
+<pre><span class="label">C // mmap_threshold.c</span><span class="pp">#include &lt;stdio.h&gt;</span>
+<span class="pp">#include &lt;stdlib.h&gt;</span>
+
+<span class="ty">int</span> <span class="fn">main</span>(<span class="ty">void</span>) {
+    <span class="ty">size_t</span> sizes[] = { <span class="num">64</span>, <span class="num">4096</span>, <span class="num">100000</span>, <span class="num">200000</span>, <span class="num">8</span>*<span class="num">1024</span>*<span class="num">1024</span> };
+    <span class="kw">for</span> (<span class="ty">int</span> i = <span class="num">0</span>; i &lt; <span class="num">5</span>; i++) {
+        <span class="ty">char</span> *p = <span class="fn">malloc</span>(sizes[i]);
+        <span class="fn">printf</span>(<span class="st">"malloc(%-8zu) = %p\n"</span>, sizes[i], p);
+    }
+    <span class="kw">return</span> <span class="num">0</span>;
+}</pre>
+
+<pre class="cy"><span class="label">stdout</span><span class="cm">malloc(64      ) = 0x55b8c7a8b2a0   &lt;- main arena (brk heap)</span>
+<span class="cm">malloc(4096    ) = 0x55b8c7a8b2f0   &lt;- main arena (brk heap)</span>
+<span class="cm">malloc(100000  ) = 0x55b8c7a8c310   &lt;- main arena (brk heap)</span>
+<span class="cm">malloc(200000  ) = 0x7f9a5c800010   &lt;- mmap region!</span>
+<span class="cm">malloc(8388608 ) = 0x7f9a5c000010   &lt;- mmap region (separate)</span></pre>
+
+  <p>The address jump from <code>0x55b8...</code> (main heap) to <code>0x7f9a...</code> (mmap region) is the threshold flip. When you <code>free()</code> the mmap'd ones, glibc actually calls <code>munmap</code> — that memory genuinely goes back to the kernel. <code>free()</code> on heap chunks just rebinds them.</p>
+</section>
+
+<!-- ═════ 09 MMAP ═════ -->
+<section id="mmap">
+  <h2><em class="cy">mmap()</em> Deep Dive <span class="htag">flags · advice</span></h2>
+  <div class="section-bar cy"></div>
+  <p>Four flag-pair combinations dominate everything you'll see in <code>/proc/[pid]/maps</code>:</p>
+
+  <div class="prim-grid two">
+    <div class="prim-card" data-type="or">
+      <div class="p-name">file + private</div>
+      <div class="p-method">MAP_PRIVATE | fd</div>
+      <div class="p-desc">Load file pages, COW on write. The classic libraries / config / data file mapping. Writes go to anonymous COW frames, never the file.</div>
+    </div>
+    <div class="prim-card" data-type="cy">
+      <div class="p-name">file + shared</div>
+      <div class="p-method">MAP_SHARED | fd</div>
+      <div class="p-desc">Changes write back to the file via the page cache. Used for shared databases, scratch files, IPC via memory-mapped files.</div>
+    </div>
+    <div class="prim-card" data-type="yl">
+      <div class="p-name">anon + private</div>
+      <div class="p-method">MAP_PRIVATE | MAP_ANONYMOUS</div>
+      <div class="p-desc">Fresh zero-filled pages. The malloc&gt;128k path. Big buffers, scratch space, anything the program owns alone.</div>
+    </div>
+    <div class="prim-card" data-type="mg">
+      <div class="p-name">anon + shared</div>
+      <div class="p-method">MAP_SHARED | MAP_ANONYMOUS</div>
+      <div class="p-desc">Shared between fork'd children. Classic IPC mechanism without needing a backing file. Survives fork(), dies with the last mapper.</div>
+    </div>
+  </div>
+
+  <h3>Anonymous private mapping (the malloc workhorse)</h3>
+
+<pre><span class="label">C // anon_private.c</span><span class="pp">#include &lt;stdio.h&gt;</span>
+<span class="pp">#include &lt;sys/mman.h&gt;</span>
+
+<span class="ty">int</span> <span class="fn">main</span>(<span class="ty">void</span>) {
+    <span class="ty">size_t</span> N = <span class="num">2</span> * <span class="num">1024</span> * <span class="num">1024</span>;            <span class="cm">/* 2 MiB */</span>
+    <span class="ty">char</span> *m = <span class="fn">mmap</span>(<span class="kw">NULL</span>, N,
+                   PROT_READ | PROT_WRITE,
+                   MAP_PRIVATE | MAP_ANONYMOUS,
+                   -<span class="num">1</span>, <span class="num">0</span>);
+    <span class="kw">if</span> (m == MAP_FAILED) { <span class="fn">perror</span>(<span class="st">"mmap"</span>); <span class="kw">return</span> <span class="num">1</span>; }
+
+    m[<span class="num">0</span>] = <span class="st">'A'</span>;                              <span class="cm">/* zero-page COW -&gt; first frame */</span>
+    <span class="fn">munmap</span>(m, N);
+    <span class="kw">return</span> <span class="num">0</span>;
+}</pre>
+
+  <h3 class="cy">File-backed shared mapping</h3>
+
+<pre class="cy"><span class="label">C // mmap_file.c</span><span class="pp">#include &lt;fcntl.h&gt;</span>
+<span class="pp">#include &lt;string.h&gt;</span>
+<span class="pp">#include &lt;sys/mman.h&gt;</span>
+<span class="pp">#include &lt;sys/stat.h&gt;</span>
+<span class="pp">#include &lt;unistd.h&gt;</span>
+
+<span class="ty">int</span> <span class="fn">main</span>(<span class="ty">int</span> argc, <span class="ty">char</span> **argv) {
+    <span class="ty">int</span> fd = <span class="fn">open</span>(argv[<span class="num">1</span>], O_RDWR);
+    <span class="kw">struct</span> stat st;
+    <span class="fn">fstat</span>(fd, &amp;st);
+
+    <span class="ty">char</span> *m = <span class="fn">mmap</span>(<span class="kw">NULL</span>, st.st_size,
+                   PROT_READ | PROT_WRITE,
+                   MAP_SHARED, fd, <span class="num">0</span>);
+
+    <span class="cm">/* edits hit the page cache; kernel writes back asynchronously */</span>
+    <span class="fn">memset</span>(m, <span class="st">'X'</span>, <span class="num">16</span>);
+    <span class="fn">msync</span>(m, st.st_size, MS_SYNC);          <span class="cm">/* force flush for durability */</span>
+
+    <span class="fn">munmap</span>(m, st.st_size);
+    <span class="fn">close</span>(fd);
+    <span class="kw">return</span> <span class="num">0</span>;
+}</pre>
+
+  <p>This skips the explicit <code>read</code>/<code>write</code> dance. Reads materialize as page faults that pull from the page cache (or disk on miss). Writes mark pages dirty; the kernel writes them back via writeback threads or on <code>msync</code>.</p>
+
+  <h3>Useful flags</h3>
+  <table>
+    <tr><th>Flag</th><th>What it does</th></tr>
+    <tr><td class="meth">MAP_POPULATE</td><td>pre-faults all pages (no demand paging) — useful when you know you'll touch everything</td></tr>
+    <tr><td class="meth">MAP_LOCKED</td><td>like mlock: pages won't be swapped out (needs RLIMIT_MEMLOCK)</td></tr>
+    <tr><td class="meth">MAP_HUGETLB</td><td>allocate from the hugepage pool (2 MiB or 1 GiB pages)</td></tr>
+    <tr><td class="meth">MAP_FIXED_NOREPLACE</td><td>try a specific address but fail rather than displace existing mappings (use this, not raw MAP_FIXED)</td></tr>
+    <tr><td class="meth">MAP_NORESERVE</td><td>don't pre-reserve swap; allows huge sparse mappings; risk: SIGBUS on fault if swap is full</td></tr>
+    <tr><td class="meth">MAP_STACK</td><td>hint that this mapping will be used as a stack</td></tr>
+  </table>
+
+  <h3 class="cy">madvise() — tell the kernel what you'll do</h3>
+
+<pre><span class="label">C // madvise hints</span><span class="fn">madvise</span>(p, n, MADV_SEQUENTIAL);   <span class="cm">/* expect linear access; aggressive readahead */</span>
+<span class="fn">madvise</span>(p, n, MADV_RANDOM);       <span class="cm">/* random access; disable readahead */</span>
+<span class="fn">madvise</span>(p, n, MADV_WILLNEED);     <span class="cm">/* prefetch into page cache */</span>
+<span class="fn">madvise</span>(p, n, MADV_DONTNEED);     <span class="cm">/* drop pages now (anon: zeros on next read!) */</span>
+<span class="fn">madvise</span>(p, n, MADV_FREE);         <span class="cm">/* lazy reclaim: pages may persist or be zeroed */</span>
+<span class="fn">madvise</span>(p, n, MADV_HUGEPAGE);     <span class="cm">/* opt this region into THP coalescing */</span>
+<span class="fn">madvise</span>(p, n, MADV_NOHUGEPAGE);   <span class="cm">/* and out */</span></pre>
+</section>
+
+<!-- ═════ 10 FORK / COW ═════ -->
+<section id="cow">
+  <h2><em class="or">fork()</em> and Copy-on-Write <span class="htag">page-table magic</span></h2>
+  <div class="section-bar"></div>
+  <p><code>fork()</code> doesn't actually copy the parent's memory. It copies the page tables, marks every writable PTE in both parent and child as read-only, and increments a refcount on each backing page. The first write by either process triggers a fault; the kernel allocates a new frame, copies the contents, points the writer's PTE at the new frame, and restores RW.</p>
+
+  <div class="svg-plate">
+    <svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono">
+      <text x="120" y="20" text-anchor="middle" fill="#5A5952" font-size="10" letter-spacing="2">PARENT</text>
+      <rect x="40" y="30" width="160" height="30" fill="#231F1C" stroke="#3AB8AC"/>
+      <text x="120" y="50" text-anchor="middle" fill="#3AB8AC" font-size="11">PTE (rw)</text>
+      <line x1="200" y1="45" x2="280" y2="45" stroke="#3AB8AC" stroke-dasharray="3,2"/>
+      <polygon points="280,45 274,41 274,49" fill="#3AB8AC"/>
+      <rect x="280" y="30" width="160" height="30" fill="#231F1C" stroke="#F09030"/>
+      <text x="360" y="50" text-anchor="middle" fill="#F09030" font-size="11">FRAME (refcnt=1)</text>
+      <text x="40" y="80" fill="#5A5952" font-size="10">[1] before fork</text>
+
+      <text x="120" y="115" text-anchor="middle" fill="#5A5952" font-size="10" letter-spacing="2">PARENT</text>
+      <text x="120" y="225" text-anchor="middle" fill="#5A5952" font-size="10" letter-spacing="2">CHILD</text>
+
+      <rect x="40" y="125" width="160" height="30" fill="#231F1C" stroke="#B85A6A"/>
+      <text x="120" y="145" text-anchor="middle" fill="#B85A6A" font-size="11">PTE (r-) [COW]</text>
+      <rect x="40" y="235" width="160" height="30" fill="#231F1C" stroke="#B85A6A"/>
+      <text x="120" y="255" text-anchor="middle" fill="#B85A6A" font-size="11">PTE (r-) [COW]</text>
+
+      <line x1="200" y1="140" x2="280" y2="180" stroke="#B85A6A" stroke-dasharray="3,2"/>
+      <line x1="200" y1="250" x2="280" y2="195" stroke="#B85A6A" stroke-dasharray="3,2"/>
+      <polygon points="280,180 274,176 274,184" fill="#B85A6A"/>
+      <polygon points="280,195 274,191 274,199" fill="#B85A6A"/>
+
+      <rect x="280" y="170" width="160" height="30" fill="#231F1C" stroke="#B85A6A"/>
+      <text x="360" y="190" text-anchor="middle" fill="#B85A6A" font-size="11">FRAME (refcnt=2)</text>
+
+      <text x="40" y="280" fill="#5A5952" font-size="10">[2] right after fork()</text>
+
+      <g transform="translate(440, 0)">
+        <text x="120" y="115" text-anchor="middle" fill="#5A5952" font-size="10" letter-spacing="2">PARENT (writes)</text>
+        <text x="120" y="225" text-anchor="middle" fill="#5A5952" font-size="10" letter-spacing="2">CHILD</text>
+
+        <rect x="40" y="125" width="160" height="30" fill="#231F1C" stroke="#7AC890"/>
+        <text x="120" y="145" text-anchor="middle" fill="#7AC890" font-size="11">PTE (rw) [new]</text>
+        <rect x="40" y="235" width="160" height="30" fill="#231F1C" stroke="#C8A030"/>
+        <text x="120" y="255" text-anchor="middle" fill="#C8A030" font-size="11">PTE (rw)</text>
+
+        <line x1="200" y1="140" x2="240" y2="140" stroke="#7AC890" stroke-dasharray="3,2"/>
+        <polygon points="240,140 234,136 234,144" fill="#7AC890"/>
+        <line x1="200" y1="250" x2="240" y2="200" stroke="#C8A030" stroke-dasharray="3,2"/>
+        <polygon points="240,200 234,196 234,204" fill="#C8A030"/>
+
+        <rect x="240" y="125" width="80" height="30" fill="#231F1C" stroke="#7AC890"/>
+        <text x="280" y="145" text-anchor="middle" fill="#7AC890" font-size="10">NEW FRAME</text>
+        <rect x="240" y="190" width="80" height="30" fill="#231F1C" stroke="#C8A030"/>
+        <text x="280" y="210" text-anchor="middle" fill="#C8A030" font-size="10">orig (rc=1)</text>
+
+        <text x="40" y="280" fill="#5A5952" font-size="10">[3] after parent write</text>
+      </g>
+    </svg>
+    <div class="cap">FIG_06 // FORK + COW LIFECYCLE</div>
+  </div>
+
+  <h3>Demonstrating COW</h3>
+
+<pre><span class="label">C // cow_demo.c</span><span class="pp">#define _GNU_SOURCE</span>
+<span class="pp">#include &lt;stdio.h&gt;</span>
+<span class="pp">#include &lt;string.h&gt;</span>
+<span class="pp">#include &lt;sys/wait.h&gt;</span>
+<span class="pp">#include &lt;sys/resource.h&gt;</span>
+<span class="pp">#include &lt;unistd.h&gt;</span>
+
+<span class="ty">int</span> <span class="fn">main</span>(<span class="ty">void</span>) {
+    <span class="ty">size_t</span> N = <span class="num">64</span> * <span class="num">1024</span> * <span class="num">1024</span>;
+    <span class="ty">char</span> *buf = <span class="fn">malloc</span>(N);
+    <span class="fn">memset</span>(buf, <span class="st">'A'</span>, N);                  <span class="cm">/* parent allocates + faults all pages */</span>
+
+    <span class="kw">struct</span> rusage r;
+    <span class="fn">getrusage</span>(RUSAGE_SELF, &amp;r);
+    <span class="fn">printf</span>(<span class="st">"parent pre-fork  minflt=%ld\n"</span>, r.ru_minflt);
+
+    <span class="ty">pid_t</span> pid = <span class="fn">fork</span>();
+    <span class="kw">if</span> (pid == <span class="num">0</span>) {
+        <span class="cm">/* child: read-only access touches nothing physically */</span>
+        <span class="ty">size_t</span> sum = <span class="num">0</span>;
+        <span class="kw">for</span> (<span class="ty">size_t</span> i = <span class="num">0</span>; i &lt; N; i += <span class="num">4096</span>) sum += buf[i];
+        <span class="fn">getrusage</span>(RUSAGE_SELF, &amp;r);
+        <span class="fn">printf</span>(<span class="st">"child  read-only  minflt=%ld\n"</span>, r.ru_minflt);
+
+        <span class="cm">/* now write half: triggers COW for half the pages */</span>
+        <span class="kw">for</span> (<span class="ty">size_t</span> i = <span class="num">0</span>; i &lt; N/<span class="num">2</span>; i += <span class="num">4096</span>) buf[i] = <span class="st">'B'</span>;
+        <span class="fn">getrusage</span>(RUSAGE_SELF, &amp;r);
+        <span class="fn">printf</span>(<span class="st">"child  half-write minflt=%ld\n"</span>, r.ru_minflt);
+        <span class="fn">_exit</span>(<span class="num">0</span>);
+    }
+    <span class="fn">waitpid</span>(pid, <span class="kw">NULL</span>, <span class="num">0</span>);
+    <span class="kw">return</span> <span class="num">0</span>;
+}</pre>
+
+<pre class="cy"><span class="label">stdout</span><span class="cm">parent pre-fork  minflt=16472</span>
+<span class="cm">child  read-only  minflt=132          # only kernel/copy bookkeeping</span>
+<span class="cm">child  half-write minflt=8324         # ~16384/2 = 8192 COW faults + noise</span></pre>
+
+  <p>Read-only access in the child does not allocate a single new physical frame. The write phase triggers exactly one minor fault per touched 4 KiB page, and only the touched pages get duplicated. This is what makes <code>fork()</code> + <code>exec()</code> cheap and what made shared read-mostly server architectures viable for decades.</p>
+
+  <div class="info-box danger">
+    <strong>RSS lies after fork // know your acronyms</strong>
+    Both processes show the same RSS in <code>top</code> immediately after <code>fork()</code>. They aren't actually using 2x the memory — the pages are shared. Look at <em>PSS</em> (Proportional Set Size) in <code>/proc/[pid]/smaps</code> for a fairer accounting that divides shared pages across the procs that map them.
+  </div>
+</section>
+
+<!-- ═════ 11 KERNEL ALLOCATORS ═════ -->
+<section id="kern">
+  <h2>Kernel <em class="or">Allocators</em> <span class="htag">buddy · slab · vmalloc</span></h2>
+  <div class="section-bar"></div>
+  <p>The kernel itself needs to allocate memory: page tables, inode caches, network buffers, scheduler runqueues, your VMA structures. It has its own zoo of allocators because the constraints (interrupt context, atomic vs sleeping, physically contiguous, NUMA-local) are different from user space.</p>
+
+  <h3>Buddy allocator — the foundation</h3>
+  <p>The buddy system is the bottom of the kernel allocator stack. It manages physical page frames in power-of-two-sized blocks called <em>orders</em>, from order-0 (1 page = 4 KiB) up to order-10 (1024 pages = 4 MiB).</p>
+
+  <div class="svg-plate">
+    <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg" font-family="Space Mono">
+      <text x="380" y="20" text-anchor="middle" fill="#5A5952" font-size="10" letter-spacing="2">BUDDY ALLOCATOR  /  POWER-OF-TWO BLOCKS</text>
+
+      <rect x="40" y="40" width="640" height="22" fill="#231F1C" stroke="#B85A6A"/>
+      <text x="20" y="55" text-anchor="end" fill="#B85A6A" font-size="10">ord 4</text>
+      <text x="360" y="55" text-anchor="middle" fill="#B85A6A" font-size="11">16 pages = 64 KiB</text>
+
+      <rect x="40" y="68" width="320" height="22" fill="#231F1C" stroke="#F09030"/>
+      <rect x="360" y="68" width="320" height="22" fill="#231F1C" stroke="#F09030" stroke-dasharray="3,2"/>
+      <text x="20" y="83" text-anchor="end" fill="#F09030" font-size="10">ord 3</text>
+      <text x="200" y="83" text-anchor="middle" fill="#F09030" font-size="10">8p / 32K</text>
+      <text x="520" y="83" text-anchor="middle" fill="#F09030" font-size="10">buddy</text>
+
+      <rect x="40" y="96" width="160" height="22" fill="#231F1C" stroke="#C8A030"/>
+      <rect x="200" y="96" width="160" height="22" fill="#231F1C" stroke="#C8A030" stroke-dasharray="3,2"/>
+      <text x="20" y="111" text-anchor="end" fill="#C8A030" font-size="10">ord 2</text>
+      <text x="120" y="111" text-anchor="middle" fill="#C8A030" font-size="10">4p / 16K</text>
+
+      <rect x="40" y="124" width="80" height="22" fill="#231F1C" stroke="#7AC890"/>
+      <rect x="120" y="124" width="80" height="22" fill="#231F1C" stroke="#7AC890" stroke-dasharray="3,2"/>
+      <text x="20" y="139" text-anchor="end" fill="#7AC890" font-size="10">ord 1</text>
+      <text x="80" y="139" text-anchor="middle" fill="#7AC890" font-size="10">2p</text>
+
+      <rect x="40" y="152" width="40" height="22" fill="#231F1C" stroke="#3AB8AC"/>
+      <rect x="80" y="152" width="40" height="22" fill="#231F1C" stroke="#3AB8AC" stroke-dasharray="3,2"/>
+      <text x="20" y="167" text-anchor="end" fill="#3AB8AC" font-size="10">ord 0</text>
+      <text x="60" y="167" text-anchor="middle" fill="#3AB8AC" font-size="10">1p</text>
+
+      <text x="380" y="195" text-anchor="middle" fill="#5A5952" font-size="10" letter-spacing="2">SPLIT ON ALLOC  ·  COALESCE WITH BUDDY ON FREE  ·  PHYS-CONTIG</text>
+    </svg>
+    <div class="cap">FIG_07 // BUDDY ALLOCATOR ORDERS</div>
+  </div>
+
+  <p>Need 12 KiB? Round up to 4 pages = order 2. The allocator finds a free order-2 block. If none exist, it splits an order-3 into two order-2 buddies, hands one out, queues the other. On free, if the buddy is also free, they recombine. This is the source of <em>memory fragmentation</em> — a system can have plenty of free order-0 pages and still fail an order-5 allocation if no contiguous run exists.</p>
+
+  <p>See <code>/proc/buddyinfo</code> for the live state per zone:</p>
+
+<pre class="cy"><span class="label">$ cat /proc/buddyinfo</span><span class="cm">Node 0, zone      DMA      1      0      0      1      2  ...</span>
+<span class="cm">Node 0, zone    DMA32  10234   8501   6442   3201    998  ...</span>
+<span class="cm">Node 0, zone   Normal  88412  41203   9871    412     22  ...</span></pre>
+
+  <h3 class="cy">Slab / SLUB — cache of fixed-size objects</h3>
+  <p>Most kernel allocations aren't full pages — they're little structs (256 bytes for a <code>task_struct</code>, 192 for a <code>file</code>, etc). The slab allocator sits on top of buddy: it asks for pages in bulk, then carves them into fixed-size object slots, keeping per-CPU and per-NUMA-node caches to avoid lock contention.</p>
+
+<pre><span class="label">$ sudo head /proc/slabinfo</span><span class="cm">slabinfo - version: 2.1</span>
+<span class="cm"># name              active_objs num_objs objsize objperslab pagesperslab</span>
+<span class="hl">dentry</span>              412091      412290      192        21            1
+<span class="hl">inode_cache</span>         206301      206301      584        14            2
+<span class="hl">kmalloc-8k</span>             280         280     8192         4            8
+<span class="hl">kmalloc-1k</span>            3104        3104     1024        16            4
+<span class="hl">task_struct</span>           1242        1242     5824         5            8
+<span class="hl">mm_struct</span>              312         312     1024        16            4
+<span class="hl">vm_area_struct</span>        9412        9412      216        18            1</pre>
+
+  <h3>kmalloc / kvmalloc / vmalloc</h3>
+  <table>
+    <tr><th>API</th><th>Returns</th><th>Used for</th></tr>
+    <tr><td class="meth">kmalloc(n, GFP_*)</td><td>physically contiguous</td><td>small kernel allocs (DMA buffers, structs); backed by SLUB</td></tr>
+    <tr><td class="cy">vmalloc(n)</td><td>virtually contiguous, physically scattered</td><td>large kernel buffers where physical contiguity isn't needed</td></tr>
+    <tr><td class="yl">kvmalloc(n)</td><td>tries kmalloc, falls back to vmalloc</td><td>generic large alloc, "I don't care which"</td></tr>
+    <tr><td class="rd">alloc_pages(order)</td><td>raw page frames</td><td>page-table builders, network ring buffers</td></tr>
+  </table>
+
+  <h3 class="cy">GFP flags — get-free-pages context</h3>
+  <table>
+    <tr><th>Flag</th><th>Means</th></tr>
+    <tr><td class="meth">GFP_KERNEL</td><td>can sleep, can do I/O, can reclaim — the default for process context</td></tr>
+    <tr><td class="rd">GFP_ATOMIC</td><td>cannot sleep (interrupt context); fail fast if no free page available</td></tr>
+    <tr><td class="yl">GFP_NOIO</td><td>can sleep but not start I/O (avoid recursion in I/O paths)</td></tr>
+    <tr><td class="meth">GFP_DMA</td><td>must come from low-memory zone usable by legacy DMA controllers</td></tr>
+    <tr><td class="cy">__GFP_ZERO</td><td>zero the returned page</td></tr>
+    <tr><td class="cy">__GFP_NOWARN</td><td>don't dump a stacktrace if alloc fails</td></tr>
+  </table>
+
+  <h3>Page cache</h3>
+  <p>Every byte you read from a regular file lives, transiently, in the page cache — the kernel's RAM-backed cache of file pages indexed by (inode, offset). It's not a separate pool; it's just pages from the buddy allocator that happen to be reclaimable. <code>free</code>'s "available" number includes most of it.</p>
+
+  <p>This is also why <code>cat largefile &gt; /dev/null</code> warms the cache, why running a benchmark twice usually gets faster the second time, and why <code>echo 3 &gt; /proc/sys/vm/drop_caches</code> is the standard way to invalidate it before measurement.</p>
+</section>
+
+<!-- ═════ 12 PRESSURE / OOM ═════ -->
+<section id="oom">
+  <h2>Memory <em class="rd">Pressure</em>, Swap, OOM <span class="htag">reclaim · watermarks</span></h2>
+  <div class="section-bar rd"></div>
+  <p>When demand for pages exceeds supply, Linux reclaims. Reclaim is handled by per-NUMA-node <code>kswapd</code> threads (background, low watermark) and direct reclaim (foreground, allocation-time, when watermarks crash).</p>
+
+  <h3>What gets reclaimed</h3>
+  <ul>
+    <li><strong>Clean file-backed pages</strong> — just drop them. Source is on disk.</li>
+    <li><strong>Dirty file-backed pages</strong> — write back, then drop.</li>
+    <li><strong>Anonymous pages</strong> — write to swap, then drop. If no swap, can't reclaim — this is when OOM looms.</li>
+  </ul>
+
+  <p>Reclaim uses an active/inactive LRU per zone, biased by the PTE accessed bit and adjusted by <code>vm.swappiness</code> (0-200, default 60). Lower values discourage anon swap-out in favor of reclaiming file cache.</p>
+
+  <h3 class="cy">Watermarks</h3>
+  <p>Each zone has three watermarks: <em>min</em>, <em>low</em>, <em>high</em>. Allocations below <em>min</em> only succeed for kernel atomic contexts. Crossing <em>low</em> wakes <code>kswapd</code>. Below <em>high</em>, <code>kswapd</code> works until it's restored. See <code>/proc/zoneinfo</code>.</p>
+
+  <h3 class="rd">The OOM killer</h3>
+  <p>If reclaim can't free enough memory, the OOM killer picks a victim and sends <code>SIGKILL</code>. The score is computed in <code>/proc/[pid]/oom_score</code>, derived from RSS and tunable via <code>/proc/[pid]/oom_score_adj</code> (-1000 to +1000; -1000 = immune).</p>
+
+<pre class="rd"><span class="label">C // oom_protect.c</span><span class="pp">#include &lt;fcntl.h&gt;</span>
+<span class="pp">#include &lt;unistd.h&gt;</span>
+
+<span class="ty">int</span> <span class="fn">main</span>(<span class="ty">void</span>) {
+    <span class="ty">int</span> fd = <span class="fn">open</span>(<span class="st">"/proc/self/oom_score_adj"</span>, O_WRONLY);
+    <span class="fn">write</span>(fd, <span class="st">"-500"</span>, <span class="num">4</span>);                    <span class="cm">/* less likely to be killed */</span>
+    <span class="fn">close</span>(fd);
+    <span class="cm">/* ... do important work ... */</span>
+    <span class="kw">return</span> <span class="num">0</span>;
+}</pre>
+
+  <h3>/proc/meminfo — what the system thinks it has</h3>
+
+<pre><span class="label">/proc/meminfo</span><span class="key">MemTotal:</span>       32896132 kB    <span class="cm"># all RAM the kernel can see</span>
+<span class="key">MemFree:</span>         1204896 kB    <span class="cm"># truly unused</span>
+<span class="key">MemAvailable:</span>   18472304 kB    <span class="cm"># estimate of what allocs *could* get</span>
+<span class="key">Buffers:</span>          412004 kB    <span class="cm"># block-device cache</span>
+<span class="key">Cached:</span>         15823008 kB    <span class="cm"># page cache (file pages)</span>
+<span class="key">SwapCached:</span>        12492 kB    <span class="cm"># pages once in swap, now back in memory</span>
+<span class="key">Active:</span>         12409832 kB    <span class="cm"># recently used (anon + file)</span>
+<span class="key">Inactive:</span>        4988124 kB    <span class="cm"># candidates for reclaim</span>
+<span class="key">AnonPages:</span>       9912004 kB    <span class="cm"># process anonymous (heap, stack, anon mmap)</span>
+<span class="key">Mapped:</span>          1284820 kB    <span class="cm"># mapped from files (libs, mmap'd files)</span>
+<span class="key">Slab:</span>             982408 kB    <span class="cm"># kernel slab caches</span>
+<span class="key">SReclaimable:</span>     682112 kB    <span class="cm"># slabs the kernel can drop</span>
+<span class="key">SUnreclaim:</span>       300296 kB    <span class="cm"># slabs that must stay</span>
+<span class="key">KernelStack:</span>       28192 kB    <span class="cm"># per-task kernel stacks</span>
+<span class="key">PageTables:</span>       142884 kB    <span class="cm"># the actual page-table pages!</span>
+<span class="key">SwapTotal:</span>       8388604 kB
+<span class="key">SwapFree:</span>        8261940 kB
+<span class="key">Dirty:</span>              2884 kB    <span class="cm"># waiting to be written back</span>
+<span class="key">Writeback:</span>             0 kB    <span class="cm"># currently being written</span></pre>
+
+  <p>Note <code>PageTables</code> — that's the kernel's accounting of RAM consumed by your process's PGDs/PUDs/PMDs/PTEs. A process with very sparse mappings can spend non-trivial RAM just on the page tables.</p>
+
+  <h3 class="cy">cgroup memory controller</h3>
+  <p>cgroups v2 lets you cap memory per group (typically per container or per service). Hitting <code>memory.max</code> triggers reclaim within the cgroup; failing reclaim invokes the cgroup OOM killer (only kills processes in the cgroup).</p>
+
+<pre class="yl"><span class="label">SHELL // cgroups v2</span><span class="cm"># limit a service to 512 MiB</span>
+mkdir /sys/fs/cgroup/myservice
+<span class="kw">echo</span> 536870912 &gt; /sys/fs/cgroup/myservice/memory.max
+<span class="kw">echo</span> $$        &gt; /sys/fs/cgroup/myservice/cgroup.procs
+<span class="cm"># now this shell + descendants are capped</span></pre>
+</section>
+
+<!-- ═════ 13 NUMA ═════ -->
+<section id="numa">
+  <h2><em class="cy">NUMA</em> // When Memory Has Geography <span class="htag">multi-socket</span></h2>
+  <div class="section-bar cy"></div>
+  <p>Multi-socket servers don't have one big memory pool. Each socket has its own attached DRAM (the <em>local node</em>); accessing another socket's memory traverses the inter-socket link (UPI on Intel, Infinity Fabric on AMD). The latency penalty is real — typically 1.5x to 2x for remote access.</p>
+
+  <p>Linux models this as <em>NUMA nodes</em>. <code>numactl --hardware</code> shows the topology:</p>
+
+<pre class="cy"><span class="label">$ numactl --hardware</span><span class="cm">available: 2 nodes (0-1)</span>
+<span class="cm">node 0 cpus: 0 1 2 3 4 5 6 7</span>
+<span class="cm">node 0 size: 16345 MB</span>
+<span class="cm">node 1 cpus: 8 9 10 11 12 13 14 15</span>
+<span class="cm">node 1 size: 16384 MB</span>
+<span class="cm">node distances:</span>
+<span class="cm">node     0    1</span>
+<span class="cm">  0:    10   21</span>
+<span class="cm">  1:    21   10</span></pre>
+
+  <p>The <em>distance matrix</em> is in arbitrary units; 10 is local, 21 here means a remote access costs ~2.1x the local cost.</p>
+
+  <h3>Allocation policies</h3>
+
+  <div class="prim-grid two">
+    <div class="prim-card" data-type="or">
+      <div class="p-name">default</div>
+      <div class="p-method">first-touch local</div>
+      <div class="p-desc">Allocate on the node where the touching thread runs. Good default. Can go wrong if one thread allocates and another consumes.</div>
+    </div>
+    <div class="prim-card" data-type="cy">
+      <div class="p-name">--membind</div>
+      <div class="p-method">strict</div>
+      <div class="p-desc">Only alloc from listed nodes; fail if none have room. Forces locality at cost of flexibility.</div>
+    </div>
+    <div class="prim-card" data-type="yl">
+      <div class="p-name">--preferred</div>
+      <div class="p-method">soft preference</div>
+      <div class="p-desc">Try one node, fall back to others. Most useful for explicit pinning of one process to one node.</div>
+    </div>
+    <div class="prim-card" data-type="mg">
+      <div class="p-name">--interleave</div>
+      <div class="p-method">round-robin</div>
+      <div class="p-desc">Striped across nodes. Good for big shared buffers where bandwidth matters more than latency.</div>
+    </div>
+  </div>
+
+<pre><span class="label">C // numa_aware.c // -lnuma</span><span class="pp">#include &lt;numa.h&gt;</span>
+<span class="pp">#include &lt;numaif.h&gt;</span>
+<span class="pp">#include &lt;stdio.h&gt;</span>
+
+<span class="ty">int</span> <span class="fn">main</span>(<span class="ty">void</span>) {
+    <span class="kw">if</span> (<span class="fn">numa_available</span>() &lt; <span class="num">0</span>) <span class="kw">return</span> <span class="num">1</span>;
+
+    <span class="ty">int</span> nnodes = <span class="fn">numa_max_node</span>() + <span class="num">1</span>;
+    <span class="fn">printf</span>(<span class="st">"%d NUMA nodes\n"</span>, nnodes);
+
+    <span class="cm">/* allocate 1 GiB strictly on node 0 */</span>
+    <span class="ty">void</span> *p = <span class="fn">numa_alloc_onnode</span>(<span class="num">1L</span> &lt;&lt; <span class="num">30</span>, <span class="num">0</span>);
+
+    <span class="cm">/* pin this thread to node 0 too */</span>
+    <span class="fn">numa_run_on_node</span>(<span class="num">0</span>);
+
+    <span class="cm">/* now touching p is fast (local DRAM) */</span>
+    <span class="fn">numa_free</span>(p, <span class="num">1L</span> &lt;&lt; <span class="num">30</span>);
+    <span class="kw">return</span> <span class="num">0</span>;
+}</pre>
+
+  <p>For the common case (single-process service, multiple threads), Linux's default first-touch + autonuma balancing usually does the right thing — it migrates pages toward the cores that touch them most. For high-end workloads (databases, in-memory analytics), explicit pinning with <code>numactl</code> or <code>libnuma</code> is the difference between 60% and 100% of memory bandwidth.</p>
+</section>
+
+<!-- ═════ 14 TOOLING ═════ -->
+<section id="tools">
+  <h2><em class="or">Tooling</em> // Where to Poke <span class="htag">procfs · perf · bcc</span></h2>
+  <div class="section-bar"></div>
+
+  <h3>Per-process</h3>
+  <table>
+    <tr><th>Path / tool</th><th>What you get</th></tr>
+    <tr><td class="meth">/proc/[pid]/maps</td><td>VMA list, perms, file backing</td></tr>
+    <tr><td class="meth">/proc/[pid]/smaps</td><td>per-VMA RSS / PSS / swap / hugepages / locked</td></tr>
+    <tr><td class="meth">/proc/[pid]/status</td><td>VmSize / VmRSS / VmHWM / VmData / VmStk / VmExe</td></tr>
+    <tr><td class="meth">/proc/[pid]/statm</td><td>compact: size, resident, shared, text, data, library, dirty</td></tr>
+    <tr><td class="meth">/proc/[pid]/pagemap</td><td>virt-to-PFN lookup, swap status, present bit (root only)</td></tr>
+    <tr><td class="meth">/proc/[pid]/oom_score_adj</td><td>tune OOM-kill priority</td></tr>
+    <tr><td class="cy">pmap -x [pid]</td><td>readable VMA summary</td></tr>
+  </table>
+
+  <h3 class="cy">System-wide</h3>
+  <table>
+    <tr><th>Path / tool</th><th>What you get</th></tr>
+    <tr><td class="meth">/proc/meminfo</td><td>top-level memory accounting</td></tr>
+    <tr><td class="meth">/proc/buddyinfo</td><td>free pages per order per zone</td></tr>
+    <tr><td class="meth">/proc/zoneinfo</td><td>watermarks, pages, vmstats per zone</td></tr>
+    <tr><td class="meth">/proc/slabinfo</td><td>per-cache slab usage (root)</td></tr>
+    <tr><td class="meth">/proc/vmstat</td><td>counters: pgfault, pgmajfault, pgscan, pswpin, etc.</td></tr>
+    <tr><td class="cy">free -h</td><td>quick total / used / free / buff/cache / available</td></tr>
+    <tr><td class="cy">vmstat 1</td><td>live si/so (swap I/O), bi/bo, free, buff, cache</td></tr>
+    <tr><td class="cy">sar -B 1</td><td>paging stats: pgpgin, pgpgout, fault, majflt, pgfree, pgscan</td></tr>
+    <tr><td class="cy">numastat -m</td><td>per-node memory breakdown</td></tr>
+    <tr><td class="yl">slabtop</td><td>live slab cache top-N</td></tr>
+    <tr><td class="rd">perf mem record</td><td>load/store address sampling, NUMA hit/miss</td></tr>
+    <tr><td class="rd">bcc tools (memleak, slabratetop)</td><td>eBPF-based dynamic tracing</td></tr>
+  </table>
+
+  <h3>Quick recipes</h3>
+
+<pre class="yl"><span class="label">SHELL</span><span class="cm"># What's allocating in the kernel right now?</span>
+sudo slabtop -o | head -20
+
+<span class="cm"># What's the actual physical frame backing a virtual address?</span>
+<span class="cm"># (root only; uses /proc/[pid]/pagemap)</span>
+sudo ./pagemap-dump $(pidof myapp) 0x7f3e9c1a0000
+
+<span class="cm"># Force-flush page cache for benchmarking:</span>
+sync &amp;&amp; <span class="kw">echo</span> 3 | sudo tee /proc/sys/vm/drop_caches
+
+<span class="cm"># Watch a process's RSS climb:</span>
+<span class="kw">while</span> <span class="kw">true</span>; <span class="kw">do</span> grep VmRSS /proc/$PID/status; sleep 1; <span class="kw">done</span>
+
+<span class="cm"># Major-fault hot processes:</span>
+ps -eo pid,comm,maj_flt,min_flt --sort=-maj_flt | head
+
+<span class="cm"># Are we swapping right now?</span>
+vmstat 1 5   <span class="cm"># si/so columns; non-zero = active swap I/O</span>
+
+<span class="cm"># Is THP coalescing pages?</span>
+grep AnonHugePages /proc/meminfo
+cat /sys/kernel/mm/transparent_hugepage/enabled</pre>
+
+  <hr>
+
+  <h3 class="cy">Further reading worth your time</h3>
+  <ul>
+    <li><strong>Mel Gorman</strong>, <em>Understanding the Linux Virtual Memory Manager</em> — the canonical text. Older (2.6 era) but the core architecture is unchanged.</li>
+    <li><strong>kernel.org/doc/html/latest/vm/</strong> — current kernel documentation for memory subsystems.</li>
+    <li><strong>Linux source</strong>: <code>mm/page_alloc.c</code> (buddy), <code>mm/slub.c</code>, <code>mm/memory.c</code> (fault handling), <code>mm/mmap.c</code>, <code>arch/x86/mm/fault.c</code>.</li>
+    <li><strong>glibc</strong>: <code>malloc/malloc.c</code> — ptmalloc2 source, well-commented for what it is.</li>
+    <li><strong>Bryant &amp; O'Hallaron</strong>, <em>Computer Systems: A Programmer's Perspective</em> — chapter 9 is the gentlest serious intro to virtual memory anywhere.</li>
+  </ul>
+</section>
+
+</div>
+
+<div class="footer">
+  <span>LINUX // MEMORY MANAGEMENT // x86_64 // KERNEL 6.x</span>
+  <span><a href="https://kernel.org/doc/html/latest/vm/">kernel.org/doc/vm</a></span>
+  <span>2026.04 // hed0rah</span>
+</div>
+
+</body>
+</html>
