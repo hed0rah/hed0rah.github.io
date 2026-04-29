@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCP // attack surface map</title>
+<meta name="description" content="MCP attack surface map: 24 vectors, 20 surfaces, stdio/SSE/HTTP transports.">
+<meta property="og:title" content="MCP // attack surface map"><meta property="og:description" content="24 vectors, 20 surfaces, full topology."><meta property="og:type" content="article">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap">
+<style>
+:root{--paper:#F2F1EE;--surface:#FFF;--surface2:#C8C7C1;--plate:#1A1918;--plate-bd:#2E2D2A;--plate-tx:#CCCBC4;--plate-dim:#5A5952;--text:#4A4A4A;--bright:#0D0D0D;--dim:#8A8A8A;--dim2:#AAA;--bd:#1A1A1A;--bd2:#D0CFC8;--orange:#E85000;--or-dk:#F09030;--cyan:#007870;--cy-dk:#3AB8AC;--yellow:#906500;--yl-dk:#C8A030;--red:#BF1020;--rd-dk:#B85A6A;--green:#287A38;--mg-dk:#B07AB8}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--text);font-family:'Space Mono',monospace;font-size:12px;line-height:1.7;counter-reset:section}
+::selection{background:var(--orange);color:#fff}
+.top-bar{height:5px;background:var(--orange)}
+.container{max-width:1100px;margin:0 auto;padding:0 32px;border-inline:1px solid var(--bd);background:var(--paper)}
+.masthead{padding:48px 0 32px;border-bottom:1px solid var(--bd)}
+.masthead h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(2.4rem,7vw,4.5rem);letter-spacing:4px;color:var(--bright);margin:0;line-height:.95}
+.masthead h1 em{font-style:normal}
+.masthead h1 .or{color:var(--orange)}.masthead h1 .cy{color:var(--cyan)}
+.masthead .subtitle{margin-top:18px;font-size:10px;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
+.masthead .subtitle strong{color:var(--bright);font-weight:700}
+.masthead .meta-line{margin-top:6px;font-size:9px;color:var(--dim2);letter-spacing:2px;text-transform:uppercase}
+nav.toc{position:sticky;top:0;background:var(--paper);border-bottom:1px solid var(--bd);z-index:100;padding:12px 0;display:flex;gap:24px;overflow-x:auto;font-size:10px;letter-spacing:2px;text-transform:uppercase}
+nav.toc a{color:var(--text);text-decoration:none;border-bottom:1px solid transparent;padding-bottom:2px;transition:.15s;white-space:nowrap}
+nav.toc a:hover{color:var(--orange);border-color:var(--orange)}
+section{padding:48px 0;border-bottom:1px solid var(--bd2);counter-increment:section}
+section:last-of-type{border-bottom:none}
+section h2{font-family:'Bebas Neue',sans-serif;font-size:32px;font-weight:400;letter-spacing:3px;color:var(--bright);margin:0;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+section h2::before{content:counter(section,decimal-leading-zero) " // ";font-family:'Space Mono',monospace;font-size:9px;font-weight:400;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+.htag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text);border:1px solid var(--bd2);padding:2px 8px;text-transform:uppercase}
+.section-bar{width:32px;height:3px;background:var(--orange);margin:14px 0 22px}
+.section-bar.cy{background:var(--cyan)}.section-bar.yl{background:var(--yellow)}
+.section-intro{font-size:12px;margin:0 0 20px;max-width:820px}
+.svg-plate{background:var(--plate);border-left:3px solid var(--orange);padding:28px 24px;position:relative;color:var(--plate-tx);margin:0 0 8px}
+.svg-plate svg{display:block;width:100%;height:auto}
+.svg-plate .label{position:absolute;top:12px;right:16px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--plate-dim)}
+.cap{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:right;margin:6px 0 0}
+.spine{position:fixed;right:12px;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;font-size:8px;letter-spacing:5px;text-transform:uppercase;color:var(--dim2);pointer-events:none;z-index:5}
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:var(--surface);border:1px solid var(--bd2);border-left:3px solid var(--cyan);margin-bottom:16px}
+.toolbar .group{display:flex;gap:6px;align-items:center}
+.toolbar .group-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)}
+.toolbar .divider{width:1px;align-self:stretch;background:var(--bd2)}
+.btn{font-family:'Space Mono',monospace;font-size:11px;padding:4px 10px;border:1px solid var(--bd2);background:var(--surface);color:var(--text);cursor:pointer;letter-spacing:1px;transition:.15s}
+.btn:hover{color:var(--orange);border-color:var(--orange)}
+.btn[data-active="true"]{color:var(--bright);border-color:var(--bd);background:var(--surface2)}
+.search-input{font-family:'Space Mono',monospace;font-size:11px;padding:4px 10px;border:1px solid var(--bd2);background:var(--surface);color:var(--text);outline:none;width:200px}
+.search-input:focus{border-color:var(--orange);color:var(--bright)}
+.search-input::placeholder{color:var(--dim)}
+.stats-chip{font-size:9px;letter-spacing:1px;color:var(--dim);padding:4px 10px;background:var(--surface2);border:1px solid var(--bd2);text-transform:uppercase}
+.stats-chip .crit{color:var(--red);font-weight:700}.stats-chip .hi{color:var(--orange);font-weight:700}.stats-chip .med{color:var(--cyan);font-weight:700}
+.kbd-hint{font-size:9px;color:var(--dim);letter-spacing:1px;margin-left:auto;text-transform:uppercase}
+.kbd-hint kbd{background:var(--surface2);border:1px solid var(--bd2);padding:1px 5px;font-size:9px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:2px;margin-bottom:8px}
+.card{background:var(--surface);border:1px solid var(--bd2);border-left:3px solid var(--dim2);padding:12px 14px;cursor:pointer;text-align:left;font-family:'Space Mono',monospace;transition:border-color .2s}
+.card:hover{border-color:var(--orange)}
+.card[data-active="true"]{border-color:var(--bd);background:var(--surface2)}
+.card[data-hidden="true"]{display:none}
+.card[data-sev="critical"]{border-left-color:var(--red)}
+.card[data-sev="high"]{border-left-color:var(--orange)}
+.card[data-sev="medium"]{border-left-color:var(--cyan)}
+.card .name{font-size:11.5px;font-weight:700;color:var(--bright);margin-bottom:6px;line-height:1.4}
+.card .meta{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}
+.card .meta .sep{color:var(--dim2);margin:0 4px}
+.sev-critical{color:var(--red);font-weight:700}.sev-high{color:var(--orange);font-weight:700}.sev-medium{color:var(--cyan);font-weight:700}
+.detail{background:var(--surface);border:1px solid var(--bd2);border-left:3px solid var(--orange);padding:24px 28px;min-height:200px;position:relative}
+.detail .label{position:absolute;top:12px;right:16px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim)}
+.detail h3{font-family:'Bebas Neue',sans-serif;font-size:26px;font-weight:400;letter-spacing:2px;color:var(--bright);margin:0 0 6px;padding-right:80px;line-height:1.1}
+.detail .empty{color:var(--dim);margin:14px 0}
+.detail .tags{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:14px}
+.detail .desc{color:var(--text);line-height:1.7;margin:0}
+.detail .section-label{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:3px;color:var(--bright);margin:22px 0 10px;padding-bottom:4px;border-bottom:1px dashed var(--bd2);text-transform:uppercase}
+.path{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:11px}
+.path .pill{background:var(--plate);color:var(--or-dk);padding:3px 9px;border:1px solid var(--plate-bd)}
+.path .arrow{color:var(--dim2);margin:0 2px;font-weight:700}
+.list{list-style:none;padding:0;margin:0}
+.list li{padding:7px 0;border-bottom:1px dashed var(--bd2);display:flex;gap:12px;align-items:flex-start;line-height:1.55}
+.list li:last-child{border-bottom:none}
+.list li .bullet{color:var(--orange);font-weight:700;flex-shrink:0;width:14px}
+.transport-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2px}
+.transport-cell{background:var(--plate);color:var(--plate-tx);border-left:2px solid var(--cy-dk);padding:12px 16px;font-size:11px}
+.transport-cell .lbl{color:var(--cy-dk);font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;font-weight:700}
+.related-list{display:flex;flex-wrap:wrap;gap:4px}
+.related-pill{font-family:'Space Mono',monospace;font-size:10.5px;padding:4px 10px;border:1px solid var(--bd2);background:var(--surface);color:var(--text);cursor:pointer;transition:.15s}
+.related-pill:hover{border-color:var(--orange);color:var(--orange)}
+.related-pill .sev-dot{display:inline-block;width:6px;height:6px;margin-right:6px;vertical-align:middle}
+.related-pill .sev-dot.crit{background:var(--red)}.related-pill .sev-dot.high{background:var(--orange)}.related-pill .sev-dot.med{background:var(--cyan)}
+.maturity{font-family:'Space Mono',monospace;font-size:8.5px;padding:1px 7px;letter-spacing:1.5px;text-transform:uppercase;margin-left:auto;flex-shrink:0;border:1px solid;font-weight:700}
+.maturity[data-state="hardened"]{color:var(--green);border-color:var(--green)}
+.maturity[data-state="wip"]{color:var(--orange);border-color:var(--orange)}
+.maturity[data-state="planned"]{color:var(--dim);border-color:var(--dim2)}
+.copy-link-btn{font-family:'Space Mono',monospace;font-size:9px;padding:3px 8px;border:1px solid var(--bd2);background:var(--surface);color:var(--dim);cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;position:absolute;right:12px;top:14px}
+.copy-link-btn:hover{color:var(--orange);border-color:var(--orange)}
+.copy-link-btn[data-copied="true"]{color:var(--green);border-color:var(--green)}
+footer{padding:32px 0 64px;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);text-align:center}
+footer .signoff{color:var(--bright);margin-top:6px;display:block;letter-spacing:3px}
+footer .keys{margin-top:12px;color:var(--dim2);font-size:8px}
+footer .keys kbd{background:var(--surface2);border:1px solid var(--bd2);padding:1px 5px;margin:0 2px}
+footer a{color:var(--dim2);text-decoration:none;border-bottom:1px solid var(--bd2)}
+footer a:hover{color:var(--orange);border-color:var(--orange)}
+svg .node{cursor:pointer}
+svg .node text{pointer-events:none}
+svg .node rect{stroke-width:1}
+svg .node[data-dim="true"]{opacity:.18}
+svg .node[data-hot="true"] rect{stroke-width:2.5}
+svg line[data-dim="true"]{opacity:.10}
+svg line[data-hot="true"]{stroke:var(--plate-tx)!important;stroke-width:2.5!important;opacity:1!important}
+svg .node[data-heat="critical"] rect{stroke:var(--rd-dk);stroke-width:2.5}
+svg .node[data-heat="high"] rect{stroke:var(--or-dk);stroke-width:2}
+svg .node[data-heat="medium"] rect{stroke:var(--cy-dk);stroke-width:1.5}
+.fig-blue rect,.fig-purple rect{fill:rgba(176,122,184,.10);stroke:var(--mg-dk)}
+.fig-blue text,.fig-purple text{fill:var(--mg-dk)}
+.fig-teal rect{fill:rgba(240,144,48,.08);stroke:var(--or-dk)}.fig-teal text{fill:var(--or-dk)}
+.fig-amber rect{fill:rgba(200,160,48,.10);stroke:var(--yl-dk)}.fig-amber text{fill:var(--yl-dk)}
+.fig-red rect{fill:rgba(184,90,106,.18);stroke:var(--rd-dk)}.fig-red text{fill:var(--rd-dk)}
+.fig-green rect{fill:rgba(58,184,172,.10);stroke:var(--cy-dk)}.fig-green text{fill:var(--cy-dk)}
+.svg-t{font-family:'Space Mono',monospace;font-size:11px;font-weight:700}
+.svg-ts{font-family:'Space Mono',monospace;font-size:9px;fill:var(--plate-dim)}
+.svg-th{font-family:'Bebas Neue',sans-serif;font-size:14px;fill:var(--plate-tx);letter-spacing:2px}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-top:14px;padding-top:12px;border-top:1px dashed var(--bd2)}
+.legend .swatch{display:inline-flex;align-items:center;gap:6px}
+.legend .dot{width:8px;height:8px;display:inline-block}
+@media print{body{background:#fff;color:#000}.toolbar,nav.toc,.spine,.copy-link-btn,.kbd-hint{display:none}.container{border:none}.card,section{break-inside:avoid}}
+@media (max-width:1180px){.spine{display:none}}
+@media (max-width:760px){.container{padding:0 16px}nav.toc{font-size:9px;gap:14px}.cards{grid-template-columns:1fr}.search-input{width:130px}.kbd-hint{display:none}section{padding:32px 0}section h2{font-size:24px}.detail{padding:20px 16px}.detail h3{padding-right:0}.copy-link-btn{position:static;margin:8px 0 0}}
+</style></head><body>
+<div class="top-bar"></div>
+<div class="spine">MCP // SECURITY // STDIO // SSE // HTTP // OAUTH // 2026</div>
+<div class="container">
+<header class="masthead">
+<h1><em class="or">MCP</em> ATTACK SURFACE <em class="cy">MAP</em></h1>
+<div class="subtitle"><strong>vectors</strong> &middot; <strong>surfaces</strong> &middot; <strong>defenses</strong> &middot; <strong>transports</strong> &middot; 24 attacks &middot; 20 surfaces</div>
+<div class="meta-line">protocol 2025-06-18 // stdio &middot; sse &middot; streamable http</div>
+</header>
+<nav class="toc"><a href="#topology">// topology</a><a href="#catalog">// catalog</a><a href="#detail">// detail</a></nav>
+<section id="topology">
+<h2>Topology <span class="htag">protocol surfaces</span></h2>
+<div class="section-bar"></div>
+<p class="section-intro">Actors, transports, server internals, sandboxes, upstreams. Click any surface to see attacks. Severity heat overlays worst-case rating per surface.</p>
+<div class="svg-plate"><span class="label">SCHEMATIC // R3</span>
+<svg id="topo" viewBox="0 0 920 720" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>MCP attack surface topology</title><desc>MCP system diagram.</desc>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+<g style="color:#5A5952">
+<g class="node fig-green" data-node="user"><rect x="20" y="20" width="120" height="40"/><text class="svg-t" x="80" y="44" text-anchor="middle">user</text></g>
+<g class="node fig-blue" data-node="llm"><rect x="200" y="20" width="380" height="40"/><text class="svg-t" x="390" y="44" text-anchor="middle">agent / LLM (model context)</text></g>
+<g class="node fig-purple" data-node="deps"><rect x="640" y="20" width="260" height="40"/><text class="svg-t" x="770" y="44" text-anchor="middle">supply chain / deps / SBOM</text></g>
+<line data-edge="user-llm" x1="140" y1="40" x2="200" y2="40" stroke="currentColor" marker-end="url(#ah)"/>
+<line data-edge="llm-down" x1="390" y1="60" x2="390" y2="100" stroke="currentColor" marker-end="url(#ah)"/>
+<g class="node fig-blue" data-node="client"><rect x="260" y="100" width="260" height="40"/><text class="svg-t" x="390" y="124" text-anchor="middle">MCP client</text></g>
+<g class="node fig-blue" data-node="federation"><rect x="560" y="100" width="220" height="40"/><text class="svg-t" x="670" y="124" text-anchor="middle">other MCP servers</text></g>
+<line data-edge="client-fed" x1="520" y1="120" x2="560" y2="120" stroke="currentColor" stroke-dasharray="3 3" opacity=".5"/>
+<line data-edge="bypass" x1="580" y1="40" x2="900" y2="630" stroke="#B85A6A" stroke-dasharray="4 4" opacity=".5"/>
+<text class="svg-ts" x="800" y="350" text-anchor="end" style="fill:#B85A6A;opacity:.7">bypass via shell or curl</text>
+<line data-edge="client-transport" x1="390" y1="140" x2="390" y2="170" stroke="currentColor" marker-end="url(#ah)"/>
+<text class="svg-ts" x="390" y="166" text-anchor="middle">// transport</text>
+<g class="node fig-amber" data-node="transport-stdio"><rect x="40" y="180" width="220" height="36"/><text class="svg-t" x="150" y="203" text-anchor="middle">stdio (local pipe)</text></g>
+<g class="node fig-amber" data-node="transport-sse"><rect x="290" y="180" width="200" height="36"/><text class="svg-t" x="390" y="203" text-anchor="middle">SSE</text></g>
+<g class="node fig-amber" data-node="transport-http"><rect x="520" y="180" width="240" height="36"/><text class="svg-t" x="640" y="203" text-anchor="middle">streamable HTTP</text></g>
+<line data-edge="transport-server" x1="390" y1="216" x2="390" y2="244" stroke="currentColor" marker-end="url(#ah)"/>
+<rect x="20" y="246" width="880" height="280" fill="none" stroke="#3A3934" stroke-dasharray="5 4"/>
+<text class="svg-th" x="32" y="266">MCP SERVER</text>
+<g class="node fig-teal" data-node="authn"><rect x="40" y="276" width="180" height="38"/><text class="svg-t" x="130" y="300" text-anchor="middle">authn / authz</text></g>
+<g class="node fig-teal" data-node="validate"><rect x="240" y="276" width="180" height="38"/><text class="svg-t" x="330" y="300" text-anchor="middle">schema validate</text></g>
+<g class="node fig-teal" data-node="ratelimit"><rect x="440" y="276" width="200" height="38"/><text class="svg-t" x="540" y="300" text-anchor="middle">rate / quota / CB</text></g>
+<g class="node fig-teal" data-node="killswitch"><rect x="660" y="276" width="220" height="38"/><text class="svg-t" x="770" y="300" text-anchor="middle">kill switch / canary</text></g>
+<g class="node fig-teal" data-node="dispatch"><rect x="40" y="334" width="240" height="38"/><text class="svg-t" x="160" y="358" text-anchor="middle">tool dispatch / policy</text></g>
+<g class="node fig-teal" data-node="cache"><rect x="300" y="334" width="180" height="38"/><text class="svg-t" x="390" y="358" text-anchor="middle">cache (TTL)</text></g>
+<g class="node fig-amber" data-node="audit"><rect x="500" y="334" width="180" height="38"/><text class="svg-t" x="590" y="358" text-anchor="middle">audit / SIEM</text></g>
+<g class="node fig-teal" data-node="sampling"><rect x="700" y="334" width="180" height="38"/><text class="svg-t" x="790" y="358" text-anchor="middle">sampling endpoint</text></g>
+<g class="node fig-teal" data-node="handler-read"><rect x="40" y="392" width="220" height="38"/><text class="svg-t" x="150" y="416" text-anchor="middle">read handlers</text></g>
+<g class="node fig-teal" data-node="handler-write"><rect x="280" y="392" width="220" height="38"/><text class="svg-t" x="390" y="416" text-anchor="middle">write handlers</text></g>
+<g class="node fig-red" data-node="handler-exec"><rect x="520" y="392" width="220" height="38"/><text class="svg-t" x="630" y="416" text-anchor="middle">exec handlers</text></g>
+<g class="node fig-teal" data-node="roots"><rect x="760" y="392" width="120" height="38"/><text class="svg-t" x="820" y="416" text-anchor="middle">roots</text></g>
+<g class="node fig-teal" data-node="output-shape"><rect x="40" y="450" width="840" height="38"/><text class="svg-t" x="460" y="474" text-anchor="middle">output shaping / sanitization / classification</text></g>
+<line data-edge="authn-validate" x1="220" y1="295" x2="240" y2="295" stroke="currentColor"/>
+<line data-edge="validate-rate" x1="420" y1="295" x2="440" y2="295" stroke="currentColor"/>
+<line data-edge="rate-dispatch" x1="540" y1="314" x2="540" y2="334" stroke="currentColor" marker-end="url(#ah)"/>
+<line data-edge="dispatch-handler-read" x1="120" y1="372" x2="120" y2="392" stroke="currentColor" marker-end="url(#ah)"/>
+<line data-edge="dispatch-handler-write" x1="200" y1="372" x2="380" y2="392" stroke="currentColor" marker-end="url(#ah)"/>
+<line data-edge="dispatch-handler-exec" x1="240" y1="372" x2="600" y2="392" stroke="currentColor" marker-end="url(#ah)"/>
+<line data-edge="dispatch-cache" x1="280" y1="353" x2="300" y2="353" stroke="currentColor"/>
+<line data-edge="cache-handlers" x1="390" y1="372" x2="390" y2="392" stroke="currentColor"/>
+<line data-edge="audit-handlers" x1="590" y1="392" x2="590" y2="372" stroke="currentColor"/>
+<line data-edge="sampling-llm" x1="790" y1="334" x2="790" y2="60" stroke="currentColor" stroke-dasharray="2 3" opacity=".5"/>
+<line data-edge="handler-output" x1="460" y1="430" x2="460" y2="450" stroke="currentColor"/>
+<line data-edge="handlers-creds" x1="100" y1="488" x2="100" y2="546" stroke="currentColor" marker-end="url(#ah)"/>
+<line data-edge="handlers-upstream" x1="460" y1="488" x2="460" y2="608" stroke="currentColor" marker-end="url(#ah)"/>
+<line data-edge="handlers-os" x1="700" y1="488" x2="700" y2="546" stroke="currentColor" marker-end="url(#ah)"/>
+<line data-edge="deps-server" x1="770" y1="60" x2="770" y2="246" stroke="currentColor" stroke-dasharray="3 3" opacity=".4" marker-end="url(#ah)"/>
+<g class="node fig-purple" data-node="creds"><rect x="40" y="546" width="220" height="44"/><text class="svg-t" x="150" y="572" text-anchor="middle">credential vault</text></g>
+<g class="node fig-amber" data-node="os"><rect x="600" y="546" width="280" height="44"/><text class="svg-t" x="740" y="572" text-anchor="middle">OS / container / sandbox</text></g>
+<g class="node fig-green" data-node="upstream"><rect x="100" y="608" width="720" height="60"/><text class="svg-t" x="460" y="634" text-anchor="middle">upstream services</text><text class="svg-ts" x="460" y="654" text-anchor="middle" style="fill:#3AB8AC">prometheus &middot; alertmanager &middot; jira &middot; confluence &middot; ssh hosts</text></g>
+<g class="node fig-amber" data-node="network"><rect x="20" y="688" width="880" height="28" opacity=".55"/><text class="svg-ts" x="460" y="706" text-anchor="middle" style="fill:#C8A030">network &middot; TLS &middot; egress controls &middot; segmentation &middot; audit proxy</text></g>
+</g></svg></div>
+<p class="cap">FIG.01 // mcp attack surface topology</p>
+<div class="legend">
+<span class="swatch"><span class="dot" style="background:var(--cy-dk)"></span>users &amp; upstreams</span>
+<span class="swatch"><span class="dot" style="background:var(--mg-dk)"></span>clients &amp; creds &amp; supply</span>
+<span class="swatch"><span class="dot" style="background:var(--or-dk)"></span>server internals</span>
+<span class="swatch"><span class="dot" style="background:var(--yl-dk)"></span>transport &amp; infra</span>
+<span class="swatch"><span class="dot" style="background:var(--rd-dk)"></span>high-risk surface</span>
+</div>
+</section>
+<section id="catalog">
+<h2>Catalog <span class="htag" id="view-tag">attacks</span></h2>
+<div class="section-bar cy"></div>
+<p class="section-intro">Toggle attacks and defenses. Filter, search, hit heat to color the topology by worst-case severity per surface.</p>
+<div class="toolbar">
+<div class="group"><span class="group-label">view</span><button class="btn" data-view="attack" data-active="true">attacks</button><button class="btn" data-view="defense">defenses</button></div>
+<div class="divider"></div>
+<div class="group" id="cat-group"><span class="group-label">filter</span><button class="btn" data-cat="all" data-active="true">all</button><button class="btn" data-cat="transport">transport</button><button class="btn" data-cat="auth">auth</button><button class="btn" data-cat="server">server</button><button class="btn" data-cat="tool">tool exec</button><button class="btn" data-cat="output">output</button><button class="btn" data-cat="supply">supply</button></div>
+<div class="divider"></div>
+<div class="group"><input type="text" class="search-input" id="search-input" placeholder="// search" autocomplete="off"><button class="btn" id="heatmap-btn" data-active="false">heat</button></div>
+<div class="divider"></div>
+<div class="group"><span class="stats-chip" id="stats-chip"></span></div>
+<div class="kbd-hint"><kbd>/</kbd>search <kbd>j</kbd><kbd>k</kbd>nav <kbd>esc</kbd>clear</div>
+</div>
+<div class="cards" id="vector-grid"></div>
+</section>
+<section id="detail">
+<h2>Detail <span class="htag">live trace</span></h2>
+<div class="section-bar yl"></div>
+<p class="section-intro">Selected vector or surface unfolds with full attack path, transport notes, and mitigations. Each item has a copy-link button.</p>
+<div class="detail" id="detail-panel"><span class="label">DETAIL // CTX</span><p class="empty">// select a vector or surface.</p></div>
+</section>
+<footer>MCP // ATTACK SURFACE MAP // PROTOCOL 2025-06-18<span class="signoff">2026.04 // hed0rah</span><div class="keys">shortcuts: <kbd>/</kbd>search <kbd>j</kbd>/<kbd>k</kbd>nav <kbd>a</kbd>attacks <kbd>d</kbd>defenses <kbd>h</kbd>heat <kbd>esc</kbd>clear &middot; <a href="#topology">back to top</a></div></footer>
+</div>
+<script>
+(function(){
+var V=[
+{i:'prompt-injection',c:'output',s:'high',n:'prompt injection via tool output',ns:['upstream','handler-read','output-shape','dispatch','client','llm'],e:['handlers-upstream','dispatch-handler-read','handler-output'],d:'adversary text in upstream content (jira, confluence, prometheus labels) flows through tool output as instructions the agent acts on.',t:{stdio:'same risk',sse:'central',http:'central'},m:['treat tool output as untrusted','wrap output in structured envelopes','strip instruction-shaped patterns','never combine broad-read and broad-write']},
+{i:'cred-theft',c:'server',s:'critical',n:'credential theft from server',ns:['os','client','authn','dispatch','creds'],e:['handlers-creds','transport-server'],d:'attacker reaches server filesystem and extracts upstream API tokens fanning out to every wrapped service.',t:{stdio:'creds in user env',sse:'high-value target',http:'high-value target'},m:['dedicated non-root service user','vault at runtime, no plaintext on disk','short-lived rotating tokens','per-tool credential isolation']},
+{i:'bypass-shell',c:'auth',s:'high',n:'agent bypass via shell or curl',ns:['llm','client','os','upstream'],e:['bypass'],d:'when MCP errors, agent falls back to host creds (kubeconfig, netrc, cached SSO) and queries upstream directly.',t:{stdio:'highest risk',sse:'low if isolated',http:'low if isolated'},m:['rich diagnostic tools so fallback is unattractive','sanctioned raw-query escape hatch through guardrails','isolate creds to service user','egress controls block direct upstream']},
+{i:'confused-deputy',c:'auth',s:'high',n:'confused deputy / scope abuse',ns:['llm','client','authn','dispatch','handler-write','upstream'],e:['transport-server','authn-validate','validate-rate','rate-dispatch','dispatch-handler-write','handlers-upstream'],d:'server scope exceeds any user. agent invokes privileged tool on behalf of low-privilege caller.',t:{stdio:'inherits user scope',sse:'service account risk',http:'service account risk'},m:['forward user identity not service account','per-tool scope minimization','confirmation wrappers on writes','policy engine at dispatch']},
+{i:'supply-chain',c:'supply',s:'critical',n:'supply chain compromise',ns:['deps','authn','dispatch','handler-read','handler-write','handler-exec','creds'],e:['deps-server','transport-server'],d:'backdoored dep or compromised maintainer ships malicious code. all surfaces compromised.',t:{stdio:'user owns SBOM',sse:'one supply chain',http:'one supply chain'},m:['pin versions, lock files, hash verify','internal package mirror','SBOM scanned every build','signed releases']},
+{i:'mitm',c:'transport',s:'high',n:'network MitM / replay',ns:['client','transport-sse','transport-http','authn','network'],e:['client-transport','transport-server'],d:'unencrypted transport lets in-path attacker read or replay tool calls, swap responses, hijack sessions.',t:{stdio:'n/a',sse:'TLS mandatory',http:'TLS + mTLS'},m:['TLS 1.3 only','mTLS service-to-service','short-lived audience-bound tokens','replay protection via nonces']},
+{i:'authn-bypass',c:'auth',s:'critical',n:'authentication bypass',ns:['client','transport-http','transport-sse','authn'],e:['transport-server'],d:'server accepts requests without verifying identity, or treats network position as identity.',t:{stdio:'implicit',sse:'must enforce',http:'must enforce'},m:['never trust network alone','valid token every request','validate sig, audience, expiry per call','fail closed']},
+{i:'dos-overload',c:'server',s:'medium',n:'DoS / resource exhaustion',ns:['llm','client','ratelimit','dispatch','handler-read','upstream'],e:['transport-server','validate-rate','rate-dispatch','dispatch-handler-read','handlers-upstream'],d:'agent fan-out or expensive range queries overwhelm server or upstream. heavy range query crashes prometheus.',t:{stdio:'one-user cap',sse:'real fleet ceiling',http:'needs shared state'},m:['cardinality estimation pre-dispatch','PromQL static analysis','auto-step for ranges','per-call sample budget','circuit breaker','kill switch via file/env']},
+{i:'cross-tenant',c:'server',s:'high',n:'cross-tenant data leak',ns:['cache','dispatch','handler-read','client'],e:['cache-handlers','dispatch-cache'],d:'cache without tenant id, query layer forgets tenant filter. one user sees another user data.',t:{stdio:'n/a',sse:'real',http:'real'},m:['tenant id explicit per call','cache keys include identity','tenant filter at data layer','cross-tenant integration tests']},
+{i:'priv-esc-exec',c:'tool',s:'critical',n:'privilege escalation via exec',ns:['llm','client','authn','dispatch','handler-exec','os'],e:['transport-server','dispatch-handler-exec','handlers-os'],d:'shell or SSH exec escapes sandbox or runs beyond allowlist. wrapster-shaped problem.',t:{stdio:'inherits user shell',sse:'sandbox at server',http:'sandbox at server'},m:['command allowlist at schema','sandbox: separate user, chroot, seccomp','cgroup limits CPU/mem','egress allowlist','gVisor or kata for high-risk']},
+{i:'ssrf',c:'tool',s:'high',n:'SSRF via URL parameters',ns:['llm','client','validate','dispatch','handler-read','network'],e:['transport-server','authn-validate','validate-rate'],d:'tool fetches URL parameter. agent points at internal endpoints (cloud metadata, internal services).',t:{stdio:'limited',sse:'real',http:'real'},m:['URL allowlist by host/scheme','reject private IP and link-local','no redirect to disallowed','block 169.254.169.254']},
+{i:'output-exfil',c:'output',s:'medium',n:'data exfiltration via tool chaining',ns:['handler-read','output-shape','client','llm','handler-write'],e:['handlers-upstream','dispatch-handler-write','handler-output'],d:'sensitive data read by one tool flows through agent to less-protected destination via another.',t:{stdio:'user-bounded',sse:'cross-user compounds',http:'cross-user compounds'},m:['classification tagging on outputs','flow analysis sensitive-read to public-write','PII redaction before context','session policy on combinations']},
+{i:'token-leak-logs',c:'server',s:'medium',n:'token leakage via logs',ns:['authn','dispatch','handler-read','audit'],e:['audit-handlers'],d:'request bodies or errors with auth headers persist to logs readable by ops.',t:{stdio:'logs local',sse:'central exposure',http:'central exposure'},m:['redact sensitive headers at log layer','pattern redaction for token-shaped strings','never log upstream response bodies']},
+{i:'schema-poison',c:'output',s:'medium',n:'schema / description poisoning',ns:['validate','dispatch','client','llm'],e:['validate-rate','dispatch-cache','rate-dispatch'],d:'descriptions templated from user-controlled config. attacker influences how model picks tools.',t:{stdio:'less common',sse:'real if dynamic',http:'real if dynamic'},m:['descriptions static, code-reviewed','no runtime templating from user input','signed manifests for federated MCPs']},
+{i:'agent-loop',c:'tool',s:'medium',n:'agent loop / cost amplification',ns:['llm','client','dispatch','handler-read','ratelimit'],e:['transport-server','rate-dispatch','dispatch-handler-read'],d:'agent enters tool-call loop burning tokens and hammering upstreams without terminating.',t:{stdio:'self-bounded but expensive',sse:'fleet impact',http:'fleet impact'},m:['per-session call cap','token budget at server','short-circuit repeated calls','circuit breaker on error rate']},
+{i:'audit-tamper',c:'server',s:'medium',n:'audit log tampering',ns:['audit','dispatch','handler-write'],e:['audit-handlers'],d:'attacker on server modifies or deletes audit entries to cover tracks.',t:{stdio:'trivial',sse:'unless shipped',http:'unless shipped'},m:['ship logs off-box realtime','append-only store on receiver','separate write vs admin identity','cryptographic chaining']},
+{i:'roots-boundary',c:'tool',s:'high',n:'roots / fs boundary violation',ns:['llm','client','dispatch','handler-read','roots','os'],e:['transport-server','dispatch-handler-read','handlers-os'],d:'agent supplies path traversal or symlink to escape declared MCP roots.',t:{stdio:'highest exposure',sse:'fs-dependent',http:'fs-dependent'},m:['canonicalize before boundary check','no symlink across boundary','realpath plus startswith','reject NUL and encoded slashes']},
+{i:'sampling-abuse',c:'server',s:'medium',n:'sampling abuse / recursive cost',ns:['sampling','llm','dispatch','handler-read'],e:['sampling-llm','dispatch-handler-read'],d:'malicious server uses MCP sampling to drain user model budget, extract context, or recurse.',t:{stdio:'one-user budget',sse:'cross-tenant',http:'cross-tenant'},m:['cap sampling per session','user confirmation','reject sampling that recurses','redact context before forwarding']},
+{i:'redos-denylist',c:'server',s:'medium',n:'ReDoS in deny list / validator',ns:['validate','ratelimit','dispatch'],e:['authn-validate','validate-rate'],d:'regex deny list itself is a CPU exhaustion vector via catastrophic backtracking.',t:{stdio:'self-DoS',sse:'fleet impact',http:'fleet impact'},m:['use re2 not PCRE','per-call regex timeout','input length cap','fuzz-test deny list']},
+{i:'container-escape',c:'tool',s:'critical',n:'container escape from exec sandbox',ns:['handler-exec','os','network'],e:['handlers-os'],d:'exec sandbox container runtime has known escape (runc, dirty-pipe, namespace abuse).',t:{stdio:'workstation blast',sse:'production blast',http:'production blast'},m:['patch runtime aggressively','no-new-privileges + read-only rootfs','gVisor or kata','monitor unusual syscalls']},
+{i:'federation-confusion',c:'output',s:'medium',n:'federation / cross-server confusion',ns:['client','federation','llm'],e:['client-fed'],d:'multi-MCP setup. one server crafts descriptions misdirecting agent toward tools on another.',t:{stdio:'setup-dependent',sse:'setup-dependent',http:'setup-dependent'},m:['audit descriptions across servers','signed tool manifests','host validates content','system prompt establishes domain authority']},
+{i:'context-pollution',c:'output',s:'medium',n:'model context window pollution',ns:['handler-read','output-shape','client','llm'],e:['handlers-upstream','handler-output'],d:'oversized tool output floods context, displacing system prompt or earlier guidance.',t:{stdio:'same',sse:'same',http:'same'},m:['pagination bounds with explicit limits','strip non-essential fields by default','output token budget per call']},
+{i:'error-side-channel',c:'server',s:'medium',n:'error message side channel',ns:['validate','dispatch','handler-read','output-shape'],e:['authn-validate','validate-rate'],d:'detailed errors reveal internal state: records, schema, paths, versions used for vuln targeting.',t:{stdio:'lower stakes',sse:'real',http:'real'},m:['internal log distinct from caller error','code + retryable + hint only','never echo upstream bodies','redact paths and versions']},
+{i:'toctou-auth',c:'auth',s:'medium',n:'TOCTOU on authorization',ns:['authn','dispatch','handler-write'],e:['authn-validate','validate-rate','rate-dispatch'],d:'auth checked at session start, not per call. permissions revoked between checks.',t:{stdio:'low',sse:'real with long sessions',http:'real with long sessions'},m:['authorize per call','short cache TTL on auth','subscribe to revocation events']}
+];
+var S=[
+{i:'authn',n:'authn / authz',r:'identity boundary',d:[['token validation every request',''],['forward user identity not service account',''],['per-tool scope minimization',''],['fail closed on missing creds','']]},
+{i:'validate',n:'schema validate',r:'first-line input filter',d:[['tight pydantic / zod schemas','hardened'],['enums for closed value spaces',''],['re2 for regex deny lists',''],['input length caps','']]},
+{i:'ratelimit',n:'rate / quota / CB',r:'load shaping',d:[['per-caller quotas','wip'],['inflight cap','wip'],['token budget per call','wip'],['circuit breaker on health','planned'],['auto-step for ranges','planned']]},
+{i:'killswitch',n:'kill switch / canary',r:'panic and verify',d:[['three-tier kill switch via file/env','planned'],['canary asserts pathological queries blocked','planned'],['watchdog flips switch on threshold','planned']]},
+{i:'dispatch',n:'tool dispatch / policy',r:'authz gate per tool',d:[['per-tool authz from authn scope',''],['policy engine for flow rules','planned'],['cross-tool flow analysis','planned'],['confirmation wrappers on writes','planned']]},
+{i:'cache',n:'cache (TTL)',r:'response acceleration',d:[['TTL in-memory cache','hardened'],['cache keys include identity',''],['invalidation on mutation',''],['redis shared cache for HTTP','']]},
+{i:'audit',n:'audit / SIEM',r:'forensics',d:[['call logging: caller, params, outcome',''],['logs shipped off-box realtime',''],['append-only on receiving side',''],['cryptographic chaining',''],['token-shape redaction at log','']]},
+{i:'sampling',n:'sampling endpoint',r:'server-to-client LLM',d:[['cap sampling per session',''],['user confirmation',''],['reject recursion to tools',''],['redact context before forward','']]},
+{i:'handler-read',n:'read handlers',r:'query and lookup',d:[['cardinality estimation pre-dispatch','planned'],['PromQL static analysis','planned'],['range limits and auto-step','hardened'],['response shaping and pagination','hardened'],['configurable deny list','hardened'],['resource catalog with fallback','hardened']]},
+{i:'handler-write',n:'write handlers',r:'mutating tools',d:[['idempotency keys','planned'],['confirmation gate before destructive','planned'],['tighter scope than reads',''],['rate limited separately','']]},
+{i:'handler-exec',n:'exec handlers',r:'shell / SSH',d:[['command allowlist at schema',''],['sandbox: user, chroot, seccomp',''],['cgroup CPU/mem limits',''],['egress allowlist',''],['audit every exec with argv',''],['gVisor or kata for high-risk','']]},
+{i:'roots',n:'roots',r:'fs boundary',d:[['canonicalize before check',''],['reject paths outside roots',''],['no symlink crossings',''],['distinct read/write roots','']]},
+{i:'output-shape',n:'output shaping',r:'last gate before context',d:[['strip instruction patterns',''],['structured envelopes',''],['PII / secret redaction',''],['output token budget',''],['classification tagging','']]},
+{i:'creds',n:'credential vault',r:'secret store',d:[['runtime vault, not on disk',''],['short-lived rotating tokens',''],['vault audit log',''],['per-tool credential isolation','']]},
+{i:'os',n:'OS / container / sandbox',r:'process boundary',d:[['non-root service user',''],['read-only rootfs',''],['no-new-privileges, dropped caps',''],['tight seccomp for exec',''],['runtime patched to CVE baseline','']]},
+{i:'network',n:'network layer',r:'transport and egress',d:[['TLS 1.3 only',''],['mTLS service-to-service',''],['egress allowlist server to upstream',''],['audit proxy in front of upstream','']]},
+{i:'deps',n:'supply chain / deps',r:'build inputs',d:[['pinned versions, locked',''],['internal package mirror',''],['SBOM scanned every build',''],['signed internal releases','']]},
+{i:'transport-stdio',n:'stdio (local pipe)',r:'transport',d:[['no listening port',''],['process boundary via separate user',''],['docker --user= and ro mounts','']]},
+{i:'transport-sse',n:'SSE',r:'legacy HTTP streaming',d:[['TLS non-localhost',''],['authn every request',''],['CORS restrictive','']]},
+{i:'transport-http',n:'streamable HTTP',r:'current standard',d:[['TLS 1.3, mTLS for service',''],['short-lived audience tokens',''],['rate limit at proxy','']]}
+];
+var L={'user':'user','llm':'agent / LLM','client':'MCP client','federation':'other MCP servers','transport-stdio':'stdio','transport-sse':'SSE','transport-http':'streamable HTTP','authn':'authn / authz','validate':'schema validate','ratelimit':'rate / quota','killswitch':'kill switch','dispatch':'tool dispatch','cache':'cache','audit':'audit','sampling':'sampling','handler-read':'read handler','handler-write':'write handler','handler-exec':'exec handler','roots':'roots','output-shape':'output shaping','creds':'creds','os':'OS / sandbox','upstream':'upstream','network':'network','deps':'deps'};
+var nA={};V.forEach(function(v){v.ns.forEach(function(n){if(!nA[n])nA[n]=[];nA[n].push(v.i);});});
+var nS={};var sR={critical:3,high:2,medium:1};V.forEach(function(v){var r=sR[v.s]||0;v.ns.forEach(function(n){var p=nS[n];if(!p||(sR[p]||0)<r)nS[n]=v.s;});});
+function rel(v){var ns={};v.ns.forEach(function(n){ns[n]=true;});var sc=V.filter(function(x){return x.i!==v.i;}).map(function(x){var sh=x.ns.filter(function(n){return ns[n];}).length;return{v:x,sh:sh};}).filter(function(r){return r.sh>=2;});sc.sort(function(a,b){return b.sh-a.sh;});return sc.slice(0,5).map(function(r){return r.v;});}
+var grid=document.getElementById('vector-grid'),det=document.getElementById('detail-panel'),topo=document.getElementById('topo'),catG=document.getElementById('cat-group'),si=document.getElementById('search-input'),hb=document.getElementById('heatmap-btn'),sc=document.getElementById('stats-chip'),vt=document.getElementById('view-tag');
+var cCat='all',cV=null,cS=null,cView='attack',cSearch='',hOn=false;
+function sH(s){return '<span class="sev-'+s+'">'+s+'</span>';}
+function sD(s){return s==='critical'?'crit':(s==='high'?'high':'med');}
+function cL(c){var m={transport:'transport',auth:'auth',server:'server',tool:'tool exec',output:'output',supply:'supply'};return m[c]||c;}
+function mS(h){if(!cSearch)return true;var q=cSearch.toLowerCase();return h.some(function(x){return (x||'').toLowerCase().indexOf(q)!==-1;});}
+function rG(){grid.innerHTML='';if(cView==='attack'){V.forEach(function(v){var ch=cCat!=='all'&&v.c!==cCat;var sh=!mS([v.n,v.d,v.c,v.s,v.i].concat(v.m));var b=document.createElement('button');b.className='card';b.setAttribute('data-vid',v.i);b.setAttribute('data-sev',v.s);b.setAttribute('data-hidden',(ch||sh)?'true':'false');b.setAttribute('data-active',cV===v.i?'true':'false');b.innerHTML='<div class="name">'+v.n+'</div><div class="meta">'+cL(v.c)+'<span class="sep">//</span>'+sH(v.s)+'</div>';b.addEventListener('click',function(){selV(v.i);});grid.appendChild(b);});}else{S.forEach(function(s){var sh=!mS([s.n,s.r,s.i].concat(s.d.map(function(x){return x[0];})));var b=document.createElement('button');b.className='card';b.setAttribute('data-sid',s.i);b.setAttribute('data-hidden',sh?'true':'false');b.setAttribute('data-active',cS===s.i?'true':'false');var ct=s.d.length;var hd=s.d.filter(function(x){return x[1]==='hardened';}).length;var lbl=hd>0?hd+'/'+ct+' hardened':ct+' defenses';b.innerHTML='<div class="name">'+s.n+'</div><div class="meta">'+s.r+'<span class="sep">//</span>'+lbl+'</div>';b.addEventListener('click',function(){selS(s.i);});grid.appendChild(b);});}uS();}
+function uS(){if(cView==='attack'){var vis=V.filter(function(v){return (cCat==='all'||v.c===cCat)&&mS([v.n,v.d,v.c,v.s,v.i].concat(v.m));});var cr=vis.filter(function(v){return v.s==='critical';}).length,hi=vis.filter(function(v){return v.s==='high';}).length,me=vis.filter(function(v){return v.s==='medium';}).length;sc.innerHTML=vis.length+' shown // <span class="crit">'+cr+'C</span> <span class="hi">'+hi+'H</span> <span class="med">'+me+'M</span>';}else{var td=0,th=0,tw=0,tp=0;S.forEach(function(s){s.d.forEach(function(x){td++;if(x[1]==='hardened')th++;else if(x[1]==='wip')tw++;else if(x[1]==='planned')tp++;});});sc.innerHTML=S.length+' surf // '+td+' def // <span class="crit">'+th+'</span>/'+tw+'/'+tp+' h/w/p';}}
+function cT(){topo.querySelectorAll('[data-node]').forEach(function(n){n.removeAttribute('data-dim');n.removeAttribute('data-hot');});topo.querySelectorAll('[data-edge]').forEach(function(e){e.removeAttribute('data-dim');e.removeAttribute('data-hot');});}
+function aH(){topo.querySelectorAll('[data-node]').forEach(function(n){n.removeAttribute('data-heat');});if(!hOn)return;Object.keys(nS).forEach(function(nid){var el=topo.querySelector('[data-node="'+nid+'"]');if(el)el.setAttribute('data-heat',nS[nid]);});}
+function hV(v){cT();var h={};v.ns.forEach(function(n){h[n]=true;});topo.querySelectorAll('[data-node]').forEach(function(n){n.setAttribute(h[n.getAttribute('data-node')]?'data-hot':'data-dim','true');});var hE={};(v.e||[]).forEach(function(e){hE[e]=true;});topo.querySelectorAll('[data-edge]').forEach(function(e){e.setAttribute(hE[e.getAttribute('data-edge')]?'data-hot':'data-dim','true');});}
+function hN(nid){cT();topo.querySelectorAll('[data-node]').forEach(function(n){n.setAttribute(n.getAttribute('data-node')===nid?'data-hot':'data-dim','true');});}
+function cB(t,i){return '<button class="copy-link-btn" data-copy-type="'+t+'" data-copy-id="'+i+'">// copy link</button>';}
+function rVD(v){if(!v){det.innerHTML='<span class="label">DETAIL // CTX</span><p class="empty">// select a vector or surface.</p>';return;}var p=v.ns.map(function(n,i){var pi='<span class="pill">'+(L[n]||n)+'</span>';return i===0?pi:'<span class="arrow">&rarr;</span>'+pi;}).join('');var mh=v.m.map(function(x){return '<li><span class="bullet">&raquo;</span><span>'+x+'</span></li>';}).join('');var th='<div class="transport-cell"><div class="lbl">stdio</div>'+v.t.stdio+'</div><div class="transport-cell"><div class="lbl">SSE</div>'+v.t.sse+'</div><div class="transport-cell"><div class="lbl">streamable HTTP</div>'+v.t.http+'</div>';var rl=rel(v);var rh=rl.length?rl.map(function(r){return '<button class="related-pill" data-go-vec="'+r.i+'"><span class="sev-dot '+sD(r.s)+'"></span>'+r.n+'</button>';}).join(''):'';det.innerHTML='<span class="label">VECTOR // '+v.i.toUpperCase()+'</span>'+cB('vec',v.i)+'<h3>'+v.n+'</h3><div class="tags">'+cL(v.c)+' // severity '+sH(v.s)+'</div><p class="desc">'+v.d+'</p><div class="section-label">attack path</div><div class="path">'+p+'</div><div class="section-label">transport variation</div><div class="transport-grid">'+th+'</div><div class="section-label">mitigations</div><ul class="list">'+mh+'</ul>'+(rh?'<div class="section-label">related</div><div class="related-list">'+rh+'</div>':'');bD();}
+function rSD(s){if(!s){det.innerHTML='<span class="label">DETAIL // CTX</span><p class="empty">// select a surface.</p>';return;}var dh=s.d.map(function(x){var b=x[1]?'<span class="maturity" data-state="'+x[1]+'">'+x[1]+'</span>':'';return '<li><span class="bullet">&raquo;</span><span style="flex:1">'+x[0]+'</span>'+b+'</li>';}).join('');var rl=(nA[s.i]||[]).map(function(id){var v=V.find(function(x){return x.i===id;});return v?'<button class="related-pill" data-go-vec="'+v.i+'"><span class="sev-dot '+sD(v.s)+'"></span>'+v.n+'</button>':'';}).join('');det.innerHTML='<span class="label">SURFACE // '+s.i.toUpperCase()+'</span>'+cB('surf',s.i)+'<h3>'+s.n+'</h3><div class="tags">surface // '+s.r+'</div><div class="section-label">defenses</div><ul class="list">'+dh+'</ul>'+(rl?'<div class="section-label">attacks here</div><div class="related-list">'+rl+'</div>':'');bD();}
+function rND(nid){var ids=nA[nid]||[];var lbl=L[nid]||nid;if(cView==='defense'){var s=S.find(function(x){return x.i===nid;});if(s){rSD(s);cS=nid;rG();return;}}if(ids.length===0){det.innerHTML='<span class="label">SURFACE</span><h3>'+lbl+'</h3><p class="desc">// no attacks mapped here.</p>';return;}var rl=ids.map(function(id){var v=V.find(function(x){return x.i===id;});return v?'<button class="related-pill" data-go-vec="'+v.i+'"><span class="sev-dot '+sD(v.s)+'"></span>'+v.n+'</button>':'';}).join('');det.innerHTML='<span class="label">SURFACE</span><h3>'+lbl+'</h3><div class="tags">surface</div><div class="section-label">attacks here</div><div class="related-list">'+rl+'</div>';bD();}
+function bD(){det.querySelectorAll('[data-go-vec]').forEach(function(b){b.addEventListener('click',function(){selV(b.getAttribute('data-go-vec'));document.getElementById('detail').scrollIntoView({behavior:'smooth'});});});det.querySelectorAll('[data-copy-type]').forEach(function(b){b.addEventListener('click',function(){var t=b.getAttribute('data-copy-type'),i=b.getAttribute('data-copy-id');var u=window.location.origin+window.location.pathname+'#'+t+'='+i;if(navigator.clipboard){navigator.clipboard.writeText(u).then(function(){b.setAttribute('data-copied','true');var o=b.textContent;b.textContent='// copied';setTimeout(function(){b.removeAttribute('data-copied');b.textContent=o;},1400);}).catch(function(){window.prompt('copy',u);});}else{window.prompt('copy',u);}});});}
+function setH(t,i){if(!t){history.replaceState(null,'',window.location.pathname);return;}history.replaceState(null,'',window.location.pathname+'#'+t+'='+i);}
+function uVB(){document.querySelectorAll('.btn[data-view]').forEach(function(b){b.setAttribute('data-active',b.getAttribute('data-view')===cView?'true':'false');});if(vt)vt.textContent=cView==='attack'?'attacks':'defenses';}
+function selV(id,o){o=o||{};var v=V.find(function(x){return x.i===id;});if(!v)return;cV=id;cS=null;if(cView!=='attack'){cView='attack';uVB();catG.style.display='';}hV(v);rVD(v);rG();if(!o.silent)setH('vec',id);aH();}
+function selS(id,o){o=o||{};var s=S.find(function(x){return x.i===id;});if(!s)return;cS=id;cV=null;if(cView!=='defense'){cView='defense';uVB();catG.style.display='none';}hN(id);rSD(s);rG();if(!o.silent)setH('surf',id);aH();}
+function selC(c){cCat=c;catG.querySelectorAll('.btn').forEach(function(b){b.setAttribute('data-active',b.getAttribute('data-cat')===c?'true':'false');});rG();}
+function selVw(v,o){o=o||{};cView=v;cV=null;cS=null;cT();uVB();catG.style.display=(v==='attack')?'':'none';det.innerHTML='<span class="label">DETAIL // CTX</span><p class="empty">'+(v==='attack'?'// select a vector.':'// select a surface. green=hardened, orange=wip, gray=planned.')+'</p>';rG();if(!o.silent)setH(null);aH();}
+function tH(){hOn=!hOn;hb.setAttribute('data-active',hOn?'true':'false');aH();}
+function vIds(){return V.filter(function(v){return (cCat==='all'||v.c===cCat)&&mS([v.n,v.d,v.c,v.s,v.i].concat(v.m));}).map(function(v){return v.i;});}
+function nav(d){if(cView!=='attack')return;var ids=vIds();if(!ids.length)return;var idx=cV?ids.indexOf(cV):-1;var nx=(idx+d+ids.length)%ids.length;if(idx===-1)nx=d>0?0:ids.length-1;selV(ids[nx]);}
+function lH(){var h=window.location.hash.replace(/^#/,'');if(!h)return false;var m=h.match(/^(vec|surf)=(.+)$/);if(!m)return false;if(m[1]==='vec'){selV(m[2],{silent:true});return true;}if(m[1]==='surf'){selS(m[2],{silent:true});return true;}return false;}
+document.querySelectorAll('.btn[data-cat]').forEach(function(b){b.addEventListener('click',function(){selC(b.getAttribute('data-cat'));});});
+document.querySelectorAll('.btn[data-view]').forEach(function(b){b.addEventListener('click',function(){selVw(b.getAttribute('data-view'));});});
+hb.addEventListener('click',tH);
+si.addEventListener('input',function(){cSearch=si.value;rG();});
+window.addEventListener('keydown',function(e){var iF=e.target===si;if(e.key==='/'&&!iF){e.preventDefault();si.focus();si.select();}else if(e.key==='Escape'){if(iF){si.value='';cSearch='';si.blur();rG();}else{cT();aH();cV=null;cS=null;setH(null);selVw(cView,{silent:true});}}else if((e.key==='j'||e.key==='ArrowDown')&&!iF){e.preventDefault();nav(1);}else if((e.key==='k'||e.key==='ArrowUp')&&!iF){e.preventDefault();nav(-1);}else if(e.key==='a'&&!iF&&!e.metaKey&&!e.ctrlKey){e.preventDefault();selVw('attack');}else if(e.key==='d'&&!iF&&!e.metaKey&&!e.ctrlKey){e.preventDefault();selVw('defense');}else if(e.key==='h'&&!iF&&!e.metaKey&&!e.ctrlKey){e.preventDefault();tH();}});
+topo.querySelectorAll('[data-node]').forEach(function(n){n.addEventListener('click',function(){var nid=n.getAttribute('data-node');if(cView==='defense'){var s=S.find(function(x){return x.i===nid;});if(s){selS(nid);return;}}cV=null;cS=null;hN(nid);rND(nid);rG();});});
+window.addEventListener('hashchange',function(){lH();});
+rG();
+if(!lH())uS();
+})();
+</script></body></html>
