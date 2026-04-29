@@ -465,7 +465,7 @@ ${sec('context + cluster','#007870',`
 ${cmd('kubectl config get-contexts','list all configured contexts',
   [{t:'c',text:'kubectl config get-contexts'},
    {t:'o',text:'CURRENT   NAME         CLUSTER      AUTHINFO     NAMESPACE'},
-   {t:'o',text:'*         k3s-ersatz   k3s-ersatz   k3s-ersatz   demo'}])}
+   {t:'o',text:'*         k3s-homelab   k3s-homelab   k3s-homelab   demo'}])}
 ${cmd('kubectl config current-context','show which context is active')}
 ${cmd('kubectl config use-context [name]','switch active context',
   [{t:'c',text:'kubectl config use-context k3s-prod'}],'m')}
@@ -497,7 +497,7 @@ ${cmd('kubectl get [resource] {-o wide}','extra columns — IP, node')}
 ${cmd('kubectl get [resource] {-o yaml}','full YAML spec')}
 ${cmd('kubectl get [resource] {-o jsonpath=`{.spec.nodeName}`}','extract a single field',
   [{t:'c',text:'kubectl get pod my-pod -o jsonpath="{.spec.nodeName}"'},
-   {t:'o',text:'ersatz'}])}
+   {t:'o',text:'homelab'}])}
 ${cmd('kubectl get [resource] {-w}','watch — live updates')}
 ${cmd('kubectl get [resource] {--show-labels}','show all labels')}
 ${cmd('kubectl get [resource] {-l app=[name]}','filter by label selector')}
@@ -541,7 +541,7 @@ ${cmd('kubectl patch [resource] [name] {-p} "{"spec":{"replicas":3}}"','JSON mer
   [{t:'c',text:'kubectl patch deployment my-app -p \'{"spec":{"replicas":3}}\''},
    {t:'o',text:'deployment.apps/my-app patched'}],'m')}
 ${cmd('kubectl set image deployment/[name] [container]=[image]:[tag] {-n [ns]}','update image — triggers rolling update',
-  [{t:'c',text:'kubectl set image deployment/api api=192.168.1.187:32000/api:2.1.0 -n demo'}],'m')}
+  [{t:'c',text:'kubectl set image deployment/api api=192.0.2.10:32000/api:2.1.0 -n demo'}],'m')}
 ${cmd('kubectl scale deployment [name] {--replicas=[n]} {-n [ns]}','change replica count','m')}
 ${cmd('kubectl label [resource] [name] [key]=[val]','add/update a label','m')}
 ${cmd('kubectl annotate [resource] [name] [key]=[val]','add/update an annotation','m')}
@@ -635,7 +635,7 @@ ${sec('resource usage','#6A0080',`
 ${cmd('kubectl top nodes','CPU + memory per node',
   [{t:'c',text:'kubectl top nodes'},
    {t:'o',text:'NAME     CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%'},
-   {t:'o',text:'ersatz   312m         7%     2841Mi          36%'}])}
+   {t:'o',text:'homelab   312m         7%     2841Mi          36%'}])}
 ${cmd('kubectl top pods {-n [ns]}','CPU + memory per pod')}
 ${cmd('kubectl top pods {-A}','all namespaces')}
 ${cmd('kubectl top pods {-n [ns]} {--containers}','per-container breakdown')}
@@ -795,7 +795,7 @@ ${cmd('kubectl cordon [node]','mark unschedulable — no new pods scheduled here
 ${cmd('kubectl uncordon [node]','re-enable scheduling','m')}
 ${cmd('kubectl drain [node] {--ignore-daemonsets} {--delete-emptydir-data}','evict all pods — use before node maintenance',
   [{t:'m',text:'draining safely moves workloads off the node'},
-   {t:'c',text:'kubectl drain ersatz --ignore-daemonsets --delete-emptydir-data'}],'d')}
+   {t:'c',text:'kubectl drain homelab --ignore-daemonsets --delete-emptydir-data'}],'d')}
 ${cmd('kubectl taint node [node] [key]=[val]:NoSchedule','prevent pods without matching toleration','m')}
 ${cmd('kubectl taint node [node] [key]-','remove taint — trailing minus','m')}
 ${cmd('kubectl label node [node] [key]=[val]','add label for nodeSelector affinity','m')}
@@ -824,10 +824,10 @@ ${cmd('docker buildx build {--platform linux/amd64,linux/arm64} {-t} [image]:[ta
 
 ${sec('tag + push','#287A38',`
 ${cmd('docker tag [image]:[tag] [registry]/[image]:[tag]','',
-  [{t:'c',text:'docker tag my-app:2.0 192.168.1.187:32000/my-app:2.0'}],'m')}
-${cmd('docker tag [image]:[tag] `192.168.1.187:32000`/[image]:[tag]','tag for ersatz registry','m')}
-${cmd('docker push `192.168.1.187:32000`/[image]:[tag]','push to ersatz',
-  [{t:'c',text:'docker push 192.168.1.187:32000/my-app:2.0'},
+  [{t:'c',text:'docker tag my-app:2.0 192.0.2.10:32000/my-app:2.0'}],'m')}
+${cmd('docker tag [image]:[tag] `192.0.2.10:32000`/[image]:[tag]','tag for homelab registry','m')}
+${cmd('docker push `192.0.2.10:32000`/[image]:[tag]','push to homelab',
+  [{t:'c',text:'docker push 192.0.2.10:32000/my-app:2.0'},
    {t:'o',text:'2.0: digest: sha256:abc123... size: 1847'}],'m')}
 ${cmd('docker pull [registry]/[image]:[tag]','','m')}
 ${cmd('docker login [registry]','authenticate — prompts for username/password','m')}
@@ -870,10 +870,10 @@ ${cmd('docker cp [container]:[path] [local-path]','copy file out of container','
 
 ${sec('registry query','#6A0080',`
 ${cmd('curl http://[registry]/v2/_catalog','list all images in registry',
-  [{t:'c',text:'curl http://192.168.1.187:32000/v2/_catalog'},
+  [{t:'c',text:'curl http://192.0.2.10:32000/v2/_catalog'},
    {t:'o',text:'{"repositories":["my-app","nginx","postgres"]}'}])}
 ${cmd('curl http://[registry]/v2/[image]/tags/list','list tags for an image',
-  [{t:'c',text:'curl http://192.168.1.187:32000/v2/my-app/tags/list'},
+  [{t:'c',text:'curl http://192.0.2.10:32000/v2/my-app/tags/list'},
    {t:'o',text:'{"name":"my-app","tags":["1.0","2.0","latest"]}'}])}
 ${cmd('crictl images','list images in containerd — run on the node')}
 ${cmd('crictl pull [image]:[tag]','pull directly via containerd — bypass Docker','m')}
@@ -891,8 +891,8 @@ ${sec('login','#6A0080',`
 ${cmd('kubectl get secret argocd-initial-admin-secret {-n argocd} {-o jsonpath=`{.data.password}`} | base64 -d','get initial admin password',
   [{t:'c',text:'kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d'},
    {t:'o',text:'T4k3M3H0me'}])}
-${cmd('argocd login `192.168.1.187:32217` {--insecure}','ersatz — HTTP NodePort',
-  [{t:'c',text:'argocd login 192.168.1.187:32217 --insecure'},
+${cmd('argocd login `192.0.2.10:32217` {--insecure}','homelab — HTTP NodePort',
+  [{t:'c',text:'argocd login 192.0.2.10:32217 --insecure'},
    {t:'o',text:'Username: admin'},
    {t:'o',text:'Password: '},
    {t:'o',text:'\'admin:login\' logged in successfully'}],'m')}
@@ -988,12 +988,12 @@ ${sec('k3s registry config','#E85000',`
 ${cmd('cat /etc/rancher/k3s/registries.yaml','view mirror + insecure registry config',
   [{t:'m',text:'example registries.yaml:'},
    {t:'o',text:'mirrors:'},
-   {t:'o',text:'  "192.168.1.187:32000":'},
+   {t:'o',text:'  "192.0.2.10:32000":'},
    {t:'o',text:'    endpoint:'},
-   {t:'o',text:'      - "http://192.168.1.187:32000"'},
+   {t:'o',text:'      - "http://192.0.2.10:32000"'},
    {t:'o',text:'  "docker.io":'},
    {t:'o',text:'    endpoint:'},
-   {t:'o',text:'      - "http://192.168.1.100:5000"'}])}
+   {t:'o',text:'      - "http://192.0.2.20:5000"'}])}
 ${cmd('sudo systemctl restart k3s','apply registry changes','m')}
 `)}
 
@@ -1214,13 +1214,13 @@ ${tbl([
   ['5. image assembled locally',     'layers extracted into overlay filesystem'],
 ])}
 ${cmd('curl http://[registry]/v2/','check registry is alive — should return {}',
-  [{t:'c',text:'curl http://192.168.1.187:32000/v2/'},
+  [{t:'c',text:'curl http://192.0.2.10:32000/v2/'},
    {t:'o',text:'{}'}])}
 ${cmd('curl http://[registry]/v2/_catalog','list all repositories in registry',
-  [{t:'c',text:'curl http://192.168.1.187:32000/v2/_catalog'},
+  [{t:'c',text:'curl http://192.0.2.10:32000/v2/_catalog'},
    {t:'o',text:'{"repositories":["my-app","nginx","postgres"]}'}])}
 ${cmd('curl http://[registry]/v2/[image]/tags/list','list all tags for an image',
-  [{t:'c',text:'curl http://192.168.1.187:32000/v2/my-app/tags/list'},
+  [{t:'c',text:'curl http://192.0.2.10:32000/v2/my-app/tags/list'},
    {t:'o',text:'{"name":"my-app","tags":["1.0","1.1","2.0","latest"]}'}])}
 ${cmd('curl http://[registry]/v2/[image]/manifests/[tag]','fetch image manifest',
   [{t:'m',text:'add -H "Accept: application/vnd.docker.distribution.manifest.v2+json" for v2 manifest'}])}
@@ -1238,12 +1238,12 @@ ${sec('k3s containerd config','#E85000',`
 ${cmd('cat /etc/rancher/k3s/registries.yaml','view current config',
   [{t:'m',text:'example — private registry + docker.io pull-through:'},
    {t:'o',text:'mirrors:'},
-   {t:'o',text:'  "192.168.1.187:32000":'},
+   {t:'o',text:'  "192.0.2.10:32000":'},
    {t:'o',text:'    endpoint:'},
-   {t:'o',text:'      - "http://192.168.1.187:32000"'},
+   {t:'o',text:'      - "http://192.0.2.10:32000"'},
    {t:'o',text:'  "docker.io":'},
    {t:'o',text:'    endpoint:'},
-   {t:'o',text:'      - "http://192.168.1.100:5000"'},
+   {t:'o',text:'      - "http://192.0.2.20:5000"'},
    {t:'o',text:'      - "https://registry-1.docker.io"  # fallback'}])}
 ${cmd('sudo systemctl restart k3s','apply after editing registries.yaml','m')}
 ${cmd('sudo crictl pull [image]:[tag]','test pull from node after config change','m')}
@@ -1276,13 +1276,13 @@ ${cmd('docker load {-i} [file.tar]','import on destination',
 ${cmd('docker tag [image]:[tag] [registry]/[image]:[tag]','re-tag for internal registry','m')}
 ${cmd('docker push [registry]/[image]:[tag]','push to internal registry after loading','m')}
 ${cmd('crane copy [src] [dst]','copy image between registries without local pull — needs crane tool',
-  [{t:'c',text:'crane copy docker.io/nginx:1.25 192.168.1.187:32000/nginx:1.25'}])}
+  [{t:'c',text:'crane copy docker.io/nginx:1.25 192.0.2.10:32000/nginx:1.25'}])}
 `)}
 
 ${sec('imagePullSecret','#6A0080',`
 ${cmd('kubectl create secret docker-registry regcred {--docker-server=[reg]} {--docker-username=[u]} {--docker-password=[p]} {-n [ns]}','create pull secret',
   [{t:'c',text:'kubectl create secret docker-registry regcred \\'},
-   {t:'c',text:'  --docker-server=192.168.1.187:32000 \\'},
+   {t:'c',text:'  --docker-server=192.0.2.10:32000 \\'},
    {t:'c',text:'  --docker-username=admin \\'},
    {t:'c',text:'  --docker-password=secret -n demo'}],'m')}
 ${cmd('kubectl patch sa default {-n [ns]} {-p} `{"imagePullSecrets":[{"name":"regcred"}]}`','attach to default SA — all pods in ns inherit it',
@@ -1293,7 +1293,7 @@ ${cmd('kubectl get secret regcred {-n [ns]} {-o jsonpath=`{.data.\\.dockerconfig
 ${sec('containerd crictl (on node)','#007870',`
 ${cmd('sudo crictl images','list all images in containerd cache')}
 ${cmd('sudo crictl pull [image]:[tag]','pull directly via containerd — tests mirror config',
-  [{t:'c',text:'sudo crictl pull 192.168.1.187:32000/my-app:2.0'},
+  [{t:'c',text:'sudo crictl pull 192.0.2.10:32000/my-app:2.0'},
    {t:'o',text:'Image is up to date for sha256:abc123...'}],'m')}
 ${cmd('sudo crictl rmi [image]','remove image from containerd cache','m')}
 ${cmd('sudo crictl info | grep -A5 registry','show containerd registry config')}
@@ -1306,7 +1306,7 @@ ${tbl([
   ['nginx:1.25',                      'docker.io/library/nginx:1.25'],
   ['myorg/myapp:1.0',                 'docker.io/myorg/myapp:1.0'],
   ['ghcr.io/myuser/myapp:1.0',        'GitHub Container Registry'],
-  ['192.168.1.187:32000/myapp:1.0',   'private registry by IP (ersatz)'],
+  ['192.0.2.10:32000/myapp:1.0',   'private registry by IP (homelab)'],
   ['registry.internal/myapp:1.0',     'private registry by hostname'],
   ['nginx@sha256:a3b2c1...',          'pinned to exact immutable digest — use in prod'],
 ])}

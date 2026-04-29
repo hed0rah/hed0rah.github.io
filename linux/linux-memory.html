@@ -423,6 +423,46 @@ td.hex  { color: var(--orange); font-weight: 700; }
 .kv .v { font-size: 12px; color: var(--bright); font-weight: 700; }
 .kv .v .hex { color: var(--orange); }
 
+/* INSPECT (collapsible) */
+details.inspect {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--cyan);
+  margin: 16px 0;
+}
+details.inspect > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 16px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--bright);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+}
+details.inspect > summary::-webkit-details-marker { display: none; }
+details.inspect > summary::before {
+  content: '\25B8';
+  color: var(--cyan);
+  font-size: 11px;
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+details.inspect[open] > summary::before { transform: rotate(90deg); }
+details.inspect > summary:hover { color: var(--cyan); }
+details.inspect > summary .tag {
+  margin-left: auto;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+}
+details.inspect[open] > summary { border-bottom: 1px solid var(--border2); }
+details.inspect > pre { margin: 0; border: none; }
+
 /* SPINE */
 .spine {
   position: fixed;
@@ -719,6 +759,28 @@ td.hex  { color: var(--orange); font-weight: 700; }
     <strong>ASLR // address space layout randomization</strong>
     With PIE binaries (default on most modern distros), the kernel randomizes the base of the executable, the mmap region, the stack top, and the heap start on every <code>execve()</code>. Two runs of the same binary won't share addresses for anything except shared <code>.text</code> pages of the underlying ELF, which the kernel happily deduplicates in the page cache.
   </div>
+
+  <details class="inspect">
+    <summary>Inspect your own address space <span class="tag">SHELL</span></summary>
+<pre class="cy"><span class="cm"># raw VMA list of the current shell</span>
+cat /proc/self/maps
+
+<span class="cm"># any process by pid (readable, with sizes and perms)</span>
+pmap -X $PID
+
+<span class="cm"># just the named regions</span>
+grep -E '\[(heap|stack|vdso|vvar)\]' /proc/$PID/maps
+
+<span class="cm"># is ASLR on? 0=off  1=conservative  2=full</span>
+cat /proc/sys/kernel/randomize_va_space
+
+<span class="cm"># run the same binary twice and diff the layout</span>
+diff &lt;(./myapp &amp; sleep 0.1; cat /proc/$!/maps; kill $!) \
+     &lt;(./myapp &amp; sleep 0.1; cat /proc/$!/maps; kill $!)
+
+<span class="cm"># max stack size for this shell</span>
+ulimit -s</pre>
+  </details>
 </section>
 
 <!-- ═════ 03 PROC MAPS ═════ -->
@@ -783,6 +845,24 @@ td.hex  { color: var(--orange); font-weight: 700; }
   <p>Each row is <code>start-end perms offset dev inode pathname</code>. Permissions are <code>rwxp</code> or <code>rwxs</code> (private vs shared). A private writable file mapping starts as a copy-on-write of the file pages — the moment you write, the kernel hands you a private anon page and forgets about the file for that location.</p>
 
   <p>Want richer info? <code>/proc/[pid]/smaps</code> breaks down each VMA's RSS, PSS, swap, anon vs file pages, hugepage backing, locked status.</p>
+
+  <details class="inspect">
+    <summary>Inspect smaps and per-VMA detail <span class="tag">SHELL</span></summary>
+<pre class="cy"><span class="cm"># first VMA's full breakdown — Size, Rss, Pss, Swap, Anon, etc.</span>
+awk '/^[0-9a-f]+-[0-9a-f]+/{n++} n==2{exit} {print}' /proc/$PID/smaps
+
+<span class="cm"># single-shot summary across all mappings</span>
+cat /proc/$PID/smaps_rollup
+
+<span class="cm"># biggest mappings by RSS</span>
+pmap -x $PID | sort -k3 -n -r | head
+
+<span class="cm"># every shared library actually loaded</span>
+awk '/\.so/{print $6}' /proc/$PID/maps | sort -u
+
+<span class="cm"># trace ld.so as it pulls libraries in</span>
+LD_DEBUG=files ./myapp 2&gt;&amp;1 | grep 'calling init'</pre>
+  </details>
 </section>
 
 <!-- ═════ 04 PAGE TABLES ═════ -->
@@ -958,6 +1038,26 @@ td.hex  { color: var(--orange); font-weight: 700; }
     <strong>PCID / ASID // process-context identifiers</strong>
     Modern x86_64 CPUs support PCIDs, which tag TLB entries with the address space they belong to. Linux enables this when available, allowing the kernel to switch CR3 without flushing the TLB for short-lived switches (KPTI being a notable consumer).
   </div>
+
+  <details class="inspect">
+    <summary>Measure TLB pressure <span class="tag">SHELL</span></summary>
+<pre class="cy"><span class="cm"># TLB miss rates while running a binary</span>
+perf stat -e dTLB-load-misses,dTLB-loads,iTLB-load-misses,iTLB-loads ./myapp
+
+<span class="cm"># expressed as miss ratio</span>
+perf stat -x, -e dTLB-loads,dTLB-load-misses ./myapp 2&gt;&amp;1 \
+  | awk -F, 'NR==1{loads=$1} NR==2{print "dTLB miss ratio:", $1/loads}'
+
+<span class="cm"># is THP coalescing pages?</span>
+grep -E 'AnonHugePages|ShmemHugePages' /proc/meminfo
+cat /sys/kernel/mm/transparent_hugepage/enabled
+
+<span class="cm"># hugepage pools (2 MiB / 1 GiB)</span>
+ls /sys/kernel/mm/hugepages
+
+<span class="cm"># is the CPU using PCIDs?</span>
+grep -m1 -o 'pcid' /proc/cpuinfo</pre>
+  </details>
 </section>
 
 <!-- ═════ 06 PAGE FAULTS ═════ -->
@@ -1017,6 +1117,30 @@ td.hex  { color: var(--orange); font-weight: 700; }
 <span class="cm">after touch    minflt=65628    majflt=0    maxrss=265728 KiB</span></pre>
 
   <p>The mmap itself is virtually free. The 256 MiB only gets paid for when you touch it — one minor fault per 4 KiB page (65536 of them). No major faults, because nothing comes from disk. Anonymous pages are filled from the kernel's zero page on first read, then COW'd on first write.</p>
+
+  <details class="inspect">
+    <summary>Watch faults on a live process <span class="tag">SHELL</span></summary>
+<pre class="cy"><span class="cm"># instantaneous fault counts for a pid (cols 10-13 of /proc/[pid]/stat)</span>
+awk '{print "minflt="$10, "cminflt="$11, "majflt="$12, "cmajflt="$13}' /proc/$PID/stat
+
+<span class="cm"># cleaner version</span>
+ps -o pid,comm,min_flt,maj_flt -p $PID
+
+<span class="cm"># top processes by major faults right now</span>
+ps -eo pid,comm,maj_flt --sort=-maj_flt | head
+
+<span class="cm"># system-wide rate, per second</span>
+sar -B 1
+
+<span class="cm"># raw kernel counters (cumulative since boot)</span>
+grep -E '^pgfault|^pgmajfault|^pgreuse' /proc/vmstat
+
+<span class="cm"># trace mmap / brk / mprotect calls during a run</span>
+strace -e mmap,mprotect,brk,munmap ./myapp 2&gt;&amp;1 | head -40
+
+<span class="cm"># live fault tracing with bcc / bpftrace</span>
+sudo bpftrace -e 'tracepoint:exceptions:page_fault_user { @[comm] = count(); }'</pre>
+  </details>
 </section>
 
 <!-- ═════ 07 BRK VS MMAP ═════ -->
@@ -1134,6 +1258,28 @@ flags:  <span class="val">P</span> = PREV_INUSE   (1 if prev chunk is in use)
 <span class="cm">malloc(8388608 ) = 0x7f9a5c000010   &lt;- mmap region (separate)</span></pre>
 
   <p>The address jump from <code>0x55b8...</code> (main heap) to <code>0x7f9a...</code> (mmap region) is the threshold flip. When you <code>free()</code> the mmap'd ones, glibc actually calls <code>munmap</code> — that memory genuinely goes back to the kernel. <code>free()</code> on heap chunks just rebinds them.</p>
+
+  <details class="inspect">
+    <summary>Probe glibc's heap and arenas <span class="tag">SHELL</span></summary>
+<pre class="cy"><span class="cm"># dump arena stats from a running process (glibc malloc_stats via gdb)</span>
+gdb -p $PID -batch -ex 'call (void)malloc_stats()' -ex detach 2&gt;&amp;1 | tail -20
+
+<span class="cm"># total heap (brk) size and the data segment</span>
+grep -E 'VmData|VmStk|VmExe|VmLib' /proc/$PID/status
+
+<span class="cm"># tweak the mmap threshold so even small allocs go to mmap</span>
+MALLOC_MMAP_THRESHOLD_=$((1&lt;&lt;14)) ./myapp   <span class="cm"># 16 KiB</span>
+
+<span class="cm"># kill tcache to see classic ptmalloc behavior</span>
+GLIBC_TUNABLES=glibc.malloc.tcache_count=0 ./myapp
+
+<span class="cm"># trace every malloc / free / realloc</span>
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libmemusage.so ./myapp
+ltrace -e malloc+free+realloc ./myapp 2&gt;&amp;1 | head
+
+<span class="cm"># or use a real heap profiler</span>
+heaptrack ./myapp &amp;&amp; heaptrack_print heaptrack.myapp.*.gz | head -30</pre>
+  </details>
 </section>
 
 <!-- ═════ 09 MMAP ═════ -->
@@ -1495,6 +1641,33 @@ mkdir /sys/fs/cgroup/myservice
 <span class="kw">echo</span> 536870912 &gt; /sys/fs/cgroup/myservice/memory.max
 <span class="kw">echo</span> $$        &gt; /sys/fs/cgroup/myservice/cgroup.procs
 <span class="cm"># now this shell + descendants are capped</span></pre>
+
+  <details class="inspect">
+    <summary>Inspect pressure, swap, OOM <span class="tag">SHELL</span></summary>
+<pre class="cy"><span class="cm"># PSI: how much time we're stalled on memory</span>
+cat /proc/pressure/memory
+<span class="cm"># some avg10=0.00 ... full avg10=0.00 ...   "full" non-zero = real pain</span>
+
+<span class="cm"># actively swapping right now? si/so columns are kB/s</span>
+vmstat 1 5
+
+<span class="cm"># current watermarks per zone</span>
+grep -E 'Node|min|low|high' /proc/zoneinfo | head -20
+
+<span class="cm"># did the OOM killer run since boot?</span>
+dmesg -T | grep -i 'killed process\|out of memory'
+journalctl -k --since boot | grep -i 'invoked oom'
+
+<span class="cm"># who would the OOM killer pick right now?</span>
+for p in /proc/[0-9]*; do
+  s=$(cat $p/oom_score 2&gt;/dev/null) || continue
+  echo "$s $(cat $p/comm 2&gt;/dev/null) $(basename $p)"
+done | sort -n | tail -10
+
+<span class="cm"># cgroup-scoped pressure and OOM events</span>
+cat /sys/fs/cgroup/myservice/memory.pressure
+cat /sys/fs/cgroup/myservice/memory.events</pre>
+  </details>
 </section>
 
 <!-- ═════ 13 NUMA ═════ -->
@@ -1564,6 +1737,30 @@ mkdir /sys/fs/cgroup/myservice
 }</pre>
 
   <p>For the common case (single-process service, multiple threads), Linux's default first-touch + autonuma balancing usually does the right thing — it migrates pages toward the cores that touch them most. For high-end workloads (databases, in-memory analytics), explicit pinning with <code>numactl</code> or <code>libnuma</code> is the difference between 60% and 100% of memory bandwidth.</p>
+
+  <details class="inspect">
+    <summary>Inspect per-process NUMA placement <span class="tag">SHELL</span></summary>
+<pre class="cy"><span class="cm"># topology + node memory totals</span>
+numactl --hardware
+
+<span class="cm"># RSS broken down by node, per process</span>
+numastat -p $PID
+
+<span class="cm"># every mapping with its current node distribution</span>
+cat /proc/$PID/numa_maps | head
+
+<span class="cm"># node-level allocator stats: hits, misses, foreign</span>
+numastat -m
+
+<span class="cm"># pin a workload manually</span>
+numactl --cpunodebind=0 --membind=0 ./myapp
+
+<span class="cm"># remote-access penalty in cycles</span>
+perf stat -e mem_load_l3_miss_retired.remote_dram ./myapp
+
+<span class="cm"># is autonuma migrating pages around?</span>
+grep numa_ /proc/vmstat</pre>
+  </details>
 </section>
 
 <!-- ═════ 14 TOOLING ═════ -->
