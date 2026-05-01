@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>MCP Enterprise Brief / Reference Architecture</title>
+<meta name="description" content="Concise reference architecture for production MCP. Spec 2025-11-25, OWASP MCP Top 10, OAuth 2.1 with RFC 9728 and RFC 8707.">
+<meta property="og:title" content="MCP Enterprise Brief"><meta property="og:type" content="article">
+<style>
+:root{--paper:#fcfcfa;--ink:#151515;--muted:#64625c;--line:#d8d5ce;--soft:rgba(0,0,0,0.012);--bigstone:#1A2F3F;--flamingo:#EC503A;--geraldine:#F78F82;--gd-soft:rgba(247,143,130,0.10);--fl-soft:rgba(236,80,58,0.08);--bs-soft:rgba(26,47,63,0.05);--ex-bg:#faf8f3}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);background:var(--paper);font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;line-height:1.45}
+.page{max-width:1240px;margin:0 auto;padding:24px 16px 44px}
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:26px;align-items:start}
+.paper{min-width:0;border-top:2px solid var(--bigstone);border-bottom:1px solid var(--line);padding:20px 0 24px}
+.eyebrow{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:var(--flamingo);font-weight:600}
+h1,h2,h3{margin:0;font-weight:600;line-height:1.2}
+h1{font-size:clamp(1.55rem,2.1vw,1.9rem);letter-spacing:-0.02em;margin-bottom:6px;color:var(--bigstone)}
+h2{font-size:0.92rem;margin-top:20px;margin-bottom:6px;padding-top:10px;border-top:1px solid var(--line);color:var(--bigstone);text-transform:uppercase;letter-spacing:0.05em}
+h3{font-size:0.86rem;margin:8px 0 4px;color:var(--ink)}
+p{margin:0 0 6px;font-size:0.86rem}
+code{font-family:"SFMono-Regular","SF Mono",Menlo,Consolas,monospace;font-size:0.85em;background:rgba(217,215,209,0.30);padding:0.04rem 0.22rem;border-radius:1px}
+.chip{display:inline-block;margin:0 3px 3px 0;padding:1px 6px;border:1px solid var(--line);border-radius:2px;font-size:0.69rem;letter-spacing:0.02em;color:var(--muted)}
+.chip.flamingo{border-color:var(--flamingo);color:var(--flamingo);background:var(--fl-soft)}
+.term{cursor:pointer;border-bottom:1px dotted var(--bigstone);color:var(--bigstone);transition:.1s;padding:0 1px;font-weight:500}
+.term:hover,.term:focus-visible,.term.is-active{background:var(--gd-soft);color:var(--flamingo);border-bottom-color:var(--flamingo);outline:none}
+.lede{font-size:0.9rem;color:#242424;margin:6px 0 14px}
+.spec-line{display:inline-block;padding:2px 8px;border:1px solid var(--bigstone);background:var(--bs-soft);font-family:"SFMono-Regular",monospace;font-size:0.74rem;color:var(--bigstone);margin-right:6px;letter-spacing:0.03em}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:6px;margin:10px 0 14px}
+.stat{padding:8px 10px;border:1px solid var(--line);background:var(--paper)}
+.stat .num{font-family:"Iowan Old Style",Georgia,serif;font-size:1.45rem;font-weight:600;color:var(--bigstone);line-height:1.1}
+.stat .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px}
+.path-bar{margin:10px 0 16px;border:1px solid var(--line);background:var(--ex-bg);padding:8px 12px}
+.path-bar .path-label{font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:6px}
+.path-bar .path-buttons{display:flex;flex-wrap:wrap;gap:6px}
+.path-btn{font-family:inherit;font-size:0.78rem;padding:4px 10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:2px;transition:.15s}
+.path-btn:hover{border-color:var(--flamingo);color:var(--flamingo)}
+.path-btn[data-active="true"]{background:var(--bigstone);color:var(--paper);border-color:var(--bigstone)}
+.path-btn .verdict{margin-left:5px;font-size:0.68rem;color:var(--muted);font-style:italic}
+.path-btn[data-active="true"] .verdict{color:rgba(252,252,250,0.7)}
+[data-path]{transition:opacity .2s,background .2s;margin:5px 0 6px}
+[data-path].path-faded{opacity:0.45}
+[data-path]:not(.path-faded){border-left:2px solid var(--geraldine);padding-left:10px;margin-left:-12px;background:var(--gd-soft)}
+[data-path="centralized"]:not(.path-faded){border-left-color:var(--flamingo);background:var(--fl-soft)}
+[data-path] p{font-size:0.82rem;margin:0;line-height:1.5}
+.compare{width:100%;border-collapse:collapse;font-size:0.82rem;margin:6px 0 8px}
+.compare th,.compare td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top}
+.compare th{background:var(--bs-soft);color:var(--bigstone);font-weight:600;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em}
+.compare td.good{color:var(--bigstone)}.compare td.bad{color:var(--flamingo)}.compare td.note{color:var(--muted);font-style:italic;font-size:0.78rem}
+.compare td code{font-size:0.78em}
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:6px;margin:6px 0 10px}
+.comp{padding:7px 10px;border:1px solid var(--line);background:var(--paper);transition:.15s}
+.comp:hover{border-color:var(--flamingo);background:var(--fl-soft)}
+.comp .name{font-size:0.88rem;font-weight:600;color:var(--bigstone);margin-bottom:1px}
+.comp .role{font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;font-family:"SFMono-Regular",monospace}
+.comp .desc{font-size:0.76rem;margin-top:3px;color:#2a2a2a;line-height:1.4}
+.bul{list-style:none;padding:0;margin:4px 0 8px}
+.bul li{padding:2px 0 2px 16px;font-size:0.84rem;position:relative;line-height:1.5;color:#222}
+.bul li::before{content:"·";position:absolute;left:5px;color:var(--flamingo);font-weight:700;font-size:1.1rem;line-height:1}
+.bul li strong{color:var(--bigstone);font-weight:600}
+.bul li code{font-size:0.82em}
+.phase-list{margin:5px 0 10px;padding:0;list-style:none;counter-reset:phase}
+.phase-list li{counter-increment:phase;padding:5px 10px 5px 34px;border-left:1px solid var(--line);position:relative;margin-bottom:2px;background:rgba(0,0,0,0.012);font-size:0.84rem;line-height:1.5}
+.phase-list li::before{content:"P" counter(phase);position:absolute;left:5px;top:5px;font-family:"SFMono-Regular",monospace;font-size:0.70rem;color:var(--flamingo);font-weight:700;letter-spacing:0.05em}
+.phase-list li strong{color:var(--bigstone)}
+.phase-list li .meta{font-size:0.70rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-left:6px;font-style:italic}
+.wireblock{font-family:"SFMono-Regular",Menlo,Consolas,monospace;font-size:0.75rem;background:var(--bigstone);color:#cbd2da;padding:10px 12px;margin:6px 0 10px;line-height:1.55;overflow-x:auto;white-space:pre;border-left:3px solid var(--flamingo)}
+.wireblock .kw{color:#f5b06b}.wireblock .hdr{color:#5cc0b0}.wireblock .cm{color:#7d8a99;font-style:italic}.wireblock .num{color:#e0b060}
+.refs{font-size:0.78rem;line-height:1.55;margin:6px 0}
+.refs .ref-row{display:grid;grid-template-columns:130px 1fr;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line)}
+.refs .ref-row:last-child{border-bottom:none}
+.refs .ref-row .key{font-family:"SFMono-Regular",monospace;font-size:0.72rem;color:var(--bigstone);font-weight:600;text-transform:uppercase;letter-spacing:0.03em}
+.refs .ref-row .val a{color:var(--flamingo);text-decoration:none;border-bottom:1px dotted var(--flamingo)}
+.refs .ref-row .val a:hover{background:var(--fl-soft)}
+.refs .ref-row .val .desc{color:var(--muted);font-style:italic;font-size:0.74rem;margin-left:6px}
+.margin{position:sticky;top:18px;border-top:2px solid var(--bigstone);padding-top:10px;font-size:0.82rem;color:var(--muted)}
+.margin-card{border:1px solid var(--line);border-left:3px solid var(--flamingo);background:rgba(0,0,0,0.012);padding:12px 12px 10px;min-height:340px}
+.margin h3{font-size:0.9rem;margin-bottom:6px;color:var(--bigstone)}
+.margin p{margin-bottom:7px;font-size:0.8rem}
+.margin-meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin:7px 0 8px;padding:7px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:#2d2d2a}
+.margin-meta strong{display:block;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.margin-meta span{font-size:0.8rem}
+.margin-code{display:inline-block;margin-top:2px;margin-bottom:6px;color:var(--flamingo)}
+.margin-section{margin-top:10px}
+.margin-section .label{font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:3px}
+.margin-section ul{margin:0;padding:0;list-style:none}
+.margin-section li{padding:2px 0;border-top:1px solid rgba(216,213,206,0.7);font-size:0.76rem;color:#2a2a2a;font-family:"SFMono-Regular",Menlo,Consolas,monospace}
+.margin-section li:first-child{border-top:none}
+.margin-section .more{color:var(--muted);font-style:italic;font-family:inherit}
+.margin-section a{color:var(--flamingo);text-decoration:none;border-bottom:1px dotted var(--flamingo);font-family:inherit;word-break:break-word}
+.margin-section a:hover{background:var(--fl-soft);color:var(--bigstone)}
+.margin-section li.link-item{white-space:normal;font-family:inherit;padding:4px 0}
+.margin-section li.link-item .src{display:block;font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:1px;font-family:"SFMono-Regular",monospace}
+.margin-hint{font-size:0.72rem;color:var(--muted);margin-top:12px;padding-top:7px;border-top:1px solid var(--line)}
+.margin-hint kbd{font-family:"SFMono-Regular",Menlo,Consolas,monospace;font-size:0.7rem;padding:0 4px;border:1px solid var(--line);border-radius:2px;background:var(--soft)}
+.footer{margin-top:20px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font-size:0.76rem}
+.footer .signoff{color:var(--bigstone);font-weight:600;letter-spacing:0.05em}
+@media (max-width:980px){.sheet{grid-template-columns:1fr}.margin{position:static;order:2;border-top:1px solid var(--line)}.comp-grid,.stat-grid{grid-template-columns:1fr}.compare{font-size:0.76rem}.refs .ref-row{grid-template-columns:100px 1fr}}
+@media print{body{background:#fff}.path-bar,.margin,.term{cursor:default}.term{border-bottom:none;color:var(--bigstone)!important;background:transparent!important}}
+</style></head><body><div class="page"><div class="sheet">
+<article class="paper">
+<p class="eyebrow">Reference Brief / MCP Enterprise Platform</p>
+<h1>Production deployment of the Model Context Protocol</h1>
+<p class="lede"><span class="spec-line">spec 2025-11-25</span><span class="spec-line">OAuth 2.1</span><span class="spec-line">JSON-RPC 2.0</span> Centralized portal, identity-brokered, audit-centralized, DLP-enforced. Streamable HTTP transport only in production; stdio retired except development.</p>
+<div class="stat-grid">
+<div class="stat"><div class="num">5</div><div class="lbl">platform components</div></div>
+<div class="stat"><div class="num">7</div><div class="lbl">phases to production</div></div>
+<div class="stat"><div class="num">10</div><div class="lbl">OWASP MCP Top 10 entries</div></div>
+<div class="stat"><div class="num">94%</div><div class="lbl">Code Mode token reduction</div></div>
+</div>
+<div class="path-bar">
+<div class="path-label">Architecture path</div>
+<div class="path-buttons">
+<button class="path-btn" data-path-btn="centralized" data-active="true">Centralized portal <span class="verdict">recommended</span></button>
+<button class="path-btn" data-path-btn="federated">Federated by team <span class="verdict">middle ground</span></button>
+<button class="path-btn" data-path-btn="marketplace">Vetted marketplace <span class="verdict">partial fit</span></button>
+<button class="path-btn" data-path-btn="local">Local-only <span class="verdict">deprecated</span></button>
+</div>
+</div>
+<h2>Components</h2>
+<div class="comp-grid">
+<div class="comp"><span class="term" data-term="portal"><span class="name">MCP server portal</span></span><div class="role">aggregation + policy</div><div class="desc">Single endpoint per user. Discovery, DLP, audit, rate limits, scope.</div></div>
+<div class="comp"><span class="term" data-term="remote-mcp"><span class="name">Remote MCP servers</span></span><div class="role">tool providers</div><div class="desc">Long-lived HTTPS services; one per upstream. Inherit from monorepo template.</div></div>
+<div class="comp"><span class="term" data-term="identity"><span class="name">Identity broker</span></span><div class="role">oauth + posture</div><div class="desc">SSO, MFA, device posture. Short-lived tokens, scope claims, audience binding.</div></div>
+<div class="comp"><span class="term" data-term="ai-gateway"><span class="name">AI Gateway</span></span><div class="role">cost + provider</div><div class="desc">Client-to-LLM proxy. Per-user budgets, switching, prompt logging.</div></div>
+<div class="comp"><span class="term" data-term="swg"><span class="name">SWG / network egress</span></span><div class="role">shadow detection</div><div class="desc">Outbound inspection for unauthorized MCP via JSON-RPC patterns.</div></div>
+</div>
+<h2>Architecture path</h2>
+<div data-path="centralized"><h3>Centralized portal</h3><p>Platform team owns deployment via <span class="term" data-term="monorepo">monorepo template</span>. New servers inherit CI/CD, secrets, default-deny writes, audit, rate limits, kill switch. Approval through AI governance.</p></div>
+<div data-path="federated"><h3>Federated by team</h3><p>Each team owns its servers; consumes shared identity + audit + DLP. Risk: low-investment team degrades posture for every consumer.</p></div>
+<div data-path="marketplace"><h3>Vetted marketplace</h3><p>Servers reviewed, listed, subscribed. Reasonable externally; internally collapses back to portal model unless paired with one.</p></div>
+<div data-path="local"><h3>Local-only (deprecated)</h3><p>Acceptable for development inner loops, individual experimentation, MCPs requiring developer-machine filesystem. Not in production.</p></div>
+<h2>Transport (Streamable HTTP)</h2>
+<table class="compare"><thead><tr><th>method</th><th>path</th><th>purpose</th></tr></thead><tbody>
+<tr><td><code>POST</code></td><td><code>/mcp</code></td><td>client → server JSON-RPC; response <code>application/json</code> or <code>text/event-stream</code></td></tr>
+<tr><td><code>GET</code></td><td><code>/mcp</code></td><td>long-lived SSE for server-initiated messages; resume via <code>Last-Event-Id</code></td></tr>
+<tr><td><code>DELETE</code></td><td><code>/mcp</code></td><td>terminate session by <code>Mcp-Session-Id</code></td></tr>
+</tbody></table>
+<table class="compare"><thead><tr><th>header</th><th>direction</th><th>purpose</th></tr></thead><tbody>
+<tr><td><code>Mcp-Session-Id</code></td><td>both</td><td>session id; server issues on initialize, client echoes</td></tr>
+<tr><td><code>MCP-Protocol-Version</code></td><td>client</td><td>protocol revision; e.g. <code>2025-11-25</code></td></tr>
+<tr><td><code>Last-Event-Id</code></td><td>client</td><td>SSE resume cursor on reconnect</td></tr>
+<tr><td><code>Origin</code></td><td>client</td><td>required; server returns <code>403</code> on invalid Origin (added 2025-11-25)</td></tr>
+<tr><td><code>WWW-Authenticate</code></td><td>server</td><td>on <code>401</code>, points to PRM document; carries scope challenges (SEP-835)</td></tr>
+<tr><td><code>Authorization</code></td><td>client</td><td><code>Bearer</code> token; audience-bound per RFC 8707</td></tr>
+</tbody></table>
+<table class="compare"><thead><tr><th>aspect</th><th>stdio</th><th>streamable HTTP</th></tr></thead><tbody>
+<tr><td>shape</td><td class="bad">subprocess per client</td><td class="good">long-lived service</td></tr>
+<tr><td>cache</td><td class="bad">resets per session</td><td class="good">steady state, multi-client share</td></tr>
+<tr><td>auth</td><td class="note">implicit, process boundary</td><td class="good">explicit via <code>Authorization</code></td></tr>
+<tr><td>audit</td><td class="bad">fragmented per user</td><td class="good">centralized to SIEM</td></tr>
+<tr><td>updates</td><td class="bad">user must rebuild</td><td class="good">deploy once</td></tr>
+<tr><td>resume</td><td class="bad">not supported</td><td class="good"><code>Last-Event-Id</code></td></tr>
+</tbody></table>
+<h2>Authorization (OAuth 2.1)</h2>
+<ul class="bul">
+<li><strong>OAuth 2.1</strong> mandatory for MCP servers as resource servers. Clients implement DCR (RFC 7591) or OAuth Client ID Metadata Documents (SEP-991, added 2025-11-25).</li>
+<li><strong>RFC 9728</strong> (Protected Resource Metadata) mandatory for servers. <code>401</code> response carries <code>WWW-Authenticate</code> with <code>resource_metadata</code> URL pointing to <code>/.well-known/oauth-protected-resource</code>; document declares <code>authorization_servers</code>.</li>
+<li><strong>RFC 8707</strong> (Resource Indicators) mandatory for clients. <code>resource</code> parameter on token requests binds the access token to a specific MCP server URL; without it tokens are ambient and leak across resources.</li>
+<li>AS metadata via RFC 8414 at <code>/.well-known/oauth-authorization-server</code>. OpenID Connect Discovery 1.0 also supported (added 2025-11-25).</li>
+<li>Per-tool scopes: <code>mcp:read</code>, <code>mcp:write</code>, <code>mcp:exec</code>. Validate signature, audience (RFC 8707 §2), expiry every call.</li>
+<li>Incremental scope consent via <code>WWW-Authenticate</code> (SEP-835). Client steps up scope mid-session without full re-auth.</li>
+<li><strong>URL Mode Elicitation</strong> (2025-11-25): server sends user to external OAuth flow in browser; credentials never transit MCP client. Enables PCI-compliant payment, third-party authorization without token passthrough.</li>
+<li>Token rotation under 24h. <span class="term" data-term="authzbypass">Insufficient authentication / authorization</span> is OWASP MCP07; <span class="term" data-term="privesc">privilege escalation via scope creep</span> is MCP02.</li>
+</ul>
+<h2>Wire format</h2>
+<div class="wireblock"><span class="cm"># initialize</span>
+<span class="kw">POST</span> /mcp HTTP/1.1
+<span class="hdr">Content-Type</span>: application/json
+<span class="hdr">Accept</span>: application/json, text/event-stream
+<span class="hdr">MCP-Protocol-Version</span>: 2025-11-25
+
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{...}}
+
+HTTP/1.1 <span class="num">200</span> OK
+<span class="hdr">Content-Type</span>: application/json
+<span class="hdr">Mcp-Session-Id</span>: 7a3f9c-...
+
+<span class="cm"># server-initiated SSE stream (sampling, notifications)</span>
+<span class="kw">GET</span> /mcp HTTP/1.1
+<span class="hdr">Mcp-Session-Id</span>: 7a3f9c-...
+<span class="hdr">Last-Event-Id</span>: 42
+
+HTTP/1.1 <span class="num">200</span> OK
+<span class="hdr">Content-Type</span>: text/event-stream
+
+event: message
+id: 43
+data: {"jsonrpc":"2.0","method":"sampling/createMessage",...}
+
+<span class="cm"># 401 with PRM pointer (RFC 9728)</span>
+HTTP/1.1 <span class="num">401</span> Unauthorized
+<span class="hdr">WWW-Authenticate</span>: Bearer realm="mcp", resource_metadata="https://srv/.well-known/oauth-protected-resource"</div>
+<h2>Observability</h2>
+<ul class="bul">
+<li>Per-call audit: caller, tool, params (sensitive fields redacted), outcome, latency, policy decisions (rate limit, deny list, kill switch). <span class="term" data-term="audit">Lack of audit and telemetry</span> is OWASP MCP08.</li>
+<li>Real-time ship to <span class="term" data-term="siem">SIEM</span> via OpenTelemetry / Vector / fluentd. Append-only on receiver. Cryptographic chaining for high-stakes audit.</li>
+<li><span class="term" data-term="dlp">DLP</span> at portal: per-tool rules block PII / PHI / secrets / source-with-keys. <span class="term" data-term="oversharing">Context injection &amp; over-sharing</span> is OWASP MCP10.</li>
+<li>Token-shape regex redaction at log layer; <span class="term" data-term="token-mgmt">token mismanagement</span> is MCP01. No long-lived tokens in logs.</li>
+</ul>
+<h2>Multi-tenancy</h2>
+<ul class="bul">
+<li>Portals are the policy boundary; upstream servers stay group-unaware.</li>
+<li>One upstream MCP behind multiple portals with different scopes, policies, audit streams.</li>
+<li>Cache keys must include tenant identity to prevent cross-tenant leakage.</li>
+</ul>
+<h2>Code Mode <span class="chip flamingo">novel</span></h2>
+<ul class="bul">
+<li><span class="term" data-term="codemode">Code Mode</span> collapses upstream tool catalogs to 2 portal tools: <code>portal_codemode_search</code>, <code>portal_codemode_execute</code>.</li>
+<li>Model writes JS against discovery + execution proxies in sandboxed runtime (Cloudflare Dynamic Workers in their reference implementation).</li>
+<li>Reported: 52 tools / 9,400 tokens to 2 / 600 (94% reduction); cost fixed regardless of MCP count.</li>
+<li>Trade-off: model-written code is itself an injection surface. <span class="term" data-term="cmd-injection">Command injection &amp; execution</span> is OWASP MCP05.</li>
+<li>Phase 6 optimization. Pilot after base platform stable.</li>
+</ul>
+<h2>Shadow MCP</h2>
+<ul class="bul">
+<li><span class="term" data-term="shadow">Shadow MCP servers</span> = OWASP MCP09. Unsanctioned servers accessed outside the portal.</li>
+<li>SWG detection: <code>/mcp</code> and <code>/mcp/sse</code> paths, JSON-RPC method strings (<code>tools/call</code>, <code>tools/list</code>, <code>initialize</code>, <code>sampling/createMessage</code>), <code>Mcp-Session-Id</code> header presence.</li>
+<li>DLP regex on body: <code>"method"\s*:\s*"tools/(call|list)"</code>; <code>"protocolVersion"\s*:\s*"202[5-6]-[0-9]{2}-[0-9]{2}"</code>.</li>
+<li>Action: block at egress, log to investigation queue.</li>
+</ul>
+<h2>First-party policy</h2>
+<ul class="bul">
+<li>Mandate: every internal service exposed via MCP ships a first-party server. No community packages of unknown provenance.</li>
+<li>Vendors publish official MCPs to prevent customer consumption of third-party packages. <span class="term" data-term="supply">Supply chain attacks &amp; dependency tampering</span> is OWASP MCP04.</li>
+<li>SBOM scanned every build. <span class="term" data-term="poisoning">Tool poisoning</span> (MCP03) sub-techniques: rug pulls, schema poisoning, tool shadowing.</li>
+</ul>
+<h2>Threat model: OWASP MCP Top 10 (2025)</h2>
+<table class="compare"><thead><tr><th>id</th><th>category</th><th>primary control surface</th></tr></thead><tbody>
+<tr><td><code>MCP01</code></td><td>token mismanagement &amp; secret exposure</td><td>vault-backed creds, log redaction, rotation under 24h</td></tr>
+<tr><td><code>MCP02</code></td><td>privilege escalation via scope creep</td><td>scope minimization, periodic review, JIT elevation</td></tr>
+<tr><td><code>MCP03</code></td><td>tool poisoning</td><td>signed manifests, code review of descriptions, no runtime templating</td></tr>
+<tr><td><code>MCP04</code></td><td>supply chain attacks &amp; dependency tampering</td><td>SBOM, internal mirror, signed releases, first-party only</td></tr>
+<tr><td><code>MCP05</code></td><td>command injection &amp; execution</td><td>command allowlist at schema, sandbox, syscall filter</td></tr>
+<tr><td><code>MCP06</code></td><td>prompt injection via contextual payloads</td><td>output sanitization, structured envelopes, instruction-pattern stripping</td></tr>
+<tr><td><code>MCP07</code></td><td>insufficient authentication &amp; authorization</td><td>OAuth 2.1 + RFC 9728 + RFC 8707, validate every call</td></tr>
+<tr><td><code>MCP08</code></td><td>lack of audit and telemetry</td><td>per-call SIEM shipping, append-only, chained logs</td></tr>
+<tr><td><code>MCP09</code></td><td>shadow MCP servers</td><td>SWG detection, egress blocking, audit proxy</td></tr>
+<tr><td><code>MCP10</code></td><td>context injection &amp; over-sharing</td><td>DLP at portal, classification tagging, flow analysis</td></tr>
+</tbody></table>
+<h2>Threat-model deltas (local → shared)</h2>
+<table class="compare"><thead><tr><th>risk</th><th>local</th><th>shared</th></tr></thead><tbody>
+<tr><td>credential exposure (MCP01)</td><td class="bad">user shell, kubeconfig, netrc</td><td class="good">service account, vault-backed</td></tr>
+<tr><td>scope creep (MCP02)</td><td class="bad">drift unmanaged</td><td class="good">portal enforces scope on every call</td></tr>
+<tr><td>tool poisoning (MCP03)</td><td class="bad">unmanaged updates</td><td class="good">signed manifests, version pin</td></tr>
+<tr><td>supply chain (MCP04)</td><td class="bad">unvetted public registry</td><td class="good">curated, signed releases</td></tr>
+<tr><td>command injection (MCP05)</td><td class="bad">user shell as sandbox</td><td class="good">isolated runtime + allowlist</td></tr>
+<tr><td>prompt injection (MCP06)</td><td class="bad">per-user impact</td><td class="bad">wider blast radius across users</td></tr>
+<tr><td>authn/authz (MCP07)</td><td class="note">implicit</td><td class="bad">explicit; OAuth 2.1 must be enforced</td></tr>
+<tr><td>audit (MCP08)</td><td class="bad">per-user, opaque</td><td class="good">centralized to SIEM</td></tr>
+<tr><td>shadow MCP (MCP09)</td><td class="bad">undetectable</td><td class="good">SWG detects + blocks</td></tr>
+<tr><td>over-sharing (MCP10)</td><td class="bad">no DLP layer</td><td class="good">portal-level DLP rules</td></tr>
+</tbody></table>
+<h2>Transition phases</h2>
+<ol class="phase-list">
+<li><strong>Inventory</strong> existing MCP usage. SWG identifies gaps. <span class="meta">visibility</span></li>
+<li><strong>Stand up portal</strong>; integrate identity (OAuth 2.1 + RFC 9728 + RFC 8707), audit, DLP. <span class="meta">platform</span></li>
+<li><strong>Migrate low-risk MCP</strong>. Validate per-call authz, session lifecycle, SSE resume. <span class="meta">first server</span></li>
+<li><strong>Migrate high-traffic MCP</strong> with full hardening (rate limits, deny lists, response shaping, circuit breaker, cardinality estimation where applicable). <span class="meta">operational pattern</span></li>
+<li><strong>Block local at policy + network</strong> for migrated upstreams. SWG enforces. <span class="meta">enforcement</span></li>
+<li><strong>Roll out remaining servers</strong>. High-risk surfaces (shell exec, code exec, fs-write) sit last. <span class="meta">remaining surface</span></li>
+<li><strong>Pilot Code Mode</strong>. Measure token reduction in production traffic. Default-on if sandbox holds under adversarial input. <span class="meta">optimization</span></li>
+</ol>
+<h2>Decision points</h2>
+<table class="compare"><thead><tr><th>question</th><th>recommendation</th></tr></thead><tbody>
+<tr><td>portal stack</td><td class="good">adopt where possible; portal logic is generic</td></tr>
+<tr><td>identity broker</td><td class="good">extend existing IdP; no new identity surface</td></tr>
+<tr><td>AI Gateway</td><td class="note">defer until LLM cost is material</td></tr>
+<tr><td>DLP engine</td><td class="good">integrate existing; do not roll your own</td></tr>
+<tr><td>Code Mode</td><td class="note">phase 6, not first move</td></tr>
+<tr><td>shell-exec / code-exec MCPs</td><td class="bad">restrict to dev local; do not place behind shared portal without heavy sandbox</td></tr>
+<tr><td>first-party policy</td><td class="good">mandate for any service exposed via MCP</td></tr>
+<tr><td>OIDC vs OAuth-only</td><td class="note">OIDC Discovery 1.0 supported as of 2025-11-25; use if existing IdP speaks it</td></tr>
+</tbody></table>
+<h2>References</h2>
+<div class="refs">
+<div class="ref-row"><span class="key">spec</span><span class="val"><a href="https://modelcontextprotocol.io/specification/2025-11-25" target="_blank" rel="noopener">MCP specification 2025-11-25</a><span class="desc">URL Mode Elicitation, OIDC Discovery, SEP-835, SEP-991</span></span></div>
+<div class="ref-row"><span class="key">changelog</span><span class="val"><a href="https://modelcontextprotocol.io/specification/2025-11-25/changelog" target="_blank" rel="noopener">2025-11-25 changelog</a></span></div>
+<div class="ref-row"><span class="key">authz</span><span class="val"><a href="https://modelcontextprotocol.io/specification/draft/basic/authorization" target="_blank" rel="noopener">MCP authorization (basic/authorization)</a></span></div>
+<div class="ref-row"><span class="key">RFC 6749</span><span class="val"><a href="https://datatracker.ietf.org/doc/html/rfc6749" target="_blank" rel="noopener">OAuth 2.0 framework</a></span></div>
+<div class="ref-row"><span class="key">OAuth 2.1</span><span class="val"><a href="https://datatracker.ietf.org/doc/draft-ietf-oauth-v2-1/" target="_blank" rel="noopener">OAuth 2.1 (IETF draft)</a><span class="desc">mandatory for MCP authz</span></span></div>
+<div class="ref-row"><span class="key">RFC 7591</span><span class="val"><a href="https://datatracker.ietf.org/doc/html/rfc7591" target="_blank" rel="noopener">Dynamic Client Registration</a></span></div>
+<div class="ref-row"><span class="key">RFC 8414</span><span class="val"><a href="https://datatracker.ietf.org/doc/html/rfc8414" target="_blank" rel="noopener">OAuth 2.0 Authorization Server Metadata</a></span></div>
+<div class="ref-row"><span class="key">RFC 8446</span><span class="val"><a href="https://datatracker.ietf.org/doc/html/rfc8446" target="_blank" rel="noopener">TLS 1.3</a></span></div>
+<div class="ref-row"><span class="key">RFC 8707</span><span class="val"><a href="https://datatracker.ietf.org/doc/html/rfc8707" target="_blank" rel="noopener">OAuth 2.0 Resource Indicators</a><span class="desc">mandatory for clients</span></span></div>
+<div class="ref-row"><span class="key">RFC 9728</span><span class="val"><a href="https://datatracker.ietf.org/doc/html/rfc9728" target="_blank" rel="noopener">OAuth 2.0 Protected Resource Metadata</a><span class="desc">mandatory for servers</span></span></div>
+<div class="ref-row"><span class="key">JSON-RPC</span><span class="val"><a href="https://www.jsonrpc.org/specification" target="_blank" rel="noopener">JSON-RPC 2.0 specification</a></span></div>
+<div class="ref-row"><span class="key">SSE</span><span class="val"><a href="https://html.spec.whatwg.org/multipage/server-sent-events.html" target="_blank" rel="noopener">WHATWG Server-Sent Events</a></span></div>
+<div class="ref-row"><span class="key">OWASP</span><span class="val"><a href="https://owasp.org/www-project-mcp-top-10/" target="_blank" rel="noopener">OWASP MCP Top 10 (2025)</a></span></div>
+<div class="ref-row"><span class="key">OWASP MCP06</span><span class="val"><a href="https://owasp.org/www-project-mcp-top-10/2025/MCP06-2025%E2%80%93Prompt-InjectionviaContextual-Payloads" target="_blank" rel="noopener">Prompt Injection via Contextual Payloads</a></span></div>
+<div class="ref-row"><span class="key">OWASP MCP09</span><span class="val"><a href="https://owasp.org/www-project-mcp-top-10/2025/MCP09-2025%E2%80%93Shadow-MCP-Servers" target="_blank" rel="noopener">Shadow MCP Servers</a></span></div>
+<div class="ref-row"><span class="key">OWASP MCP10</span><span class="val"><a href="https://owasp.org/www-project-mcp-top-10/2025/MCP10-2025%E2%80%93ContextInjection&OverSharing" target="_blank" rel="noopener">Context Injection &amp; Over-Sharing</a></span></div>
+<div class="ref-row"><span class="key">Cloudflare</span><span class="val"><a href="https://blog.cloudflare.com/enterprise-mcp/" target="_blank" rel="noopener">Cloudflare enterprise MCP reference architecture</a></span></div>
+<div class="ref-row"><span class="key">roadmap</span><span class="val"><a href="https://blog.modelcontextprotocol.io/posts/2026-mcp-roadmap/" target="_blank" rel="noopener">2026 MCP roadmap</a></span></div>
+<div class="ref-row"><span class="key">OpenTelemetry</span><span class="val"><a href="https://opentelemetry.io/docs/specs/" target="_blank" rel="noopener">OpenTelemetry specification</a></span></div>
+</div>
+<div class="footer"><span class="signoff">MCP Enterprise Brief</span> &middot; reference architecture &middot; spec rev 2025-11-25 &middot; aligned with OWASP MCP Top 10 (2025) &middot; OAuth 2.1 + RFC 9728 + RFC 8707</div>
+</article>
+<aside class="margin"><div class="margin-card">
+<p class="margin-code" style="display:block;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted)">Reference Inspector</p>
+<h3 id="m-title">Hover any underlined term</h3>
+<code class="margin-code" id="m-code">—</code>
+<p id="m-body">Move the cursor over any dotted-underline term to load details: role, examples, related concepts, notes, and authoritative source links.</p>
+<div class="margin-meta" id="m-meta"></div>
+<div class="margin-section" id="m-rel"><div class="label">Related</div><ul><li class="more">—</li></ul></div>
+<div class="margin-section" id="m-notes"><div class="label">Notes</div><ul><li class="more">—</li></ul></div>
+<div class="margin-section" id="m-links"><div class="label">Sources</div><ul><li class="more">—</li></ul></div>
+<p class="margin-hint">Hover &middot; <kbd>tab</kbd> &middot; click path button to filter</p>
+</div></aside>
+</div></div>
+<script id="reference-data" type="application/json">
+{
+"portal":{"title":"MCP server portal","code":"aggregation layer","body":"Single endpoint per user fronting upstream MCP servers. Discovery, policy, DLP, audit, rate limiting. Distinct portals encode different policies for different consumers of the same upstream.","meta":{"role":"aggregation","scope":"per-team","auth":"OAuth 2.1"},"rel":["remote-mcp","identity","dlp"],"notes":["portal is the high-value target","one upstream MCP can sit behind multiple portals","Code Mode runs at portal level"],"links":[{"label":"Cloudflare MCP server portals","url":"https://blog.cloudflare.com/enterprise-mcp/"},{"label":"MCP specification 2025-11-25","url":"https://modelcontextprotocol.io/specification/2025-11-25"}]},
+"remote-mcp":{"title":"Remote MCP servers","code":"long-lived HTTPS","body":"Tool providers. One per upstream system. Long-lived processes, HTTPS endpoints, sessions via Mcp-Session-Id. Stateless or with explicitly managed shared state.","meta":{"transport":"streamable HTTP","lifetime":"long-lived","spec":"2025-11-25"},"rel":["portal","monorepo"],"notes":["each server inherits monorepo template defaults","mTLS between portal and server","cache lives on the server"],"links":[{"label":"MCP transports specification","url":"https://modelcontextprotocol.io/specification/2025-11-25"},{"label":"Cloudflare on remote MCP","url":"https://blog.cloudflare.com/enterprise-mcp/"}]},
+"identity":{"title":"Identity broker","code":"OAuth 2.1 + posture","body":"Aggregates SSO, MFA, device posture. Issues short-lived audience-bound tokens. MCP authz mandates RFC 9728 (PRM) for servers and RFC 8707 (resource indicator) for clients.","meta":{"protocol":"OAuth 2.1","prm":"RFC 9728","resource":"RFC 8707"},"rel":["portal","authzbypass","privesc"],"notes":["DCR (RFC 7591) or OAuth Client ID Metadata Documents (SEP-991)","AS metadata via RFC 8414; OIDC Discovery 1.0 also supported (2025-11-25)","TOCTOU defense: validate per call"],"links":[{"label":"MCP authorization specification","url":"https://modelcontextprotocol.io/specification/draft/basic/authorization"},{"label":"OAuth 2.1 (IETF draft)","url":"https://datatracker.ietf.org/doc/draft-ietf-oauth-v2-1/"},{"label":"RFC 9728 — Protected Resource Metadata","url":"https://datatracker.ietf.org/doc/html/rfc9728"},{"label":"RFC 8707 — Resource Indicators","url":"https://datatracker.ietf.org/doc/html/rfc8707"},{"label":"RFC 7591 — DCR","url":"https://datatracker.ietf.org/doc/html/rfc7591"},{"label":"RFC 8414 — AS Metadata","url":"https://datatracker.ietf.org/doc/html/rfc8414"}]},
+"authzbypass":{"title":"Insufficient authentication / authorization","code":"OWASP MCP07","body":"Server fails to validate caller identity, treats network position as identity, or skips per-call scope revalidation. TOCTOU on long-lived sessions is canonical.","meta":{"owasp":"MCP07","mitigation":"validate per call"},"rel":["identity","privesc"],"notes":["never trust network alone","valid token every request","fail closed on missing creds"],"links":[{"label":"OWASP MCP Top 10","url":"https://owasp.org/www-project-mcp-top-10/"},{"label":"MCP authz spec","url":"https://modelcontextprotocol.io/specification/draft/basic/authorization"}]},
+"privesc":{"title":"Privilege escalation via scope creep","code":"OWASP MCP02","body":"Tokens accumulate scopes over time as agents request capabilities ad hoc. Resulting tokens grant excessive authority no individual flow needed.","meta":{"owasp":"MCP02","mitigation":"scope min, JIT elevation"},"rel":["identity","authzbypass"],"notes":["periodic scope review","incremental scope consent (SEP-835)","JIT elevation for privileged actions"],"links":[{"label":"OWASP MCP Top 10","url":"https://owasp.org/www-project-mcp-top-10/"}]},
+"token-mgmt":{"title":"Token mismanagement &amp; secret exposure","code":"OWASP MCP01","body":"Hard-coded credentials, long-lived tokens, secrets in model memory or protocol logs. Recoverable through prompt injection, compromised context, or debug traces.","meta":{"owasp":"MCP01","mitigation":"vault + rotation + redaction"},"rel":["identity","siem"],"notes":["vault-backed runtime fetch","rotation under 24h","token-shape regex redaction at log layer"],"links":[{"label":"OWASP MCP Top 10","url":"https://owasp.org/www-project-mcp-top-10/"}]},
+"ai-gateway":{"title":"AI Gateway","code":"client to LLM proxy","body":"Sits between MCP client and LLM. Per-user budget, provider switching, prompt and response logging.","meta":{"role":"cost + governance","when":"phase 6+","priority":"defer"},"rel":["portal"],"notes":["not a hard prerequisite","defer until LLM cost is real driver","prompt logging is separate audit stream"],"links":[{"label":"Cloudflare AI Gateway in MCP","url":"https://blog.cloudflare.com/enterprise-mcp/"}]},
+"swg":{"title":"Secure web gateway","code":"network-side enforcement","body":"Inspects outbound traffic for unauthorized MCP. URL path patterns + DLP regex on JSON-RPC method fields. Blocks shadow MCP attempts.","meta":{"layer":"network","action":"detect + block"},"rel":["shadow"],"notes":["use existing corporate SWG","DLP rules: regex on tools/call, tools/list, initialize","feeds shadow-MCP investigation queue"],"links":[{"label":"OWASP MCP09 — Shadow MCP","url":"https://owasp.org/www-project-mcp-top-10/2025/MCP09-2025%E2%80%93Shadow-MCP-Servers"},{"label":"Cloudflare shadow MCP","url":"https://blog.cloudflare.com/enterprise-mcp/"}]},
+"monorepo":{"title":"Monorepo template","code":"governed-by-default","body":"Mechanism enforcing baseline hardening. Template includes CI/CD, secrets, default-deny writes, audit, RBAC, kill switch. Developer writes only tool definitions.","meta":{"role":"governance","ownership":"platform team","review":"AI governance"},"rel":["portal"],"notes":["forces consistency","approval at template adoption","new server creation cheap once template solid"],"links":[{"label":"Cloudflare monorepo approach","url":"https://blog.cloudflare.com/enterprise-mcp/"}]},
+"audit":{"title":"Lack of audit and telemetry","code":"OWASP MCP08","body":"Per-call telemetry not produced, not shipped, or not append-only. Without it: no forensics, no anomaly detection, no compliance evidence.","meta":{"owasp":"MCP08","mitigation":"per-call SIEM + append-only"},"rel":["siem","portal"],"notes":["per-call: caller, tool, params (redacted), outcome, latency","ship via OTel/Vector","cryptographic chaining for high-stakes"],"links":[{"label":"OWASP MCP Top 10","url":"https://owasp.org/www-project-mcp-top-10/"}]},
+"siem":{"title":"SIEM / audit destination","code":"append-only, queryable","body":"Real-time log destination. Tamper-resistant, queryable in real time, identity-linked. Required for OWASP MCP08 compliance.","meta":{"shipping":"OTel/Vector","query":"real-time"},"rel":["audit","dlp"],"notes":["append-only on receiver","cryptographic chaining for high-stakes","redact token-shaped strings"],"links":[{"label":"OpenTelemetry specification","url":"https://opentelemetry.io/docs/specs/"}]},
+"dlp":{"title":"DLP guardrails","code":"data class enforcement","body":"Inspects request and response payloads at portal for sensitive data classes (PII, PHI, secrets, source-with-keys). Per-tool/per-portal rules block specific classes from upstream calls or LLM context.","meta":{"layer":"portal","granularity":"per-tool"},"rel":["portal","siem","oversharing","injection"],"notes":["per-portal DLP enforces multi-tenant policy","integrate existing DLP","logs DLP hits to audit"],"links":[{"label":"Cloudflare DLP in MCP","url":"https://blog.cloudflare.com/enterprise-mcp/"}]},
+"oversharing":{"title":"Context injection &amp; over-sharing","code":"OWASP MCP10","body":"Sensitive data inadvertently shared across tools, sessions, or with the LLM. Includes excessive resource exposure via MCP context.","meta":{"owasp":"MCP10","mitigation":"DLP + flow analysis"},"rel":["dlp","injection"],"notes":["classify outputs by data class","flow analysis: sensitive read cannot feed public write","session policy on tool combinations"],"links":[{"label":"OWASP MCP10","url":"https://owasp.org/www-project-mcp-top-10/2025/MCP10-2025%E2%80%93ContextInjection&OverSharing"}]},
+"codemode":{"title":"Code Mode","code":"portal_codemode_search + execute","body":"Optimization collapsing upstream tool catalogs to 2 portal tools. Model writes JS against discovery + execution proxies in sandboxed runtime. Reported: 52 tools / 9,400 tokens to 2 / 600 (94% reduction).","meta":{"reduction":"94%","when":"phase 6"},"rel":["portal","cmd-injection"],"notes":["model writes code = injection surface","sandbox hardened to untrusted-code standards","pilot once base stable"],"links":[{"label":"Cloudflare Code Mode","url":"https://blog.cloudflare.com/enterprise-mcp/"}]},
+"cmd-injection":{"title":"Command injection &amp; execution","code":"OWASP MCP05","body":"Tool surface allows arbitrary command execution: shell, code interpreters, generic exec. Adversary or model induced into running unintended commands.","meta":{"owasp":"MCP05","mitigation":"allowlist + sandbox"},"rel":["codemode"],"notes":["command allowlist at schema","sandbox with seccomp + cgroups","gVisor or kata for high-risk surfaces"],"links":[{"label":"OWASP MCP Top 10","url":"https://owasp.org/www-project-mcp-top-10/"}]},
+"shadow":{"title":"Shadow MCP servers","code":"OWASP MCP09","body":"Users connecting to MCP servers outside sanctioned channels. Detected at SWG via path patterns and JSON-RPC method names.","meta":{"owasp":"MCP09","detection":"SWG + DLP","action":"block + log"},"rel":["swg","portal","supply"],"notes":["inevitable in early rollout","detection patterns evolve with spec versions","bypass via shell or curl is the agent-side concern"],"links":[{"label":"OWASP MCP09","url":"https://owasp.org/www-project-mcp-top-10/2025/MCP09-2025%E2%80%93Shadow-MCP-Servers"},{"label":"Cloudflare shadow MCP","url":"https://blog.cloudflare.com/enterprise-mcp/"}]},
+"supply":{"title":"Supply chain attacks &amp; dependency tampering","code":"OWASP MCP04","body":"Backdoored dependencies, compromised maintainers, dependency confusion. Public registries have shipped MCPs with undisclosed data collection and adversarial tool descriptions.","meta":{"owasp":"MCP04","mitigation":"first-party + SBOM"},"rel":["poisoning","shadow"],"notes":["pin versions, lock files, hash verify","internal package mirror","SBOM scanned every build"],"links":[{"label":"OWASP MCP Top 10","url":"https://owasp.org/www-project-mcp-top-10/"},{"label":"Cloudflare on supply chain","url":"https://blog.cloudflare.com/enterprise-mcp/"}]},
+"poisoning":{"title":"Tool poisoning","code":"OWASP MCP03","body":"Adversarial tool definitions or malicious server logic manipulating the agent. Sub-techniques: rug pulls (malicious updates), schema poisoning (corrupting interfaces), tool shadowing (fake duplicates).","meta":{"owasp":"MCP03","sub":"rug pull, schema, shadow"},"rel":["supply","injection"],"notes":["descriptions code-reviewed","no runtime templating from user input","cryptographically signed manifests"],"links":[{"label":"OWASP MCP Top 10","url":"https://owasp.org/www-project-mcp-top-10/"}]},
+"injection":{"title":"Prompt injection via contextual payloads","code":"OWASP MCP06","body":"Adversary text in upstream content (issue comments, page bodies, log labels) flows back through tool output as instructions the agent acts on. Analogous to SQLi where the model is the interpreter.","meta":{"owasp":"MCP06","blast":"per-session"},"rel":["dlp","portal","poisoning"],"notes":["treat tool output as untrusted input","wrap in structured envelopes","strip instruction-shaped patterns at output shaping"],"links":[{"label":"OWASP MCP06","url":"https://owasp.org/www-project-mcp-top-10/2025/MCP06-2025%E2%80%93Prompt-InjectionviaContextual-Payloads"}]}
+}
+</script>
+<script>
+(()=>{
+const D=JSON.parse(document.getElementById('reference-data').textContent);
+const els={t:document.getElementById('m-title'),c:document.getElementById('m-code'),b:document.getElementById('m-body'),m:document.getElementById('m-meta'),r:document.getElementById('m-rel'),n:document.getElementById('m-notes'),l:document.getElementById('m-links')};
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+function host(u){try{return new URL(u).hostname.replace(/^www\./,'');}catch(e){return '';}}
+function paint(k){
+  const x=D[k];if(!x)return;
+  els.t.textContent=x.title;
+  els.c.textContent=x.code||'—';
+  els.b.textContent=x.body||'';
+  els.m.innerHTML=Object.entries(x.meta||{}).map(([k,v])=>`<div><strong>${esc(k)}</strong><span>${esc(v)}</span></div>`).join('');
+  els.r.querySelector('ul').innerHTML=(x.rel||[]).map(r=>{const o=D[r];return o?`<li>&rsaquo; ${esc(o.title)}</li>`:'';}).join('')||'<li class="more">—</li>';
+  els.n.querySelector('ul').innerHTML=(x.notes||[]).map(n=>`<li style="white-space:normal;font-family:inherit;font-size:0.76rem">&middot; ${esc(n)}</li>`).join('')||'<li class="more">—</li>';
+  els.l.querySelector('ul').innerHTML=(x.links||[]).map(L=>`<li class="link-item"><a href="${esc(L.url)}" target="_blank" rel="noopener noreferrer">${esc(L.label)}</a><span class="src">${esc(host(L.url))}</span></li>`).join('')||'<li class="more">—</li>';
+}
+document.querySelectorAll('.term').forEach(el=>{
+  el.setAttribute('tabindex','0');
+  el.addEventListener('focus',()=>paint(el.getAttribute('data-term')));
+  el.addEventListener('click',e=>{e.preventDefault();paint(el.getAttribute('data-term'));});
+});
+document.addEventListener('mouseover',e=>{
+  const t=e.target.closest('.term');
+  if(!t)return;
+  paint(t.getAttribute('data-term'));
+  document.querySelectorAll('.term.is-active').forEach(x=>{if(x!==t)x.classList.remove('is-active');});
+  t.classList.add('is-active');
+});
+let currentPath='centralized';
+function applyPath(p){
+  currentPath=p;
+  document.querySelectorAll('.path-btn').forEach(b=>b.setAttribute('data-active',b.getAttribute('data-path-btn')===p?'true':'false'));
+  document.querySelectorAll('[data-path]').forEach(el=>{el.classList.toggle('path-faded',el.getAttribute('data-path')!==p);});
+}
+document.querySelectorAll('.path-btn').forEach(b=>{b.addEventListener('click',()=>applyPath(b.getAttribute('data-path-btn')));});
+applyPath('centralized');
+})();
+</script>
+</body></html>
