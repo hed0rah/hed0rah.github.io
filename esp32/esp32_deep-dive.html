@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESP32 Deep Dive // Boot ROM to Flash</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* masthead */
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+.masthead .companion {
+  margin-top: 14px;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 2px;
+}
+
+/* nav */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0;
+  white-space: nowrap;
+}
+.nav a {
+  display: block;
+  padding: 12px 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav a:hover { color: var(--orange); border-bottom-color: var(--orange); }
+.nav a.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+/* layout */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+  counter-reset: section;
+}
+section { padding: 52px 0; border-bottom: 1px solid var(--border2); counter-increment: section; }
+section:last-of-type { border-bottom: none; }
+section::before {
+  content: counter(section, decimal-leading-zero) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+/* headings */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--yellow); }
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+.section-bar.yl { background: var(--yellow); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+h3.cy { color: var(--cyan); }
+h3.yl { color: var(--yellow); }
+h3.rd { color: var(--red); }
+h4 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  margin: 20px 0 8px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+
+/* code */
+code {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--bright);
+}
+pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre.yl { border-left-color: var(--yellow); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .flag   { color: #7A7870; }
+
+/* diagrams */
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #8A8880;
+}
+.diagram.cy { border-left-color: var(--cyan); }
+.diagram.yl { border-left-color: var(--yellow); }
+.diagram.rd { border-left-color: var(--red); }
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .acc3 { color: #C8A030; }
+.diagram .dim  { color: #4A4942; }
+.diagram .hi   { color: #CCCBC4; }
+
+/* info boxes */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy    { border-left-color: var(--cyan); }
+.info-box.warn  { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; vertical-align: top; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; white-space: nowrap; }
+td.cy   { color: var(--cyan); }
+td.rd   { color: var(--red); }
+td.yl   { color: var(--yellow); }
+
+/* two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; align-items: stretch; }
+.two-col > div { display: flex; flex-direction: column; }
+.two-col > div > pre { flex: 1; margin-bottom: 0; }
+
+/* step list */
+.step-list { list-style: none; counter-reset: step; margin: 16px 0; }
+.step-list li {
+  counter-increment: step;
+  position: relative;
+  padding: 10px 0 10px 42px;
+  border-bottom: 1px dashed var(--border2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-list li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  width: 34px;
+}
+.step-list li strong { color: var(--bright); display: block; margin-bottom: 2px; }
+.step-list.cy li::before { color: var(--cyan); }
+.step-list.rd li::before { color: var(--red); }
+
+/* footer */
+.footer {
+  border-top: 1px solid var(--border2);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+.footer a { color: var(--orange); text-decoration: none; }
+
+/* spine */
+.spine {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* responsive */
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .masthead { padding: 40px 20px 28px; }
+}
+@media (max-width: 1280px) { .spine { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- masthead -->
+<div class="masthead">
+  <h1>ESP32 <em>Deep</em> Dive</h1>
+  <div class="subtitle">
+    <span>SLIP Wire · Stub Loader · Flash Geometry · eFuse · JTAG</span>
+  </div>
+  <div class="companion">esptool / espefuse / espsecure / OpenOCD // Boot ROM to Brick Recovery // classic · S2 · S3 · C3 · C5 · C6 · H2 · P4</div>
+</div>
+
+<!-- nav -->
+<div class="nav">
+  <div class="nav-inner">
+    <a href="#intro">Intro</a>
+    <a href="#boot">Boot Modes</a>
+    <a href="#wire">SLIP Wire</a>
+    <a href="#stub">Stub Loader</a>
+    <a href="#flash">Flash Geometry</a>
+    <a href="#rw">Read &amp; Write</a>
+    <a href="#image">Image Format</a>
+    <a href="#efuse">eFuse &amp; Security</a>
+    <a href="#idf">ESP-IDF</a>
+    <a href="#serial">Serial &amp; Discovery</a>
+    <a href="#jtag">JTAG &amp; OpenOCD</a>
+    <a href="#brick">Brick Recovery</a>
+    <a href="#further">Further</a>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- intro -->
+<section id="intro">
+  <h2>Beyond the <em class="or">Datasheet</em></h2>
+  <div class="section-bar"></div>
+  <p>Most people interact with ESP32 chips through one command: <code>esptool.py write_flash</code>. It works, the LED blinks, you move on. This document is for when it doesn't work, or when you need to do something more interesting than blink the LED, or when you want to understand why an ESP32-C3 has its bootloader at <code>0x0</code> while ESP32-classic has it at <code>0x1000</code>.</p>
+  <p>Scope: ESP32 family chips (classic, S2, S3, C3, C5, C6, H2, P4) talking to a host computer over UART or native USB. Reference tooling is <code>esptool.py</code> v4.x, <code>espefuse.py</code>, <code>espsecure.py</code>, and the ESP-IDF wrapper <code>idf.py</code>. Where chip variants differ, called out explicitly.</p>
+
+  <div class="info-box cy">
+    <strong>How to read this</strong>
+    Each section is independent. If you only have 10 minutes and a brick on your desk, read Boot Modes and Brick Recovery. If you're debugging upload failures, read SLIP Wire and Stub Loader. If you're chasing a flash size mismatch, read Flash Geometry. The diagrams are the load-bearing part, not the prose.
+  </div>
+</section>
+
+<!-- boot modes -->
+<section id="boot">
+  <h2><em class="or">Boot</em> Modes &amp; Strap Pins</h2>
+  <div class="section-bar"></div>
+  <p>Every ESP32 chip samples a handful of GPIO pins in the first few microseconds after reset comes high. Those samples decide whether the chip boots from flash, enters the UART download bootloader, or does something weird. If you have flashing problems and the wiring looks right, it's almost always strap pins.</p>
+
+  <h3>The strap pins per chip</h3>
+
+  <table>
+    <tr>
+      <th>Chip</th>
+      <th>Boot strap (LOW = download)</th>
+      <th>Other straps</th>
+    </tr>
+    <tr>
+      <td class="meth">ESP32</td>
+      <td>GPIO0</td>
+      <td>GPIO2 (must be low/floating), GPIO12 MTDI (VDD_SDIO 1.8/3.3v select), GPIO15 MTDO (silences boot log if low)</td>
+    </tr>
+    <tr>
+      <td class="meth">ESP32-S2</td>
+      <td>GPIO0</td>
+      <td>GPIO45 (VDD_SPI), GPIO46 (must be low at reset)</td>
+    </tr>
+    <tr>
+      <td class="meth">ESP32-S3</td>
+      <td>GPIO0</td>
+      <td>GPIO45 (VDD_SPI), GPIO46 (ROM print on UART0)</td>
+    </tr>
+    <tr>
+      <td class="meth">ESP32-C3</td>
+      <td>GPIO9</td>
+      <td>GPIO8 (ROM print log enable), GPIO2 (VDD_SPI)</td>
+    </tr>
+    <tr>
+      <td class="meth">ESP32-C6</td>
+      <td>GPIO9</td>
+      <td>GPIO8 (ROM log), GPIO15 (JTAG select)</td>
+    </tr>
+    <tr>
+      <td class="meth">ESP32-H2</td>
+      <td>GPIO9</td>
+      <td>GPIO8 (ROM log), GPIO25 (JTAG)</td>
+    </tr>
+    <tr>
+      <td class="meth">ESP32-C5</td>
+      <td>GPIO28 (low = download); 3-pin code GPIO26/27/28</td>
+      <td>GPIO27 (ROM log), GPIO7 (JTAG select — no internal pull, must be driven). Download Boot 0 (USB/UART/SPI): GPIO28=0, GPIO27=1. Download Boot 1 (UART/SDIO): GPIO27=0, GPIO28=0.</td>
+    </tr>
+    <tr>
+      <td class="meth">ESP32-P4</td>
+      <td>GPIO35 (low = download; pull-up default); 4-pin code GPIO35/36/37/38</td>
+      <td>GPIO36 (ROM log), GPIO34 (JTAG select — no internal pull, must be driven). No RF (no WiFi/BT); 16/32 MB PSRAM integrated in package. USB 2.0 HS OTG + USB Serial/JTAG.</td>
+    </tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>C5 and P4 use multi-pin boot codes</strong>
+    Unlike the classic/S/C3/C6/H2 chips where a single GPIO (0 or 9) low = download mode, the C5 and P4 use a 3- and 4-pin strapping code respectively. For C5: GPIO28 low triggers download mode; GPIO27 selects between Download Boot 0 (USB Serial/JTAG + UART) and Download Boot 1 (UART + SDIO). For P4: GPIO35 low + GPIO36 high = Joint Download Boot (USB OTG FS + UART + SPI Slave). Neither C5 nor P4 has the auto-reset transistor circuit on most dev boards — check your specific module.
+  </div>
+
+  <div class="info-box">
+    <strong>ESP32-P4 is a different animal</strong>
+    P4 is a high-performance application MCU, not a connectivity SoC. It has no built-in RF (no WiFi, no Bluetooth, no 802.15.4) and is designed to pair with a C5 module for wireless. It runs a dual-core RISC-V at 400 MHz, has 768 KB of L2 RAM, and ships with 16 or 32 MB of PSRAM sealed in the package. The strap pins are on GPIO34–38, nowhere near GPIO0 or GPIO9. Its USB Download Boot goes through the USB OTG HS controller at FS speed — not through UART and not through the USB Serial/JTAG bridge used for debugging.
+  </div>
+
+  <p>Boot strap is sampled at the rising edge of <code>CHIP_PU</code> (also called EN or RST). The sample is latched: changing the pin after the chip has come out of reset does nothing for boot mode. To re-enter download mode you must reset again.</p>
+
+  <h3 class="cy">The auto-reset circuit</h3>
+  <p>Dev boards like NodeMCU, Wemos, and ESP32-DevKitC all carry the same little NPN-transistor circuit so esptool can flash without you touching a button. It uses the two RS-232 modem control lines that USB-serial chips expose: DTR and RTS. The trick is that the transistors invert the lines, and they're wired so that asserting DTR alone or RTS alone does nothing.</p>
+
+  <pre class="diagram cy"><span class="dim">    USB-serial            transistor pair             ESP32</span>
+<span class="dim">    ──────────            ───────────────             ─────</span>
+
+      <span class="acc2">DTR</span>  ────┬─────┐                                <span class="acc">EN</span>
+                │     │ Q1                              ▲
+                │     ├──── BASE                        │
+                │     │                                 │
+      <span class="acc2">RTS</span>  ──┐ │  ┌──┴── BASE  Q2                    <span class="acc">GPIO0</span>
+              │ │  │                                    ▲
+              └─┼──┘                                    │
+                │                                       │
+                └───────────────────────────────────────┘
+
+    <span class="hi">Truth table</span>  (DTR/RTS at the chip pin, after inversion)
+
+      DTR=H  RTS=H   →   EN=H, GPIO0=H   <span class="dim">// normal run</span>
+      DTR=L  RTS=L   →   EN=H, GPIO0=H   <span class="dim">// normal run</span>
+      DTR=H  RTS=L   →   EN=L, GPIO0=H   <span class="dim">// reset only</span>
+      DTR=L  RTS=H   →   EN=H, GPIO0=L   <span class="dim">// boot only</span></pre>
+
+  <p>The cross-wiring is intentional. Each line by itself does nothing useful: only the transition from <code>DTR=H,RTS=L</code> (reset asserted) to <code>DTR=L,RTS=H</code> (reset released, GPIO0 still pulled low) actually triggers download mode. Meanwhile <code>RTS=H,DTR=H</code> at idle keeps both pins high so the chip boots normally. This is why opening the port in a normal terminal doesn't accidentally reset the chip.</p>
+
+  <h3 class="cy">esptool reset sequences</h3>
+  <p>esptool exposes the reset behaviour through <code>--before</code> and <code>--after</code>. Each name corresponds to a specific dance on DTR/RTS.</p>
+
+  <table>
+    <tr>
+      <th>Sequence</th>
+      <th>What it does</th>
+      <th>When to use</th>
+    </tr>
+    <tr>
+      <td class="meth">default_reset</td>
+      <td>Classic reset: DTR low, RTS high, sleep, swap, sleep, release. Drives chip into download mode.</td>
+      <td>Default <code>--before</code>. Works on every dev board with the auto-reset circuit.</td>
+    </tr>
+    <tr>
+      <td class="meth">usb_reset</td>
+      <td>USB-CDC reset: hits DTR/RTS through the chip's native USB stack rather than through external transistors.</td>
+      <td>S2/S3/C3 USB-OTG and USB-Serial-JTAG when no transistor circuit exists.</td>
+    </tr>
+    <tr>
+      <td class="meth">no_reset</td>
+      <td>Skip the dance entirely. Talk directly to whatever's already in download mode.</td>
+      <td>Custom hardware with a manual button, or chips already held in bootloader.</td>
+    </tr>
+    <tr>
+      <td class="meth">no_reset_no_sync</td>
+      <td>Skip dance and skip the SYNC handshake too. Used when caller already synced.</td>
+      <td>Chained tool flows.</td>
+    </tr>
+    <tr>
+      <td class="meth">hard_reset</td>
+      <td>After-flash: pulse EN low to reboot the chip cleanly into the new firmware.</td>
+      <td>Default <code>--after</code>. Almost always what you want.</td>
+    </tr>
+    <tr>
+      <td class="meth">soft_reset</td>
+      <td>Send a soft-reset command to the stub loader; chip jumps to user code without toggling EN.</td>
+      <td>Rare. Useful when EN is hard-wired and you can't toggle it.</td>
+    </tr>
+    <tr>
+      <td class="meth">no_reset_stub</td>
+      <td>Leave the stub running on the chip after we're done.</td>
+      <td>Chained workflows where the next tool wants the stub already up.</td>
+    </tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>The classic GPIO12 brick</strong>
+    On classic ESP32 with embedded flash, GPIO12 (MTDI) is sampled at boot to decide whether VDD_SDIO is 1.8V or 3.3V. If your application code sets GPIO12 high during normal operation and you don't burn the eFuse to lock the strap, the next reset reads VDD_SDIO as 1.8V and the flash chip browns out. Symptom: boots fine while powered, dies after first reset. Cure: <code>espefuse.py set_flash_voltage 3.3V</code>.
+  </div>
+
+  <h3 class="cy">Manual entry into download mode</h3>
+  <p>When the auto-reset circuit isn't there, doesn't work, or you've cut its traces, you do it by hand. The sequence on every ESP32 variant is the same:</p>
+
+  <ol class="step-list cy">
+    <li><strong>Hold BOOT</strong> Press and hold the boot button (GPIO0 on classic / S2 / S3, GPIO9 on RISC-V variants).</li>
+    <li><strong>Pulse EN</strong> While still holding BOOT, press and release the EN/RST button. Some boards need you to hold EN for a half-second.</li>
+    <li><strong>Release BOOT</strong> Wait at least 100ms after releasing EN, then release BOOT.</li>
+    <li><strong>Verify</strong> Open a terminal at 115200 baud. The ROM bootloader on classic ESP32 prints <code>waiting for download</code>. RISC-V variants print nothing by default but respond to <code>esptool.py chip_id</code>.</li>
+  </ol>
+</section>
+
+<!-- wire -->
+<section id="wire">
+  <h2>SLIP <em class="cy">Wire</em> Protocol</h2>
+  <div class="section-bar cy"></div>
+  <p>esptool talks to the ROM bootloader using a binary command protocol over UART, framed with SLIP (Serial Line Internet Protocol, RFC 1055). Reading a SLIP-framed esptool exchange from a logic analyzer is one of the fastest ways to understand what's happening when uploads fail.</p>
+
+  <h3 class="cy">SLIP framing rules</h3>
+  <p>Each packet is delimited by the <code>0xC0</code> byte (END). Inside a packet, two bytes need escaping: the END byte itself becomes <code>0xDB 0xDC</code>, and the escape byte <code>0xDB</code> becomes <code>0xDB 0xDD</code>.</p>
+
+  <pre class="cy"><span class="label">slip framing</span>
+<span class="cm">// raw payload</span>
+A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
+
+<span class="cm">// after slip escaping (with END framing)</span>
+<span class="key">C0</span> A1 B2 <span class="kw">DB DC</span> D4 <span class="kw">DB DD</span> F6 <span class="key">C0</span>
+<span class="cm">^^      ^^^^^      ^^^^^      ^^</span>
+<span class="cm">|       escape     escape    end</span>
+<span class="cm">start   for C0     for DB    delimiter</span></pre>
+
+  <p>Decode is the reverse: read until you see an unescaped <code>C0</code>, then walk the buffer replacing escape pairs back to their original bytes. Because escape bytes can never appear unescaped inside a packet, framing is unambiguous even if you join mid-stream and miss the start.</p>
+
+  <h3 class="cy">Command packet structure</h3>
+
+  <pre class="cy"><span class="label">esptool command packet (pre-slip-encoding)</span>
+ 0       1       2       3       4       5       6       7
++-------+-------+-------+-------+-------+-------+-------+-------+
+| <span class="kw">DIR</span>   | <span class="kw">CMD</span>   | <span class="kw">SIZE (LE)</span>     | <span class="kw">CHECKSUM (LE32)</span>             |
++-------+-------+-------+-------+-------+-------+-------+-------+
+| <span class="key">DATA ...                                                       </span>|
++---------------------------------------------------------------+
+
+  <span class="hi">DIR</span>      0x00 = request, 0x01 = response
+  <span class="hi">CMD</span>      one of the command opcodes (table below)
+  <span class="hi">SIZE</span>     uint16, little-endian, length of DATA in bytes
+  <span class="hi">CHECKSUM</span> uint32, little-endian, XOR-fold of DATA bytes with seed 0xEF
+           (only used by FLASH_DATA / MEM_DATA; ignored otherwise)
+  <span class="hi">DATA</span>     command-specific payload
+
+<span class="cm">// the entire structure above is then SLIP-framed before transmit</span></pre>
+
+  <h3 class="cy">Command opcodes</h3>
+
+  <table>
+    <tr>
+      <th>Code</th>
+      <th>Name</th>
+      <th>Available in</th>
+      <th>Purpose</th>
+    </tr>
+    <tr><td class="meth">0x02</td><td>FLASH_BEGIN</td><td>ROM + stub</td><td>Begin flash write: erase region, set up state.</td></tr>
+    <tr><td class="meth">0x03</td><td>FLASH_DATA</td><td>ROM + stub</td><td>One block of flash data (typically 4KB).</td></tr>
+    <tr><td class="meth">0x04</td><td>FLASH_END</td><td>ROM + stub</td><td>End flash session, optional reboot flag.</td></tr>
+    <tr><td class="meth">0x05</td><td>MEM_BEGIN</td><td>ROM + stub</td><td>Begin RAM upload: where to load and how big.</td></tr>
+    <tr><td class="meth">0x06</td><td>MEM_END</td><td>ROM + stub</td><td>End RAM upload, optional jump to entry point.</td></tr>
+    <tr><td class="meth">0x07</td><td>MEM_DATA</td><td>ROM + stub</td><td>One block of RAM data.</td></tr>
+    <tr><td class="meth">0x08</td><td>SYNC</td><td>ROM + stub</td><td>Initial handshake. Sent 5x with timing.</td></tr>
+    <tr><td class="meth">0x09</td><td>WRITE_REG</td><td>ROM + stub</td><td>Write a 32-bit memory-mapped register.</td></tr>
+    <tr><td class="meth">0x0A</td><td>READ_REG</td><td>ROM + stub</td><td>Read a 32-bit memory-mapped register.</td></tr>
+    <tr><td class="meth">0x0B</td><td>SPI_SET_PARAMS</td><td>ROM + stub</td><td>Tell SPI controller flash size + page/sector geometry.</td></tr>
+    <tr><td class="meth">0x0D</td><td>SPI_ATTACH</td><td>ROM + stub</td><td>Configure SPI pins (relevant for octal/quad PSRAM combos).</td></tr>
+    <tr><td class="meth">0x0F</td><td>CHANGE_BAUDRATE</td><td>stub only</td><td>Switch UART baud mid-session.</td></tr>
+    <tr><td class="meth">0x10</td><td>FLASH_DEFL_BEGIN</td><td>stub only</td><td>Begin compressed flash write (zlib).</td></tr>
+    <tr><td class="meth">0x11</td><td>FLASH_DEFL_DATA</td><td>stub only</td><td>One block of deflate-compressed data.</td></tr>
+    <tr><td class="meth">0x12</td><td>FLASH_DEFL_END</td><td>stub only</td><td>End compressed flash session.</td></tr>
+    <tr><td class="meth">0x13</td><td>SPI_FLASH_MD5</td><td>stub only</td><td>Compute MD5 over a flash region; used by verify_flash.</td></tr>
+    <tr><td class="meth">0x14</td><td>ERASE_FLASH</td><td>stub only</td><td>Whole-chip erase via SPI flash command 0xC7.</td></tr>
+    <tr><td class="meth">0x15</td><td>ERASE_REGION</td><td>stub only</td><td>4KB-aligned sector erase loop.</td></tr>
+    <tr><td class="meth">0x16</td><td>READ_FLASH</td><td>stub only</td><td>Stream a flash region back to host.</td></tr>
+  </table>
+
+  <h3 class="cy">The SYNC handshake</h3>
+  <p>Every esptool session starts with sync. The host sends a fixed 36-byte SYNC payload up to seven times (with retries on no response). The chip echoes back, and from the echo esptool fingerprints which chip variant it's talking to.</p>
+
+  <pre class="cy"><span class="label">sync payload</span>
+<span class="cm">// 36 bytes total, sent as the DATA of a SYNC command (0x08)</span>
+<span class="key">07 07 12 20</span>                                       <span class="cm">// magic prefix</span>
+<span class="val">55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55</span>   <span class="cm">// 32 bytes of 0x55</span>
+<span class="val">55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55</span>
+
+<span class="cm">// timing</span>
+<span class="cm">// host sleeps ~100ms between sync attempts to let chip latch baud rate</span>
+<span class="cm">// chip echoes empty SYNC response when it accepts</span></pre>
+
+  <p>The eight 0x55 bytes (binary <code>01010101</code>) are deliberate: alternating bits help a UART auto-baud routine lock onto the host's baud rate. ESP32 ROMs do auto-baud detection on the first SYNC, which is why esptool can connect at any rate from 9600 up to 115200 without telling the chip in advance.</p>
+
+  <div class="info-box danger">
+    <strong>"Failed to connect" is almost always strapping</strong>
+    If sync fails for seven retries, esptool gives up with the famous <code>A fatal error occurred: Failed to connect</code>. The host ran out of patience waiting for an echo. The chip never entered download mode, or the auto-reset circuit fired but didn't actually drive the right pins, or the USB-serial chip is so jittery that the SYNC bytes corrupt before the chip's UART can lock baud. Try lower baud (<code>--baud 115200</code>), then manual button entry, then a different USB cable.
+  </div>
+
+  <h3 class="cy">A complete sync + chip_id capture</h3>
+
+  <pre class="cy"><span class="label">logic analyzer view, host → chip in green</span>
+<span class="cm">// host sends SYNC</span>
+<span class="key">C0</span> <span class="kw">00 08</span> <span class="val">24 00</span> <span class="num">00 00 00 00</span> <span class="val">07 07 12 20 55 55 55 55 ... 55</span> <span class="key">C0</span>
+                                    <span class="dim">^ data: 36 bytes</span>
+
+<span class="cm">// chip responds (echoes 8 trailing 0x55, status 0/0)</span>
+<span class="key">C0</span> <span class="kw">01 08</span> <span class="val">04 00</span> <span class="num">00 00 00 00</span> <span class="val">00 00 00 00</span> <span class="key">C0</span>
+
+<span class="cm">// host sends READ_REG against EFUSE_BLK0_RDATA3 (0x3FF5A00C on classic)</span>
+<span class="key">C0</span> <span class="kw">00 0A</span> <span class="val">04 00</span> <span class="num">00 00 00 00</span> <span class="val">0C A0 F5 3F</span> <span class="key">C0</span>
+                                    <span class="dim">^ register address, LE32</span>
+
+<span class="cm">// chip responds with the register value (32-bit LE)</span>
+<span class="key">C0</span> <span class="kw">01 0A</span> <span class="val">04 00</span> <span class="num">A4 7C 24 BC</span> <span class="val">00 00 00 00</span> <span class="key">C0</span>
+                  <span class="dim">^ value goes in the "value" field, not data</span></pre>
+
+  <p>READ_REG and WRITE_REG don't use the data field for results. The 32-bit register value comes back in what would be the checksum slot of the response packet. Awkward, but that's how the protocol grew.</p>
+</section>
+
+<!-- stub -->
+<section id="stub">
+  <h2>The <em class="cy">Stub</em> Loader</h2>
+  <div class="section-bar cy"></div>
+  <p>The ROM bootloader on every ESP32 chip is fixed silicon-or-mask-ROM and can't be patched. It's also pretty minimal: no compression, no faster baud, no MD5 verification, slow flash writes. To work around this, esptool uploads a small program to RAM at the start of every session called the <em>stub loader</em>. The stub re-implements the same protocol but with extra commands and fewer bugs.</p>
+
+  <h3 class="cy">Stub upload sequence</h3>
+
+  <pre class="diagram cy"><span class="dim">    HOST                                        CHIP (ROM)</span>
+      <span class="acc2">│</span>                                            <span class="acc">│</span>
+      <span class="acc2">│</span>  SYNC ──────────────────────────────────▶ <span class="acc">│</span>
+      <span class="acc2">│</span>  ◀──────────────────────────────── ack    <span class="acc">│</span>
+      <span class="acc2">│</span>                                            <span class="acc">│</span>
+      <span class="acc2">│</span>  MEM_BEGIN(addr=stub.text_addr,            <span class="acc">│</span>
+      <span class="acc2">│</span>            size=stub.text_size,            <span class="acc">│</span>
+      <span class="acc2">│</span>            blocks=N, blocksize=4096) ────▶ <span class="acc">│</span>
+      <span class="acc2">│</span>  ◀──────────────────────────────── ack    <span class="acc">│</span>
+      <span class="acc2">│</span>                                            <span class="acc">│</span>
+      <span class="acc2">│</span>  MEM_DATA(seq=0, payload=text_block_0) ─▶ <span class="acc">│</span>
+      <span class="acc2">│</span>  MEM_DATA(seq=1, payload=text_block_1) ─▶ <span class="acc">│</span>
+      <span class="acc2">│</span>  ...                                       <span class="acc">│</span>
+      <span class="acc2">│</span>                                            <span class="acc">│</span>
+      <span class="acc2">│</span>  MEM_BEGIN(addr=stub.data_addr, ...) ────▶ <span class="acc">│</span>
+      <span class="acc2">│</span>  MEM_DATA(seq=0, payload=data_block_0) ─▶ <span class="acc">│</span>
+      <span class="acc2">│</span>  ...                                       <span class="acc">│</span>
+      <span class="acc2">│</span>                                            <span class="acc">│</span>
+      <span class="acc2">│</span>  MEM_END(entry=stub.entry_addr) ────────▶ <span class="acc">│</span>
+      <span class="acc2">│</span>                                            <span class="acc">│</span>  jump to entry
+      <span class="acc2">│</span>                                            <span class="acc3">│</span>  STUB now running
+      <span class="acc2">│</span>  ◀──── 4 bytes <span class="hi">"OHAI"</span> over UART          <span class="acc3">│</span>  prints OHAI
+      <span class="acc2">│</span>                                            <span class="acc3">│</span>
+      <span class="acc2">│</span>  CHANGE_BAUDRATE(921600) ────────────────▶ <span class="acc3">│</span>
+      <span class="acc2">│</span>  ◀───────────────────────────────── ack    <span class="acc3">│</span>
+      <span class="acc2">│</span>                                            <span class="acc3">│</span>
+      <span class="acc2">│</span>  FLASH_DEFL_BEGIN / FLASH_DEFL_DATA ─────▶ <span class="acc3">│</span>  fast path now</pre>
+
+  <p>The OHAI string is literally that: four bytes <code>0x4F 0x48 0x41 0x49</code>, sent unsolicited by the stub on entry. esptool reads four bytes and either matches the magic and continues, or assumes the upload failed.</p>
+
+  <h3 class="cy">What the stub adds</h3>
+
+  <table>
+    <tr>
+      <th>Feature</th>
+      <th>ROM only</th>
+      <th>With stub</th>
+    </tr>
+    <tr><td class="meth">Max baud</td><td>115200 (auto-baud limit)</td><td>921600+ via CHANGE_BAUDRATE</td></tr>
+    <tr><td class="meth">Compressed flash</td><td>no</td><td>yes (zlib via FLASH_DEFL_*)</td></tr>
+    <tr><td class="meth">Flash MD5</td><td>no</td><td>yes (SPI_FLASH_MD5)</td></tr>
+    <tr><td class="meth">Read flash</td><td>no</td><td>yes (READ_FLASH streams blocks)</td></tr>
+    <tr><td class="meth">Write throughput</td><td>~22 KB/s typical</td><td>200-300 KB/s typical</td></tr>
+    <tr><td class="meth">Block buffering</td><td>flush per block</td><td>queue blocks while previous flushes</td></tr>
+  </table>
+
+  <h3 class="cy">Where the stub lives in RAM</h3>
+  <p>Stub addresses are chip-specific because each variant has different IRAM/DRAM layouts and the stub has to fit somewhere that won't collide with the ROM bootloader's own variables. esptool ships pre-compiled stubs (one per chip) embedded as hex blobs in the source.</p>
+
+  <table>
+    <tr>
+      <th>Chip</th>
+      <th>Stub text load</th>
+      <th>Stub data load</th>
+      <th>Source location</th>
+    </tr>
+    <tr><td class="meth">ESP32</td><td>0x4009_0000</td><td>0x3FFE_8000</td><td>flasher_stub/stub_flasher_chip.bin</td></tr>
+    <tr><td class="meth">ESP32-S2</td><td>0x4002_4000</td><td>0x3FFE_8000</td><td>same dir, different binary</td></tr>
+    <tr><td class="meth">ESP32-S3</td><td>0x4037_8000</td><td>0x3FCB_8000</td><td>same dir</td></tr>
+    <tr><td class="meth">ESP32-C3</td><td>0x4038_0000</td><td>0x3FCD_C000</td><td>same dir</td></tr>
+    <tr><td class="meth">ESP32-C6</td><td>0x4080_8000</td><td>0x4082_8000</td><td>same dir</td></tr>
+  </table>
+
+  <h3 class="cy">Skipping the stub</h3>
+  <p>Two situations want raw ROM mode: when the stub itself is misbehaving (rare, but happens on early production chips and on some clones), and when you're testing pure ROM bootloader behavior. Pass <code>--no-stub</code> to esptool. You lose compression, MD5, fast baud, and read_flash. Most operations still work, just slower.</p>
+
+  <pre class="cy"><span class="label">stub vs no-stub</span>
+<span class="kw">esptool.py</span> <span class="flag">--port</span> /dev/ttyUSB0 <span class="kw">write_flash</span> <span class="num">0x10000</span> firmware.bin
+<span class="cm"># default: uploads stub, uses compressed write at 460800 baud</span>
+
+<span class="kw">esptool.py</span> <span class="flag">--no-stub</span> <span class="flag">--port</span> /dev/ttyUSB0 <span class="kw">write_flash</span> <span class="num">0x10000</span> firmware.bin
+<span class="cm"># raw ROM: uncompressed, 115200 baud max, no md5 verify after</span></pre>
+
+  <div class="info-box warn">
+    <strong>The "Stub running..." line that hides errors</strong>
+    esptool prints <code>Uploading stub...</code> then <code>Stub running...</code> as if these are sequential certainties. They're not. If MEM_END fired but OHAI never came back, the stub crashed or didn't upload cleanly, and esptool reports a generic error two seconds later. When you see weird timeouts immediately after stub upload, retry with <code>--no-stub</code> to confirm the ROM path works. If ROM works and stub doesn't, you have a flaky USB connection or marginal power supply.
+  </div>
+</section>
+
+<!-- flash -->
+<section id="flash">
+  <h2>Flash <em class="yl">Geometry</em></h2>
+  <div class="section-bar yl"></div>
+  <p>Where things live on the SPI flash chip is one of the most chip-variant-specific aspects of the ESP32 family. The flash itself is a generic 25-series SPI chip (Winbond, GigaDevice, ISSI, XMC), but the address at which the bootloader expects to start is hardcoded into the silicon ROM. Putting the bootloader at the wrong offset means a chip that successfully accepts the write but never boots.</p>
+
+  <h3 class="yl">Bootloader offset by chip</h3>
+
+  <table>
+    <tr>
+      <th>Chip</th>
+      <th>Bootloader offset</th>
+      <th>Why</th>
+    </tr>
+    <tr><td class="meth">ESP32</td><td>0x1000</td><td>First 4KB of flash is reserved for the secure boot V1 verifier digest area; bootloader proper starts at 0x1000.</td></tr>
+    <tr><td class="meth">ESP32-S2</td><td>0x1000</td><td>Same reservation as classic.</td></tr>
+    <tr><td class="meth">ESP32-S3</td><td>0x0000</td><td>Newer ROM does not require the 4KB reservation; bootloader can start at the very front.</td></tr>
+    <tr><td class="meth">ESP32-C3</td><td>0x0000</td><td>RISC-V chips skip the reservation entirely.</td></tr>
+    <tr><td class="meth">ESP32-C6</td><td>0x0000</td><td>Same.</td></tr>
+    <tr><td class="meth">ESP32-H2</td><td>0x0000</td><td>Same.</td></tr>
+    <tr><td class="meth">ESP32-P4</td><td>0x2000</td><td>Bigger reserved area for the high-perf SoC's eFuse/digest space.</td></tr>
+  </table>
+
+  <h3 class="yl">Standard ESP-IDF layout</h3>
+
+  <pre class="yl"><span class="label">classic ESP32, default 4MB flash</span>
+<span class="num">0x000000</span>  <span class="dim">┌─────────────────────────────────┐</span>  <span class="cm">// reserved (secure boot digest area)</span>
+          <span class="dim">│  empty / digest                 │</span>
+<span class="num">0x001000</span>  <span class="dim">├─────────────────────────────────┤</span>
+          <span class="dim">│  </span><span class="hi">2nd-stage bootloader</span><span class="dim">             │</span>  <span class="cm">// bootloader.bin (~25KB)</span>
+          <span class="dim">│                                 │</span>
+<span class="num">0x008000</span>  <span class="dim">├─────────────────────────────────┤</span>
+          <span class="dim">│  </span><span class="hi">partition table</span><span class="dim">                  │</span>  <span class="cm">// 4KB, ends with MD5 entry</span>
+<span class="num">0x009000</span>  <span class="dim">├─────────────────────────────────┤</span>
+          <span class="dim">│  </span><span class="acc3">nvs</span><span class="dim"> (data/wifi)                │</span>  <span class="cm">// 24KB key-value store</span>
+<span class="num">0x00f000</span>  <span class="dim">├─────────────────────────────────┤</span>
+          <span class="dim">│  </span><span class="acc3">phy_init</span><span class="dim">                        │</span>  <span class="cm">// 4KB RF calibration</span>
+<span class="num">0x010000</span>  <span class="dim">├─────────────────────────────────┤</span>
+          <span class="dim">│                                 │</span>
+          <span class="dim">│  </span><span class="acc">factory app</span><span class="dim"> (or ota_0)          │</span>  <span class="cm">// 1MB+, your code</span>
+          <span class="dim">│                                 │</span>
+<span class="num">0x110000</span>  <span class="dim">├─────────────────────────────────┤</span>
+          <span class="dim">│  </span><span class="acc">ota_1</span><span class="dim"> (if dual-OTA layout)      │</span>  <span class="cm">// matches ota_0 size</span>
+          <span class="dim">│                                 │</span>
+<span class="num">0x210000</span>  <span class="dim">├─────────────────────────────────┤</span>
+          <span class="dim">│  </span><span class="acc3">spiffs</span><span class="dim"> / </span><span class="acc3">littlefs</span><span class="dim"> / userdata    │</span>
+          <span class="dim">│                                 │</span>
+<span class="num">0x3FF000</span>  <span class="dim">├─────────────────────────────────┤</span>
+          <span class="dim">│  </span><span class="acc3">otadata</span><span class="dim">                         │</span>  <span class="cm">// 8KB, holds active OTA slot</span>
+<span class="num">0x400000</span>  <span class="dim">└─────────────────────────────────┘</span>  <span class="cm">// end of 4MB flash</span></pre>
+
+  <h3 class="yl">The partition table</h3>
+  <p>At <code>0x8000</code> (default; configurable in menuconfig) lives a 4KB partition table. It's a list of 32-byte entries, terminated by an MD5-checksum entry. ESP-IDF reads it on boot to figure out where every other partition lives.</p>
+
+  <pre class="yl"><span class="label">partition table entry layout</span>
+ 0       1       2       3       4       5       6       7
++-------+-------+-------+-------+-------+-------+-------+-------+
+| <span class="kw">MAGIC (LE16)</span>  | <span class="kw">TYPE</span>  | <span class="kw">SUB</span>   | <span class="kw">OFFSET (LE32)</span>             |
++-------+-------+-------+-------+-------+-------+-------+-------+
+| <span class="kw">SIZE (LE32)</span>                  | <span class="kw">LABEL (16 bytes, null-padded)</span>
++-------+-------+-------+-------+-------+-------+-------+-------+
+                                | <span class="kw">FLAGS (LE32)</span>              |
+                                +-------+-------+-------+-------+
+
+  <span class="hi">MAGIC</span>   0xAA50  (regular entry) or 0xEBEB (md5 trailer)
+  <span class="hi">TYPE</span>    0x00 = app, 0x01 = data, 0x40-0xFE = custom
+  <span class="hi">SUB</span>     subtype within type. app: 0x00=factory, 0x10/0x11=ota_0/1
+                              data: 0x00=otadata, 0x01=phy, 0x02=nvs,
+                                    0x82=spiffs, 0x83=littlefs
+  <span class="hi">FLAGS</span>   bit 0 = encrypted, bit 1 = readonly</pre>
+
+  <h3 class="yl">Reading the partition table from a running chip</h3>
+
+  <pre class="yl"><span class="label">dump partition table</span>
+<span class="kw">esptool.py</span> <span class="flag">--port</span> /dev/ttyUSB0 <span class="kw">read_flash</span> <span class="num">0x8000</span> <span class="num">0x1000</span> partitions.bin
+<span class="kw">parttool.py</span> <span class="flag">-q</span> <span class="kw">get_partition_info</span> <span class="flag">--partition-table-file</span> partitions.bin <span class="flag">--info</span> name offset size
+
+<span class="cm"># or via the IDF python helper</span>
+<span class="kw">python</span> $IDF_PATH/components/partition_table/gen_esp32part.py partitions.bin
+
+<span class="cm"># typical output</span>
+<span class="cm"># nvs,data,nvs,0x9000,24K,</span>
+<span class="cm"># phy_init,data,phy,0xf000,4K,</span>
+<span class="cm"># factory,app,factory,0x10000,1M,</span>
+<span class="cm"># spiffs,data,spiffs,0x110000,1M,</span></pre>
+
+  <h3 class="yl">Flash mode, frequency, and size</h3>
+  <p>These three parameters live in the bootloader image header and tell the ROM how to talk to the SPI flash chip. Wrong values are the second-most-common cause of "boots once, won't boot again" symptoms (the first is bad partition tables).</p>
+
+  <table>
+    <tr>
+      <th>Parameter</th>
+      <th>Values</th>
+      <th>Meaning</th>
+    </tr>
+    <tr>
+      <td class="meth">--flash_mode</td>
+      <td>qio, qout, dio, dout, opi</td>
+      <td>How many SPI lines and which direction. <code>qio</code> = quad in/out (4 data lines), <code>dio</code> = dual in/out (2). Octal (<code>opi</code>) is S3-only and needs a compatible flash chip.</td>
+    </tr>
+    <tr>
+      <td class="meth">--flash_freq</td>
+      <td>20m, 26m, 40m, 80m, 120m</td>
+      <td>SPI clock. 40m is the safe default. 80m needs a flash chip rated for it. 120m is S3 + octal flash.</td>
+    </tr>
+    <tr>
+      <td class="meth">--flash_size</td>
+      <td>1MB, 2MB, 4MB, 8MB, 16MB, 32MB, 64MB, 128MB</td>
+      <td>Total chip capacity. Wrong value here means esptool refuses to write past where it thinks the chip ends.</td>
+    </tr>
+  </table>
+
+  <pre class="yl"><span class="label">setting flash params at write time</span>
+<span class="kw">esptool.py</span> <span class="flag">--chip</span> esp32 <span class="flag">--port</span> /dev/ttyUSB0 <span class="kw">write_flash</span> <span class="flag">-z</span> \
+  <span class="flag">--flash_mode</span> dio <span class="flag">--flash_freq</span> 40m <span class="flag">--flash_size</span> 4MB \
+  <span class="num">0x1000</span>  bootloader.bin \
+  <span class="num">0x8000</span>  partitions.bin \
+  <span class="num">0x10000</span> firmware.bin
+
+<span class="cm"># detect what the flash chip says about itself</span>
+<span class="kw">esptool.py</span> <span class="kw">flash_id</span>
+<span class="cm"># Manufacturer: ef    (Winbond)</span>
+<span class="cm"># Device:       4017  (W25Q64)</span>
+<span class="cm"># Detected flash size: 8MB</span></pre>
+</section>
+
+<!-- read write -->
+<section id="rw">
+  <h2><em class="or">Read</em>, Write &amp; Verify</h2>
+  <div class="section-bar"></div>
+  <p>The everyday operations. The flags below mostly compose: <code>--port</code>, <code>--baud</code>, <code>--chip</code>, <code>--before</code>, <code>--after</code> apply to all of them.</p>
+
+  <h3>Common flags</h3>
+
+  <table>
+    <tr>
+      <th>Flag</th>
+      <th>Default</th>
+      <th>Notes</th>
+    </tr>
+    <tr><td class="meth">--port / -p</td><td>auto-detect</td><td>Serial device. Linux: <code>/dev/ttyUSB0</code>, <code>/dev/ttyACM0</code>. macOS: <code>/dev/cu.usbserial-XXXX</code>. Windows: <code>COM5</code>.</td></tr>
+    <tr><td class="meth">--baud / -b</td><td>115200</td><td>Initial baud. Stub bumps to 460800 unless overridden. Some CH340 clones max at 921600; FTDI does 3M.</td></tr>
+    <tr><td class="meth">--chip / -c</td><td>auto</td><td>esp32, esp32s2, esp32s3, esp32c3, esp32c6, esp32h2, esp32p4. Auto works but is slower because it has to fingerprint.</td></tr>
+    <tr><td class="meth">--connect-attempts</td><td>7</td><td>How many times to retry SYNC before giving up.</td></tr>
+    <tr><td class="meth">--trace</td><td>off</td><td>Print every byte going in and out of the serial port. Indispensable for debugging.</td></tr>
+  </table>
+
+  <h3>chip_id, flash_id, read_mac</h3>
+
+  <pre><span class="label">identification commands</span>
+<span class="kw">esptool.py</span> <span class="kw">chip_id</span>
+<span class="cm"># Chip is ESP32-D0WD-V3 (revision v3.0)</span>
+<span class="cm"># Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse</span>
+<span class="cm"># Crystal is 40MHz</span>
+<span class="cm"># MAC: 24:6f:28:ab:cd:ef</span>
+
+<span class="kw">esptool.py</span> <span class="kw">flash_id</span>
+<span class="cm"># Manufacturer: ef</span>
+<span class="cm"># Device:       4016</span>
+<span class="cm"># Detected flash size: 4MB</span>
+
+<span class="kw">esptool.py</span> <span class="kw">read_mac</span>
+<span class="cm"># MAC: 24:6f:28:ab:cd:ef</span>
+<span class="cm"># BASE MAC, WIFI_STA, WIFI_AP, BT, ETH all derived</span></pre>
+
+  <p>Each ESP32 has a single 48-bit base MAC burned into eFuse at the factory. The four interface MACs (Wi-Fi STA, Wi-Fi AP, Bluetooth, Ethernet) are derived deterministically from base MAC plus a small offset. Don't randomize them; they're meant to be unique per silicon.</p>
+
+  <h3>write_flash</h3>
+
+  <pre><span class="label">write_flash with all the flags</span>
+<span class="kw">esptool.py</span> <span class="flag">--chip</span> esp32 <span class="flag">--port</span> /dev/ttyUSB0 <span class="flag">--baud</span> 921600 <span class="kw">write_flash</span> \
+  <span class="flag">-z</span>                          <span class="cm"># compress with zlib (stub only)</span>
+  <span class="flag">--flash_mode</span> dio              <span class="cm"># SPI mode</span>
+  <span class="flag">--flash_freq</span> 40m              <span class="cm"># SPI clock</span>
+  <span class="flag">--flash_size</span> detect           <span class="cm"># let chip report</span>
+  <span class="flag">--erase-all</span>                  <span class="cm"># erase whole chip first (optional)</span>
+  <span class="flag">--verify</span>                      <span class="cm"># MD5 check after write</span>
+  <span class="flag">--encrypt</span>                     <span class="cm"># encrypt during write (flash encryption enabled chips)</span>
+  <span class="flag">--ignore-flash-encryption-efuse-setting</span>   <span class="cm"># override safety check</span>
+  <span class="num">0x1000</span>  bootloader.bin
+  <span class="num">0x8000</span>  partitions.bin
+  <span class="num">0x10000</span> firmware.bin
+  <span class="num">0x310000</span> spiffs.bin</pre>
+
+  <p>The pairs of <code>address file</code> at the end can repeat as many times as you want. esptool sorts them by address before sending and writes each region with FLASH_BEGIN / FLASH_DATA / FLASH_END (or the DEFL variants under <code>-z</code>).</p>
+
+  <h3>read_flash</h3>
+
+  <pre><span class="label">read flash to file</span>
+<span class="cm"># dump entire 4MB flash</span>
+<span class="kw">esptool.py</span> <span class="kw">read_flash</span> <span class="num">0</span> <span class="num">0x400000</span> dump.bin
+
+<span class="cm"># dump just the partition table</span>
+<span class="kw">esptool.py</span> <span class="kw">read_flash</span> <span class="num">0x8000</span> <span class="num">0x1000</span> parts.bin
+
+<span class="cm"># dump the running firmware partition (find offset+size from partition table first)</span>
+<span class="kw">esptool.py</span> <span class="kw">read_flash</span> <span class="num">0x10000</span> <span class="num">0x100000</span> app.bin
+
+<span class="cm"># skip the read of unprogrammed (0xFF) sectors to save time</span>
+<span class="kw">esptool.py</span> <span class="kw">read_flash</span> <span class="num">0</span> ALL flash_dump.bin
+<span class="cm"># "ALL" reads up to the detected flash size</span></pre>
+
+  <h3>verify_flash</h3>
+
+  <pre><span class="label">verify without rewriting</span>
+<span class="kw">esptool.py</span> <span class="kw">verify_flash</span> <span class="num">0x10000</span> firmware.bin
+<span class="cm"># Verifying 0x100000 (1048576) bytes @ 0x00010000 in flash against firmware.bin...</span>
+<span class="cm"># -- verify OK (digest matched)</span>
+
+<span class="cm"># mismatch case</span>
+<span class="cm"># -- verify FAILED: 0x40 (64) bytes differ at @ 0x00012E40</span>
+<span class="cm"># first byte differs: file=0xA1 flash=0xFF</span></pre>
+
+  <p>verify_flash uses the SPI_FLASH_MD5 stub command to ask the chip for an MD5 hash of a region, then compares against an MD5 it computes locally over the file. No data is read back, just the digest. This is much faster than read-then-compare for large regions.</p>
+
+  <h3>erase_flash, erase_region</h3>
+
+  <pre><span class="label">erasing</span>
+<span class="cm"># whole-chip erase (issues SPI command 0xC7)</span>
+<span class="kw">esptool.py</span> <span class="kw">erase_flash</span>
+<span class="cm"># takes 8-30s depending on flash size</span>
+
+<span class="cm"># just the NVS partition (24KB starting at 0x9000)</span>
+<span class="kw">esptool.py</span> <span class="kw">erase_region</span> <span class="num">0x9000</span> <span class="num">0x6000</span>
+<span class="cm"># both args must be 4KB-aligned (one sector)</span>
+
+<span class="cm"># nuke OTA data so chip falls back to factory</span>
+<span class="kw">esptool.py</span> <span class="kw">erase_region</span> <span class="num">0xd000</span> <span class="num">0x2000</span></pre>
+
+  <div class="info-box warn">
+    <strong>The "won't connect after erase" gotcha</strong>
+    <code>erase_flash</code> wipes everything including the bootloader. After it finishes, the chip has nothing to boot. <code>esptool.py chip_id</code> still works because that hits the ROM, not flash. But power-cycle and the chip prints garbage on the UART (the ROM trying to verify a bootloader that's all 0xFF). Always have a fresh bootloader+app+partitions ready to write before you erase.
+  </div>
+</section>
+
+<!-- image format -->
+<section id="image">
+  <h2><em class="cy">Image</em> Format &amp; elf2image</h2>
+  <div class="section-bar cy"></div>
+  <p>The <code>.bin</code> file you flash is not just a copy of your <code>.elf</code>. It's a structured container with a header, a list of segments, and a checksum (and on newer chips, a SHA-256). The conversion happens via <code>esptool.py elf2image</code>, which the IDF build system runs automatically.</p>
+
+  <h3 class="cy">Image header layout</h3>
+
+  <pre class="cy"><span class="label">esp32 firmware image header (24 bytes)</span>
+ 0       1       2       3       4       5       6       7
++-------+-------+-------+-------+-------+-------+-------+-------+
+| <span class="kw">MAGIC</span> | <span class="kw">SEG#</span>  | <span class="kw">FMODE</span> | <span class="kw">FSF</span>   | <span class="kw">ENTRY POINT (LE32)</span>        |
++-------+-------+-------+-------+-------+-------+-------+-------+
+| <span class="kw">WP_PIN</span>| <span class="kw">CLK_DRV / Q_DRV</span> ...        | <span class="kw">CHIP_ID (LE16)</span> |       |
++-------+-------+-------+-------+-------+-------+-------+-------+
+| <span class="kw">MIN_REV</span>...                | <span class="kw">MAX_REV</span> ...                | <span class="kw">RESVD</span> |
++-------+-------+-------+-------+-------+-------+-------+-------+
+| <span class="kw">HASH_APPENDED</span>                                                  |
++-------+
+
+  <span class="hi">MAGIC</span>          0xE9
+  <span class="hi">SEG#</span>           number of segments that follow
+  <span class="hi">FMODE</span>          flash mode (0=qio, 1=qout, 2=dio, 3=dout, 4=opi)
+  <span class="hi">FSF</span>            high nibble = flash size (0=1MB, 1=2MB, ..., 4=16MB)
+                 low nibble  = flash freq (0=40m, 1=26m, 2=20m, 0xF=80m)
+  <span class="hi">ENTRY POINT</span>    32-bit jump address after image is loaded
+  <span class="hi">CHIP_ID</span>        0=ESP32, 2=S2, 5=C3, 9=S3, 12=C2, 13=C6, 16=H2, ...
+  <span class="hi">HASH_APPENDED</span>  1 = SHA-256 follows after last segment</pre>
+
+  <h3 class="cy">Segment layout</h3>
+
+  <pre class="cy"><span class="label">segment (variable length)</span>
++-------+-------+-------+-------+
+| <span class="kw">LOAD ADDR (LE32)</span>            |
++-------+-------+-------+-------+
+| <span class="kw">DATA LEN (LE32)</span>             |
++-------+-------+-------+-------+
+| <span class="key">DATA bytes ...                              </span>|
++--------------------------------+
+
+  <span class="cm">// repeats SEG# times</span>
+  <span class="cm">// padded so total image length is multiple of 16 bytes</span>
+  <span class="cm">// 1-byte XOR checksum at the next 16-byte boundary - 1</span>
+  <span class="cm">// (last byte of the padded image)</span>
+  <span class="cm">// then optional 32-byte SHA-256 if HASH_APPENDED</span>
+  <span class="cm">// then optional signature block if signed (secure boot)</span></pre>
+
+  <h3 class="cy">elf2image conversion</h3>
+
+  <pre class="cy"><span class="label">elf2image</span>
+<span class="kw">esptool.py</span> <span class="flag">--chip</span> esp32 <span class="kw">elf2image</span> \
+  <span class="flag">--flash_mode</span> dio <span class="flag">--flash_freq</span> 40m <span class="flag">--flash_size</span> 4MB \
+  <span class="flag">--min-rev</span> 0 <span class="flag">--max-rev</span> 0x100 \
+  <span class="flag">-o</span> firmware.bin firmware.elf
+
+<span class="cm"># inspect the resulting image</span>
+<span class="kw">esptool.py</span> <span class="kw">image_info</span> firmware.bin
+<span class="cm"># File size: 1234560 bytes</span>
+<span class="cm"># Image version: 1</span>
+<span class="cm"># Entry point: 0x40080a44</span>
+<span class="cm"># Segments: 5</span>
+<span class="cm"># Segment 1: len 0x024df0 load 0x3f400020 file_offs 0x00000018 [DROM]</span>
+<span class="cm"># Segment 2: len 0x00400 load 0x3ffb0000 file_offs 0x00024e10 [BYTE_ACCESSIBLE,DRAM]</span>
+<span class="cm"># Segment 3: len 0x094a0 load 0x3ffb0400 file_offs 0x00025218 [DRAM]</span>
+<span class="cm"># Segment 4: len 0x06bcc load 0x40080000 file_offs 0x0002e6c0 [IRAM]</span>
+<span class="cm"># Segment 5: len 0x1604c load 0x400d0020 file_offs 0x00035294 [IROM]</span>
+<span class="cm"># Checksum: 0xa1 (valid)</span>
+<span class="cm"># Validation hash: SHA256 fb29... (valid)</span></pre>
+
+  <h3 class="cy">Memory regions in segment names</h3>
+
+  <table>
+    <tr>
+      <th>Region</th>
+      <th>Address (classic)</th>
+      <th>Purpose</th>
+    </tr>
+    <tr><td class="meth">IROM</td><td>0x400D_0000 ...</td><td>Instruction-fetched-from-flash, mapped via flash cache.</td></tr>
+    <tr><td class="meth">DROM</td><td>0x3F40_0000 ...</td><td>Data-fetched-from-flash (constants, strings).</td></tr>
+    <tr><td class="meth">IRAM</td><td>0x4008_0000 ...</td><td>Internal SRAM mapped for instruction fetch. Fast, used for ISRs.</td></tr>
+    <tr><td class="meth">DRAM</td><td>0x3FFB_0000 ...</td><td>Internal SRAM mapped as data. The heap lives here.</td></tr>
+    <tr><td class="meth">RTC_IRAM</td><td>0x400C_0000 ...</td><td>Survives deep sleep on classic ESP32.</td></tr>
+    <tr><td class="meth">RTC_DRAM</td><td>0x3FF8_0000 ...</td><td>Survives deep sleep, holds RTC variables.</td></tr>
+  </table>
+
+  <h3 class="cy">merge_bin</h3>
+  <p>For factory programmers, OTA cloud uploads, or anywhere that wants a single contiguous image, <code>merge_bin</code> stitches the bootloader, partition table, app, and any other regions into one file you can flash at offset 0 (or wherever the chip's bootloader expects).</p>
+
+  <pre class="cy"><span class="label">merge_bin</span>
+<span class="kw">esptool.py</span> <span class="flag">--chip</span> esp32 <span class="kw">merge_bin</span> <span class="flag">-o</span> merged.bin \
+  <span class="flag">--flash_mode</span> dio <span class="flag">--flash_freq</span> 40m <span class="flag">--flash_size</span> 4MB \
+  <span class="num">0x1000</span>  bootloader.bin \
+  <span class="num">0x8000</span>  partitions.bin \
+  <span class="num">0x10000</span> app.bin
+
+<span class="cm"># now flash the single file at offset 0</span>
+<span class="kw">esptool.py</span> <span class="kw">write_flash</span> <span class="num">0x0</span> merged.bin
+
+<span class="cm"># or pad to full flash size (good for production imaging)</span>
+<span class="kw">esptool.py</span> <span class="kw">merge_bin</span> <span class="flag">-o</span> factory.bin <span class="flag">--fill-flash-size</span> 4MB \
+  <span class="num">0x1000</span> bootloader.bin <span class="num">0x8000</span> partitions.bin <span class="num">0x10000</span> app.bin</pre>
+
+  <div class="info-box cy">
+    <strong>image_info on a stripped binary</strong>
+    Run <code>esptool.py image_info file.bin</code> on any unknown ESP32 binary you have lying around. If the magic byte at offset 0 is 0xE9, esptool can decode the segments and tell you which chip variant the image targets, what the entry point is, and whether the SHA-256 / signature checks pass. This is faster than running <code>file</code> or <code>strings</code> when triaging a folder of mystery firmware.
+  </div>
+</section>
+
+<!-- efuse -->
+<section id="efuse">
+  <h2><em class="rd">eFuse</em> &amp; Security</h2>
+  <div class="section-bar rd"></div>
+  <p>eFuses are one-time-programmable (OTP) bits inside every ESP32 chip. They store the factory MAC address, the chip revision, calibration values, and a small set of user-burnable security keys and flags. Once a fuse is burned (set to 1), it cannot be unburned. Misusing <code>espefuse.py</code> is a fast way to brick a chip permanently.</p>
+
+  <h3 class="rd">eFuse layout</h3>
+
+  <table>
+    <tr>
+      <th>Block</th>
+      <th>Bits</th>
+      <th>Contents (classic ESP32)</th>
+    </tr>
+    <tr><td class="meth">BLK0</td><td>256</td><td>Factory MAC, chip rev, package, ADC calibration, user-config flags (UART_DOWNLOAD_DIS, JTAG_DISABLE, etc.)</td></tr>
+    <tr><td class="meth">BLK1</td><td>256</td><td>Flash encryption key (256-bit AES)</td></tr>
+    <tr><td class="meth">BLK2</td><td>256</td><td>Secure boot V1 key</td></tr>
+    <tr><td class="meth">BLK3</td><td>256</td><td>User block (custom data, customer ID)</td></tr>
+  </table>
+
+  <p>S2/S3/C3/etc. expand this to BLK0-BLK10 with multiple key slots, key-purpose bits, and dedicated digest blocks. The principle is the same: read-or-write protectable banks of OTP bits.</p>
+
+  <h3 class="rd">espefuse.py</h3>
+
+  <pre class="rd"><span class="label">summary: read every eFuse</span>
+<span class="kw">espefuse.py</span> <span class="flag">--port</span> /dev/ttyUSB0 <span class="kw">summary</span>
+<span class="cm">### EFUSE_BLK0 fields ###</span>
+<span class="cm"># MAC                : 24:6f:28:ab:cd:ef</span>
+<span class="cm"># CHIP_VER_REV1      : 1</span>
+<span class="cm"># CHIP_VERSION       : 0</span>
+<span class="cm"># CHIP_PACKAGE       : 1</span>
+<span class="cm"># UART_DOWNLOAD_DIS  : False  R/W (0b0)</span>
+<span class="cm"># DISABLE_JTAG       : False  R/W (0b0)</span>
+<span class="cm"># FLASH_CRYPT_CNT    : 0      R/W (0b0000000)</span>
+<span class="cm"># ABS_DONE_0         : False  R/W (0b0)   <span class="hi">// secure boot v1 enable</span></span>
+<span class="cm"># ...</span></pre>
+
+  <pre class="rd"><span class="label">burn fuses (DESTRUCTIVE - irreversible)</span>
+<span class="cm"># burn an arbitrary user fuse</span>
+<span class="kw">espefuse.py</span> <span class="kw">burn_efuse</span> WR_DIS 0x1
+
+<span class="cm"># burn a key into a key block</span>
+<span class="kw">espefuse.py</span> <span class="kw">burn_key</span> BLOCK1 flash_encryption_key.bin
+
+<span class="cm"># burn flash encryption key + enable + lock down (full deployment)</span>
+<span class="kw">espefuse.py</span> <span class="kw">burn_key</span> BLOCK1 flash_enc_key.bin
+<span class="kw">espefuse.py</span> <span class="kw">burn_efuse</span> FLASH_CRYPT_CNT 0x7
+<span class="kw">espefuse.py</span> <span class="kw">burn_efuse</span> FLASH_CRYPT_CONFIG 0xF
+<span class="kw">espefuse.py</span> <span class="kw">write_protect_efuse</span> FLASH_CRYPT_CNT  <span class="cm"># can no longer disable</span>
+
+<span class="cm"># raw 256-bit data into a user block</span>
+<span class="kw">espefuse.py</span> <span class="kw">burn_block_data</span> BLOCK3 customer_data.bin
+
+<span class="cm"># lock specific fuses against further changes</span>
+<span class="kw">espefuse.py</span> <span class="kw">read_protect_efuse</span> BLOCK1   <span class="cm"># key can never be read out</span>
+<span class="kw">espefuse.py</span> <span class="kw">write_protect_efuse</span> BLOCK1  <span class="cm"># key can never be re-written</span></pre>
+
+  <div class="info-box danger">
+    <strong>The fuses you regret</strong>
+    <code>UART_DOWNLOAD_DIS</code> permanently kills the ROM UART download path. <code>DISABLE_DL_ENCRYPT</code> + <code>DISABLE_DL_DECRYPT</code> on a flash-encrypted chip means you can no longer flash plaintext images, ever. <code>JTAG_DISABLE</code> kills hardware debugging. Burning <code>FLASH_CRYPT_CNT</code> to 0x7F with no key burned makes the chip try to decrypt zeros and refuse to boot. Always read <code>espefuse.py summary</code> twice before <code>burn_efuse</code>, and always test on a sacrificial chip first.
+  </div>
+
+  <h3 class="rd">espsecure.py</h3>
+  <p>Where <code>espefuse</code> deals with the chip side of security, <code>espsecure</code> is the host-side counterpart: it generates keys, signs images, and prepares encrypted payloads.</p>
+
+  <pre class="rd"><span class="label">secure boot v2 workflow</span>
+<span class="cm"># generate signing key (RSA-3072 for V2, ECDSA also supported)</span>
+<span class="kw">espsecure.py</span> <span class="kw">generate_signing_key</span> <span class="flag">--version</span> 2 secure_boot_signing_key.pem
+
+<span class="cm"># compute the public key digest (this is what gets burned to eFuse)</span>
+<span class="kw">espsecure.py</span> <span class="kw">digest_sbv2_public_key</span> \
+  <span class="flag">--keyfile</span> secure_boot_signing_key.pem \
+  <span class="flag">--output</span> sb_public_digest.bin
+
+<span class="cm"># sign an application image</span>
+<span class="kw">espsecure.py</span> <span class="kw">sign_data</span> <span class="flag">--version</span> 2 \
+  <span class="flag">--keyfile</span> secure_boot_signing_key.pem \
+  <span class="flag">--output</span> firmware_signed.bin firmware.bin
+
+<span class="cm"># verify a signed image (no chip needed)</span>
+<span class="kw">espsecure.py</span> <span class="kw">verify_signature</span> <span class="flag">--version</span> 2 \
+  <span class="flag">--keyfile</span> secure_boot_signing_key.pem firmware_signed.bin</pre>
+
+  <pre class="rd"><span class="label">flash encryption workflow</span>
+<span class="cm"># generate AES-256 key</span>
+<span class="kw">espsecure.py</span> <span class="kw">generate_flash_encryption_key</span> <span class="flag">--keylen</span> 256 fe_key.bin
+
+<span class="cm"># encrypt a binary using that key (offset matters - tweak depends on it)</span>
+<span class="kw">espsecure.py</span> <span class="kw">encrypt_flash_data</span> \
+  <span class="flag">--keyfile</span> fe_key.bin \
+  <span class="flag">--address</span> 0x10000 \
+  <span class="flag">--output</span> firmware_enc.bin firmware.bin
+
+<span class="cm"># decrypt for inspection</span>
+<span class="kw">espsecure.py</span> <span class="kw">decrypt_flash_data</span> \
+  <span class="flag">--keyfile</span> fe_key.bin \
+  <span class="flag">--address</span> 0x10000 \
+  <span class="flag">--output</span> firmware_dec.bin firmware_enc.bin</pre>
+
+  <h3 class="rd">Secure boot V1 vs V2</h3>
+
+  <table>
+    <tr>
+      <th>Property</th>
+      <th>V1 (classic ESP32 only)</th>
+      <th>V2 (S2/S3/C3/C6/H2 + classic v3)</th>
+    </tr>
+    <tr><td class="meth">Algorithm</td><td>AES-256 ECB + SHA-256 digest</td><td>RSA-PSS-3072 or ECDSA-P256</td></tr>
+    <tr><td class="meth">Key in eFuse</td><td>256-bit symmetric (BLK2)</td><td>SHA-256 digest of public key (1-3 slots)</td></tr>
+    <tr><td class="meth">Key revocation</td><td>impossible (single key, burned forever)</td><td>up to 3 slots, individually revocable</td></tr>
+    <tr><td class="meth">Image trailer</td><td>32-byte digest</td><td>signature block (1216 bytes per signature)</td></tr>
+    <tr><td class="meth">Recommendation</td><td>do not use on new designs</td><td>required for production</td></tr>
+  </table>
+</section>
+
+<!-- idf -->
+<section id="idf">
+  <h2>ESP-IDF: <em class="or">idf.py</em></h2>
+  <div class="section-bar"></div>
+  <p>Before <code>idf.py</code>, an ESP-IDF build was a CMake invocation, a Python script to merge images, and a separate esptool call. The wrapper folds all of it into one CLI. Under the hood it still calls esptool; you can see the exact command with <code>-v</code>.</p>
+
+  <h3>Lifecycle commands</h3>
+
+  <table>
+    <tr>
+      <th>Command</th>
+      <th>What it does</th>
+    </tr>
+    <tr><td class="meth">idf.py set-target esp32s3</td><td>Configure project for chip variant. Wipes <code>build/</code>, regenerates sdkconfig.</td></tr>
+    <tr><td class="meth">idf.py menuconfig</td><td>ncurses configurator over Kconfig. Edits <code>sdkconfig</code>.</td></tr>
+    <tr><td class="meth">idf.py reconfigure</td><td>Re-run cmake without rebuilding everything. Used after <code>git pull</code> on IDF itself.</td></tr>
+    <tr><td class="meth">idf.py build</td><td>Compile, link, generate <code>.bin</code>, image_info. Cached via ninja.</td></tr>
+    <tr><td class="meth">idf.py app</td><td>Build only the app, not bootloader and partition table.</td></tr>
+    <tr><td class="meth">idf.py clean</td><td>Remove built artifacts but keep config.</td></tr>
+    <tr><td class="meth">idf.py fullclean</td><td>Nuke <code>build/</code> entirely. Required after some IDF version bumps.</td></tr>
+    <tr><td class="meth">idf.py -p PORT flash</td><td>Run esptool to write all three images (bootloader, partitions, app).</td></tr>
+    <tr><td class="meth">idf.py -p PORT app-flash</td><td>Flash only the app partition. Faster iteration when bootloader unchanged.</td></tr>
+    <tr><td class="meth">idf.py -p PORT erase-flash</td><td>Wrapper for <code>esptool.py erase_flash</code>.</td></tr>
+    <tr><td class="meth">idf.py -p PORT monitor</td><td>Open the IDF monitor (smart serial terminal with crash decoding).</td></tr>
+    <tr><td class="meth">idf.py -p PORT flash monitor</td><td>The combo. Flash, then immediately attach monitor.</td></tr>
+    <tr><td class="meth">idf.py size</td><td>Print size of static + heap regions used by the linked image.</td></tr>
+    <tr><td class="meth">idf.py size-components</td><td>Per-component size breakdown.</td></tr>
+    <tr><td class="meth">idf.py size-files</td><td>Per-object-file size breakdown. Most useful for hunting bloat.</td></tr>
+    <tr><td class="meth">idf.py partition-table</td><td>Print the active partition table CSV.</td></tr>
+    <tr><td class="meth">idf.py partition-table-flash</td><td>Flash only the partition table.</td></tr>
+    <tr><td class="meth">idf.py coredump-info</td><td>Decode a core dump produced by IDF's panic handler.</td></tr>
+    <tr><td class="meth">idf.py gdb / openocd</td><td>Launch xtensa-esp32-elf-gdb attached to OpenOCD with the right scripts.</td></tr>
+  </table>
+
+  <h3>idf.py monitor: more than a terminal</h3>
+  <p>The monitor is not just <code>screen</code>. It pipes the serial stream through addr2line so that addresses in panic backtraces become file:line references, decodes coredumps if you point it at the elf, recognizes <code>esp_log</code> color codes, and lets you trigger flash/build cycles without quitting.</p>
+
+  <pre><span class="label">monitor key bindings</span>
+<span class="kw">Ctrl+T  Ctrl+H</span>  help screen
+<span class="kw">Ctrl+T  Ctrl+R</span>  reset chip (hardware EN pulse via DTR)
+<span class="kw">Ctrl+T  Ctrl+F</span>  build &amp; flash app, then resume monitoring
+<span class="kw">Ctrl+T  Ctrl+A</span>  build &amp; flash app only (no monitor break)
+<span class="kw">Ctrl+T  Ctrl+P</span>  pause chip (suspend output)
+<span class="kw">Ctrl+T  Ctrl+Y</span>  toggle log printing on/off
+<span class="kw">Ctrl+T  Ctrl+L</span>  toggle timestamp prefix on each line
+<span class="kw">Ctrl+T  Ctrl+T</span>  reset chip + enter download mode (button-less)
+<span class="kw">Ctrl+]</span>          quit (this is also Ctrl+5 on some keyboards)</pre>
+
+  <p>The Ctrl+T sequence exists because Ctrl+] is the GNU screen escape and they didn't want collisions. The trade-off is that anyone unfamiliar with the binding spends a minute discovering they can't quit without a kill -9. <code>Ctrl+]</code> is the safety hatch.</p>
+
+  <h3>The build directory</h3>
+
+  <pre><span class="label">build/ after idf.py build</span>
+build/
+├── bootloader/
+│   └── bootloader.bin               <span class="cm"># 0x1000 (classic) or 0x0 (newer)</span>
+├── partition_table/
+│   └── partition-table.bin          <span class="cm"># 0x8000</span>
+├── ota_data_initial.bin             <span class="cm"># 0xd000 if OTA</span>
+├── <span class="key">my_app.bin</span>                       <span class="cm"># the actual application image (0x10000)</span>
+├── <span class="key">my_app.elf</span>                       <span class="cm"># elf with debug symbols, for addr2line/gdb</span>
+├── <span class="key">my_app.map</span>                       <span class="cm"># linker map; use to chase symbol bloat</span>
+├── flasher_args.json                <span class="cm"># everything esptool needs in one file</span>
+├── flash_args                       <span class="cm"># shell-style equivalent</span>
+└── compile_commands.json            <span class="cm"># for clangd, vscode, etc</span></pre>
+
+  <p><code>flasher_args.json</code> is the single source of truth for what idf.py flash will run. If you want to recreate the flash command outside of idf.py (CI, factory programmer, third-party tool), that file has every offset, mode, freq, and binary path. Read it with <code>jq</code> for scripting.</p>
+</section>
+
+<!-- serial -->
+<section id="serial">
+  <h2>Serial Monitors &amp; <em class="cy">Discovery</em></h2>
+  <div class="section-bar cy"></div>
+  <p>Half of ESP32 troubleshooting is figuring out which <code>/dev/ttyXXX</code> the board mounted as, what driver it's using, and whether the host's getty has stolen it. These are the commands.</p>
+
+  <h3 class="cy">Identifying the device</h3>
+
+  <pre class="cy"><span class="label">Linux: USB-serial discovery</span>
+<span class="cm"># freshly plug in the board, then</span>
+<span class="kw">dmesg</span> <span class="flag">|</span> <span class="kw">tail</span> <span class="flag">-30</span>
+<span class="cm"># [12345.678] usb 1-1.4: new full-speed USB device number 7 using ehci-pci</span>
+<span class="cm"># [12345.789] usb 1-1.4: New USB device found, idVendor=10c4, idProduct=ea60</span>
+<span class="cm"># [12345.789] usb 1-1.4: Product: CP2102 USB to UART Bridge Controller</span>
+<span class="cm"># [12345.890] cp210x 1-1.4:1.0: cp210x converter detected</span>
+<span class="cm"># [12345.901] usb 1-1.4: cp210x converter now attached to ttyUSB0</span>
+
+<span class="cm"># list every serial-class device with metadata</span>
+<span class="kw">python</span> <span class="flag">-m</span> serial.tools.list_ports <span class="flag">-v</span>
+<span class="cm"># /dev/ttyUSB0</span>
+<span class="cm">#     desc: CP2102 USB to UART Bridge Controller</span>
+<span class="cm">#     hwid: USB VID:PID=10C4:EA60 SER=01234567 LOCATION=1-1.4</span>
+
+<span class="cm"># udev's view of the device</span>
+<span class="kw">udevadm</span> <span class="kw">info</span> <span class="flag">-a</span> <span class="flag">-n</span> /dev/ttyUSB0 <span class="flag">|</span> <span class="kw">grep</span> <span class="flag">-E</span> <span class="st">'idVendor|idProduct|serial'</span>
+
+<span class="cm"># live USB topology</span>
+<span class="kw">lsusb</span> <span class="flag">-tv</span></pre>
+
+  <h3 class="cy">USB-serial chips found on ESP32 boards</h3>
+
+  <table>
+    <tr>
+      <th>Chip</th>
+      <th>VID:PID</th>
+      <th>Driver</th>
+      <th>Notes</th>
+    </tr>
+    <tr><td class="meth">CP2102 / CP2104</td><td>10c4:ea60</td><td>cp210x</td><td>Silicon Labs. Common on official Espressif kits. Reliable.</td></tr>
+    <tr><td class="meth">CH340 / CH341</td><td>1a86:7523</td><td>ch341</td><td>WCH. On cheap NodeMCU clones. Older macOS needs a kernel extension.</td></tr>
+    <tr><td class="meth">CH9102</td><td>1a86:55d4</td><td>ch343 / ch9102</td><td>Newer WCH. Higher baud rates than CH340.</td></tr>
+    <tr><td class="meth">FT232R / FT231X</td><td>0403:6001 / 6015</td><td>ftdi_sio</td><td>FTDI. Best at high baud, costs more, what serious boards use.</td></tr>
+    <tr><td class="meth">FT2232H / FT4232H</td><td>0403:6010 / 6011</td><td>ftdi_sio</td><td>Multi-channel FTDI. Used on JTAG-equipped dev kits where one channel is UART, another is JTAG.</td></tr>
+    <tr><td class="meth">native USB-CDC</td><td>303a:1001 etc</td><td>cdc_acm</td><td>S2/S3/C3/C6/H2 native USB. Mounts as <code>/dev/ttyACM0</code>. No driver needed on Linux.</td></tr>
+    <tr><td class="meth">native USB-Serial-JTAG</td><td>303a:1001</td><td>cdc_acm + libusb</td><td>S3/C3/C6 with built-in JTAG bridge. Two endpoints: one CDC for serial, one for OpenOCD.</td></tr>
+  </table>
+
+  <h3 class="cy">udev rules for stable names + permissions</h3>
+
+  <pre class="cy"><span class="label">/etc/udev/rules.d/99-esp32.rules</span>
+<span class="cm"># grant access to dialout group, create stable symlink</span>
+<span class="key">SUBSYSTEM</span>==<span class="st">"tty"</span>, <span class="key">ATTRS{idVendor}</span>==<span class="st">"10c4"</span>, <span class="key">ATTRS{idProduct}</span>==<span class="st">"ea60"</span>, \
+  <span class="key">MODE</span>=<span class="st">"0666"</span>, <span class="key">GROUP</span>=<span class="st">"dialout"</span>, <span class="key">SYMLINK</span>+=<span class="st">"esp32-cp210x"</span>
+
+<span class="key">SUBSYSTEM</span>==<span class="st">"tty"</span>, <span class="key">ATTRS{idVendor}</span>==<span class="st">"1a86"</span>, <span class="key">ATTRS{idProduct}</span>==<span class="st">"7523"</span>, \
+  <span class="key">MODE</span>=<span class="st">"0666"</span>, <span class="key">GROUP</span>=<span class="st">"dialout"</span>, <span class="key">SYMLINK</span>+=<span class="st">"esp32-ch340"</span>
+
+<span class="key">SUBSYSTEM</span>==<span class="st">"tty"</span>, <span class="key">ATTRS{idVendor}</span>==<span class="st">"303a"</span>, <span class="key">ATTRS{idProduct}</span>==<span class="st">"1001"</span>, \
+  <span class="key">MODE</span>=<span class="st">"0666"</span>, <span class="key">GROUP</span>=<span class="st">"dialout"</span>, <span class="key">SYMLINK</span>+=<span class="st">"esp32-native"</span>
+
+<span class="cm"># reload</span>
+<span class="kw">sudo</span> udevadm control <span class="flag">--reload-rules</span>
+<span class="kw">sudo</span> udevadm trigger</pre>
+
+  <p>Then your scripts and IDE configs can use the stable <code>/dev/esp32-cp210x</code> path instead of guessing whether it'll be <code>ttyUSB0</code> or <code>ttyUSB2</code> today. The <code>SERIAL</code> attribute lets you distinguish two boards of the same type if you populate it with the chip's serial number.</p>
+
+  <h3 class="cy">Terminal programs comparison</h3>
+
+  <table>
+    <tr>
+      <th>Tool</th>
+      <th>Quit binding</th>
+      <th>Notes</th>
+    </tr>
+    <tr><td class="meth">screen</td><td>Ctrl+A then K</td><td>Already installed everywhere. <code>screen /dev/ttyUSB0 115200</code>. No flow control.</td></tr>
+    <tr><td class="meth">picocom</td><td>Ctrl+A Ctrl+X</td><td>Lightweight. <code>picocom -b 115200 /dev/ttyUSB0</code>. Good for scripts.</td></tr>
+    <tr><td class="meth">minicom</td><td>Ctrl+A X</td><td>Has a config file (<code>~/.minirc.dfl</code>). Old-school.</td></tr>
+    <tr><td class="meth">tio</td><td>Ctrl+T Q</td><td>Modern (Rust). <code>tio /dev/ttyUSB0 -b 115200</code>. Hexdump mode, scripts, line tracing.</td></tr>
+    <tr><td class="meth">pyserial-miniterm</td><td>Ctrl+]</td><td><code>python -m serial.tools.miniterm /dev/ttyUSB0 115200</code>. Always available with esptool.</td></tr>
+    <tr><td class="meth">idf.py monitor</td><td>Ctrl+]</td><td>Decodes panic addresses, color logs, can trigger flash without quitting.</td></tr>
+    <tr><td class="meth">cu</td><td>~. (tilde dot)</td><td>BSD heritage, on macOS by default. <code>cu -l /dev/cu.usbserial -s 115200</code>.</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>The "Resource busy" mystery</strong>
+    Linux distributions sometimes spawn a getty or ModemManager probe on USB-serial devices. The probe holds the port open for 30+ seconds at boot and esptool fails with <code>could not open port</code>. Fix: <code>sudo systemctl stop ModemManager; sudo systemctl disable ModemManager</code> if you don't have a real modem. Or add the device's idVendor/idProduct to <code>/etc/usb_modeswitch.d</code> as ignored. macOS has the same issue with <code>usbmuxd</code> grabbing serial pretending to be an iPhone.
+  </div>
+</section>
+
+<!-- jtag -->
+<section id="jtag">
+  <h2><em class="yl">JTAG</em>, OpenOCD, GDB</h2>
+  <div class="section-bar yl"></div>
+  <p>For anything beyond <code>printf</code> debugging — single-stepping, watching memory, breaking on hardware events — you need JTAG. Espressif provides a customized OpenOCD fork that knows about Xtensa LX6/LX7 (ESP32, S2, S3) and standard RISC-V (C3, C6, H2, P4) cores.</p>
+
+  <h3 class="yl">JTAG pin assignments</h3>
+
+  <table>
+    <tr>
+      <th>Chip</th>
+      <th>TCK</th>
+      <th>TMS</th>
+      <th>TDI</th>
+      <th>TDO</th>
+      <th>Built-in?</th>
+    </tr>
+    <tr><td class="meth">ESP32</td><td>GPIO13</td><td>GPIO14</td><td>GPIO12</td><td>GPIO15</td><td>no, external probe</td></tr>
+    <tr><td class="meth">ESP32-S2</td><td>GPIO39</td><td>GPIO42</td><td>GPIO41</td><td>GPIO40</td><td>no, external probe</td></tr>
+    <tr><td class="meth">ESP32-S3</td><td>GPIO39</td><td>GPIO42</td><td>GPIO41</td><td>GPIO40</td><td>yes, native USB-Serial-JTAG</td></tr>
+    <tr><td class="meth">ESP32-C3</td><td>GPIO6</td><td>GPIO5</td><td>GPIO4</td><td>GPIO7</td><td>yes, native USB-Serial-JTAG</td></tr>
+    <tr><td class="meth">ESP32-C6</td><td>GPIO6</td><td>GPIO5</td><td>GPIO4</td><td>GPIO7</td><td>yes, native USB-Serial-JTAG</td></tr>
+    <tr><td class="meth">ESP32-H2</td><td>GPIO27</td><td>GPIO26</td><td>GPIO25</td><td>GPIO28</td><td>yes</td></tr>
+  </table>
+
+  <p>Classic ESP32 needs an external probe (FT2232H, J-Link, Olimex ARM-USB-OCD, ESP-Prog). The newer chips with built-in USB-Serial-JTAG let you skip the probe entirely: plug the board's USB-OTG port into your host and OpenOCD talks JTAG over the same USB connection that's giving you the serial console.</p>
+
+  <h3 class="yl">Launching OpenOCD</h3>
+
+  <pre class="yl"><span class="label">openocd against various targets</span>
+<span class="cm"># classic ESP32 over FT2232H (ESP-Prog or generic)</span>
+<span class="kw">openocd</span> <span class="flag">-f</span> board/esp32-wrover-kit-3.3v.cfg
+
+<span class="cm"># ESP32-S3 over its built-in USB-JTAG</span>
+<span class="kw">openocd</span> <span class="flag">-f</span> board/esp32s3-builtin.cfg
+
+<span class="cm"># ESP32-C3 over its built-in USB-JTAG</span>
+<span class="kw">openocd</span> <span class="flag">-f</span> board/esp32c3-builtin.cfg
+
+<span class="cm"># custom: explicit interface + target chain</span>
+<span class="kw">openocd</span> \
+  <span class="flag">-f</span> interface/ftdi/esp32_devkitj_v1.cfg \
+  <span class="flag">-f</span> target/esp32.cfg \
+  <span class="flag">-c</span> <span class="st">"adapter speed 20000"</span>
+
+<span class="cm"># typical output</span>
+<span class="cm"># Open On-Chip Debugger v0.12.0-esp32-20231004</span>
+<span class="cm"># Info : ftdi: clock auto-adapt set to 10000 kHz</span>
+<span class="cm"># Info : esp32.cpu0: hardware has 2 break/watch points</span>
+<span class="cm"># Info : Listening on port 3333 for gdb connections</span>
+<span class="cm"># Info : Listening on port 4444 for telnet connections</span></pre>
+
+  <p>OpenOCD listens on three ports by default: 3333 for GDB remote-serial-protocol, 4444 for an interactive telnet command shell, and 6666 for tcl. The telnet shell is where you do one-off operations like <code>halt</code>, <code>reset</code>, <code>flash erase_address 0x10000 0x100000</code>, or <code>mdw 0x3FF42000 16</code> to peek at memory.</p>
+
+  <h3 class="yl">GDB session</h3>
+
+  <pre class="yl"><span class="label">debug an existing build</span>
+<span class="cm"># in one terminal: openocd</span>
+<span class="kw">openocd</span> <span class="flag">-f</span> board/esp32s3-builtin.cfg
+
+<span class="cm"># in another: gdb attached</span>
+<span class="kw">xtensa-esp32s3-elf-gdb</span> build/firmware.elf
+(gdb) <span class="kw">target remote</span> :3333
+(gdb) <span class="kw">monitor reset halt</span>           <span class="cm"># OpenOCD telnet command from inside gdb</span>
+(gdb) <span class="kw">flushregs</span>                    <span class="cm"># refresh after monitor reset</span>
+(gdb) <span class="kw">hb</span> app_main                  <span class="cm"># hardware breakpoint (limited count)</span>
+(gdb) <span class="kw">c</span>                            <span class="cm"># continue</span>
+(gdb) <span class="kw">bt</span>                           <span class="cm"># once we hit, full backtrace</span>
+(gdb) <span class="kw">info threads</span>                 <span class="cm"># FreeRTOS task list with names</span>
+(gdb) <span class="kw">thread 4</span>                     <span class="cm"># switch to a different task</span>
+(gdb) <span class="kw">x/64xw</span> 0x3FFB0000           <span class="cm"># hex dump 64 words from DRAM</span>
+(gdb) <span class="kw">disassemble</span>                  <span class="cm"># show current function asm</span></pre>
+
+  <div class="info-box warn">
+    <strong>Hardware breakpoints are scarce</strong>
+    Xtensa LX6 has 2 hardware breakpoints + 2 watchpoints, total. RISC-V variants typically have 4. Software breakpoints (regular <code>b</code>) work in IRAM/DRAM (where ROM/IDF can patch instructions) but not in IROM (flash-mapped code, read-only). Use <code>hb</code> (hardware breakpoint) when setting breakpoints on flash-resident code or you'll get the cryptic "cannot insert breakpoint" error.
+  </div>
+
+  <h3 class="yl">idf.py gdb / openocd shortcuts</h3>
+
+  <pre class="yl"><span class="label">idf.py wrappers</span>
+<span class="cm"># start openocd in a child process</span>
+<span class="kw">idf.py</span> <span class="kw">openocd</span>
+
+<span class="cm"># start openocd + gdb together, attached to the right elf</span>
+<span class="kw">idf.py</span> <span class="kw">gdb</span>
+
+<span class="cm"># or use the gdbgui frontend</span>
+<span class="kw">idf.py</span> <span class="kw">gdbgui</span>
+
+<span class="cm"># start gdb in batch mode running a script</span>
+<span class="kw">idf.py</span> <span class="kw">gdb</span> <span class="flag">--batch</span> <span class="flag">--commands</span> debug_script.gdb</pre>
+</section>
+
+<!-- brick -->
+<section id="brick">
+  <h2>Brick <em class="rd">Recovery</em></h2>
+  <div class="section-bar rd"></div>
+  <p>The flowchart for "my ESP32 doesn't work anymore." Most apparent bricks are not actual silicon failures, they're recoverable software states.</p>
+
+  <h3 class="rd">Diagnosis tree</h3>
+
+  <pre class="diagram rd"><span class="hi">START: chip doesn't boot or behaves strangely</span>
+
+  <span class="dim">│</span>
+  <span class="dim">▼</span>
+  <span class="acc">does esptool.py chip_id work?</span>
+  <span class="dim">├── no  ────▶ go to "no comms" branch</span>
+  <span class="dim">└── yes ───▶ go to "comms ok" branch</span>
+
+
+<span class="hi">no comms branch</span>
+  <span class="dim">│</span>
+  <span class="dim">├──▶</span> manual download mode? (hold BOOT, pulse EN)
+  <span class="dim">│      ├── now works ──▶ auto-reset circuit broken: solder, swap board, or use --before no_reset</span>
+  <span class="dim">│      └── still fails ──▶ continue</span>
+  <span class="dim">│</span>
+  <span class="dim">├──▶</span> different USB cable + port? swap.
+  <span class="dim">│</span>
+  <span class="dim">├──▶</span> dmesg shows USB enumeration?
+  <span class="dim">│      ├── no ──▶ dead USB-serial chip or board power, check 3.3V rail</span>
+  <span class="dim">│      └── yes ──▶ continue</span>
+  <span class="dim">│</span>
+  <span class="dim">├──▶</span> ROM is reachable but won't enter download:
+  <span class="dim">│      check eFuse UART_DOWNLOAD_DIS via espefuse summary IF YOU CAN STILL READ EFUSES</span>
+  <span class="dim">│      if burnt: chip is permanently locked. recover via JTAG only if not also disabled.</span>
+  <span class="dim">│</span>
+  <span class="dim">└──▶</span> last resort: lift flash chip, reflash externally, resolder
+
+<span class="hi">comms ok branch</span>
+  <span class="dim">│</span>
+  <span class="dim">├──▶</span> erase + reflash from clean source
+  <span class="dim">│      esptool.py erase_flash</span>
+  <span class="dim">│      esptool.py write_flash 0x0 merged.bin</span>
+  <span class="dim">│      power cycle and observe</span>
+  <span class="dim">│</span>
+  <span class="dim">├──▶</span> still bad: check flash params (mode/freq/size) match the board
+  <span class="dim">│      esptool.py flash_id   ──▶ get manufacturer/device/size</span>
+  <span class="dim">│      cross-reference datasheet for max freq + valid modes</span>
+  <span class="dim">│</span>
+  <span class="dim">├──▶</span> still bad: check eFuse summary for unexpected writes
+  <span class="dim">│      espefuse.py summary | grep -i "True"</span>
+  <span class="dim">│      anything that says SECURE_BOOT, FLASH_CRYPT, DISABLE_*</span>
+  <span class="dim">│      that you didn't set means somebody else burned a fuse</span>
+  <span class="dim">│</span>
+  <span class="dim">└──▶</span> still bad with all known-good binaries: silicon defect or RF damage</pre>
+
+  <h3 class="rd">The "weird boot loop" diagnosis</h3>
+
+  <pre class="rd"><span class="label">capture the ROM bootloader output</span>
+<span class="cm"># put board in normal boot mode (don't hold BOOT)</span>
+<span class="cm"># open serial at 115200 (most chips) or 74880 (classic ESP32 ROM is 74880!)</span>
+<span class="kw">picocom</span> <span class="flag">-b</span> 74880 /dev/ttyUSB0
+<span class="cm"># press EN/RST</span>
+
+<span class="cm"># on classic ESP32 you'll see the cryptic ROM line first:</span>
+<span class="cm"># rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)</span>
+<span class="cm"># configsip: 0, SPIWP:0xee</span>
+<span class="cm"># clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00</span>
+<span class="cm"># mode:DIO, clock div:2</span>
+<span class="cm"># load:0x3fff0030,len:1184</span>
+<span class="cm"># ho 0 tail 12 room 4</span>
+<span class="cm"># load:0x40078000,len:13260</span>
+<span class="cm"># load:0x40080400,len:3028</span>
+<span class="cm"># entry 0x400805e4</span>
+<span class="cm"># [then second-stage bootloader takes over at 115200]</span></pre>
+
+  <p>The ROM speaks at 74880 baud (an artifact of the 26MHz crystal divisor). If the second-stage bootloader never starts, you'll only see ROM output. <code>rst:0x10</code> means RTC_WDT_RTC_RESET — a watchdog timeout caused the reset. <code>boot:0x13</code> is SPI fast flash boot, the normal mode. Other <code>boot</code> codes indicate strap pin states. The header lines are dense but they tell you exactly what mode the chip thinks it's in.</p>
+
+  <h3 class="rd">Reset reason codes</h3>
+
+  <table>
+    <tr>
+      <th>Code</th>
+      <th>Name</th>
+      <th>Meaning</th>
+    </tr>
+    <tr><td class="meth">0x01</td><td>POWERON_RESET</td><td>Cold boot, just powered on.</td></tr>
+    <tr><td class="meth">0x03</td><td>SW_RESET</td><td>Software called esp_restart() or reset_reason set to 0x03.</td></tr>
+    <tr><td class="meth">0x04</td><td>OWDT_RESET</td><td>Legacy watchdog (deprecated path).</td></tr>
+    <tr><td class="meth">0x05</td><td>DEEPSLEEP_RESET</td><td>Came out of deep sleep normally.</td></tr>
+    <tr><td class="meth">0x06</td><td>SDIO_RESET</td><td>Reset from SDIO slave host.</td></tr>
+    <tr><td class="meth">0x07</td><td>TG0WDT_SYS_RESET</td><td>Timer group 0 watchdog.</td></tr>
+    <tr><td class="meth">0x08</td><td>TG1WDT_SYS_RESET</td><td>Timer group 1 watchdog.</td></tr>
+    <tr><td class="meth">0x09</td><td>RTCWDT_SYS_RESET</td><td>RTC watchdog. Firmware hung early in boot.</td></tr>
+    <tr><td class="meth">0x0B</td><td>INTRUSION_RESET</td><td>Tamper-detect (rare).</td></tr>
+    <tr><td class="meth">0x0C</td><td>TGWDT_CPU_RESET</td><td>Timer-group watchdog targeting CPU.</td></tr>
+    <tr><td class="meth">0x0F</td><td>RTCWDT_BROWN_OUT_RESET</td><td>Brownout: VDD dropped below threshold. Power supply problem.</td></tr>
+    <tr><td class="meth">0x10</td><td>RTCWDT_RTC_RESET</td><td>RTC watchdog full reset.</td></tr>
+  </table>
+
+  <h3 class="rd">External flash reflashing (last resort)</h3>
+  <p>If the ESP32 itself is dead or its UART path is locked, but the SPI flash chip is socketed (some boards) or accessible with hot air, you can read/write it directly with any SPI flash programmer.</p>
+
+  <pre class="rd"><span class="label">flashrom on a soic-8 clip</span>
+<span class="cm"># identify chip first</span>
+<span class="kw">flashrom</span> <span class="flag">--programmer</span> ch341a_spi
+
+<span class="cm"># dump existing</span>
+<span class="kw">flashrom</span> <span class="flag">--programmer</span> ch341a_spi <span class="flag">-r</span> dump.bin
+
+<span class="cm"># write new image (must be padded to flash size)</span>
+<span class="kw">flashrom</span> <span class="flag">--programmer</span> ch341a_spi <span class="flag">-w</span> merged_full.bin
+
+<span class="cm"># or use a Bus Pirate as the SPI programmer</span>
+<span class="kw">flashrom</span> <span class="flag">--programmer</span> buspirate_spi:dev=/dev/ttyUSB0,spispeed=1M <span class="flag">-r</span> dump.bin</pre>
+
+  <div class="info-box danger">
+    <strong>Power the flash chip from the programmer, not the board</strong>
+    A clip programmer drives 3.3V down the SOIC clip's VCC pin. If the ESP32 is also powered (via USB or otherwise), the two power sources fight and you get garbage reads or damage. Disconnect the board from USB. Some ESP32 modules tie ESP_EN to a pull-up that itself draws current — lift the EN pin or hold it to ground while reading flash externally.
+  </div>
+</section>
+
+<!-- further -->
+<section id="further">
+  <h2><em class="or">Further</em> Rabbit Holes</h2>
+  <div class="section-bar"></div>
+  <p>Things to read and experiment with to keep deepening. Each one leads to better questions.</p>
+
+  <table>
+    <tr>
+      <th>Topic</th>
+      <th>Why it matters</th>
+      <th>Where to start</th>
+    </tr>
+    <tr>
+      <td class="meth">esptool source</td>
+      <td>Understand the SLIP encoder, stub upload, command implementations. The Python is readable.</td>
+      <td><code>esptool/loader.py</code> and <code>esptool/cmds.py</code> in github.com/espressif/esptool</td>
+    </tr>
+    <tr>
+      <td class="meth">flasher_stub source</td>
+      <td>The stub itself is C with a tiny linker script. Worth a read if you want to add commands.</td>
+      <td><code>flasher_stub/</code> directory, same repo</td>
+    </tr>
+    <tr>
+      <td class="meth">ROM bootloader docs</td>
+      <td>The undocumented but widely reverse-engineered ESP32 ROM. Espressif published most of the entry points eventually.</td>
+      <td>esp-idf-bootloader-plus, esp32-rom-tools, the ESP32 TRM Appendix B</td>
+    </tr>
+    <tr>
+      <td class="meth">Xtensa LX6/LX7 ISA</td>
+      <td>Read disassembly without panicking. Branch hints, windowed registers, weird call/ret semantics.</td>
+      <td>Xtensa Instruction Set Architecture (ISA) Reference Manual, Cadence</td>
+    </tr>
+    <tr>
+      <td class="meth">RISC-V on C/H/P-series</td>
+      <td>C3/C5/C6/H2: RV32IMC/RV32IMAC single-core. C5 also has an LP RISC-V core. P4: dual-core RISC-V at 400 MHz + LP core. Much simpler than Xtensa. GDB + objdump just work.</td>
+      <td>RISC-V User-Level ISA Specification + chip-specific TRM</td>
+    </tr>
+    <tr>
+      <td class="meth">esp-idf bootloader source</td>
+      <td>The second-stage bootloader. Where partition table parsing, OTA selection, and image verification live.</td>
+      <td><code>components/bootloader_support/</code> in esp-idf</td>
+    </tr>
+    <tr>
+      <td class="meth">app_trace and SystemView</td>
+      <td>Real-time tracing without halting the chip. Uses JTAG bandwidth as a sideband channel.</td>
+      <td>ESP-IDF Application Level Tracing docs + Segger SystemView</td>
+    </tr>
+    <tr>
+      <td class="meth">esp_coredump</td>
+      <td>Panic-time core dumps to flash or UART. Decoded later with <code>idf.py coredump-info</code>.</td>
+      <td><code>components/espcoredump/</code> in esp-idf</td>
+    </tr>
+    <tr>
+      <td class="meth">Flash encryption modes</td>
+      <td>Development vs Release mode. Tweak algorithm. AES-XTS on newer chips. Implications for OTA.</td>
+      <td>ESP-IDF Security guide, Flash Encryption section</td>
+    </tr>
+    <tr>
+      <td class="meth">DFU on S2/S3</td>
+      <td>USB DFU via ROM. Alternative to UART download for chips with native USB.</td>
+      <td><code>dfu-util -d 303a:0002</code>, ESP-IDF DFU docs</td>
+    </tr>
+    <tr>
+      <td class="meth">USB-Serial-JTAG protocol</td>
+      <td>The dual-channel CDC + JTAG bridge that ate the external JTAG probe market.</td>
+      <td>esp-usb-jtag in esp-idf-tools, OpenOCD esp_usb_jtag driver</td>
+    </tr>
+    <tr>
+      <td class="meth">PartitionTool / nvs_partition_gen</td>
+      <td>Generate NVS partitions offline (provisioning), build partition tables programmatically.</td>
+      <td><code>components/nvs_flash/nvs_partition_generator/</code> in esp-idf</td>
+    </tr>
+    <tr>
+      <td class="meth">SPI flash chip variations</td>
+      <td>Why setting flash_size wrong sometimes works (chip detected) and sometimes doesn't (datasheet lies). The 25-series command set.</td>
+      <td>Winbond W25Q datasheet, GigaDevice GD25 datasheet, JEDEC JESD216</td>
+    </tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>The meta-question to hold</strong>
+    Every time the ESP32 flow feels magical, ask: what bytes went over UART, what bytes are in flash, what bits are in eFuse. esptool is a thin tool. There's no hidden layer. Every operation decomposes into SLIP packets, SPI commands, and OTP burns. If you can't trace it to bytes, you don't understand it yet.
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<div class="footer">
+  <span>ESP32 DEEP DIVE // BOOT ROM TO FLASH // BYTES OVER UART</span>
+  <span><a href="https://docs.espressif.com">docs.espressif.com</a></span>
+</div>
+
+<div class="spine">// boot · wire · stub · flash · rw · image · efuse · idf · serial · jtag · brick //</div>
+
+<script>
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 80) current = s.id;
+  });
+  navLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+  });
+});
+</script>
+</body>
+</html>
