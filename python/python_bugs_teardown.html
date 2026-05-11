@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Bugs // Teardown</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+.masthead .companion {
+  margin-top: 14px;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 2px;
+}
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0;
+  white-space: nowrap;
+}
+.nav a {
+  display: block;
+  padding: 12px 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav a:hover { color: var(--orange); border-bottom-color: var(--orange); }
+.nav a.active { color: var(--orange); border-bottom-color: var(--orange); }
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+  counter-reset: section;
+  background: var(--bg);
+}
+section { padding: 52px 0; border-bottom: 1px solid var(--border2); counter-increment: section; }
+section:last-of-type { border-bottom: none; }
+section::before {
+  content: counter(section, decimal-leading-zero) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--yellow); }
+h2 em.gr { color: var(--green); }
+h2 em.mg { color: var(--magenta); }
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+.section-bar.yl { background: var(--yellow); }
+.section-bar.gr { background: var(--green); }
+.section-bar.mg { background: var(--magenta); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+h3.cy { color: var(--cyan); }
+h3.yl { color: var(--yellow); }
+h3.rd { color: var(--red); }
+h3.gr { color: var(--green); }
+h3.mg { color: var(--magenta); }
+h4 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  margin: 20px 0 8px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+code {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--bright);
+}
+pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre.yl { border-left-color: var(--yellow); }
+pre.gr { border-left-color: var(--green); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .flag   { color: #7A7870; }
+pre .bad    { color: #E85870; }
+pre .gd     { color: #5AD08A; }
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #8A8880;
+}
+.diagram.cy { border-left-color: var(--cyan); }
+.diagram.yl { border-left-color: var(--yellow); }
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .acc3 { color: #C8A030; }
+.diagram .dim  { color: #4A4942; }
+.diagram .hi   { color: #CCCBC4; }
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy    { border-left-color: var(--cyan); }
+.info-box.warn  { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box.gr   { border-left-color: var(--green); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; vertical-align: top; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; white-space: nowrap; }
+td.cy { color: var(--cyan); font-weight: 700; white-space: nowrap; }
+td.bad { color: var(--red); }
+td.gd { color: var(--green); }
+td.dim { color: var(--dim); font-style: italic; }
+ul, ol { margin: 10px 0 10px 20px; }
+li { margin: 4px 0; font-size: 12px; }
+.footer {
+  border-top: 5px solid var(--orange);
+  padding: 30px 40px;
+  text-align: center;
+  background: var(--surface);
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.footer span { color: var(--orange); }
+.tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 16px; }
+.tag {
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--dim);
+}
+.tag.or { color: var(--orange); border-color: var(--orange); }
+.tag.cy { color: var(--cyan); border-color: var(--cyan); }
+.tag.rd { color: var(--red); border-color: var(--red); }
+.tag.yl { color: var(--yellow); border-color: var(--yellow); }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <h1>PYTHON <em>BUGS</em></h1>
+  <div class="subtitle">teardown <span>//</span> under the hood</div>
+  <div class="companion">bug taxonomy, detection landscape, real failure modes</div>
+</header>
+
+<nav class="nav"><div class="nav-inner">
+  <a href="#scope">00 // scope</a>
+  <a href="#runtime">01 // runtime</a>
+  <a href="#logic">02 // logic</a>
+  <a href="#types">03 // types</a>
+  <a href="#resource">04 // resource</a>
+  <a href="#concurrency">05 // concurrency</a>
+  <a href="#security">06 // security</a>
+  <a href="#perf">07 // perf</a>
+  <a href="#smells">08 // smells</a>
+  <a href="#detection">09 // detection</a>
+</div></nav>
+
+<main class="container">
+
+<section id="scope">
+  <div class="section-bar"></div>
+  <h2>SCOPE <em class="or">&amp;</em> THESIS</h2>
+  <p>Python's flexibility is its footgun surface. Late binding, duck typing, mutable defaults, the GIL, async colored functions, two string types — every convenience has a failure mode. Most of those failure modes are silent: the program runs, returns a wrong answer, and you find out at 3am from a customer.</p>
+
+  <p>This teardown enumerates the bug families that actually hit production Python codebases. For each, the canonical bad code, the fix, the runtime mechanism, and whether existing tools catch it. The goal is a complete map: <strong>what tools catch, what needs human or LLM review, what hides forever</strong>.</p>
+
+  <div class="info-box">
+    <strong>// who this is for</strong>
+    Engineers running static analyzers and wondering why the output is mostly noise. Skill authors building bug-finding agents. Anyone who has ever debugged a <code>def f(x=[]):</code> and wanted to understand <em>why</em>.
+  </div>
+
+  <h3 class="cy">// the categories</h3>
+  <table>
+    <thead><tr><th>family</th><th>what hits production</th><th>tool coverage</th></tr></thead>
+    <tbody>
+      <tr><td class="meth">runtime</td><td>IndexError, KeyError, AttributeError on None, TypeError on duck-typing</td><td class="dim">partial — types catch some, runtime catches the rest</td></tr>
+      <tr><td class="meth">logic</td><td>mutable defaults, late binding, off-by-one, shadowed names</td><td class="dim">mixed — mutable default is caught, late binding is not</td></tr>
+      <tr><td class="meth">types</td><td>str/bytes, shallow vs deep copy, falsy gotchas</td><td class="dim">type checkers, when configured</td></tr>
+      <tr><td class="meth">resource</td><td>leaked files / sockets / locks / db connections</td><td class="dim">partial — context manager hints exist</td></tr>
+      <tr><td class="meth">concurrency</td><td>races, deadlocks, async/sync mismatches, GIL assumptions</td><td class="dim">poor — most needs semantic review</td></tr>
+      <tr><td class="meth">security</td><td>injection (sql/shell/eval), pickle, hardcoded creds</td><td class="dim">bandit catches the obvious; subtle injection often missed</td></tr>
+      <tr><td class="meth">performance</td><td>O(n²) inner loops, string concat, list-as-set, materialization</td><td class="dim">perflint exists but rarely run</td></tr>
+      <tr><td class="meth">smells</td><td>god classes, deep nesting, magic numbers, eval/exec abuse</td><td class="dim">complexity tools catch metrics, not semantics</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-box warn">
+    <strong>// the rule of three</strong>
+    Most "tools find your bugs" claims rely on the user enabling every ruleset, every plugin, every type-checker stricture. In practice projects run defaults. The bugs that actually slip through are ones that need <em>opt-in</em> tooling or <em>cross-function semantic reasoning</em>. The latter is where LLMs add value over linters.
+  </div>
+</section>
+
+<section id="runtime">
+  <div class="section-bar"></div>
+  <h2>RUNTIME <em class="or">EXCEPTIONS</em></h2>
+  <p>The bugs that crash visibly. Less dangerous than logic bugs (you find them fast) but still ubiquitous because Python's late binding hides them from static analysis.</p>
+
+  <h3>// the none dereference</h3>
+  <p>Almost every Python attribute or subscript bug eventually traces to a <code>None</code> sneaking in where an object was expected. Functions that <em>can</em> return <code>None</code> but usually don't are landmines.</p>
+
+  <pre><span class="label">bad</span><span class="cm"># dict.get returns None when missing; no second arg = no default</span>
+<span class="kw">def</span> <span class="fn">user_age</span>(users, name):
+    <span class="kw">return</span> users.get(name).age  <span class="cm"># AttributeError if name absent</span></pre>
+
+  <pre class="gr"><span class="label">good</span><span class="kw">def</span> <span class="fn">user_age</span>(users, name):
+    user = users.get(name)
+    <span class="kw">if</span> user <span class="kw">is None</span>:
+        <span class="kw">return None</span>
+    <span class="kw">return</span> user.age</pre>
+
+  <div class="info-box warn">
+    <strong>// detection</strong>
+    <code>pyright --strict</code> catches this via <code>reportOptionalMemberAccess</code>. <code>mypy --strict</code> with <code>--no-implicit-optional</code> catches it. <code>ruff</code> default does not. The bug shows up because <code>dict.get()</code> returns <code>Optional[T]</code> in its type stub and the access ignores the <code>Optional</code>.
+  </div>
+
+  <h3 class="cy">// bare except</h3>
+  <p>Catches everything including <code>SystemExit</code>, <code>KeyboardInterrupt</code>, and the bug you needed to see. The most cited code smell that's also a real correctness bug.</p>
+
+  <pre><span class="label">bad</span><span class="kw">try</span>:
+    do_work()
+<span class="kw">except</span>:  <span class="cm"># swallows ctrl-c, swallows MemoryError, swallows the real bug</span>
+    log(<span class="st">"oops"</span>)</pre>
+
+  <pre class="gr"><span class="label">good</span><span class="kw">try</span>:
+    do_work()
+<span class="kw">except</span> (ValueError, KeyError) <span class="kw">as</span> e:
+    log(<span class="st">"recoverable: %s"</span>, e)</pre>
+
+  <div class="info-box">
+    <strong>// detection</strong>
+    <code>ruff E722</code> in default rules. Easy catch. Bigger issue is <code>except Exception:</code> — also wrong in many contexts, but not in the default ruleset.
+  </div>
+
+  <h3 class="yl">// the index-and-pop race</h3>
+  <p>Pattern that looks defensive but isn't:</p>
+  <pre><span class="label">bad</span><span class="kw">if</span> queue:
+    item = queue.pop(<span class="num">0</span>)  <span class="cm"># IndexError if another thread popped first</span></pre>
+
+  <p>The <code>if queue</code> check is not atomic with the <code>pop</code>. Under threads this races. Under asyncio across <code>await</code> points it races too if you yielded between them.</p>
+
+  <pre class="cy"><span class="label">good</span><span class="kw">try</span>:
+    item = queue.pop(<span class="num">0</span>)
+<span class="kw">except</span> IndexError:
+    item = <span class="kw">None</span></pre>
+
+  <h3 class="rd">// off-by-one in slicing</h3>
+  <p>Python's half-open intervals are intuitive once internalized but trip up people thinking in inclusive C-style ranges.</p>
+  <pre><span class="label">bad</span><span class="cm"># take the last N items; off-by-one if you forget slice semantics</span>
+last_n = items[len(items) - n - <span class="num">1</span>:]  <span class="cm"># takes n+1 items</span></pre>
+  <pre class="gr"><span class="label">good</span>last_n = items[-n:]  <span class="cm"># pythonic and correct for n &gt; 0</span></pre>
+</section>
+
+<section id="logic">
+  <div class="section-bar cy"></div>
+  <h2>LOGIC <em class="cy">&amp;</em> STATE</h2>
+  <p>The most uniquely Pythonic bugs live here. Mutable defaults and late binding closures are interview questions because they keep biting production code. The fact that they're known doesn't stop them.</p>
+
+  <h3>// THE classic: mutable default arguments</h3>
+  <p>Default argument values are evaluated <em>once</em>, when the <code>def</code> statement executes, not every call. A mutable default is shared across every invocation.</p>
+
+  <pre><span class="label">bad</span><span class="kw">def</span> <span class="fn">add_item</span>(item, items=[]):
+    items.append(item)
+    <span class="kw">return</span> items
+
+<span class="fn">add_item</span>(<span class="num">1</span>)  <span class="cm"># [1]</span>
+<span class="fn">add_item</span>(<span class="num">2</span>)  <span class="cm"># [1, 2]  -- not [2]!</span>
+<span class="fn">add_item</span>(<span class="num">3</span>)  <span class="cm"># [1, 2, 3]</span></pre>
+
+  <pre class="gr"><span class="label">good</span><span class="kw">def</span> <span class="fn">add_item</span>(item, items=<span class="kw">None</span>):
+    <span class="kw">if</span> items <span class="kw">is None</span>:
+        items = []
+    items.append(item)
+    <span class="kw">return</span> items</pre>
+
+  <div class="info-box danger">
+    <strong>// detection</strong>
+    <code>ruff B006</code> in the <code>B</code> ruleset catches this. The rule is opt-in (not in defaults) but extremely high signal. Every project that runs ruff should have <code>B</code> selected. Pylint catches it as <code>W0102 dangerous-default-value</code>.
+  </div>
+
+  <h3 class="cy">// late binding in closures</h3>
+  <p>Closures capture variable <em>names</em>, not values. When the closure runs, it sees the variable's current value, not the value at capture time. This breaks loops that build callables.</p>
+
+  <pre><span class="label">bad</span>handlers = []
+<span class="kw">for</span> i <span class="kw">in</span> range(<span class="num">3</span>):
+    handlers.append(<span class="kw">lambda</span>: i)
+
+[h() <span class="kw">for</span> h <span class="kw">in</span> handlers]  <span class="cm"># [2, 2, 2]  -- all see final i</span></pre>
+
+  <pre class="gr"><span class="label">good</span><span class="cm"># bind i as a default arg, evaluated at lambda definition</span>
+handlers = [<span class="kw">lambda</span> i=i: i <span class="kw">for</span> i <span class="kw">in</span> range(<span class="num">3</span>)]
+[h() <span class="kw">for</span> h <span class="kw">in</span> handlers]  <span class="cm"># [0, 1, 2]</span></pre>
+
+  <div class="info-box warn">
+    <strong>// detection</strong>
+    <code>ruff B023</code> catches function definitions that don't bind loop variables. Default-off. Real bug, often missed.
+  </div>
+
+  <h3 class="yl">// is vs ==</h3>
+  <p><code>is</code> compares identity (same object in memory). <code>==</code> compares value. They coincidentally agree for small ints (-5 to 256 are interned) and short strings — until they don't.</p>
+
+  <pre><span class="label">bad</span><span class="cm"># two distinct objects with equal value</span>
+a = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>]
+b = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>]
+a == b   <span class="cm"># True  -- same value</span>
+a <span class="kw">is</span> b   <span class="cm"># False -- different objects</span>
+
+<span class="cm"># small ints (-5..256) are cached, which masks the difference</span>
+x, y = <span class="num">5</span>, <span class="num">5</span>
+x <span class="kw">is</span> y   <span class="cm"># True  -- implementation detail, not a guarantee</span></pre>
+
+  <div class="info-box">
+    <strong>// detection</strong>
+    <code>ruff E711</code> catches <code>== None</code>, <code>ruff F632</code> catches <code>is</code> with a literal. The general "wrong identity check" needs semantic review.
+  </div>
+
+  <h3 class="rd">// truthy/falsy traps</h3>
+  <p><code>0</code>, <code>0.0</code>, <code>""</code>, <code>[]</code>, <code>{}</code>, <code>set()</code>, <code>None</code>, and <code>False</code> are all falsy. A function returning <code>0</code> as a meaningful value is indistinguishable from one returning <code>None</code> by a truth check.</p>
+
+  <pre><span class="label">bad</span>count = users.get_count()  <span class="cm"># returns int, possibly 0</span>
+<span class="kw">if not</span> count:
+    handle_no_users()  <span class="cm"># fires when count == 0 (correct) AND when count is None (might be wrong)</span></pre>
+
+  <pre class="gr"><span class="label">good</span><span class="kw">if</span> count <span class="kw">is None</span>:
+    handle_missing()
+<span class="kw">elif</span> count == <span class="num">0</span>:
+    handle_empty()</pre>
+
+  <h3>// dict ordering assumptions</h3>
+  <p>Dict insertion order has been guaranteed since Python 3.7. <em>Iteration</em> order matches insertion order. But code written against earlier Python or ported from other languages still sometimes assumes alphabetical, hash, or arbitrary order. The fix is usually to wrap the dict in <code>sorted()</code> or use <code>collections.OrderedDict</code> for clarity of intent.</p>
+
+  <h3 class="cy">// shadowed builtins</h3>
+  <p><code>list</code>, <code>dict</code>, <code>id</code>, <code>type</code>, <code>filter</code>, <code>map</code>, <code>sum</code> — assigning to any of these in module scope shadows the builtin for the rest of the file. Subsequent code that expects the builtin breaks silently.</p>
+
+  <pre><span class="label">bad</span><span class="cm"># at module top level</span>
+list = get_users()
+<span class="cm"># 200 lines later</span>
+ids = list(<span class="kw">map</span>(get_id, items))  <span class="cm"># TypeError: 'list' object is not callable</span></pre>
+
+  <div class="info-box">
+    <strong>// detection</strong>
+    <code>ruff A001/A002/A003</code> from the <code>flake8-builtins</code> plugin. Opt-in. Catches every shadowing case.
+  </div>
+</section>
+
+<section id="types">
+  <div class="section-bar yl"></div>
+  <h2>DATA <em class="yl">&amp;</em> TYPE ISSUES</h2>
+  <p>Python's flexibility around types makes "it works in dev" mean "it might break in prod under different input." The bugs in this family are about <em>silent</em> behavior changes when types differ.</p>
+
+  <h3 class="yl">// str / bytes mixing</h3>
+  <p>The most-fought-over Python 3 transition. <code>str</code> and <code>bytes</code> don't compare equal, don't concatenate, don't substitute into each other. A function that accepts either silently does the wrong thing.</p>
+
+  <pre><span class="label">bad</span><span class="kw">def</span> <span class="fn">starts_with_x</span>(s):
+    <span class="kw">return</span> s[<span class="num">0</span>] == <span class="st">"x"</span>
+
+starts_with_x(<span class="st">"xyz"</span>)       <span class="cm"># True</span>
+starts_with_x(<span class="st">b"xyz"</span>)      <span class="cm"># False -- s[0] is int 120, "x" is str</span></pre>
+
+  <pre class="gr"><span class="label">good</span><span class="kw">def</span> <span class="fn">starts_with_x</span>(s: str | bytes):
+    <span class="kw">if</span> <span class="kw">isinstance</span>(s, bytes):
+        <span class="kw">return</span> s.startswith(<span class="st">b"x"</span>)
+    <span class="kw">return</span> s.startswith(<span class="st">"x"</span>)</pre>
+
+  <h3>// shallow vs deep copy</h3>
+  <p><code>copy.copy()</code> copies the outer container. Nested mutable objects are still shared. <code>list[:]</code> and <code>dict.copy()</code> have the same behavior. <code>copy.deepcopy()</code> recursively copies.</p>
+
+  <pre><span class="label">bad</span><span class="kw">import</span> copy
+defaults = {<span class="st">"perms"</span>: [<span class="st">"read"</span>]}
+user_config = copy.copy(defaults)
+user_config[<span class="st">"perms"</span>].append(<span class="st">"write"</span>)
+
+defaults[<span class="st">"perms"</span>]  <span class="cm"># ["read", "write"]  -- defaults mutated!</span></pre>
+
+  <pre class="gr"><span class="label">good</span>user_config = copy.deepcopy(defaults)
+user_config[<span class="st">"perms"</span>].append(<span class="st">"write"</span>)
+defaults[<span class="st">"perms"</span>]  <span class="cm"># ["read"]</span></pre>
+
+  <h3 class="cy">// reference aliasing</h3>
+  <p>Assignment in Python binds names to objects; it does not copy. Same for function arguments. Mutation through one name shows up through every other name pointing at the same object.</p>
+
+  <pre><span class="label">bad</span><span class="kw">def</span> <span class="fn">scale</span>(values, factor):
+    <span class="kw">for</span> i <span class="kw">in</span> range(<span class="kw">len</span>(values)):
+        values[i] *= factor  <span class="cm"># mutates caller's list</span>
+
+original = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>]
+<span class="fn">scale</span>(original, <span class="num">2</span>)
+original  <span class="cm"># [2, 4, 6]</span></pre>
+
+  <p>Returning a new list instead of mutating is almost always the right answer unless mutation is the documented contract.</p>
+
+  <h3 class="rd">// encoding mismatches</h3>
+  <p>Reading bytes as the wrong encoding doesn't always raise. It silently produces wrong-looking text (mojibake) that propagates through your system. <code>latin-1</code> is the worst offender — it accepts any byte but interprets non-ASCII as garbage.</p>
+
+  <pre><span class="label">bad</span><span class="kw">open</span>(<span class="st">"data.txt"</span>).read()  <span class="cm"># platform-dependent default encoding</span></pre>
+
+  <pre class="gr"><span class="label">good</span><span class="kw">open</span>(<span class="st">"data.txt"</span>, encoding=<span class="st">"utf-8"</span>).read()</pre>
+
+  <div class="info-box warn">
+    <strong>// detection</strong>
+    <code>ruff PLW1514</code> catches missing encoding on <code>open()</code>. Opt-in via the <code>PL</code> plugin set. In Python 3.10+, set <code>PYTHONWARNDEFAULTENCODING=1</code> to surface this at runtime.
+  </div>
+</section>
+
+<section id="resource">
+  <div class="section-bar gr"></div>
+  <h2>RESOURCE <em class="gr">LIFECYCLE</em></h2>
+  <p>Files, sockets, db connections, locks. Each is a finite resource. Leaks compound: small per-request leak times millions of requests equals process restart.</p>
+
+  <h3 class="gr">// the bare open()</h3>
+  <p>Python doesn't close files automatically when their reference goes out of scope. CPython does via reference counting <em>most of the time</em>, but PyPy and other implementations don't, and exceptions can leave references dangling.</p>
+
+  <pre><span class="label">bad</span>data = <span class="kw">open</span>(<span class="st">"big.json"</span>).read()  <span class="cm"># file may stay open until GC</span></pre>
+
+  <pre class="gr"><span class="label">good</span><span class="kw">with</span> <span class="kw">open</span>(<span class="st">"big.json"</span>) <span class="kw">as</span> f:
+    data = f.read()  <span class="cm"># closed on scope exit, even on exception</span></pre>
+
+  <div class="info-box gr">
+    <strong>// detection</strong>
+    <code>ruff SIM115</code> catches <code>open()</code> outside a <code>with</code>. <code>pylint R1732</code> same. <code>ResourceWarning</code> fires at runtime if a file is GC'd while open. Easy class of bug to find statically.
+  </div>
+
+  <h3>// db connections without context managers</h3>
+  <p>Same pattern, higher stakes. A leaked connection can block the entire pool.</p>
+
+  <pre><span class="label">bad</span>conn = pool.acquire()
+result = conn.execute(query)
+<span class="kw">if</span> result.empty():
+    <span class="kw">return None</span>  <span class="cm"># leak! conn never released on this path</span>
+conn.release()</pre>
+
+  <pre class="gr"><span class="label">good</span><span class="kw">with</span> pool.acquire() <span class="kw">as</span> conn:
+    result = conn.execute(query)
+    <span class="kw">if</span> result.empty():
+        <span class="kw">return None</span>  <span class="cm"># released on exit anyway</span></pre>
+
+  <h3 class="yl">// lock release in error paths</h3>
+  <p>Acquiring a <code>threading.Lock</code> manually requires releasing on every code path. One exception with no <code>finally</code> and you have a permanently held lock.</p>
+
+  <pre><span class="label">bad</span>lock.acquire()
+do_work()  <span class="cm"># if this raises, lock is never released</span>
+lock.release()</pre>
+
+  <pre class="gr"><span class="label">good</span><span class="kw">with</span> lock:
+    do_work()</pre>
+
+  <h3 class="cy">// __del__ surprises</h3>
+  <p><code>__del__</code> runs when the object is garbage collected, which is not guaranteed to be when the last reference drops. Reference cycles can leave <code>__del__</code> never called (pre-3.4) or called in undefined order (post-3.4). Don't put critical cleanup there.</p>
+
+  <p>The correct primitive for "do X when this resource is no longer needed" is a context manager, an explicit close method, or <code>weakref.finalize</code>.</p>
+
+  <h3 class="rd">// growing caches</h3>
+  <p>Module-level dicts used as caches grow without bound. They survive every garbage collection. They survive request boundaries. A long-running process slowly leaks until OOM.</p>
+
+  <pre><span class="label">bad</span>_cache = {}
+
+<span class="kw">def</span> <span class="fn">expensive</span>(key):
+    <span class="kw">if</span> key <span class="kw">not in</span> _cache:
+        _cache[key] = compute(key)
+    <span class="kw">return</span> _cache[key]</pre>
+
+  <pre class="gr"><span class="label">good</span><span class="kw">from</span> functools <span class="kw">import</span> lru_cache
+
+<span class="cm"># bounded, evicts least-recently-used</span>
+@lru_cache(maxsize=<span class="num">1024</span>)
+<span class="kw">def</span> <span class="fn">expensive</span>(key):
+    <span class="kw">return</span> compute(key)</pre>
+</section>
+
+<section id="concurrency">
+  <div class="section-bar rd"></div>
+  <h2>CONCURRENCY <em class="rd">&amp;</em> ASYNC</h2>
+  <p>The highest-LLM-value bug family. Tools rarely catch async/sync mismatches or shared-state races. Required reading: Glyph's posts, Brett Cannon on coroutines, and the asyncio-gotchas pattern catalog.</p>
+
+  <h3 class="rd">// blocking calls in async functions</h3>
+  <p>An <code>async def</code> function that calls <code>time.sleep()</code>, <code>requests.get()</code>, or <code>open().read()</code> blocks the event loop. Every other coroutine waiting for the loop is stalled. Latency spikes for unrelated requests.</p>
+
+  <pre><span class="label">bad</span><span class="kw">async def</span> <span class="fn">fetch</span>(url):
+    time.sleep(<span class="num">1</span>)           <span class="cm"># blocks the loop</span>
+    r = requests.get(url)   <span class="cm"># blocks the loop</span>
+    <span class="kw">return</span> r.text</pre>
+
+  <pre class="gr"><span class="label">good</span><span class="kw">async def</span> <span class="fn">fetch</span>(url):
+    <span class="kw">await</span> asyncio.sleep(<span class="num">1</span>)
+    <span class="kw">async with</span> aiohttp.ClientSession() <span class="kw">as</span> sess:
+        <span class="kw">async with</span> sess.get(url) <span class="kw">as</span> r:
+            <span class="kw">return await</span> r.text()</pre>
+
+  <div class="info-box danger">
+    <strong>// detection</strong>
+    <code>ruff --select=ASYNC</code> catches <code>ASYNC251</code> (time.sleep), <code>ASYNC210</code> (blocking HTTP). Default ruff misses both. This rule set should be table-stakes for any async-heavy project.
+  </div>
+
+  <h3 class="rd">// task not awaited</h3>
+  <p><code>asyncio.create_task()</code> returns a task. If you don't keep a reference, the garbage collector can collect the task while it's still running. The task gets cancelled mid-flight.</p>
+
+  <pre><span class="label">bad</span><span class="kw">async def</span> <span class="fn">main</span>():
+    asyncio.create_task(background_work())  <span class="cm"># task may be GC'd</span>
+    <span class="kw">await</span> other_work()</pre>
+
+  <pre class="gr"><span class="label">good</span>_background = <span class="kw">set</span>()
+<span class="kw">async def</span> <span class="fn">main</span>():
+    t = asyncio.create_task(background_work())
+    _background.add(t)
+    t.add_done_callback(_background.discard)
+    <span class="kw">await</span> other_work()</pre>
+
+  <h3 class="rd">// shared mutable state across awaits</h3>
+  <p>The deceiving bug. Pure-Python statements between two <code>await</code> points are atomic relative to other coroutines (the loop can't preempt them). But the moment you <code>await</code>, another coroutine can run, mutate shared state, and return.</p>
+
+  <pre><span class="label">bad</span>balance = <span class="num">100</span>
+
+<span class="kw">async def</span> <span class="fn">transfer</span>(amount):
+    <span class="kw">global</span> balance
+    current = balance              <span class="cm"># read</span>
+    <span class="kw">await</span> log_transfer(amount)     <span class="cm"># yields! another coroutine can run</span>
+    balance = current - amount     <span class="cm"># write based on stale read</span></pre>
+
+  <pre class="gr"><span class="label">good</span>balance_lock = asyncio.Lock()
+
+<span class="kw">async def</span> <span class="fn">transfer</span>(amount):
+    <span class="kw">global</span> balance
+    <span class="kw">async with</span> balance_lock:
+        current = balance
+        <span class="kw">await</span> log_transfer(amount)
+        balance = current - amount</pre>
+
+  <h3 class="yl">// queue.Queue vs asyncio.Queue</h3>
+  <p>Two queues, same name. <code>queue.Queue</code> uses OS threads and blocks. <code>asyncio.Queue</code> uses the event loop and yields. Using the wrong one in async code blocks the loop or deadlocks.</p>
+
+  <pre><span class="label">bad</span><span class="kw">from</span> queue <span class="kw">import</span> Queue       <span class="cm"># thread-safe, blocking</span>
+
+q = Queue()
+<span class="kw">async def</span> <span class="fn">consumer</span>():
+    <span class="kw">while</span> <span class="kw">True</span>:
+        item = q.get()           <span class="cm"># blocks the entire event loop</span>
+        process(item)</pre>
+
+  <pre class="gr"><span class="label">good</span><span class="kw">from</span> asyncio <span class="kw">import</span> Queue     <span class="cm"># yields to the loop</span>
+
+q = Queue()
+<span class="kw">async def</span> <span class="fn">consumer</span>():
+    <span class="kw">while</span> <span class="kw">True</span>:
+        item = <span class="kw">await</span> q.get()
+        process(item)</pre>
+
+  <h3>// GIL assumptions</h3>
+  <p>The Global Interpreter Lock makes single-bytecode operations atomic. Most operations are <em>not</em> single-bytecode. <code>counter += 1</code> is read, increment, write — three bytecodes. Under threading, races appear at bytecode boundaries even with the GIL.</p>
+
+  <p>"Python has the GIL so I don't need locks" is the most expensive misconception in Python concurrency.</p>
+
+  <div class="diagram">counter += 1   <span class="dim">// what looks atomic (counter is a shared global)</span>
+   |
+   v
+<span class="acc">LOAD_GLOBAL  counter</span>    <span class="dim">// thread A reads 5</span>
+<span class="acc">LOAD_CONST   1</span>          <span class="dim">// thread B preempts, also reads 5</span>
+<span class="acc">BINARY_OP    +=</span>         <span class="dim">// both compute 6</span>
+<span class="acc">STORE_GLOBAL counter</span>    <span class="dim">// both write 6 -- one increment lost</span></div>
+</section>
+
+<section id="security">
+  <div class="section-bar rd"></div>
+  <h2>SECURITY <em class="rd">VULNS</em></h2>
+  <p>Python's flexibility extends to unsafe primitives. <code>eval</code>, <code>exec</code>, <code>pickle</code>, <code>yaml.load</code>, and string interpolation into shell or SQL are all ways to turn user input into code execution.</p>
+
+  <h3 class="rd">// pickle from untrusted sources</h3>
+  <p><code>pickle.loads()</code> is equivalent to executing arbitrary Python. A pickle payload can spawn shells, exfiltrate data, install backdoors. There is no way to make it safe.</p>
+
+  <pre><span class="label">bad</span>data = pickle.loads(request.body)  <span class="cm"># RCE</span></pre>
+
+  <pre class="gr"><span class="label">good</span>data = json.loads(request.body)
+<span class="cm"># or use a typed schema with msgpack, protobuf, etc.</span></pre>
+
+  <div class="info-box danger">
+    <strong>// detection</strong>
+    <code>bandit B301 (blacklist pickle)</code>, <code>B403 (import pickle)</code>. Both default. Reliable catch for the obvious cases. Indirect pickle use through libraries (joblib, dill) often missed.
+  </div>
+
+  <h3 class="rd">// sql injection via f-strings</h3>
+  <pre><span class="label">bad</span>cursor.execute(<span class="kw">f</span><span class="st">"SELECT * FROM users WHERE name = '{name}'"</span>)
+<span class="cm"># name = "x'; DROP TABLE users; --"</span></pre>
+
+  <pre class="gr"><span class="label">good</span>cursor.execute(<span class="st">"SELECT * FROM users WHERE name = %s"</span>, (name,))</pre>
+
+  <div class="info-box danger">
+    <strong>// detection</strong>
+    <code>bandit B608</code> catches f-string SQL. Sqlalchemy's <code>text()</code> with bound params is the right primitive. Format-string SQL is a CWE-89 classic.
+  </div>
+
+  <h3 class="rd">// shell injection</h3>
+  <pre><span class="label">bad</span>os.system(<span class="kw">f</span><span class="st">"convert {filename} out.png"</span>)
+<span class="cm"># filename = "x.png; rm -rf /"</span></pre>
+
+  <pre class="gr"><span class="label">good</span>subprocess.run([<span class="st">"convert"</span>, filename, <span class="st">"out.png"</span>], check=<span class="kw">True</span>)</pre>
+
+  <h3 class="yl">// yaml.load</h3>
+  <p>Default <code>yaml.load()</code> constructs arbitrary Python objects from the input. Yes, including running code. <code>yaml.safe_load()</code> is the safe variant — it only constructs basic types.</p>
+
+  <pre><span class="label">bad</span>config = yaml.load(<span class="kw">open</span>(<span class="st">"config.yaml"</span>))  <span class="cm"># can execute code</span></pre>
+
+  <pre class="gr"><span class="label">good</span>config = yaml.safe_load(<span class="kw">open</span>(<span class="st">"config.yaml"</span>))</pre>
+
+  <h3>// eval / exec on user input</h3>
+  <p>Self-explanatory. <code>eval(user_input)</code> is "please run my user's code as me."</p>
+
+  <h3 class="rd">// hardcoded credentials</h3>
+  <pre><span class="label">bad</span>API_KEY = <span class="st">"sk-proj-AbCd1234..."</span></pre>
+  <p>Beyond the obvious "don't commit secrets," API keys in code leak to logs, error reports, AI assistants, every clone of the repo. <code>git filter-repo</code> can scrub history but only if you notice.</p>
+
+  <div class="info-box warn">
+    <strong>// detection</strong>
+    <code>bandit B105 / B106 / B107</code> catches hardcoded password literals. Truffhog, gitleaks, and github's secret scanning catch more patterns. Bare API keys still slip through if they don't match known token patterns.
+  </div>
+</section>
+
+<section id="perf">
+  <div class="section-bar yl"></div>
+  <h2>PERFORMANCE <em class="yl">PATTERNS</em></h2>
+  <p>Most Python performance problems are algorithmic or idiomatic, not the GIL. The GIL is the convenient excuse; the actual cost is usually quadratic loops or unnecessary materialization.</p>
+
+  <h3 class="yl">// O(n²) via list membership</h3>
+  <p>A list's <code>in</code> operator scans linearly. Doing it inside a loop over another collection is O(n × m).</p>
+
+  <pre><span class="label">bad</span><span class="kw">def</span> <span class="fn">find_overlap</span>(items, blacklist):
+    <span class="kw">return</span> [x <span class="kw">for</span> x <span class="kw">in</span> items <span class="kw">if</span> x <span class="kw">in</span> blacklist]
+<span class="cm"># O(n * m) -- m is len(blacklist)</span></pre>
+
+  <pre class="gr"><span class="label">good</span><span class="kw">def</span> <span class="fn">find_overlap</span>(items, blacklist):
+    bl = <span class="kw">set</span>(blacklist)
+    <span class="kw">return</span> [x <span class="kw">for</span> x <span class="kw">in</span> items <span class="kw">if</span> x <span class="kw">in</span> bl]
+<span class="cm"># O(n + m)</span></pre>
+
+  <div class="info-box warn">
+    <strong>// detection</strong>
+    No direct ruff rule catches <code>x in [a, b, c]</code> → <code>x in {a, b, c}</code>. <code>ruff PLR1714</code> is the closest, but only flags the related <code>x == a or x == b</code> pattern. The cross-function case (list passed in) needs LLM-level reasoning either way.
+  </div>
+
+  <h3 class="yl">// string concatenation in loops</h3>
+  <p>Strings are immutable. Each concat allocates a new string and copies. Quadratic behavior masquerading as a loop.</p>
+
+  <pre><span class="label">bad</span>result = <span class="st">""</span>
+<span class="kw">for</span> chunk <span class="kw">in</span> chunks:
+    result += chunk  <span class="cm"># O(n²) total</span></pre>
+
+  <pre class="gr"><span class="label">good</span>result = <span class="st">""</span>.join(chunks)  <span class="cm"># O(n)</span></pre>
+
+  <h3 class="yl">// list materialization where a generator would do</h3>
+  <p><code>list(map(...))</code> when you only iterate once. <code>[x for x in big]</code> when you just need to check membership. Materializing means allocating, populating, and (often) tearing down a list you didn't need.</p>
+
+  <pre><span class="label">bad</span><span class="cm"># reads whole file into memory just to check if any line matches</span>
+<span class="kw">if</span> <span class="kw">any</span>([is_match(line) <span class="kw">for</span> line <span class="kw">in</span> <span class="kw">open</span>(<span class="st">"huge.log"</span>)]):
+    handle()</pre>
+
+  <pre class="gr"><span class="label">good</span><span class="cm"># generator, short-circuits on first match</span>
+<span class="kw">if</span> <span class="kw">any</span>(is_match(line) <span class="kw">for</span> line <span class="kw">in</span> <span class="kw">open</span>(<span class="st">"huge.log"</span>)):
+    handle()</pre>
+
+  <h3 class="cy">// repeated attribute lookup in hot loops</h3>
+  <p>Python looks up attributes by name at every access. <code>obj.method</code> in a loop hits the object's <code>__getattribute__</code> every iteration. Hoisting saves real time on inner loops.</p>
+
+  <pre><span class="label">bad</span><span class="kw">for</span> item <span class="kw">in</span> items:
+    self.processor.handler.process(item)  <span class="cm"># 3 lookups per iter</span></pre>
+
+  <pre class="gr"><span class="label">good</span>process = self.processor.handler.process
+<span class="kw">for</span> item <span class="kw">in</span> items:
+    process(item)</pre>
+
+  <h3>// loops where pandas/numpy vectorize</h3>
+  <p>The largest delta. A Python loop over a numpy array can be 100-1000x slower than the vectorized equivalent.</p>
+
+  <pre><span class="label">bad</span>result = []
+<span class="kw">for</span> i <span class="kw">in</span> range(<span class="kw">len</span>(arr)):
+    result.append(arr[i] * <span class="num">2</span> + <span class="num">1</span>)</pre>
+
+  <pre class="gr"><span class="label">good</span>result = arr * <span class="num">2</span> + <span class="num">1</span>  <span class="cm"># vectorized; runs in C</span></pre>
+
+  <h3>// loading whole files when streaming would do</h3>
+  <p>JSON files of moderate size, CSVs that exceed RAM, log scans. <code>f.read()</code> is the default but rarely the right choice for files over a few MB.</p>
+</section>
+
+<section id="smells">
+  <div class="section-bar mg"></div>
+  <h2>SMELLS <em class="mg">&amp;</em> MAINTAINABILITY</h2>
+  <p>Not bugs in the "wrong answer" sense, but causes of future bugs. Worth flagging in a code review but not blocking.</p>
+
+  <h3 class="mg">// god functions</h3>
+  <p>A 500-line function with 20 parameters and 8 levels of nesting. Every call site has to reason about every branch. Refactoring fear is high; bug rate is higher.</p>
+
+  <div class="info-box">
+    <strong>// detection</strong>
+    <code>radon cc</code> measures cyclomatic complexity. Functions over CC=15 are warning territory; over 30 should be split. <code>ruff C901</code> in the <code>C</code> ruleset flags by complexity threshold.
+  </div>
+
+  <h3>// magic numbers and strings</h3>
+  <p><code>if status == 7:</code> is a bug magnet. Six months later nobody knows what 7 means. <code>StatusCode.PROCESSED</code> is self-documenting and refactorable.</p>
+
+  <h3 class="cy">// deep nesting</h3>
+  <p>Each <code>if</code> or <code>for</code> level doubles the mental model. Early return / guard clauses flatten nesting and make every branch explicit.</p>
+
+  <pre><span class="label">bad</span><span class="kw">def</span> <span class="fn">handle</span>(req):
+    <span class="kw">if</span> req:
+        <span class="kw">if</span> req.user:
+            <span class="kw">if</span> req.user.active:
+                <span class="kw">if</span> req.action:
+                    <span class="kw">return</span> dispatch(req)
+    <span class="kw">return None</span></pre>
+
+  <pre class="gr"><span class="label">good</span><span class="kw">def</span> <span class="fn">handle</span>(req):
+    <span class="kw">if not</span> req <span class="kw">or not</span> req.user <span class="kw">or not</span> req.user.active:
+        <span class="kw">return None</span>
+    <span class="kw">if not</span> req.action:
+        <span class="kw">return None</span>
+    <span class="kw">return</span> dispatch(req)</pre>
+
+  <h3>// duplicated logic</h3>
+  <p>The same five-line block appearing in three places. The bug fix that lands in one place and misses the others. The classic case for extraction.</p>
+
+  <h3 class="rd">// eval / exec / globals() abuse</h3>
+  <p>Every now and then someone uses <code>globals()</code> as a dispatcher or <code>exec</code> to build a class dynamically. The performance is terrible, the bug surface is enormous, and the alternative is almost always a dict of callables.</p>
+</section>
+
+<section id="detection">
+  <div class="section-bar cy"></div>
+  <h2>DETECTION <em class="cy">LANDSCAPE</em></h2>
+  <p>What runs, what catches what, where the holes are.</p>
+
+  <h3 class="cy">// tool matrix</h3>
+  <table>
+    <thead>
+      <tr><th>tool</th><th>strong at</th><th>weak at</th><th>config burden</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="cy">ruff</td><td>style, imports, simple bugs, perf hints; fast</td><td>cross-function semantic, opt-in rulesets often skipped</td><td>low</td></tr>
+      <tr><td class="cy">pyright</td><td>types, control flow, optional access</td><td>dynamic code, untyped third-party libs</td><td>low (strict mode adds work)</td></tr>
+      <tr><td class="cy">mypy</td><td>types, strict null safety</td><td>slow, weaker flow analysis than pyright</td><td>medium</td></tr>
+      <tr><td class="cy">bandit</td><td>security CWE patterns</td><td>narrow scope, lots of FPs in default config</td><td>low</td></tr>
+      <tr><td class="cy">vulture</td><td>dead code, unused symbols</td><td>FPs on plugins, reflection, public API</td><td>low</td></tr>
+      <tr><td class="cy">perflint</td><td>performance idioms</td><td>narrow rule set, rarely run in CI</td><td>low</td></tr>
+      <tr><td class="cy">semgrep</td><td>custom syntactic patterns; powerful</td><td>requires rules; setup investment</td><td>medium</td></tr>
+      <tr><td class="cy">radon / xenon</td><td>complexity metrics</td><td>metrics, not bugs; needs human interpretation</td><td>low</td></tr>
+    </tbody>
+  </table>
+
+  <h3>// what no tool catches well</h3>
+  <ul>
+    <li>Cross-function mutation: function A mutates an object B assumed unchanged</li>
+    <li>State-machine violations: methods called in wrong order on a stateful object</li>
+    <li>Algorithmic complexity that needs workload context (the <code>in</code> on a list might be hot or cold)</li>
+    <li>Race conditions across async boundaries with mutable shared state</li>
+    <li>Resource leaks via exception paths that skip cleanup in non-context-manager flows</li>
+    <li>Security: indirect injection through dependency calls, untrusted deserialization buried in libraries</li>
+    <li>Logic errors that compile and run correctly but don't match intent</li>
+    <li>Documentation/comment lies (the comment says X, the code does Y)</li>
+  </ul>
+
+  <p>The above is where LLM-assisted review earns its keep over tool-only output.</p>
+
+  <div class="info-box cy">
+    <strong>// the prioritization gap</strong>
+    Default tool output is too noisy to act on. A typical <code>ruff check --select=ALL</code> on a real codebase produces hundreds to thousands of findings. The hard problem isn't generating candidates; it's culling, ranking, and presenting the 10-15 that matter. That gap — between linter output and actionable report — is the python-analyzer skill's reason to exist.
+  </div>
+
+  <h3 class="yl">// recommended baseline config</h3>
+  <p>For a new project running x8r-style analysis discipline, start here:</p>
+  <pre><span class="label">pyproject.toml</span>[tool.ruff]
+select = [
+  <span class="st">"E"</span>, <span class="st">"F"</span>, <span class="st">"W"</span>,        <span class="cm"># pyflakes + pycodestyle</span>
+  <span class="st">"B"</span>,                  <span class="cm"># flake8-bugbear (mutable defaults, etc)</span>
+  <span class="st">"SIM"</span>,                <span class="cm"># simplifications</span>
+  <span class="st">"ASYNC"</span>,              <span class="cm"># async pitfalls</span>
+  <span class="st">"PERF"</span>,               <span class="cm"># performance idioms</span>
+  <span class="st">"RUF"</span>,                <span class="cm"># ruff-specific</span>
+  <span class="st">"S"</span>,                  <span class="cm"># bandit-equivalent security</span>
+  <span class="st">"UP"</span>,                 <span class="cm"># pyupgrade</span>
+]
+
+[tool.pyright]
+typeCheckingMode = <span class="st">"strict"</span>
+
+[tool.mypy]
+strict = <span class="kw">true</span></pre>
+
+  <p>This alone catches ~70% of what the python-analyzer skill flags in the bug families above. The skill's job is the remaining ~30% that needs cross-function reasoning, plus the prioritization layer on top of the raw output.</p>
+</section>
+
+</main>
+
+<div class="footer">
+  python <span>//</span> teardown <span>//</span> bug taxonomy + detection landscape
+</div>
+
+<script>
+  // sticky-nav active section highlighting
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav a');
+  const obs = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) {
+        const id = e.target.id;
+        navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+      }
+    }
+  }, { rootMargin: '-40% 0px -55% 0px' });
+  sections.forEach(s => obs.observe(s));
+</script>
+
+</body>
+</html>
