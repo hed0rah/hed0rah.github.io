@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>python bugs / a working taxonomy</title>
+<meta name="description" content="Bug families, optimization opportunities, and detection landscape for production python codebases. Reference for static analyzers, type checkers, and LLM-assisted code review.">
+<style>
+:root{--paper:#fcfcfa;--ink:#151515;--muted:#64625c;--line:#d8d5ce;--soft:rgba(0,0,0,0.012);--bigstone:#1A2F3F;--flamingo:#EC503A;--geraldine:#F78F82;--gd-soft:rgba(247,143,130,0.10);--fl-soft:rgba(236,80,58,0.08);--bs-soft:rgba(26,47,63,0.05);--ex-bg:#faf8f3}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);background:var(--paper);font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;line-height:1.45}
+.page{max-width:1240px;margin:0 auto;padding:24px 16px 44px}
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:26px;align-items:start}
+.paper{min-width:0;border-top:2px solid var(--bigstone);border-bottom:1px solid var(--line);padding:20px 0 24px}
+.eyebrow{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:var(--flamingo);font-weight:600}
+h1,h2,h3{margin:0;font-weight:600;line-height:1.2}
+h1{font-size:clamp(1.55rem,2.1vw,1.9rem);letter-spacing:-0.02em;margin-bottom:6px;color:var(--bigstone)}
+h2{font-size:0.92rem;margin-top:22px;margin-bottom:8px;padding-top:12px;border-top:1px solid var(--line);color:var(--bigstone);text-transform:uppercase;letter-spacing:0.05em}
+h3{font-size:0.86rem;margin:10px 0 5px;color:var(--ink)}
+p{margin:0 0 8px;font-size:0.86rem}
+code{font-family:"SFMono-Regular","SF Mono",Menlo,Consolas,monospace;font-size:0.85em;background:rgba(217,215,209,0.30);padding:0.04rem 0.22rem;border-radius:1px}
+.chip{display:inline-block;margin:0 3px 3px 0;padding:1px 6px;border:1px solid var(--line);border-radius:2px;font-size:0.69rem;letter-spacing:0.02em;color:var(--muted)}
+.chip.flamingo{border-color:var(--flamingo);color:var(--flamingo);background:var(--fl-soft)}
+.term{cursor:pointer;border-bottom:1px dotted var(--bigstone);color:var(--bigstone);transition:.1s;padding:0 1px;font-weight:500}
+.term:hover,.term:focus-visible,.term.is-active{background:var(--gd-soft);color:var(--flamingo);border-bottom-color:var(--flamingo);outline:none}
+.lede{font-size:0.9rem;color:#242424;margin:6px 0 14px}
+.spec-line{display:inline-block;padding:2px 8px;border:1px solid var(--bigstone);background:var(--bs-soft);font-family:"SFMono-Regular",monospace;font-size:0.74rem;color:var(--bigstone);margin-right:6px;letter-spacing:0.03em}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:6px;margin:10px 0 16px}
+.stat{padding:8px 10px;border:1px solid var(--line);background:var(--paper)}
+.stat .num{font-family:"Iowan Old Style",Georgia,serif;font-size:1.45rem;font-weight:600;color:var(--bigstone);line-height:1.1}
+.stat .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px}
+.compare{width:100%;border-collapse:collapse;font-size:0.82rem;margin:6px 0 10px}
+.compare th,.compare td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+.compare th{background:var(--bs-soft);color:var(--bigstone);font-weight:600;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em}
+.compare td.good{color:var(--bigstone)}.compare td.bad{color:var(--flamingo)}.compare td.note{color:var(--muted);font-style:italic;font-size:0.78rem}
+.compare td code{font-size:0.78em}
+.compare td.num{font-family:"SFMono-Regular",monospace;font-size:0.8rem;text-align:right;font-variant-numeric:tabular-nums}
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:6px;margin:6px 0 12px}
+.comp{padding:7px 10px;border:1px solid var(--line);background:var(--paper);transition:.15s}
+.comp:hover{border-color:var(--flamingo);background:var(--fl-soft)}
+.comp .name{font-size:0.88rem;font-weight:600;color:var(--bigstone);margin-bottom:1px}
+.comp .role{font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;font-family:"SFMono-Regular",monospace}
+.comp .desc{font-size:0.76rem;margin-top:3px;color:#2a2a2a;line-height:1.4}
+.bul{list-style:none;padding:0;margin:4px 0 10px}
+.bul li{padding:2px 0 2px 16px;font-size:0.84rem;position:relative;line-height:1.5;color:#222}
+.bul li::before{content:"·";position:absolute;left:5px;color:var(--flamingo);font-weight:700;font-size:1.1rem;line-height:1}
+.bul li strong{color:var(--bigstone);font-weight:600}
+.bul li code{font-size:0.82em}
+.wireblock{font-family:"SFMono-Regular",Menlo,Consolas,monospace;font-size:0.75rem;background:var(--bigstone);color:#cbd2da;padding:10px 12px;margin:8px 0 12px;line-height:1.55;overflow-x:auto;white-space:pre;border-left:3px solid var(--flamingo)}
+.wireblock .kw{color:#f5b06b}.wireblock .hdr{color:#5cc0b0}.wireblock .cm{color:#7d8a99;font-style:italic}.wireblock .num{color:#e0b060}.wireblock .reg{color:#b9a3e3}.wireblock .bad{color:#e85870}.wireblock .gd{color:#5ad08a}
+.refs{font-size:0.78rem;line-height:1.55;margin:6px 0}
+.refs .ref-row{display:grid;grid-template-columns:140px 1fr;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line)}
+.refs .ref-row:last-child{border-bottom:none}
+.refs .ref-row .key{font-family:"SFMono-Regular",monospace;font-size:0.72rem;color:var(--bigstone);font-weight:600;text-transform:uppercase;letter-spacing:0.03em}
+.refs .ref-row .val a{color:var(--flamingo);text-decoration:none;border-bottom:1px dotted var(--flamingo)}
+.refs .ref-row .val a:hover{background:var(--fl-soft)}
+.refs .ref-row .val .desc{color:var(--muted);font-style:italic;font-size:0.74rem;margin-left:6px}
+.margin{position:sticky;top:18px;border-top:2px solid var(--bigstone);padding-top:10px;font-size:0.82rem;color:var(--muted)}
+.margin-card{border:1px solid var(--line);border-left:3px solid var(--flamingo);background:rgba(0,0,0,0.012);padding:12px 12px 10px;min-height:340px}
+.margin h3{font-size:0.9rem;margin-bottom:6px;color:var(--bigstone)}
+.margin p{margin-bottom:7px;font-size:0.8rem}
+.margin-meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin:7px 0 8px;padding:7px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:#2d2d2a}
+.margin-meta strong{display:block;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.margin-meta span{font-size:0.8rem}
+.margin-code{display:inline-block;margin-top:2px;margin-bottom:6px;color:var(--flamingo)}
+.margin-section{margin-top:10px}
+.margin-section .label{font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:3px}
+.margin-section ul{margin:0;padding:0;list-style:none}
+.margin-section li{padding:2px 0;border-top:1px solid rgba(216,213,206,0.7);font-size:0.76rem;color:#2a2a2a;font-family:"SFMono-Regular",Menlo,Consolas,monospace}
+.margin-section li:first-child{border-top:none}
+.margin-section .more{color:var(--muted);font-style:italic;font-family:inherit}
+.margin-section a{color:var(--flamingo);text-decoration:none;border-bottom:1px dotted var(--flamingo);font-family:inherit;word-break:break-word}
+.margin-section a:hover{background:var(--fl-soft);color:var(--bigstone)}
+.margin-section li.link-item{white-space:normal;font-family:inherit;padding:4px 0}
+.margin-section li.link-item .src{display:block;font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:1px;font-family:"SFMono-Regular",monospace}
+.margin-hint{font-size:0.72rem;color:var(--muted);margin-top:12px;padding-top:7px;border-top:1px solid var(--line)}
+.margin-hint kbd{font-family:"SFMono-Regular",Menlo,Consolas,monospace;font-size:0.7rem;padding:0 4px;border:1px solid var(--line);border-radius:2px;background:var(--soft)}
+.footer{margin-top:24px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font-size:0.76rem}
+.footer .signoff{color:var(--bigstone);font-weight:600;letter-spacing:0.05em}
+@media (max-width:980px){.sheet{grid-template-columns:1fr}.margin{position:static;order:2;border-top:1px solid var(--line)}.comp-grid,.stat-grid{grid-template-columns:1fr}.compare{font-size:0.76rem}.refs .ref-row{grid-template-columns:100px 1fr}}
+@media print{body{background:#fff}.margin,.term{cursor:default}.term{border-bottom:none;color:var(--bigstone)!important;background:transparent!important}}
+</style></head><body><div class="page"><div class="sheet">
+
+<article class="paper">
+
+<p class="eyebrow">Whitepaper / Python bugs in production</p>
+<h1>a working taxonomy of python bugs and optimization opportunities</h1>
+<p class="lede">
+<span class="spec-line">8 families</span><span class="spec-line">~45 patterns</span><span class="spec-line">tool coverage map</span>
+Bug families, optimization patterns, and detection landscape for production python codebases. Reference material for static analyzers, type checkers, security scanners, and LLM-assisted code review.
+</p>
+
+<div class="stat-grid">
+  <div class="stat"><div class="num">8</div><div class="lbl">bug families</div></div>
+  <div class="stat"><div class="num">~700</div><div class="lbl">ruff rules</div></div>
+  <div class="stat"><div class="num">5</div><div class="lbl">tier-1 tools</div></div>
+  <div class="stat"><div class="num">~30%</div><div class="lbl">needs cross-function review</div></div>
+  <div class="stat"><div class="num">~5%</div><div class="lbl">signal in default lint output</div></div>
+</div>
+
+<h2>Premise</h2>
+<p>
+Python's flexibility is its footgun surface. <span class="term" data-term="late-binding">Late binding</span>, duck typing, <span class="term" data-term="mutable-default">mutable defaults</span>, the <span class="term" data-term="gil">GIL</span>, async colored functions, two string types — every convenience has a documented failure mode. The bug families below are the ones that actually hit production, ranked by which tool tier catches them.
+</p>
+<p>
+The taxonomy is not novel; many of these bugs have been known since Python 2. What's worth structuring is the detection landscape: which family is reliably caught by which tool tier, and which families require LLM-grade semantic review because no tool sees them.
+</p>
+
+<h2>Family map</h2>
+<div class="comp-grid">
+  <div class="comp"><span class="term" data-term="runtime-exceptions"><span class="name">runtime</span></span><div class="role">exception bugs</div><div class="desc">IndexError, KeyError, None dereferences, TypeError on duck-typing. Visible failures.</div></div>
+  <div class="comp"><span class="term" data-term="logic-bugs"><span class="name">logic</span></span><div class="role">behavioral</div><div class="desc">Mutable defaults, late binding, off-by-one, condition inversion, shadowed builtins.</div></div>
+  <div class="comp"><span class="term" data-term="data-types"><span class="name">data &amp; types</span></span><div class="role">silent wrong</div><div class="desc">str/bytes, shallow vs deep copy, encoding, reference aliasing.</div></div>
+  <div class="comp"><span class="term" data-term="resource-lifecycle"><span class="name">resource</span></span><div class="role">lifecycle</div><div class="desc">Leaked files / sockets / locks / db connections; context manager misuse.</div></div>
+  <div class="comp"><span class="term" data-term="concurrency"><span class="name">concurrency</span></span><div class="role">races, deadlocks</div><div class="desc">Async/sync mismatches, GIL assumptions, shared state across awaits.</div></div>
+  <div class="comp"><span class="term" data-term="security"><span class="name">security</span></span><div class="role">vulnerabilities</div><div class="desc">Injection, unsafe deserialization, hardcoded creds, eval/exec on user input.</div></div>
+  <div class="comp"><span class="term" data-term="performance"><span class="name">performance</span></span><div class="role">opportunities</div><div class="desc">Algorithmic O(n²), string concat in loops, materialization, repeated attr lookup.</div></div>
+  <div class="comp"><span class="term" data-term="smells"><span class="name">smells</span></span><div class="role">maintainability</div><div class="desc">God functions, deep nesting, magic numbers, duplication, eval/exec abuse.</div></div>
+</div>
+
+<h2>Runtime exceptions</h2>
+<p>
+The visible bugs. <span class="term" data-term="runtime-exceptions">IndexError, KeyError, AttributeError, TypeError</span> show up at runtime; the program crashes; you find them fast. The hidden danger is the <em>conditional</em> path where the exception fires only under specific input — your test suite happens to miss that branch and the bug ships.
+</p>
+<p>
+Subtypes worth calling out:
+</p>
+<ul class="bul">
+<li><strong>None dereference</strong>: functions returning <code>Optional[T]</code> whose return value is used without a null check. Caught reliably by <span class="term" data-term="pyright-strict">pyright --strict</span> and <code>mypy --strict</code>. Missed by default ruff.</li>
+<li><strong>Bare except</strong>: catches <code>SystemExit</code>, <code>KeyboardInterrupt</code>, and the bug you needed to see. Caught by ruff E722 in defaults.</li>
+<li><strong>Off-by-one in slicing</strong>: Python's half-open intervals trip up people thinking in C-style inclusive ranges. Needs semantic review; no tool catches the intent mismatch.</li>
+</ul>
+
+<h2>Logic and state</h2>
+<p>
+The most uniquely Pythonic bugs. <span class="term" data-term="mutable-default">Mutable default arguments</span> and <span class="term" data-term="late-binding">late binding in closures</span> are interview questions because they keep biting real code. Knowing about them doesn't stop the bug from appearing — a tired engineer writes <code>def f(x=[]):</code> in a code review at 5pm and ships it.
+</p>
+
+<div class="wireblock"><span class="cm"># the canonical bug</span>
+<span class="kw">def</span> <span class="bad">add_item</span>(item, items=[]):
+    items.append(item)
+    <span class="kw">return</span> items
+
+<span class="bad">add_item</span>(<span class="num">1</span>)  <span class="cm"># [1]</span>
+<span class="bad">add_item</span>(<span class="num">2</span>)  <span class="cm"># [1, 2]  -- not [2]!</span>
+
+<span class="cm"># the fix</span>
+<span class="kw">def</span> <span class="gd">add_item</span>(item, items=<span class="kw">None</span>):
+    <span class="kw">if</span> items <span class="kw">is None</span>:
+        items = []
+    items.append(item)
+    <span class="kw">return</span> items</div>
+
+<p>
+Other logic bugs in this family: <span class="term" data-term="dict-order">dict ordering assumptions</span> (subtle since Python 3.7 guarantees order, but legacy code may still assume hash order), <span class="term" data-term="shadowed-builtin">shadowed builtins</span> (assigning to <code>list</code> or <code>id</code> at module level), <span class="term" data-term="truthy-falsy">truthy/falsy traps</span> (a function returning <code>0</code> is indistinguishable from one returning <code>None</code> via a truth check).
+</p>
+
+<h2>Data and types</h2>
+<p>
+Silent wrong-answer bugs. The most expensive class in the taxonomy because they don't crash. <span class="term" data-term="str-bytes">str/bytes mixing</span> ships data with mojibake. <span class="term" data-term="shallow-deep-copy">Shallow copies</span> share inner mutable state. Reference aliasing means a function that "modifies its argument" mutates the caller's object.
+</p>
+<p>
+Type checkers help when configured. <span class="term" data-term="pyright-strict">pyright --strict</span> catches the str/bytes and Optional cases. <code>mypy --strict</code> catches them slower but as reliably. Neither catches reference aliasing — that's semantic. <code>copy.deepcopy</code> vs <code>copy.copy</code> needs human review of intent.
+</p>
+
+<h2>Resource lifecycle</h2>
+<p>
+Files, sockets, locks, db connections. Each is finite. The <span class="term" data-term="context-manager">context manager</span> pattern (<code>with</code> statement) is the idiomatic answer. Code that opens resources without a <code>with</code> block — especially in functions with early returns or exception paths — leaks under load.
+</p>
+<p>
+ruff <code>SIM115</code> catches naked <code>open()</code> outside <code>with</code>. <code>ResourceWarning</code> fires at runtime if a file is GC'd while open. Catching db connection leaks is harder — they're typically per-library and ruff doesn't know the connection-pool API.
+</p>
+<p>
+Special mention: <span class="term" data-term="growing-cache">unbounded module-level caches</span>. The classic "memoization" pattern that grows forever. <code>functools.lru_cache(maxsize=N)</code> is bounded; a bare dict is not.
+</p>
+
+<h2>Concurrency and async</h2>
+<p>
+The highest-LLM-value bug family. Tools rarely catch async/sync mismatches, shared state across <code>await</code> points, or improper task lifecycle. The <span class="term" data-term="asyncio-gotchas">asyncio gotchas catalog</span> in the python-analyzer-research corpus documents 12 patterns that no default tool config detects.
+</p>
+<p>
+Top hitters:
+</p>
+<ul class="bul">
+<li><strong>Blocking calls in async functions</strong>: <code>time.sleep()</code>, <code>requests.get()</code>, <code>open().read()</code> inside <code>async def</code> blocks the entire event loop. ruff <code>ASYNC251</code>, <code>ASYNC210</code> catch with the right select.</li>
+<li><strong>Task not awaited</strong>: <code>asyncio.create_task()</code> return value discarded, GC collects mid-flight. ruff <code>RUF006</code>.</li>
+<li><strong>Shared mutable state across awaits</strong>: pure-Python statements are atomic between awaits, but <code>await</code> yields the loop. Read-modify-write across an <code>await</code> races without a lock. No tool catches this.</li>
+<li><strong>queue.Queue vs asyncio.Queue</strong>: same name, different semantics. The threading queue blocks the loop. No tool catches.</li>
+<li><strong>GIL assumptions</strong>: <code>counter += 1</code> is not atomic at the bytecode level. The most expensive misconception in Python concurrency.</li>
+</ul>
+
+<h2>Security</h2>
+<p>
+Python ships unsafe primitives. <span class="term" data-term="pickle-rce">pickle.loads</span> is arbitrary code execution. <span class="term" data-term="sql-injection">SQL injection via f-strings</span> is CWE-89 wrapped in syntactic sugar. <span class="term" data-term="yaml-load">yaml.load</span> constructs arbitrary Python objects unless you use <code>safe_load</code>. <code>eval</code> and <code>exec</code> on user input are the same as giving them a shell.
+</p>
+<p>
+<span class="term" data-term="bandit-cwe">bandit</span> catches the obvious cases — pickle imports, hardcoded credentials, shell=True. Indirect cases (pickle hidden in joblib, sql via SQLAlchemy <code>text()</code> with f-string content) often slip through. The pattern "tools catch direct, miss indirect" is general in Python security analysis.
+</p>
+
+<h2>Performance opportunities</h2>
+<p>
+Most Python performance problems are algorithmic or idiomatic, not the GIL. The GIL is the convenient excuse; the actual cost is usually <span class="term" data-term="list-in-loop">O(n²) inner loops</span> from list-as-set membership tests, <span class="term" data-term="string-concat">string concatenation in loops</span>, or <span class="term" data-term="materialization">unnecessary materialization</span> of generators into lists.
+</p>
+<p>
+The biggest delta comes from <span class="term" data-term="vectorize">vectorizing numpy/pandas</span> code. A Python loop over a numpy array can be 100-1000x slower than the vectorized form. This is rarely caught by tools because it requires recognizing the array context.
+</p>
+<p>
+<span class="term" data-term="perflint">perflint</span> exists for this family. <code>ruff PERF</code> covers a subset. Most projects don't run either.
+</p>
+
+<h2>Detection coverage</h2>
+<table class="compare">
+<thead><tr><th>family</th><th>tier-1 tools</th><th>opt-in tools</th><th>needs LLM</th></tr></thead>
+<tbody>
+<tr><td>runtime exceptions</td><td>pyright/mypy strict</td><td>ruff Optional access plugins</td><td>conditional paths missed by tests</td></tr>
+<tr><td>logic &amp; state</td><td>ruff <code>B</code>, <code>SIM</code></td><td>ruff <code>RUF</code>, <code>A</code> (builtins)</td><td>cross-function mutation; intent vs code</td></tr>
+<tr><td>data &amp; types</td><td>pyright/mypy strict</td><td>ruff <code>UP</code> for str/bytes upgrades</td><td>reference aliasing; shallow vs deep intent</td></tr>
+<tr><td>resource lifecycle</td><td>ruff <code>SIM115</code></td><td>pylint <code>R1732</code></td><td>cross-function leaks via early return</td></tr>
+<tr><td>concurrency &amp; async</td><td>—</td><td>ruff <code>ASYNC</code></td><td>shared state races; lifecycle; semantic flow</td></tr>
+<tr><td>security</td><td>bandit defaults</td><td>semgrep custom; <code>S</code> ruff plugin</td><td>indirect injection through libraries</td></tr>
+<tr><td>performance</td><td>—</td><td>perflint; ruff <code>PERF</code></td><td>workload-dependent hotness; vectorize candidates</td></tr>
+<tr><td>smells</td><td>radon; ruff <code>C</code></td><td>xenon for thresholds</td><td>god-class refactor recommendations</td></tr>
+</tbody>
+</table>
+
+<p>
+Roughly: <strong>~30% of bug-finding value needs LLM-grade reasoning.</strong> The other 70% is achievable by tools that most projects don't enable. The python-analyzer skill's job is both: run the opt-in tools by default, then handle the 30% that needs semantic analysis.
+</p>
+
+<h2>Baseline configuration</h2>
+<p>
+For projects starting a serious lint regime, this catches roughly 70% of the families above:
+</p>
+<div class="wireblock"><span class="cm"># pyproject.toml</span>
+[tool.ruff]
+select = [
+  <span class="hdr">"E"</span>, <span class="hdr">"F"</span>, <span class="hdr">"W"</span>,        <span class="cm"># pycodestyle + pyflakes</span>
+  <span class="hdr">"B"</span>,                  <span class="cm"># flake8-bugbear (mutable defaults, etc)</span>
+  <span class="hdr">"SIM"</span>,                <span class="cm"># simplification hints</span>
+  <span class="hdr">"ASYNC"</span>,              <span class="cm"># async pitfalls (high signal)</span>
+  <span class="hdr">"PERF"</span>,               <span class="cm"># performance idioms</span>
+  <span class="hdr">"RUF"</span>,                <span class="cm"># ruff-specific (RUF006 task storage)</span>
+  <span class="hdr">"S"</span>,                  <span class="cm"># bandit-equivalent</span>
+  <span class="hdr">"UP"</span>,                 <span class="cm"># pyupgrade</span>
+]
+
+[tool.pyright]
+typeCheckingMode = <span class="hdr">"strict"</span></div>
+
+<h2>References</h2>
+<div class="refs">
+  <div class="ref-row"><span class="key">ruff</span><span class="val"><a href="https://docs.astral.sh/ruff/rules/" target="_blank" rel="noopener">ruff rule catalog</a><span class="desc">~700 rules across ~30 categories</span></span></div>
+  <div class="ref-row"><span class="key">pyright</span><span class="val"><a href="https://microsoft.github.io/pyright/" target="_blank" rel="noopener">pyright type checker</a><span class="desc">strict mode is the floor</span></span></div>
+  <div class="ref-row"><span class="key">bandit</span><span class="val"><a href="https://bandit.readthedocs.io/" target="_blank" rel="noopener">bandit security linter</a><span class="desc">CWE-mapped plugin set</span></span></div>
+  <div class="ref-row"><span class="key">asyncio</span><span class="val"><a href="https://docs.python.org/3/library/asyncio.html" target="_blank" rel="noopener">asyncio reference</a><span class="desc">the source of most async bugs is here</span></span></div>
+  <div class="ref-row"><span class="key">glyph</span><span class="val"><a href="https://glyph.twistedmatrix.com/" target="_blank" rel="noopener">Glyph's async writeups</a><span class="desc">canonical pre-asyncio thinking; still relevant</span></span></div>
+  <div class="ref-row"><span class="key">brett cannon</span><span class="val"><a href="https://snarky.ca/how-the-heck-does-async-await-work-in-python-3-5/" target="_blank" rel="noopener">How async/await works</a><span class="desc">3-part series; required reading</span></span></div>
+  <div class="ref-row"><span class="key">hettinger</span><span class="val"><a href="https://www.youtube.com/watch?v=OSGv2VnC0go" target="_blank" rel="noopener">Raymond Hettinger PyCon talks</a><span class="desc">data structures + perf idioms</span></span></div>
+  <div class="ref-row"><span class="key">CWE Python</span><span class="val"><a href="https://cwe.mitre.org/data/definitions/89.html" target="_blank" rel="noopener">CWE-89: SQL injection</a><span class="desc">core security primitive</span></span></div>
+  <div class="ref-row"><span class="key">corpus</span><span class="val">python-analyzer-research<span class="desc">private repo: pattern catalogs, false-positive DB, severity rubric</span></span></div>
+</div>
+
+<div class="footer">
+  <span class="signoff">python bugs whitepaper</span> &middot; bug families &middot; detection landscape &middot; reference material for static + LLM analyzers
+</div>
+
+</article>
+
+<aside class="margin"><div class="margin-card">
+<p class="margin-code" style="display:block;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted)">Reference Inspector</p>
+<h3 id="m-title">Hover any underlined term</h3>
+<code class="margin-code" id="m-code">—</code>
+<p id="m-body">Move the cursor over any dotted-underline term to load details: what the pattern is, how it bites, fix, detection signal, sources.</p>
+<div class="margin-meta" id="m-meta"></div>
+<div class="margin-section" id="m-rel"><div class="label">Related</div><ul><li class="more">—</li></ul></div>
+<div class="margin-section" id="m-notes"><div class="label">Notes</div><ul><li class="more">—</li></ul></div>
+<div class="margin-section" id="m-links"><div class="label">Sources</div><ul><li class="more">—</li></ul></div>
+<p class="margin-hint">Hover &middot; <kbd>tab</kbd> &middot; click to pin</p>
+</div></aside>
+
+</div></div>
+
+<script id="reference-data" type="application/json">
+{
+"mutable-default":{"title":"Mutable default arguments","code":"def f(x=[]):","body":"Default argument values are evaluated once when the def statement executes, not on every call. A mutable default is shared across every invocation, accumulating state. Fix: use None as the sentinel and create the mutable inside the function body.","meta":{"family":"logic","severity":"tier-1 bug","detection":"ruff B006"},"rel":["logic-bugs","late-binding"],"notes":["caught by ruff B006 in the bugbear plugin","not in default ruff ruleset; must opt in via --select=B","pylint W0102 dangerous-default-value catches it"],"links":[{"label":"Python docs - default args","url":"https://docs.python.org/3/tutorial/controlflow.html#default-argument-values"},{"label":"ruff B006","url":"https://docs.astral.sh/ruff/rules/mutable-argument-default/"}]},
+"late-binding":{"title":"Late binding in closures","code":"lambda: i  # inside a loop","body":"Closures capture variable names, not values. When the closure runs, it sees the variable's current value, not the value at capture time. Loops that build callables produce N functions all referencing the loop's final iteration value.","meta":{"family":"logic","severity":"tier-1 bug","detection":"ruff B023"},"rel":["mutable-default","logic-bugs"],"notes":["workaround: bind via default arg (lambda i=i: i)","or use functools.partial","ruff B023 opt-in via flake8-bugbear"],"links":[{"label":"ruff B023","url":"https://docs.astral.sh/ruff/rules/function-uses-loop-variable/"}]},
+"gil":{"title":"Global Interpreter Lock","code":"counter += 1 is not atomic","body":"The GIL makes single-bytecode operations atomic but most operations are not single bytecode. counter += 1 compiles to LOAD/ADD/STORE — three bytecodes — across which the GIL can yield. Threads racing on shared counters lose increments. 'Python has the GIL so I don't need locks' is the most expensive Python concurrency misconception.","meta":{"family":"concurrency","severity":"tier-1 bug","detection":"semantic only"},"rel":["concurrency","async-shared-state"],"notes":["use threading.Lock for shared mutation","or use queue.Queue which is thread-safe","atomic types (atomicwrites lib) for primitives"],"links":[{"label":"Python GIL FAQ","url":"https://docs.python.org/3/faq/library.html#what-kinds-of-global-value-mutation-are-thread-safe"},{"label":"Removing the GIL (PEP 703)","url":"https://peps.python.org/pep-0703/"}]},
+"str-bytes":{"title":"str / bytes mixing","code":"s[0] == 'x' vs b's'[0] == 120","body":"In Python 3 str and bytes do not compare equal, do not concatenate, and indexing bytes gives ints not single-byte strings. A function that accepts either silently does the wrong thing depending on input type. Detected reliably by pyright/mypy strict.","meta":{"family":"data-types","severity":"tier-1 bug","detection":"pyright strict"},"rel":["data-types","encoding"],"notes":["b'xyz'[0] is 120 (int), not 'x'","explicit isinstance checks or two function variants","Python 2 vs 3 transition pain still leaks into legacy code"],"links":[{"label":"Python str / bytes guide","url":"https://docs.python.org/3/howto/unicode.html"}]},
+"shallow-deep-copy":{"title":"Shallow vs deep copy","code":"copy.copy() vs copy.deepcopy()","body":"copy.copy() copies the outer container; nested mutable objects are still shared. Mutating a list inside a 'copied' dict mutates both. dict.copy() and list[:] have the same shallow semantics. copy.deepcopy() recursively copies but is slower.","meta":{"family":"data-types","severity":"tier-1 bug","detection":"semantic only"},"rel":["data-types","reference-aliasing"],"notes":["use deepcopy for nested mutable data","intent is rarely clear from code; needs review","performance cost of deepcopy is real on large structures"],"links":[{"label":"copy module docs","url":"https://docs.python.org/3/library/copy.html"}]},
+"bare-except":{"title":"Bare except clause","code":"try: ... except: ...","body":"except: catches BaseException, including SystemExit and KeyboardInterrupt. Swallows ctrl-c. Swallows the bug you needed to see. Almost always wrong; the only legitimate use is at process top level to log-and-die.","meta":{"family":"runtime","severity":"tier-1 bug","detection":"ruff E722"},"rel":["runtime-exceptions"],"notes":["except Exception: is better but still often too broad","prefer specific exception types","caught by ruff E722 in default rules"],"links":[{"label":"ruff E722","url":"https://docs.astral.sh/ruff/rules/bare-except/"}]},
+"context-manager":{"title":"Context manager pattern","code":"with open(...) as f:","body":"The with statement guarantees __exit__ runs even on exception. Used for files, locks, db connections, async resources. Opening a resource without a with block leaks on early return or exception. ruff SIM115 catches naked open(). The cross-function leak case (open in A, close in B, exception in between) needs semantic review.","meta":{"family":"resource","severity":"tier-1 bug","detection":"ruff SIM115"},"rel":["resource-lifecycle"],"notes":["files leak less catastrophically in CPython due to refcounting","but PyPy and exception paths can still leak","db connection leaks block the pool"],"links":[{"label":"PEP 343 - with statement","url":"https://peps.python.org/pep-0343/"},{"label":"ruff SIM115","url":"https://docs.astral.sh/ruff/rules/open-file-with-context-handler/"}]},
+"asyncio-gotchas":{"title":"asyncio gotchas catalog","code":"12 documented patterns","body":"A pattern catalog in the python-analyzer-research corpus covering 12 async bugs that default tool configs don't catch. Includes blocking calls in async functions, task lifecycle leaks, shared state across awaits, queue.Queue vs asyncio.Queue confusion, context manager async mismatches.","meta":{"family":"concurrency","severity":"tier-1 reference","detection":"varies"},"rel":["concurrency","async-shared-state","create-task"],"notes":["each pattern documents bad code, fix, and tool detection","each pattern includes false-positive conditions","ruff ASYNC select catches ~4 of 12; rest need LLM"],"links":[]},
+"create-task":{"title":"asyncio.create_task lifecycle","code":"asyncio.create_task(coro())","body":"create_task returns a Task. If the caller doesn't keep a reference, the garbage collector can collect the task while it's still running, cancelling it mid-flight. The fix is to store the task in a long-lived set and remove it on completion.","meta":{"family":"concurrency","severity":"tier-1 bug","detection":"ruff RUF006"},"rel":["concurrency","asyncio-gotchas"],"notes":["GC behavior is documented but surprising","TaskGroup (3.11+) handles this more cleanly","wrap with asyncio.shield if cancellation must not propagate"],"links":[{"label":"ruff RUF006","url":"https://docs.astral.sh/ruff/rules/asyncio-dangling-task/"},{"label":"CPython issue 91887","url":"https://github.com/python/cpython/issues/91887"}]},
+"async-shared-state":{"title":"Shared state across awaits","code":"read; await; write","body":"Pure-Python statements between awaits are atomic relative to other coroutines. But await yields the loop, and another coroutine can run between your read and your write. Read-modify-write patterns across awaits race silently. Use asyncio.Lock to make the critical section atomic.","meta":{"family":"concurrency","severity":"tier-1 bug","detection":"semantic only"},"rel":["concurrency","create-task","gil"],"notes":["this is the deceiving bug — looks single-threaded","no tool catches it","async/await is cooperative, not single-event-stream"],"links":[{"label":"asyncio synchronization","url":"https://docs.python.org/3/library/asyncio-sync.html"}]},
+"pickle-rce":{"title":"pickle.loads is RCE","code":"pickle.loads(untrusted_bytes)","body":"pickle.loads is equivalent to executing arbitrary Python. A crafted payload can spawn shells, exfiltrate data, install backdoors. There is no way to make pickle safe for untrusted input. Use json, msgpack, or protobuf with explicit schemas.","meta":{"family":"security","severity":"tier-1 vuln","detection":"bandit B301"},"rel":["security","yaml-load"],"notes":["caught by bandit B301 default","indirect pickle via joblib, dill, torch.load is often missed","torch.load(map_location=...) with untrusted weights has RCE history"],"links":[{"label":"bandit pickle","url":"https://bandit.readthedocs.io/en/latest/blacklists/blacklist_calls.html#b301-pickle"},{"label":"CWE-502","url":"https://cwe.mitre.org/data/definitions/502.html"}]},
+"sql-injection":{"title":"SQL injection via f-strings","code":"f\"SELECT ... WHERE n='{name}'\"","body":"String interpolation into SQL is CWE-89 wrapped in syntactic sugar. The fix is parameterized queries via the DB driver's binding API (cursor.execute(query, params)). SQLAlchemy text() with f-string content has the same problem; use bound params there too.","meta":{"family":"security","severity":"tier-1 vuln","detection":"bandit B608"},"rel":["security","pickle-rce"],"notes":["caught by bandit B608 for raw cursor.execute","ORMs hide it but text() escape hatch still vulnerable","%s placeholders use the driver's escaping, not python's"],"links":[{"label":"CWE-89","url":"https://cwe.mitre.org/data/definitions/89.html"},{"label":"OWASP SQL injection","url":"https://owasp.org/www-community/attacks/SQL_Injection"}]},
+"yaml-load":{"title":"yaml.load is unsafe","code":"yaml.load(stream)","body":"Default yaml.load constructs arbitrary Python objects from the input, including calling constructors with arbitrary args. This is RCE for untrusted YAML. Use yaml.safe_load which only constructs basic types (dict, list, str, int, float, bool, None).","meta":{"family":"security","severity":"tier-1 vuln","detection":"bandit B506"},"rel":["security","pickle-rce"],"notes":["bandit B506 catches yaml.load default","PyYAML 5.1+ warns on yaml.load() without Loader","ruamel.yaml has safer defaults but still has unsafe modes"],"links":[{"label":"PyYAML safe_load","url":"https://pyyaml.org/wiki/PyYAMLDocumentation"}]},
+"list-in-loop":{"title":"O(n²) via list membership","code":"if x in big_list:","body":"list's in operator scans linearly. Doing it inside another loop is O(n × m). Converting the lookup target to a set drops it to O(n + m). The cross-function case (list passed in) is invisible to linters because they don't know what type the argument has at runtime.","meta":{"family":"performance","severity":"tier-2 perf","detection":"semantic; PLR1714 partial"},"rel":["performance","string-concat"],"notes":["no direct ruff rule for x in [literal]; PLR1714 catches the related x == a or x == b pattern","cross-function case needs type info or runtime profile","frozenset cheaper than set for read-only"],"links":[{"label":"ruff PLR1714","url":"https://docs.astral.sh/ruff/rules/repeated-equality-comparison/"}]},
+"string-concat":{"title":"String concat in loops","code":"s += chunk inside for","body":"Strings are immutable. Each += allocates a new string and copies. Quadratic behavior masquerading as a linear loop. Use ''.join(iter) which is O(n) total. CPython has an optimization that sometimes makes += linear in-place, but it's unreliable and not in PyPy.","meta":{"family":"performance","severity":"tier-2 perf","detection":"ruff PERF (partial)"},"rel":["performance","materialization"],"notes":["str.join is the canonical fix","io.StringIO for incremental building","f-string concat (f'{a}{b}') is fine; that's compile-time"],"links":[{"label":"CPython string concat optimization","url":"https://docs.python.org/3/reference/datamodel.html#object.__iadd__"}]},
+"materialization":{"title":"Unnecessary list materialization","code":"list(map(...)) when only iterating","body":"list(...) or [x for x in big] when you only need an iterator allocates and copies. any/all/sum/max accept generators and short-circuit; passing them a list forces full materialization. Memory and time waste, sometimes order-of-magnitude on large inputs.","meta":{"family":"performance","severity":"tier-2 perf","detection":"ruff PERF (partial)"},"rel":["performance","list-in-loop"],"notes":["any([...]) → any(...) for short-circuit","sum([...]) → sum(...) likewise","generators stream; lists allocate"],"links":[{"label":"ruff C419 - unnecessary list comp in call","url":"https://docs.astral.sh/ruff/rules/unnecessary-comprehension-in-call/"}]},
+"vectorize":{"title":"numpy/pandas vectorization","code":"for i in range(len(arr)): arr[i] * 2","body":"A Python loop over a numpy array is 100-1000x slower than the vectorized form (arr * 2 runs entirely in C). Same for pandas Series operations. Detection requires recognizing the array context; no tool flags this in general because the array-vs-list distinction is dynamic.","meta":{"family":"performance","severity":"tier-2 perf","detection":"semantic only"},"rel":["performance","perflint"],"notes":["pandas .apply() with python lambda is slow; vectorize where possible","numba @jit is an escape hatch for non-vectorizable code","numexpr for complex element-wise math"],"links":[{"label":"numpy vectorization","url":"https://numpy.org/doc/stable/user/basics.broadcasting.html"}]},
+"growing-cache":{"title":"Unbounded module cache","code":"_cache = {}; def f(k): _cache[k] = ...","body":"Module-level dicts used as memoization caches grow without bound. They survive every GC. Long-running processes leak slowly until OOM. Use functools.lru_cache(maxsize=N) for bounded eviction, or an explicit cache with size limits.","meta":{"family":"resource","severity":"tier-2 bug","detection":"semantic only"},"rel":["resource-lifecycle","performance"],"notes":["lru_cache(maxsize=None) is unbounded — same problem","weakref.WeakValueDictionary for cached objects with natural lifetimes","cachetools library has TTL/LFU variants"],"links":[{"label":"functools.lru_cache","url":"https://docs.python.org/3/library/functools.html#functools.lru_cache"}]},
+"dict-order":{"title":"Dict ordering assumptions","code":"assuming alphabetical / hash order","body":"Dict insertion order has been guaranteed since Python 3.7. Code assuming alphabetical, hash, or arbitrary iteration order is broken on 3.7+ if it expected sorted, and was always broken on 3.6 if it expected insertion order. Wrap in sorted() if alphabetical is needed; the dict itself gives insertion.","meta":{"family":"logic","severity":"tier-3 smell","detection":"semantic only"},"rel":["logic-bugs"],"notes":["3.6 was implementation detail; 3.7 made it spec","OrderedDict still exists for code that wants the explicit type","JSON output: serializers usually preserve insertion order"],"links":[{"label":"PEP 468 - kwargs ordering","url":"https://peps.python.org/pep-0468/"}]},
+"truthy-falsy":{"title":"Truthy / falsy traps","code":"if not count: vs if count is None:","body":"0, 0.0, '', [], {}, set(), None, and False are all falsy. A function returning 0 as a meaningful value is indistinguishable from one returning None via a truth check. Use explicit 'is None' when None is a sentinel.","meta":{"family":"logic","severity":"tier-2 bug","detection":"ruff E711 (partial)"},"rel":["logic-bugs"],"notes":["empty-container check (if items:) is idiomatic; 0-vs-None is the trap","mypy Optional types help when annotated","sentinels can be safer: MISSING = object()"],"links":[{"label":"Python truth value testing","url":"https://docs.python.org/3/library/stdtypes.html#truth-value-testing"}]},
+"shadowed-builtin":{"title":"Shadowed builtins","code":"list = get_users()","body":"Assigning to list, dict, id, type, filter, map, sum at module scope shadows the builtin for the rest of the file. Subsequent code expecting the builtin breaks silently — calling list(...) becomes 'list object not callable'.","meta":{"family":"logic","severity":"tier-2 bug","detection":"ruff A001 (opt-in)"},"rel":["logic-bugs"],"notes":["caught by ruff A001/A002/A003 from flake8-builtins","not in default ruleset","pylint W0622 redefined-builtin"],"links":[{"label":"ruff A001","url":"https://docs.astral.sh/ruff/rules/builtin-variable-shadowing/"}]},
+"runtime-exceptions":{"title":"Runtime exception family","code":"IndexError, KeyError, etc.","body":"The visible bugs. The hidden danger is the conditional path where the exception fires only under specific input that your tests miss. Tools catch the obvious patterns (bare except, optional access); the rest needs branch coverage and review.","meta":{"family":"runtime","severity":"family","detection":"mixed"},"rel":["bare-except","truthy-falsy"],"notes":["null-safety mode in pyright catches most None derefs","bare except is the most easily caught","off-by-one needs semantic intent review"],"links":[{"label":"Python exceptions","url":"https://docs.python.org/3/library/exceptions.html"}]},
+"logic-bugs":{"title":"Logic and state family","code":"mutable defaults, late binding, etc.","body":"The most uniquely Pythonic bug family. Mutable defaults, late binding, dict order assumptions, shadowed builtins, truthy/falsy traps. Some are caught by ruff with the right rulesets; cross-function intent mismatches need LLM-level review.","meta":{"family":"logic","severity":"family","detection":"mixed"},"rel":["mutable-default","late-binding","shadowed-builtin","truthy-falsy","dict-order"],"notes":["enable ruff B and A selects at minimum","semantic review catches what tools miss","tested-but-wrong is the worst case"],"links":[]},
+"data-types":{"title":"Data and types family","code":"str/bytes, shallow copy, encoding","body":"Silent wrong-answer bugs. str/bytes mixing, shallow vs deep copy, reference aliasing, encoding mismatches. Type checkers in strict mode catch the type-explicit cases; reference aliasing and copy-depth intent need review.","meta":{"family":"data-types","severity":"family","detection":"mixed"},"rel":["str-bytes","shallow-deep-copy"],"notes":["pyright strict catches Optional and str/bytes","reference aliasing needs explicit mutation contracts","encoding errors propagate as mojibake, not exceptions"],"links":[]},
+"resource-lifecycle":{"title":"Resource lifecycle family","code":"open(), conn, lock without with","body":"Files, sockets, locks, db connections. The context manager pattern is the idiomatic answer. Catch the obvious cases with ruff SIM115. Cross-function leaks (open in A, close in B, exception between) need semantic review.","meta":{"family":"resource","severity":"family","detection":"partial"},"rel":["context-manager","growing-cache"],"notes":["ResourceWarning at runtime helps","exception paths in non-with code are the silent killer","db pools mask leaks until they exhaust"],"links":[]},
+"concurrency":{"title":"Concurrency and async family","code":"races, deadlocks, async/sync","body":"The highest-LLM-value bug family. Tools rarely catch async/sync mismatches, GIL assumptions, or shared state across awaits. Required reading: the asyncio-gotchas pattern catalog in the corpus.","meta":{"family":"concurrency","severity":"family","detection":"poor"},"rel":["asyncio-gotchas","create-task","async-shared-state","gil"],"notes":["ruff ASYNC ruleset catches ~4 common patterns","semantic flow analysis is required for the rest","TaskGroup (3.11+) eliminates some pitfalls"],"links":[]},
+"security":{"title":"Security family","code":"injection, deserialization, creds","body":"Python ships unsafe primitives. pickle is RCE. yaml.load is RCE. f-string SQL is injection. eval/exec on user input is shell-as-service. bandit catches direct patterns; indirect injection through libraries often slips through.","meta":{"family":"security","severity":"family","detection":"partial"},"rel":["pickle-rce","sql-injection","yaml-load"],"notes":["bandit defaults catch the obvious","indirect (joblib, sqlalchemy text()) needs deeper review","secret detection: gitleaks, trufflehog"],"links":[]},
+"performance":{"title":"Performance family","code":"O(n²), concat, materialize","body":"Most Python performance problems are algorithmic or idiomatic, not the GIL. The biggest delta is vectorizing numpy/pandas. perflint and ruff PERF cover idioms; the algorithmic-with-context cases need workload analysis.","meta":{"family":"performance","severity":"family","detection":"partial"},"rel":["list-in-loop","string-concat","materialization","vectorize","perflint"],"notes":["measure before optimizing — profile first","hot/cold matters: an O(n²) called once is fine","workload context matters more than tool warnings"],"links":[]},
+"smells":{"title":"Smells and maintainability","code":"god functions, deep nesting","body":"Not bugs in the wrong-answer sense, but causes of future bugs. radon and ruff C catch complexity metrics; pattern-level smells (god classes, tight coupling) need design review.","meta":{"family":"smells","severity":"family","detection":"metrics only"},"rel":[],"notes":["complexity is a leading indicator","early-return / guard clauses flatten nesting","duplication is the cheapest fix to suggest"],"links":[]},
+"pyright-strict":{"title":"pyright --strict mode","code":"typeCheckingMode = strict","body":"pyright's strictest type-checking mode. Enables all type checks (Optional access, implicit Any, untyped imports, etc). Many projects run pyright in basic mode and miss most of the bugs strict catches. Required to detect most None deref and str/bytes bugs.","meta":{"family":"tool","severity":"config","detection":"foundational"},"rel":["str-bytes"],"notes":["faster than mypy strict on large codebases","reportMissingTypeStubs is the noisiest rule; consider tuning","pyright is microsoft, mypy is the original"],"links":[{"label":"pyright strict mode","url":"https://microsoft.github.io/pyright/#/configuration"}]},
+"perflint":{"title":"perflint","code":"perflint .","body":"A lint plugin specifically for python performance idioms. ~20 rules covering string concat in loops, list comprehensions vs generators, dict.keys() iteration, etc. Lower coverage than ruff PERF but stricter. Often run as a one-time audit rather than in CI.","meta":{"family":"tool","severity":"opt-in","detection":"perf idioms"},"rel":["performance","list-in-loop","string-concat"],"notes":["overlap with ruff PERF; ruff is broader","perflint rules are well-explained per-rule","not maintained as aggressively as ruff"],"links":[{"label":"perflint","url":"https://github.com/tonybaloney/perflint"}]},
+"bandit-cwe":{"title":"bandit CWE coverage","code":"bandit -r .","body":"Python security linter. Maps to OWASP CWE entries. Reliable on direct unsafe-API calls (pickle imports, hardcoded passwords, shell=True). Weak on indirect injection (eval via library, sql via ORM text(), pickle via joblib). Run in default config; tune false positives per-project.","meta":{"family":"tool","severity":"default","detection":"security"},"rel":["security","pickle-rce","sql-injection","yaml-load"],"notes":["B-prefixed rule ids","plugin system for project-specific patterns","semgrep with custom rules catches more indirect cases"],"links":[{"label":"bandit","url":"https://bandit.readthedocs.io/"}]}
+}
+</script>
+
+<script>
+(()=>{
+const D=JSON.parse(document.getElementById('reference-data').textContent);
+const els={t:document.getElementById('m-title'),c:document.getElementById('m-code'),b:document.getElementById('m-body'),m:document.getElementById('m-meta'),r:document.getElementById('m-rel'),n:document.getElementById('m-notes'),l:document.getElementById('m-links')};
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+function host(u){try{return new URL(u).hostname.replace(/^www\./,'');}catch(e){return '';}}
+function paint(k){
+  const x=D[k];if(!x)return;
+  els.t.textContent=x.title;
+  els.c.textContent=x.code||'—';
+  els.b.textContent=x.body||'';
+  els.m.innerHTML=Object.entries(x.meta||{}).map(([k,v])=>`<div><strong>${esc(k)}</strong><span>${esc(v)}</span></div>`).join('');
+  els.r.querySelector('ul').innerHTML=(x.rel||[]).map(r=>{const o=D[r];return o?`<li>&rsaquo; ${esc(o.title)}</li>`:'';}).join('')||'<li class="more">—</li>';
+  els.n.querySelector('ul').innerHTML=(x.notes||[]).map(n=>`<li style="white-space:normal;font-family:inherit;font-size:0.76rem">&middot; ${esc(n)}</li>`).join('')||'<li class="more">—</li>';
+  els.l.querySelector('ul').innerHTML=(x.links||[]).map(L=>`<li class="link-item"><a href="${esc(L.url)}" target="_blank" rel="noopener noreferrer">${esc(L.label)}</a><span class="src">${esc(host(L.url))}</span></li>`).join('')||'<li class="more">—</li>';
+}
+document.querySelectorAll('.term').forEach(el=>{
+  el.setAttribute('tabindex','0');
+  el.addEventListener('focus',()=>paint(el.getAttribute('data-term')));
+  el.addEventListener('click',e=>{e.preventDefault();paint(el.getAttribute('data-term'));});
+});
+document.addEventListener('mouseover',e=>{
+  const t=e.target.closest('.term');
+  if(!t)return;
+  paint(t.getAttribute('data-term'));
+  document.querySelectorAll('.term.is-active').forEach(x=>{if(x!==t)x.classList.remove('is-active');});
+  t.classList.add('is-active');
+});
+})();
+</script>
+</body></html>
