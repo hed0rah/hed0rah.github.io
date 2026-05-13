@@ -318,26 +318,53 @@
   #world.notrans{transition:none !important}
   #world:not(.notrans){transition:transform .3s cubic-bezier(.4,0,.2,1)}
 
-  /* YEAR RULERS - dotted gray for years, solid for decades */
+  /* YEAR RULERS - dotted gray for years, solid for decades.
+     Labels are no longer drawn inside the world; they live in the fixed
+     #year-gutter overlay so they "follow the screen" when panned. */
   .year-mark{
     position:absolute;left:0;right:0;height:0;
     pointer-events:none;
     border-top:1px dotted #C8C8C8;
   }
   .year-mark.decade{border-top:1px solid #808080}
-  .year-mark span{
-    position:absolute;left:4px;top:-9px;
+  .year-mark span{display:none}
+
+  /* FIXED YEAR GUTTER - stays put when you pan, so you always know what era
+     you're looking at without scrolling back to the canvas edge */
+  #year-gutter{
+    position:absolute;
+    top:0;left:0;
+    width:64px;
+    height:100%;
+    pointer-events:none;
+    z-index:7;
+    overflow:hidden;
+  }
+  /* subtle fade behind the labels so they don't fight with crossing edges */
+  #year-gutter::before{
+    content:"";
+    position:absolute;
+    top:0;left:0;bottom:0;
+    width:48px;
+    background:linear-gradient(90deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.92) 60%, rgba(255,255,255,0) 100%);
+  }
+  .y-label{
+    position:absolute;
+    left:5px;
     font-family:var(--sans);
     font-size:10px;
+    font-weight:normal;
     color:var(--text-dim);
     background:var(--canvas);
     padding:1px 6px;
     line-height:1;
+    white-space:nowrap;
+    transform:translateY(-50%);
+    border:1px solid transparent;
   }
-  .year-mark.decade span{
+  .y-label.decade{
     font-weight:bold;
     color:var(--text);
-    background:var(--canvas);
     border:1px solid;
     border-color:var(--hilite) var(--shadow-dark) var(--shadow-dark) var(--hilite);
     box-shadow:inset 1px 1px 0 var(--face-light), inset -1px -1px 0 var(--shadow);
@@ -987,6 +1014,8 @@
     <div id="world">
       <svg id="links" xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
+
+    <div id="year-gutter"></div>
 
     <div id="legend">
       <div class="leg-title">
@@ -1699,6 +1728,40 @@ function apply(){
   world.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
   document.getElementById('sb-zoom').textContent = 'Zoom: '+Math.round(scale*100)+'%';
   updateMinimap();
+  updateYearGutter();
+}
+
+/* Render year labels at fixed screen-left, positioned at the screen Y that
+   matches each year line in the panned/zoomed world. Reused divs to avoid
+   thrashing the DOM during continuous pan/zoom. */
+const gutterEl = document.getElementById('year-gutter');
+const gutterCache = {};
+function updateYearGutter(){
+  const r = stage.getBoundingClientRect();
+  const used = new Set();
+  /* density: when very zoomed out, only show decades to avoid label crowding */
+  const decadesOnly = scale < 0.35;
+  for(let y = 1960; y <= 2030; y += 5){
+    if(decadesOnly && y % 10 !== 0) continue;
+    const worldY = yr(y) + OFFY;
+    const screenY = worldY * scale + ty;
+    if(screenY < -20 || screenY > r.height + 20) continue;
+    let el = gutterCache[y];
+    if(!el){
+      el = document.createElement('div');
+      el.className = 'y-label' + (y % 10 === 0 ? ' decade' : '');
+      el.textContent = y;
+      gutterEl.appendChild(el);
+      gutterCache[y] = el;
+    }
+    el.style.top = screenY + 'px';
+    el.style.display = '';
+    used.add(y);
+  }
+  /* hide off-screen labels rather than destroying them */
+  Object.keys(gutterCache).forEach(y => {
+    if(!used.has(Number(y))) gutterCache[y].style.display = 'none';
+  });
 }
 
 function fit(animate=true){
