@@ -64,6 +64,7 @@
     --c-embed:#00A800;
     --c-mainframe:#5C3800;
     --c-proprietary:#404040;
+    --c-grivt:#E900FF;
 
     /* MS Sans Serif is bitmap-only, Tahoma is the canonical fallback for the look */
     --sans:"MS Sans Serif","Microsoft Sans Serif","Pixelated MS Sans Serif",Tahoma,Geneva,sans-serif;
@@ -517,6 +518,7 @@
   .node.embed{--lin-color:var(--c-embed)}
   .node.mainframe{--lin-color:var(--c-mainframe)}
   .node.proprietary{--lin-color:var(--c-proprietary)}
+  .node.grivt{--lin-color:var(--c-grivt)}
 
   /* CONNECTIONS */
   svg#links{position:absolute;top:0;left:0;pointer-events:none;overflow:visible;z-index:6}
@@ -1081,7 +1083,7 @@
         <p>An interactive genealogy of 120 operating systems, charted across 65 years of computing history.</p>
         <p>Each entry is placed on the vertical axis at its year of first release. <b>Click any node</b> to trace its lineage: ancestors highlight in blue, descendants in pink.</p>
         <p><b>Controls:</b> <kbd>scroll</kbd> zoom, <kbd>drag</kbd> pan, <kbd>/</kbd> search, <kbd>Esc</kbd> close. Click empty canvas to clear selection. Click lineage swatches to filter.</p>
-        <p style="color:#404040;font-size:11px;margin-top:10px">After chococigar's 2020 diagram, expanded with research on obscure and modern systems.</p>
+        <p style="color:#404040;font-size:11px;margin-top:10px">By <a href="https://hed0rah.github.io" target="_blank">hed0rah.github.io</a> &middot; <a href="https://x.com/r3l0z" target="_blank">@r3l0z</a></p>
       </div>
     </div>
     <div class="dlg-foot">
@@ -1098,7 +1100,7 @@ const NODES = [
   // === HISTORICAL ROOTS ===========================================
   {id:'ctss',name:'CTSS',year:1961,by:'MIT',lin:'research',stat:'historical',lic:'proprietary',x:1450,
    tag:'Compatible Time-Sharing System',
-   desc:`One of the very first time-sharing operating systems, developed at MIT's Computation Center starting in 1961 on a modified IBM 7090. CTSS demonstrated that multiple users could share a single mainframe interactively from teletypes, an idea radical enough that the project's name needled IBM's then-mainstream "incompatible" Fortran Monitor System. It is the direct progenitor of Multics and, by extension, of Unix. It introduced text formatting (RUNOFF, an ancestor of nroff/troff), email-like inter-user messaging, and one of the first password systems, which famously also leaked passwords in plaintext to anyone who issued the right MOTD command, in what may be the first documented OS vulnerability.`},
+   desc:`One of the very first time-sharing operating systems, developed at MIT's Computation Center starting in 1961 on a modified IBM 7090. CTSS demonstrated that multiple users could share a single mainframe interactively from teletypes, an idea radical enough that the project's name needled IBM's then-mainstream "incompatible" Fortran Monitor System. It is the direct progenitor of Multics and, by extension, of Unix. It introduced text formatting (RUNOFF, an ancestor of nroff/troff), email-like inter-user messaging, and one of the first password systems. The 1962 Allan Scherr incident, where a researcher requested a printout of the entire password file via punch card to bypass his four-hour weekly time quota, is the earliest documented password breach. A separate 1966 incident, the "Password Incident" recalled by Tom Van Vleck, swapped the password file into the message-of-the-day display after two admins edited both files simultaneously and the editor's shared-name temp files collided.`},
 
   {id:'its',name:'ITS',year:1967,by:'MIT AI Lab',lin:'research',stat:'historical',lic:'mixed',x:1700,
    tag:'Incompatible Timesharing System',
@@ -1249,7 +1251,7 @@ const NODES = [
   // === RED HAT FAMILY =============================================
   {id:'redhat',name:'Red Hat',year:1995,by:'Bob Young, Marc Ewing',lin:'linux',stat:'historical',lic:'open',x:700,parents:['linux'],
    tag:'RHL → RHEL',
-   desc:`Founded by Marc Ewing (the "red hat" was his Cornell lacrosse cap) and Bob Young. RPM (Red Hat Package Manager) was invented here. Red Hat Linux ran from 1995 to 2003, when it forked into community Fedora and commercial RHEL (Red Hat Enterprise Linux). IBM bought Red Hat for $34B in 2019, the largest open-source acquisition ever.`},
+   desc:`Founded by Marc Ewing (who wore his grandfather's red Cornell University lacrosse cap as a student at Carnegie Mellon, and became known around the CMU computer lab as "the guy in the red hat") and Bob Young. RPM (Red Hat Package Manager) was invented here. Red Hat Linux ran from 1995 to 2003, when it forked into community Fedora and commercial RHEL (Red Hat Enterprise Linux). IBM bought Red Hat for $34B in 2019, the largest open-source acquisition ever.`},
 
   {id:'fedora',name:'Fedora',year:2003,by:'Fedora Project',lin:'linux',stat:'active',lic:'open',x:700,parents:['redhat'],
    tag:'Community upstream of RHEL',
@@ -1329,7 +1331,7 @@ const NODES = [
    desc:`Google's web-centric OS. Built on Gentoo's Portage at the package level, with a Linux kernel and a Chrome-browser shell. Originally pure web-app, now runs Android apps (Crostini) and Linux apps in containers. ChromeOS Flex (2022) is a free version installable on most x86 hardware. Verified Boot with Google-signed firmware is a key security feature.`},
   {id:'asahi',name:'Asahi Linux',year:2021,by:'Hector Martin et al',lin:'linux',stat:'active',lic:'open',x:1750,parents:['arch'],
    tag:'Linux on Apple Silicon',
-   desc:`Reverse-engineered, clean-room Linux port for Apple Silicon Macs (M1, M2, M3, M4). Hector "marcan" Martin led the project, ported from Arch ARM, and figured out Apple's bespoke GPU through brutal reverse engineering, Asahi Lina (a vtuber, also actually Hector) wrote the GPU driver in Rust. Project is in a difficult moment as of 2025 with Hector having stepped back, but development continues.`},
+   desc:`Reverse-engineered, clean-room Linux port for Apple Silicon Macs (M1, M2, M3, M4). Hector "marcan" Martin led the project, building on Arch Linux ARM as the userland and figuring out Apple's bespoke GPU through brutal reverse engineering. Asahi Lina (a vtuber-persona developer) wrote the GPU driver in Rust. Hector stepped back from kernel maintainership in early 2025 after public friction over Rust-in-kernel disputes; the project continues with the remaining maintainers.`},
   {id:'pmos',name:'postmarketOS',year:2017,by:'pmOS community',lin:'linux',stat:'active',lic:'open',x:1900,parents:['alpine'],
    tag:'10-year OS for phones',
    desc:`Alpine-based mobile OS aimed at giving smartphones a decade of life. Targets dozens of mostly-Android-orphaned phones (Pinephones, OnePlus 6, various Samsung devices). Multiple desktop environments available (Phosh, Plasma Mobile, Sxmo). The community is closely tied to the Linux-mobile movement and to projects like Pine64 and Purism.`},
@@ -1382,7 +1384,7 @@ const NODES = [
    desc:`Jean-Louis Gassée's startup answered the question "what if we redesigned an OS from scratch for multimedia and pervasive threading?" BeOS featured a multithreaded kernel, the BeFS journaled 64-bit filesystem with database-like indexed attributes (you could query the filesystem like SQL), pervasive symmetric multiprocessing, a clean C++ object-oriented API. Apple nearly bought Be in 1996, Gassée asked $300M, Apple offered $125M, Apple's board went with NeXT instead. Be Inc. was sold to Palm in 2001. <a href="https://en.wikipedia.org/wiki/BeOS" target="_blank">More.</a>`},
   {id:'haiku',name:'Haiku',year:2001,by:'Haiku, Inc.',lin:'be',stat:'active',lic:'open',x:2050,parents:['beos'],
    tag:'Open-source BeOS reimplementation',
-   desc:`Started Aug 18, 2001, the day after Palm bought Be, as OpenBeOS by Michael Phipps, then renamed Haiku in 2004 over trademark concerns. It's a complete clean-room reimplementation, binary-compatible with BeOS R5 software on x86 (BeBook + Tracker/Deskbar were released open-source by Be's owners). Hybrid microkernel-style design forked from Travis Geiselbrecht's NewOS. R1/Beta 5 shipped July 2024; pre-final R1 in active development. <a href="https://www.haiku-os.org/" target="_blank">haiku-os.org</a>`},
+   desc:`Started Aug 18, 2001, the day after Palm bought Be, as OpenBeOS by Michael Phipps, then renamed Haiku in 2004 over trademark concerns. It's a complete clean-room reimplementation, binary-compatible with BeOS R5 software on x86 (BeBook + Tracker/Deskbar were released open-source by Be's owners). Hybrid microkernel-style design forked from Travis Geiselbrecht's NewOS. R1/Beta 5 shipped September 2024; pre-final R1 in active development. <a href="https://www.haiku-os.org/" target="_blank">haiku-os.org</a>`},
 
   // === AMIGA & FRIENDS ============================================
   {id:'amigaos',name:'AmigaOS',year:1985,by:'Commodore / Amiga',lin:'amiga',stat:'historical',lic:'proprietary',x:2200,
@@ -1538,6 +1540,11 @@ const NODES = [
   {id:'geos',name:'GEOS',year:1986,by:'Berkeley Softworks',lin:'macclassic',stat:'historical',lic:'proprietary',x:2500,
    tag:'GUI for Commodore 64',
    desc:`A GUI OS for the Commodore 64 (later C128, then PC) shipping in 1986. Squeezed a Mac-like desktop, mouse cursor, drag-and-drop, vector fonts, and applications (geoWrite, geoPaint) into 64KB of RAM. A genuinely impressive engineering feat. Later spun off PC/GEOS, which became Nokia's smartphone OS for the 9000-series Communicator.`},
+
+  // === C-CLASS MECH UX ============================================
+  {id:'grivtos',name:'GrivtOS',year:2022,by:'Grivt Dynamics',lin:'grivt',stat:'active',lic:'proprietary',x:3150,
+   tag:'Premium UX for C-Class Mechs',
+   desc:`Developed by Grivt Dynamics as a premium UX layer for civilian-grade C-Class mechs operating in The Hills. Cy officials have since introduced litigation against the company in an attempt to ban its use outside of UCS approved hardware. <a href="https://killengn.com" target="_blank">killengn.com</a>`},
 ];
 
 /* ---------- AUTO-LAYOUT: assign X coordinates by lineage lane ----------- */
@@ -1562,7 +1569,8 @@ const LANE_PREFER = {
   mainframe:  [17],
   dos:        [18],
   windows:    [19],
-  proprietary:[16, 17, 18, 19]
+  proprietary:[16, 17, 18, 19],
+  grivt:      [19]
 };
 
 const NODE_BY_ID = Object.fromEntries(NODES.map(n=>[n.id,n]));
@@ -2103,7 +2111,8 @@ const LINEAGES = [
   ['mainframe','Mainframe'],
   ['dos','DOS'],
   ['windows','Windows'],
-  ['proprietary','Other']
+  ['proprietary','Other'],
+  ['grivt','GrivtOS']
 ];
 const lineageOn = new Set(LINEAGES.map(l=>l[0]));
 LINEAGES.forEach(([id,label])=>{
