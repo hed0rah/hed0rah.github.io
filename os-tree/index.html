@@ -1,0 +1,2131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OSFAMTRE.EXE - Operating System Family Tree</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* AUTHENTIC WIN 3.1 SYSTEM COLORS - from the VGA palette */
+    --face:#C0C0C0;
+    --face-light:#DFDFDF;
+    --hilite:#FFFFFF;
+    --shadow:#808080;
+    --shadow-dark:#404040;
+    --text:#000000;
+    --text-dim:#404040;
+    --text-disabled:#808080;
+    --title-active:#000080;          /* solid navy - Win 3.1 authentic */
+    --title-inactive:#808080;
+    --title-text:#FFFFFF;
+    --title-text-inactive:#C0C0C0;
+    --desktop:#008080;               /* iconic teal */
+    --canvas:#FFFFFF;
+    --select:#000080;
+    --select-text:#FFFFFF;
+    --highlight:#FFFFE1;
+
+    /* lineage colors - constrained to Win 3.x 16-color-ish palette */
+    --c-research:#008000;
+    --c-unix:#0000A8;
+    --c-bsd:#A80000;
+    --c-linux:#A85400;
+    --c-gnu:#A800A8;
+    --c-darwin:#0078A8;
+    --c-macclassic:#606060;
+    --c-dos:#544404;
+    --c-windows:#000080;
+    --c-amiga:#A800A8;
+    --c-be:#00A8A8;
+    --c-hobby:#A85800;
+    --c-mobile:#A8005C;
+    --c-embed:#00A800;
+    --c-mainframe:#5C3800;
+    --c-proprietary:#404040;
+
+    /* MS Sans Serif is bitmap-only, Tahoma is the canonical fallback for the look */
+    --sans:"MS Sans Serif","Microsoft Sans Serif","Pixelated MS Sans Serif",Tahoma,Geneva,sans-serif;
+    --mono:"VT323","Perfect DOS VGA 437","Lucida Console","Courier New",monospace;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;width:100%;overflow:hidden;font-family:var(--sans);font-size:11px;color:var(--text);background:var(--desktop)}
+
+  /* DESKTOP - dithered teal pattern (1 px dither between two close greens) */
+  body{
+    background-color:#008080;
+    background-image:
+      repeating-conic-gradient(#008080 0 25%, #007878 0 50%);
+    background-size:2px 2px;
+    image-rendering:pixelated;
+  }
+
+  /* outer black 1px definition then 2-px raised bevel - authentic Win 3.1 */
+  .win{
+    position:fixed;
+    top:4px;left:4px;right:4px;bottom:4px;
+    background:var(--face);
+    border:1px solid var(--text);
+    box-shadow:
+      inset 1px 1px 0 var(--hilite),
+      inset 2px 2px 0 var(--face-light),
+      inset -1px -1px 0 var(--shadow-dark),
+      inset -2px -2px 0 var(--shadow);
+    padding:2px;
+    display:flex;flex-direction:column;
+  }
+
+  /* AUTHENTIC WIN 3.1 TITLE BAR - solid navy, white bold text */
+  .titlebar{
+    height:19px;
+    background:var(--title-active);
+    color:var(--title-text);
+    font-family:var(--sans);
+    font-weight:bold;
+    font-size:11px;
+    padding:1px 1px 1px 2px;
+    display:flex;align-items:center;gap:2px;
+    flex-shrink:0;
+    user-select:none;
+    border-bottom:1px solid var(--text);
+  }
+  .titlebar.inactive{
+    background:var(--title-inactive);
+    color:var(--title-text-inactive);
+  }
+
+  /* SYSTEM MENU BOX (control box) - the horizontal bar icon on left of title bar */
+  .sysmenu-box{
+    width:18px;height:16px;
+    background:var(--face);
+    border:1px solid;
+    border-color:var(--hilite) var(--shadow-dark) var(--shadow-dark) var(--hilite);
+    box-shadow:inset 1px 1px 0 var(--face-light), inset -1px -1px 0 var(--shadow);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    position:relative;
+  }
+  .sysmenu-box::after{
+    content:"";
+    width:10px;height:2px;
+    background:var(--text);
+    box-shadow:0 -1px 0 var(--shadow), 0 1px 0 var(--shadow);
+  }
+  .sysmenu-box:active{
+    border-color:var(--shadow-dark) var(--hilite) var(--hilite) var(--shadow-dark);
+    box-shadow:inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--face-light);
+  }
+
+  .titlebar .title-text{
+    flex:1;
+    padding:0 4px;
+    letter-spacing:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .titlebar .controls{display:flex;gap:0;margin-left:auto}
+  .titlebar .cbtn{
+    width:18px;height:16px;
+    background:var(--face);
+    border:1px solid;
+    border-color:var(--hilite) var(--shadow-dark) var(--shadow-dark) var(--hilite);
+    box-shadow:inset 1px 1px 0 var(--face-light), inset -1px -1px 0 var(--shadow);
+    margin-left:1px;
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:8px;font-weight:bold;
+    line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    padding:0;
+    position:relative;
+  }
+  .titlebar .cbtn:active{
+    border-color:var(--shadow-dark) var(--hilite) var(--hilite) var(--shadow-dark);
+    box-shadow:inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--face-light);
+  }
+  /* pixel-perfect ▼ minimize, ▲ maximize, X close - authentic icons */
+  .titlebar .cbtn .gly{display:block;line-height:1;font-size:9px}
+  .titlebar .cbtn.min .gly::after{
+    content:"";
+    display:block;
+    width:6px;height:3px;
+    border-bottom:2px solid var(--text);
+    margin-top:6px;
+  }
+  .titlebar .cbtn.max .gly::after{
+    content:"";
+    display:block;
+    width:8px;height:8px;
+    border:1px solid var(--text);
+    border-top-width:2px;
+  }
+  .titlebar .cbtn.close .gly::after{
+    content:"\d7";
+    font-size:13px;
+    font-weight:bold;
+  }
+
+  /* MENU BAR */
+  .menubar{
+    height:20px;
+    background:var(--face);
+    padding:0 2px;
+    display:flex;align-items:center;
+    border-bottom:1px solid var(--shadow);
+    box-shadow:0 1px 0 var(--hilite);
+    flex-shrink:0;
+    font-size:11px;
+    position:relative;
+  }
+  .menu-item{
+    padding:3px 8px 4px;
+    cursor:default;
+    user-select:none;
+    font-family:var(--sans);
+    font-size:11px;
+    line-height:1;
+  }
+  .menu-item u{text-decoration:underline}
+  .menu-item:hover, .menu-item.open{
+    background:var(--select);
+    color:var(--select-text);
+  }
+  .menu-popup{
+    position:absolute;
+    top:22px;
+    background:var(--face);
+    border:1px solid var(--text);
+    box-shadow:
+      inset 1px 1px 0 var(--hilite),
+      inset -1px -1px 0 var(--shadow-dark),
+      2px 2px 0 rgba(0,0,0,.3);
+    padding:2px;
+    min-width:170px;
+    z-index:200;
+    display:none;
+  }
+  .menu-popup.show{display:block}
+  .menu-popup .mi{
+    padding:3px 22px 3px 22px;
+    cursor:default;
+    position:relative;
+    white-space:nowrap;
+    font-family:var(--sans);
+    font-size:11px;
+  }
+  .menu-popup .mi:hover{background:var(--select);color:var(--select-text)}
+  .menu-popup .mi .acc{position:absolute;right:8px;color:var(--text-dim);font-family:var(--sans);font-size:11px}
+  .menu-popup .mi:hover .acc{color:var(--select-text)}
+  .menu-popup .sep{height:1px;background:var(--shadow);margin:3px 4px;border-bottom:1px solid var(--hilite)}
+
+  /* TOOLBAR */
+  .toolbar{
+    background:var(--face);
+    padding:3px 4px;
+    display:flex;align-items:center;gap:2px;
+    border-bottom:1px solid var(--shadow);
+    box-shadow:0 1px 0 var(--hilite);
+    flex-shrink:0;
+    flex-wrap:wrap;
+  }
+  .tb-btn{
+    background:var(--face);
+    border:1px solid;
+    border-color:var(--hilite) var(--shadow-dark) var(--shadow-dark) var(--hilite);
+    box-shadow:inset 1px 1px 0 var(--face-light), inset -1px -1px 0 var(--shadow);
+    padding:3px 10px;
+    cursor:pointer;
+    font-family:var(--sans);
+    font-size:11px;
+    color:var(--text);
+    min-height:24px;
+    display:inline-flex;align-items:center;gap:4px;
+    line-height:1;
+  }
+  .tb-btn:active, .tb-btn.pressed{
+    border-color:var(--shadow-dark) var(--hilite) var(--hilite) var(--shadow-dark);
+    box-shadow:inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--face-light);
+    padding:4px 9px 2px 11px;
+  }
+  .tb-sep{width:2px;height:18px;background:var(--shadow);border-right:1px solid var(--hilite);margin:0 4px}
+  .tb-input{
+    background:var(--canvas);
+    border:1px solid;
+    border-color:var(--shadow) var(--hilite) var(--hilite) var(--shadow);
+    box-shadow:inset 1px 1px 0 var(--shadow-dark), inset -1px -1px 0 var(--face-light);
+    padding:3px 5px;
+    font-family:var(--sans);
+    font-size:11px;
+    color:var(--text);
+    height:24px;
+    outline:none;
+    min-width:140px;
+  }
+  .tb-input:focus{outline:1px dotted var(--text);outline-offset:-3px}
+  .tb-select{
+    background:var(--face);
+    border:1px solid;
+    border-color:var(--hilite) var(--shadow-dark) var(--shadow-dark) var(--hilite);
+    box-shadow:inset 1px 1px 0 var(--face-light), inset -1px -1px 0 var(--shadow);
+    padding:2px 4px;
+    font-family:var(--sans);
+    font-size:11px;
+    height:24px;
+    cursor:pointer;
+  }
+  .tb-label{font-size:11px;color:var(--text);margin-right:2px;margin-left:4px}
+
+  /* CANVAS WORKSPACE */
+  #stage{
+    position:relative;
+    flex:1;
+    overflow:hidden;
+    background:var(--canvas);
+    border:1px solid;
+    border-color:var(--shadow) var(--hilite) var(--hilite) var(--shadow);
+    box-shadow:inset 1px 1px 0 var(--shadow-dark), inset -1px -1px 0 var(--face-light);
+    margin:2px 2px 0;
+    cursor:grab;
+  }
+  #stage.dragging{cursor:grabbing}
+  #world{position:relative;transform-origin:0 0;will-change:transform}
+  #world.notrans{transition:none !important}
+  #world:not(.notrans){transition:transform .3s cubic-bezier(.4,0,.2,1)}
+
+  /* YEAR RULERS - dotted gray for years, solid for decades */
+  .year-mark{
+    position:absolute;left:0;right:0;height:0;
+    pointer-events:none;
+    border-top:1px dotted #C8C8C8;
+  }
+  .year-mark.decade{border-top:1px solid #808080}
+  .year-mark span{
+    position:absolute;left:4px;top:-9px;
+    font-family:var(--sans);
+    font-size:10px;
+    color:var(--text-dim);
+    background:var(--canvas);
+    padding:1px 6px;
+    line-height:1;
+  }
+  .year-mark.decade span{
+    font-weight:bold;
+    color:var(--text);
+    background:var(--canvas);
+    border:1px solid;
+    border-color:var(--hilite) var(--shadow-dark) var(--shadow-dark) var(--hilite);
+    box-shadow:inset 1px 1px 0 var(--face-light), inset -1px -1px 0 var(--shadow);
+    padding:1px 8px;
+  }
+
+  /* ERA SECTION DIVIDERS - styled like Win 3.x group-box section headers */
+  .era-divider{
+    position:absolute;
+    left:0;right:0;
+    height:24px;
+    pointer-events:none;
+    z-index:3;
+  }
+  .era-divider .era-line{
+    position:absolute;
+    left:64px;right:24px;
+    top:50%;
+    height:2px;
+    border-top:1px solid var(--shadow);
+    border-bottom:1px solid var(--hilite);
+  }
+  .era-divider .era-label{
+    position:absolute;
+    top:50%;
+    left:90px;
+    transform:translateY(-50%);
+    background:var(--canvas);
+    padding:1px 12px;
+    font-family:var(--sans);
+    font-size:11px;
+    font-weight:bold;
+    color:var(--text);
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    border-left:1px solid var(--shadow);
+    border-right:1px solid var(--shadow);
+    z-index:1;
+  }
+
+  /* NODE: card with proper Win 3.x bevel and lineage stripe */
+  .node{
+    position:absolute;
+    background:var(--face);
+    border:1px solid;
+    border-color:var(--hilite) var(--shadow-dark) var(--shadow-dark) var(--hilite);
+    box-shadow:inset 1px 1px 0 var(--face-light), inset -1px -1px 0 var(--shadow);
+    padding:3px 5px 4px 11px;
+    cursor:pointer;
+    color:var(--text);
+    overflow:hidden;
+    user-select:none;
+    z-index:10;
+    font-family:var(--sans);
+  }
+  .node::before{
+    content:"";
+    position:absolute;
+    top:2px;bottom:2px;left:2px;
+    width:5px;
+    background:var(--lin-color);
+    border:1px solid;
+    border-color:var(--hilite) var(--shadow-dark) var(--shadow-dark) var(--hilite);
+    box-sizing:border-box;
+  }
+
+  .node:hover{background:#D4D0C8}
+
+  .node.active{
+    background:var(--highlight);
+    border-color:var(--shadow-dark) var(--hilite) var(--hilite) var(--shadow-dark);
+    box-shadow:inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--face-light);
+    z-index:20;
+    outline:1px dotted var(--text);
+    outline-offset:-4px;
+  }
+
+  .node.ancestor{
+    background:#D8E0FF;
+    border-color:var(--hilite) #4040FF #4040FF var(--hilite);
+    z-index:15;
+  }
+  .node.descendant{
+    background:#FFD8E8;
+    border-color:var(--hilite) #FF40A0 #FF40A0 var(--hilite);
+    z-index:15;
+  }
+  .node.faded{opacity:.4}
+  .node.dim{opacity:.18;filter:grayscale(.8)}
+
+  .node .yr{
+    display:flex;align-items:center;justify-content:space-between;gap:3px;
+    margin-bottom:2px;
+    line-height:1;
+  }
+  .node .yr > span:first-child{
+    font-family:var(--mono);
+    font-size:14px;
+    color:var(--text);
+    letter-spacing:0;
+    line-height:1;
+  }
+  .node .status{
+    font-family:var(--sans);
+    font-size:9px;font-weight:bold;
+    padding:1px 4px;
+    background:var(--lin-color);
+    color:#FFFFFF;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    border:1px solid rgba(0,0,0,.25);
+    line-height:1.15;
+    text-shadow:1px 1px 0 rgba(0,0,0,.35);
+  }
+  .node[data-status="historical"] .status{background:var(--shadow);color:#FFFFFF}
+  .node[data-status="abandoned"] .status{background:var(--c-bsd);color:#FFFFFF}
+  .node[data-status="dormant"] .status{background:var(--c-linux);color:#FFFFFF}
+
+  .node .nm{
+    font-family:var(--sans);
+    font-weight:bold;
+    font-size:12px;
+    line-height:1.1;
+    color:var(--text);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    margin-bottom:2px;
+  }
+  .node .by{
+    font-family:var(--sans);
+    font-weight:normal;
+    font-size:11px;
+    color:var(--text-dim);
+    line-height:1.15;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+
+  .node.research{--lin-color:var(--c-research)}
+  .node.unix{--lin-color:var(--c-unix)}
+  .node.bsd{--lin-color:var(--c-bsd)}
+  .node.linux{--lin-color:var(--c-linux)}
+  .node.gnu{--lin-color:var(--c-gnu)}
+  .node.darwin{--lin-color:var(--c-darwin)}
+  .node.macclassic{--lin-color:var(--c-macclassic)}
+  .node.dos{--lin-color:var(--c-dos)}
+  .node.windows{--lin-color:var(--c-windows)}
+  .node.amiga{--lin-color:var(--c-amiga)}
+  .node.be{--lin-color:var(--c-be)}
+  .node.hobby{--lin-color:var(--c-hobby)}
+  .node.mobile{--lin-color:var(--c-mobile)}
+  .node.embed{--lin-color:var(--c-embed)}
+  .node.mainframe{--lin-color:var(--c-mainframe)}
+  .node.proprietary{--lin-color:var(--c-proprietary)}
+
+  /* CONNECTIONS */
+  svg#links{position:absolute;top:0;left:0;pointer-events:none;overflow:visible;z-index:6}
+  svg#links path{
+    fill:none;
+    stroke:#404040;
+    stroke-width:1;
+    opacity:.55;
+  }
+  svg#links path.inspired{
+    stroke:#800080;
+    stroke-dasharray:2 3;
+    opacity:.55;
+  }
+  svg#links path.hl-ancestor{
+    stroke:#0000FF;
+    stroke-width:2;
+    opacity:1;
+  }
+  svg#links path.hl-descendant{
+    stroke:#FF00A0;
+    stroke-width:2;
+    opacity:1;
+  }
+  svg#links path.dim{opacity:.08}
+
+  /* STATUS BAR */
+  .statusbar{
+    height:22px;
+    background:var(--face);
+    border-top:1px solid var(--hilite);
+    box-shadow:inset 0 1px 0 var(--shadow);
+    display:flex;align-items:center;
+    padding:1px 3px;
+    gap:2px;
+    flex-shrink:0;
+  }
+  .sb-cell{
+    height:18px;
+    border:1px solid;
+    border-color:var(--shadow) var(--hilite) var(--hilite) var(--shadow);
+    padding:1px 6px;
+    font-family:var(--sans);
+    font-size:11px;
+    display:flex;align-items:center;
+    color:var(--text);
+    background:var(--face);
+    line-height:1;
+  }
+  .sb-cell.grow{flex:1;min-width:0}
+  .sb-cell.thin{padding:1px 8px}
+  .sb-cell .prompt{
+    font-family:var(--mono);
+    color:var(--text-dim);
+    font-size:13px;
+    margin-right:4px;
+    line-height:1;
+  }
+
+  /* TOOLTIP */
+  #tip{
+    position:fixed;z-index:80;
+    background:#FFFFE1;
+    border:1px solid var(--text);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:11px;
+    padding:3px 7px;
+    max-width:260px;
+    pointer-events:none;
+    opacity:0;
+    box-shadow:2px 2px 0 rgba(0,0,0,.25);
+  }
+  #tip.show{opacity:1}
+  #tip .tip-name{font-weight:bold;margin-bottom:1px}
+  #tip .tip-meta{font-family:var(--mono);font-size:13px;color:var(--text-dim);margin-bottom:2px;line-height:1}
+  #tip .tip-tag{font-style:italic;color:var(--text-dim);font-size:11px;line-height:1.2}
+
+  /* DETAIL DIALOG - draggable Win 3.x window */
+  #detail{
+    position:fixed;
+    top:60px;left:50%;
+    transform:translateX(-50%);
+    width:min(520px, 94vw);
+    max-height:80vh;
+    background:var(--face);
+    border:1px solid var(--text);
+    box-shadow:
+      inset 1px 1px 0 var(--hilite),
+      inset 2px 2px 0 var(--face-light),
+      inset -1px -1px 0 var(--shadow-dark),
+      inset -2px -2px 0 var(--shadow),
+      4px 4px 0 rgba(0,0,0,.25);
+    padding:2px;
+    z-index:90;
+    display:none;
+    flex-direction:column;
+  }
+  #detail.open{display:flex}
+  #detail .titlebar{cursor:move}
+
+  .d-body{
+    flex:1;
+    overflow:auto;
+    background:var(--face);
+    padding:0;
+    display:flex;flex-direction:column;
+  }
+
+  .d-banner{
+    background:var(--canvas);
+    border:1px solid;
+    border-color:var(--shadow) var(--hilite) var(--hilite) var(--shadow);
+    box-shadow:inset 1px 1px 0 var(--shadow-dark), inset -1px -1px 0 var(--face-light);
+    padding:11px 14px 11px 18px;
+    margin:8px 8px 0;
+    position:relative;
+  }
+  .d-banner-stripe{
+    position:absolute;
+    top:1px;bottom:1px;left:1px;
+    width:5px;
+    background:var(--lin-color, var(--shadow));
+  }
+  #d-year{
+    font-family:var(--mono);
+    font-size:16px;
+    color:var(--text-dim);
+    line-height:1;
+    margin-bottom:5px;
+  }
+  #d-name{
+    font-family:var(--sans);
+    font-weight:bold;
+    font-size:22px;
+    line-height:1.05;
+    color:var(--text);
+    letter-spacing:-.01em;
+  }
+  #d-by{
+    font-family:var(--sans);
+    font-size:11px;
+    color:var(--text-dim);
+    margin-top:4px;
+  }
+
+  #d-tags{
+    display:flex;flex-wrap:wrap;gap:4px;
+    padding:8px 12px 4px;
+  }
+  .t{
+    font-family:var(--sans);
+    font-size:10px;font-weight:bold;
+    text-transform:uppercase;
+    padding:2px 8px;
+    border:1px solid var(--shadow-dark);
+    color:var(--text);
+    background:var(--face);
+    letter-spacing:.04em;
+    line-height:1.2;
+  }
+  .t.lin{
+    background:var(--lin-color);
+    color:#FFFFFF;
+    border-color:rgba(0,0,0,.4);
+    text-shadow:1px 1px 0 rgba(0,0,0,.3);
+  }
+  .t.stat.active{background:#80FF80;color:#003300}
+  .t.stat.abandoned{background:#FFD0D0;color:#600000}
+  .t.stat.dormant{background:#FFE890;color:#604000}
+  .t.stat.historical{background:#D0D0D0;color:#202020}
+
+  #d-desc{
+    padding:10px 14px;
+    font-family:var(--sans);
+    font-size:12px;
+    line-height:1.55;
+    color:var(--text);
+    overflow:auto;
+    max-height:280px;
+    background:var(--canvas);
+    border:1px solid;
+    border-color:var(--shadow) var(--hilite) var(--hilite) var(--shadow);
+    box-shadow:inset 1px 1px 0 var(--shadow-dark), inset -1px -1px 0 var(--face-light);
+    margin:0 8px 8px;
+  }
+  #d-desc::-webkit-scrollbar{width:16px}
+  #d-desc::-webkit-scrollbar-track{background:var(--face);border:1px solid var(--shadow)}
+  #d-desc::-webkit-scrollbar-thumb{
+    background:var(--face);
+    border:1px solid;
+    border-color:var(--hilite) var(--shadow-dark) var(--shadow-dark) var(--hilite);
+    box-shadow:inset 1px 1px 0 var(--face-light), inset -1px -1px 0 var(--shadow);
+  }
+
+  #d-rels{
+    padding:6px 12px 10px;
+    background:var(--face);
+    border-top:1px solid var(--shadow);
+    box-shadow:inset 0 1px 0 var(--hilite);
+    font-family:var(--sans);
+    font-size:11px;
+  }
+  #d-rels h4{
+    font-size:10px;
+    font-weight:bold;
+    color:var(--text);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    margin:6px 0 4px;
+  }
+  #d-rels h4 .count{color:var(--text-dim);font-weight:normal}
+  #d-rels ul{list-style:none;display:flex;flex-wrap:wrap;gap:3px}
+  #d-rels a{
+    display:inline-block;
+    font-size:11px;
+    padding:3px 8px 3px 14px;
+    background:var(--face);
+    border:1px solid;
+    border-color:var(--hilite) var(--shadow-dark) var(--shadow-dark) var(--hilite);
+    box-shadow:inset 1px 1px 0 var(--face-light), inset -1px -1px 0 var(--shadow);
+    text-decoration:none;color:var(--text);
+    cursor:pointer;
+    position:relative;
+    line-height:1;
+  }
+  #d-rels a::before{
+    content:"";
+    position:absolute;
+    top:3px;bottom:3px;left:3px;
+    width:3px;
+    background:var(--lin-color, var(--shadow));
+  }
+  #d-rels a:active{
+    border-color:var(--shadow-dark) var(--hilite) var(--hilite) var(--shadow-dark);
+    box-shadow:inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--face-light);
+  }
+
+  /* LEGEND - floating Win 3.x mini window */
+  #legend{
+    position:absolute;
+    bottom:6px;left:6px;
+    background:var(--face);
+    border:1px solid var(--text);
+    box-shadow:
+      inset 1px 1px 0 var(--hilite),
+      inset -1px -1px 0 var(--shadow-dark);
+    padding:1px;
+    width:208px;
+    z-index:50;
+    font-family:var(--sans);font-size:11px;
+  }
+  #legend .leg-title{
+    background:var(--title-active);
+    color:var(--title-text);
+    font-weight:bold;
+    padding:2px 4px;
+    font-size:11px;
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--text);
+  }
+  #legend .leg-body{
+    padding:6px 8px;
+    max-height:220px;overflow:auto;
+  }
+  #legend .item{
+    display:flex;align-items:center;gap:6px;
+    padding:1px 2px;
+    cursor:default;
+    user-select:none;
+    line-height:1.4;
+  }
+  #legend .item:hover{background:rgba(0,0,128,.08)}
+  #legend .item.muted{opacity:.4;text-decoration:line-through}
+  #legend .swatch{
+    width:12px;height:10px;
+    border:1px solid var(--text);
+    display:inline-block;
+    flex-shrink:0;
+  }
+  #legend .leg-title .cbtn{
+    width:14px;height:13px;
+    background:var(--face);
+    border:1px solid;
+    border-color:var(--hilite) var(--shadow-dark) var(--shadow-dark) var(--hilite);
+    color:var(--text);font-weight:bold;font-size:8px;
+    line-height:1;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+  }
+  #legend.collapsed .leg-body{display:none}
+
+  /* MINIMAP */
+  #mini{
+    position:absolute;
+    bottom:6px;right:6px;
+    background:var(--face);
+    border:1px solid var(--text);
+    box-shadow:
+      inset 1px 1px 0 var(--hilite),
+      inset -1px -1px 0 var(--shadow-dark);
+    padding:1px;
+    width:210px;
+    z-index:50;
+  }
+  #mini .mini-title{
+    background:var(--title-active);
+    color:var(--title-text);
+    font-weight:bold;
+    padding:2px 4px;
+    font-size:11px;
+    border-bottom:1px solid var(--text);
+  }
+  #mini .mini-frame{
+    position:relative;
+    margin:2px;
+    background:var(--canvas);
+    border:1px solid;
+    border-color:var(--shadow) var(--hilite) var(--hilite) var(--shadow);
+    box-shadow:inset 1px 1px 0 var(--shadow-dark);
+    height:110px;
+    overflow:hidden;
+    cursor:crosshair;
+  }
+  #mini canvas{position:absolute;inset:0;width:100%;height:100%}
+  #miniview{
+    position:absolute;
+    border:1px solid #000080;
+    background:rgba(0,0,128,.15);
+    pointer-events:none;
+  }
+
+  /* ABOUT DIALOG */
+  #about{
+    position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0);
+    pointer-events:none;
+  }
+  #about.show{display:flex;pointer-events:auto}
+  #about .dlg{
+    width:460px;
+    max-width:92vw;
+    background:var(--face);
+    border:1px solid var(--text);
+    box-shadow:
+      inset 1px 1px 0 var(--hilite),
+      inset 2px 2px 0 var(--face-light),
+      inset -1px -1px 0 var(--shadow-dark),
+      inset -2px -2px 0 var(--shadow),
+      4px 4px 0 rgba(0,0,0,.3);
+    padding:2px;
+    pointer-events:auto;
+  }
+  #about .dlg .titlebar{cursor:move}
+  #about .dlg-body{padding:16px;display:flex;gap:16px;align-items:flex-start;background:var(--face)}
+  #about .dlg-icon{
+    width:52px;height:52px;
+    background:var(--canvas);
+    border:1px solid;
+    border-color:var(--shadow) var(--hilite) var(--hilite) var(--shadow);
+    box-shadow:inset 1px 1px 0 var(--shadow-dark);
+    padding:4px;
+    flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);
+    font-size:36px;
+    color:var(--title-active);
+    line-height:1;
+  }
+  #about .dlg-body p{font-size:12px;line-height:1.45;margin-bottom:8px}
+  #about .dlg-body kbd{
+    font-family:var(--mono);
+    font-size:13px;
+    background:var(--face);
+    border:1px solid;
+    border-color:var(--hilite) var(--shadow-dark) var(--shadow-dark) var(--hilite);
+    box-shadow:inset 1px 1px 0 var(--face-light), inset -1px -1px 0 var(--shadow);
+    padding:0 4px;
+    color:var(--text);
+    line-height:1;
+  }
+  #about .dlg-foot{
+    padding:0 14px 14px;
+    display:flex;justify-content:flex-end;
+    background:var(--face);
+  }
+  .btn-default{
+    background:var(--face);
+    border:1px solid var(--text);
+    box-shadow:
+      inset 1px 1px 0 var(--hilite),
+      inset -1px -1px 0 var(--shadow-dark),
+      inset 2px 2px 0 var(--face-light),
+      inset -2px -2px 0 var(--shadow);
+    padding:5px 22px;
+    font-family:var(--sans);
+    font-size:11px;
+    color:var(--text);
+    cursor:pointer;
+    min-width:72px;
+    font-weight:normal;
+  }
+  .btn-default:focus{outline:1px dotted var(--text);outline-offset:-5px}
+  .btn-default:active{
+    box-shadow:
+      inset 1px 1px 0 var(--shadow-dark),
+      inset -1px -1px 0 var(--hilite),
+      inset 2px 2px 0 var(--shadow),
+      inset -2px -2px 0 var(--face-light);
+  }
+
+  /* RESPONSIVE */
+  @media (max-width:760px){
+    .win{top:2px;left:2px;right:2px;bottom:2px}
+    .toolbar{padding:2px}
+    .tb-label{display:none}
+    .tb-input{min-width:80px}
+    #legend{width:140px}
+    #mini{width:130px}
+    #mini .mini-frame{height:70px}
+  }
+</style>
+</head>
+<body>
+
+<div class="win">
+  <div class="titlebar" id="main-titlebar">
+    <div class="sysmenu-box" id="sysmenu-box" title="Control menu"></div>
+    <div class="title-text">OSFAMTRE.EXE - Operating System Family Tree</div>
+    <div class="controls">
+      <button class="cbtn min" title="Minimize"><span class="gly"></span></button>
+      <button class="cbtn max" title="Maximize"><span class="gly"></span></button>
+      <button class="cbtn close" title="Close" onclick="window.close()"><span class="gly"></span></button>
+    </div>
+  </div>
+
+  <div class="menubar" id="menubar">
+    <div class="menu-item" data-menu="file"><u>F</u>ile</div>
+    <div class="menu-item" data-menu="view"><u>V</u>iew</div>
+    <div class="menu-item" data-menu="lineage"><u>L</u>ineage</div>
+    <div class="menu-item" data-menu="help"><u>H</u>elp</div>
+
+    <div class="menu-popup" id="menu-file">
+      <div class="mi" onclick="alert('Save: not implemented');closeMenus()">&nbsp;Save Layout...<span class="acc">Ctrl+S</span></div>
+      <div class="mi" onclick="alert('Export: not implemented');closeMenus()">&nbsp;Export PNG...<span class="acc">Ctrl+E</span></div>
+      <div class="sep"></div>
+      <div class="mi" onclick="window.close()">&nbsp;Exit<span class="acc">Alt+F4</span></div>
+    </div>
+    <div class="menu-popup" id="menu-view">
+      <div class="mi" onclick="fit(true);closeMenus()">&nbsp;Fit to Window<span class="acc">F</span></div>
+      <div class="mi" onclick="fitWidth(true);closeMenus()">&nbsp;Fit Width<span class="acc">W</span></div>
+      <div class="mi" onclick="zoomBy(1.3);closeMenus()">&nbsp;Zoom In<span class="acc">+</span></div>
+      <div class="mi" onclick="zoomBy(1/1.3);closeMenus()">&nbsp;Zoom Out<span class="acc">-</span></div>
+      <div class="sep"></div>
+      <div class="mi" onclick="toggleLegend();closeMenus()">&nbsp;Lineage Palette</div>
+      <div class="mi" onclick="document.getElementById('mini').style.display=document.getElementById('mini').style.display==='none'?'block':'none';closeMenus()">&nbsp;Mini-Map</div>
+    </div>
+    <div class="menu-popup" id="menu-lineage">
+      <div class="mi" onclick="closeDetail();closeMenus()">&nbsp;Clear Selection<span class="acc">Esc</span></div>
+    </div>
+    <div class="menu-popup" id="menu-help">
+      <div class="mi" onclick="document.getElementById('about').classList.add('show');setMainActive(false);closeMenus()">&nbsp;About OSFAMTRE...</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="tb-btn" id="fit" title="Fit to window">Fit</button>
+    <button class="tb-btn" id="fit-w" title="Fit width">Fit W</button>
+    <button class="tb-btn" id="zin" title="Zoom in">+</button>
+    <button class="tb-btn" id="zout" title="Zoom out">&minus;</button>
+    <div class="tb-sep"></div>
+    <span class="tb-label">Find:</span>
+    <input type="search" class="tb-input" id="search" placeholder="Search by name...">
+    <div class="tb-sep"></div>
+    <span class="tb-label">Status:</span>
+    <select id="filter-status" class="tb-select">
+      <option value="">(all)</option>
+      <option value="active">Active</option>
+      <option value="dormant">Dormant</option>
+      <option value="abandoned">Abandoned</option>
+      <option value="historical">Historical</option>
+    </select>
+    <span class="tb-label">License:</span>
+    <select id="filter-license" class="tb-select">
+      <option value="">(all)</option>
+      <option value="open">Open Source</option>
+      <option value="proprietary">Proprietary</option>
+      <option value="mixed">Mixed</option>
+      <option value="public-domain">Public Domain</option>
+    </select>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" id="about-btn" title="About">?</button>
+  </div>
+
+  <div id="stage">
+    <div id="world">
+      <svg id="links" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <div id="legend">
+      <div class="leg-title">
+        <span>Lineages</span>
+        <button class="cbtn" id="legend-toggle" onclick="toggleLegend()" title="Minimize">_</button>
+      </div>
+      <div class="leg-body" id="legend-body"></div>
+    </div>
+
+    <div id="mini">
+      <div class="mini-title">Mini-Map</div>
+      <div class="mini-frame">
+        <canvas></canvas>
+        <div id="miniview"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <div class="sb-cell grow" id="sb-info"><span class="prompt">C:\&gt;</span><span id="sb-info-text">Ready</span></div>
+    <div class="sb-cell thin" id="sb-count">120 systems</div>
+    <div class="sb-cell thin" id="sb-zoom">Zoom: 100%</div>
+    <div class="sb-cell thin">1961-2026</div>
+  </div>
+</div>
+
+<aside id="detail">
+  <div class="titlebar" id="detail-titlebar">
+    <div class="sysmenu-box" title="Control menu"></div>
+    <div class="title-text" id="d-titlebar-text">Information</div>
+    <div class="controls">
+      <button class="cbtn close" id="d-close" title="Close"><span class="gly"></span></button>
+    </div>
+  </div>
+  <div class="d-body">
+    <div class="d-banner">
+      <div class="d-banner-stripe"></div>
+      <div id="d-year"></div>
+      <div id="d-name"></div>
+      <div id="d-by"></div>
+    </div>
+    <div id="d-tags"></div>
+    <div id="d-desc"></div>
+    <div id="d-rels"></div>
+  </div>
+</aside>
+
+<div id="tip"></div>
+
+<div id="about">
+  <div class="dlg">
+    <div class="titlebar" id="about-titlebar">
+      <div class="sysmenu-box" title="Control menu"></div>
+      <div class="title-text">About OSFAMTRE</div>
+      <div class="controls">
+        <button class="cbtn close" onclick="document.getElementById('about').classList.remove('show');setMainActive(true)"><span class="gly"></span></button>
+      </div>
+    </div>
+    <div class="dlg-body">
+      <div class="dlg-icon">&#9636;</div>
+      <div>
+        <p><b>OSFAMTRE.EXE</b> &nbsp; Version 1.00</p>
+        <p>An interactive genealogy of 120 operating systems, charted across 65 years of computing history.</p>
+        <p>Each entry is placed on the vertical axis at its year of first release. <b>Click any node</b> to trace its lineage: ancestors highlight in blue, descendants in pink.</p>
+        <p><b>Controls:</b> <kbd>scroll</kbd> zoom, <kbd>drag</kbd> pan, <kbd>/</kbd> search, <kbd>Esc</kbd> close. Click empty canvas to clear selection. Click lineage swatches to filter.</p>
+        <p style="color:#404040;font-size:11px;margin-top:10px">After chococigar's 2020 diagram, expanded with research on obscure and modern systems.</p>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn-default" onclick="document.getElementById('about').classList.remove('show');setMainActive(true)">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* year_scale dialed up so cards never overlap vertically - 64px per year */
+function yr(y){ return (y-1961)*64; }
+
+const NODES = [
+  // === HISTORICAL ROOTS ===========================================
+  {id:'ctss',name:'CTSS',year:1961,by:'MIT',lin:'research',stat:'historical',lic:'proprietary',x:1450,
+   tag:'Compatible Time-Sharing System',
+   desc:`One of the very first time-sharing operating systems, developed at MIT's Computation Center starting in 1961 on a modified IBM 7090. CTSS demonstrated that multiple users could share a single mainframe interactively from teletypes, an idea radical enough that the project's name needled IBM's then-mainstream "incompatible" Fortran Monitor System. It is the direct progenitor of Multics and, by extension, of Unix. It introduced text formatting (RUNOFF, an ancestor of nroff/troff), email-like inter-user messaging, and one of the first password systems, which famously also leaked passwords in plaintext to anyone who issued the right MOTD command, in what may be the first documented OS vulnerability.`},
+
+  {id:'its',name:'ITS',year:1967,by:'MIT AI Lab',lin:'research',stat:'historical',lic:'mixed',x:1700,
+   tag:'Incompatible Timesharing System',
+   desc:`The MIT AI Lab's deliberately anti-corporate riposte to CTSS, hand-written in PDP-10 assembly. ITS had no passwords, no file protections, and any user could spy on or even alter another's session, a culture of total transparency that became foundational to hacker ethics. Richard Stallman cut his teeth here; when ITS finally shut down in the early '90s, he had already begun GNU as a reaction to the proprietary software world that replaced it. Emacs, the original MUD-like ZORK environment, and a vast amount of early AI research lived on ITS.`},
+
+  {id:'tenex',name:'TENEX',year:1969,by:'BBN',lin:'research',stat:'historical',lic:'proprietary',x:1900,
+   tag:'PDP-10 timesharing, virtual memory',
+   desc:`Built by BBN (the ARPANET contractor) for the PDP-10, TENEX pioneered demand-paged virtual memory on a commercial-class machine and a sophisticated command interpreter with completion, history, and recognition, features that wouldn't be standard on Unix shells for decades. DEC later took TENEX's design and shipped it as TOPS-20, the OS Lisp Machine programmers and ARPANET researchers loved most through the 1970s.`},
+
+  {id:'multics',name:'MULTICS',year:1969,by:'MIT / GE / Bell Labs',lin:'research',stat:'historical',lic:'proprietary',x:1300,parents:['ctss'],
+   tag:'Multiplexed Information & Computing Service',
+   desc:`Multics was the giant, ambitious successor to CTSS, designed to be a computing utility (think "electric power for thinking"). It introduced or popularized hierarchical filesystems with arbitrary depth, dynamic linking, ring-based protection, segmented memory, and the very concept of treating processes as named entities. It was so ambitious that Bell Labs withdrew, leaving Ken Thompson and Dennis Ritchie deflated, and inspired. Their reaction, a stripped-down "castrated" parody named UNICS (later UNIX), became one of the most important pieces of software ever written. Multics outlived its reputation: the last running production system was decommissioned at the Canadian DND in 2000.`},
+
+  {id:'vms',name:'VMS',year:1977,by:'DEC / Dave Cutler',lin:'mainframe',stat:'active',lic:'mixed',x:2700,
+   tag:'VAX → OpenVMS',
+   desc:`Dave Cutler's masterpiece for the DEC VAX. VMS introduced an extremely strict, layered architecture with hard process boundaries, clustering across the network (VAXcluster, with shared disks years before anyone else managed it), and forensic-grade logging. It powered the NYSE, NASA, ATMs, and the early MTA at JPL. Cutler later took the same architectural principles to Microsoft, where they became Windows NT, there's a long-running joke that incrementing each letter in "VMS" gives "WNT". Now stewarded by VMS Software Inc. as OpenVMS on x86-64, still receiving updates in 2025.`},
+
+  // === XEROX & APPLE EARLY ========================================
+  {id:'alto',name:'Alto OS',year:1973,by:'Xerox PARC',lin:'macclassic',stat:'historical',lic:'proprietary',x:2400,
+   tag:'First GUI, bitmap display',
+   desc:`The Xerox Alto wasn't sold commercially but had everything: a bitmap display, three-button mouse, WYSIWYG editor (Bravo), Smalltalk-based programming environments, Ethernet, and a desktop metaphor. Steve Jobs's 1979 visit to PARC, where he saw the Alto running Smalltalk, is one of computing's mythic moments, though arguably what Jobs really took away was overlapping windows, while everything else was already in the air. PARC kept iterating into the Xerox Star (1981), the first commercial GUI system.`},
+
+  {id:'star',name:'Xerox Star',year:1981,by:'Xerox',lin:'macclassic',stat:'abandoned',lic:'proprietary',x:2400,parents:['alto'],
+   tag:'8010 Information System',
+   desc:`The Xerox 8010 Star Information System brought Alto ideas to market: desktop metaphor, icons, drag-and-drop, properties sheets, double-click. Priced at $16,500+ per workstation it was a commercial failure, but its UI conventions are still ubiquitous. The Smalltalk-80 work also escaped PARC in this era and became its own influence on object-oriented operating systems.`},
+
+  {id:'cpm',name:'CP/M',year:1974,by:'Gary Kildall / Digital Research',lin:'dos',stat:'historical',lic:'proprietary',x:2700,
+   tag:'8-bit microcomputer standard',
+   desc:`Gary Kildall's Control Program for Microcomputers ran on 8080/Z80 machines and was the de-facto OS for personal computers before the IBM PC. Its BIOS abstraction layer was a key idea: hardware-specific code lived in the BIOS, the OS proper was portable. IBM famously tried to license CP/M-86 for the PC but went with QDOS (a CP/M clone) from Tim Paterson instead, after Kildall reportedly didn't take the meeting seriously. DR-DOS, FreeDOS, and the entire DOS-compatible ecosystem owe CP/M their CCP, FCB, and most of their early API design.`},
+
+  {id:'applelisa',name:'Lisa OS',year:1983,by:'Apple',lin:'macclassic',stat:'abandoned',lic:'proprietary',x:2200,parents:['alto'],
+   tag:'Pre-emptive Apple GUI',
+   desc:`Apple's first commercial GUI computer, priced at ~$10,000 in 1983. Lisa OS had pre-emptive multitasking and protected memory, features the Mac didn't ship with for over a decade afterward. Lisa flopped, but its Office suite (LisaWrite, LisaCalc) demonstrated what GUI apps could be. In 1989, Apple buried 2,700 unsold Lisas in a Utah landfill for tax purposes; archaeologists may someday excavate them.`},
+
+  // === UNIX CORE ==================================================
+  {id:'unix',name:'UNIX',year:1971,by:'Ken Thompson, Dennis Ritchie',lin:'unix',stat:'historical',lic:'mixed',x:1300,parents:['multics'],
+   tag:'Research Unix, Bell Labs',
+   desc:`Born in part as a Multics joke (UNIX = UNiplexed Information and Computing Service), Unix made simplicity the religion. Everything is a file. Programs are filters. Small tools composed via pipes (Doug McIlroy's invention). The shell is itself a program. Rewritten in C by 1973, Unix became the first portable OS, escaping its PDP-11 origins and spreading across the world's computers, and eventually under nearly all of them. The "Research Unix" line at Bell Labs continued through Eighth, Ninth, and Tenth Editions while the rest of the world forked off into BSD and System V.`},
+
+  {id:'bsd',name:'BSD',year:1977,by:'CSRG / UC Berkeley',lin:'bsd',stat:'historical',lic:'open',x:1100,parents:['unix'],
+   tag:'Berkeley Software Distribution',
+   desc:`The Computer Systems Research Group at Berkeley took Bell Labs' Sixth Edition Unix and bolted on the things Unix needed to take over the world: virtual memory (4.0BSD), the TCP/IP stack (4.2BSD, 1983) which still underpins essentially all networking, vi, csh, sendmail, BIND, NFS. The famous AT&T-vs-BSDi lawsuit in the early '90s nearly killed BSD; it ended with most of BSD declared free of AT&T code, just in time for the FreeBSD/NetBSD/OpenBSD forks to take off. As an aside, BSD is one of the few projects with its own daemon mascot designed by John Lasseter, later of Pixar.`},
+
+  {id:'sysv',name:'System V',year:1983,by:'AT&T (USL)',lin:'unix',stat:'historical',lic:'proprietary',x:1500,parents:['unix'],
+   tag:'Commercial Unix',
+   desc:`AT&T's commercial answer to BSD. System V (release 4 in particular, "SVR4") is the ancestor of nearly every commercial Unix you've heard of, Solaris, HP-UX, AIX, IRIX, SCO Unix, A/UX. Its init system, STREAMS networking, and SysV IPC primitives (shmget, semop, msgsnd) are still all over POSIX today. The bitterness between Berkeley people and AT&T people during the SVR4 era shaped a generation of OS politics.`},
+
+  // === BSD FAMILY =================================================
+  {id:'freebsd',name:'FreeBSD',year:1993,by:'Jordan Hubbard et al',lin:'bsd',stat:'active',lic:'open',x:1050,parents:['bsd'],
+   tag:'Server / workstation BSD',
+   desc:`The biggest BSD and the workhorse behind a startling fraction of internet infrastructure. Yahoo!, WhatsApp's original servers, Netflix's CDN, and the PlayStation 3/4/5 operating systems all run on FreeBSD or directly use its code. Key inventions: ZFS port from OpenSolaris, jails (lightweight containers, 2000, predating Linux LXC/Docker by over a decade), DTrace, Capsicum capability sandboxing. The ports system was a model for source-based package management. License: 2-clause BSD, the maximally permissive open-source license.`},
+
+  {id:'netbsd',name:'NetBSD',year:1993,by:'NetBSD Foundation',lin:'bsd',stat:'active',lic:'open',x:1200,parents:['bsd'],
+   tag:'Portable to anything with a CPU',
+   desc:`"Of course it runs NetBSD." NetBSD's motto is "of course it runs NetBSD" because it does, currently 50+ supported CPU architectures including m68k, VAX, SPARC64, RISC-V, MIPS, PowerPC, ARM down to embedded toasters. Its source tree is famously clean; pkgsrc is the cross-platform package system that even runs on macOS and Linux. NetBSD was the first of the free BSD forks.`},
+
+  {id:'openbsd',name:'OpenBSD',year:1996,by:'Theo de Raadt',lin:'bsd',stat:'active',lic:'open',x:1350,parents:['netbsd'],
+   tag:'Security-focused fork of NetBSD',
+   desc:`Forked from NetBSD by Theo de Raadt after a famously contentious split. OpenBSD's project obsession is correctness and security: full source code audits, strlcpy/strlcat invented here, pledge() and unveil() sandboxing primitives, the most paranoid default install ("Only two remote holes in the default install, in a heck of a long time."). Spinoffs that escaped the project and ate the world: OpenSSH (used everywhere), OpenBGPD, LibreSSL (forked after Heartbleed), tmux, mandoc. Theo runs a tight ship; if you've ever read a flame on misc@openbsd.org, you understand the culture.`},
+
+  {id:'dragonfly',name:'DragonFly BSD',year:2003,by:'Matt Dillon',lin:'bsd',stat:'active',lic:'open',x:900,parents:['freebsd'],
+   tag:'SMP-focused FreeBSD 4 fork',
+   desc:`Matt Dillon forked FreeBSD 4.x in 2003 in disagreement with the direction of FreeBSD 5's SMPng work. DragonFly pursued a lightweight kernel threading model, a single big kernel lock that incrementally dissolves into per-subsystem locks, and HAMMER and HAMMER2, copy-on-write filesystems with snapshots that influenced ZFS thinking. It's an example of what happens when a single, opinionated kernel architect runs his own BSD.`},
+
+  // === DARWIN / NEXTSTEP / macOS ==================================
+  {id:'nextstep',name:'NEXTSTEP',year:1989,by:'NeXT / Steve Jobs',lin:'darwin',stat:'historical',lic:'proprietary',x:1700,parents:['bsd'],
+   tag:'Mach + BSD + Objective-C',
+   desc:`After Jobs was forced out of Apple in 1985, he founded NeXT and shipped NEXTSTEP on the magnesium-cubed NeXT workstation. Underneath: a Mach 2.5 microkernel with a BSD userland (the Lites-style hybrid that would later become XNU). On top: Display PostScript for graphics, Interface Builder, and a fully object-oriented Objective-C framework called AppKit. Tim Berners-Lee built the world's first web browser, WorldWideWeb, on a NeXTcube. id Software's Doom was developed on NEXTSTEP. Sales were dismal, but when Apple bought NeXT in 1996 they got NEXTSTEP, Jobs, Cocoa, and the entire foundation of macOS.`},
+
+  {id:'darwin',name:'Darwin',year:2000,by:'Apple',lin:'darwin',stat:'active',lic:'mixed',x:1700,parents:['nextstep','freebsd'],
+   tag:'XNU kernel: Mach + BSD',
+   desc:`The open-source core of macOS, iOS, iPadOS, watchOS, tvOS, and visionOS. The XNU kernel ("X is Not Unix") fuses a Mach 3.0 microkernel core with a BSD personality layer and the I/O Kit driver framework (which is, fascinatingly, written in a restricted subset of C++). Darwin's userland borrows heavily from FreeBSD. Apple keeps releasing source for the kernel and many utilities; PureDarwin and OpenDarwin attempted to build complete OSes from it, with limited success.`},
+
+  {id:'macos',name:'macOS',year:2001,by:'Apple',lin:'darwin',stat:'active',lic:'proprietary',x:1700,parents:['darwin','macos9'],
+   tag:'OS X → macOS, glossy Aqua',
+   desc:`Mac OS X 10.0 "Cheetah" shipped March 2001 on top of Darwin, with the Aqua UI (Jobs called the buttons "lickable"). Each big-cat / California-place-name release added serious infrastructure: 10.4 Tiger introduced Spotlight and CoreData; 10.5 Leopard added time-machine snapshots; 10.7 Lion absorbed iOS conventions; macOS 11 Big Sur (2020) brought the Apple Silicon transition; macOS 14 Sonoma and later have steadily welded the desktop into the Apple ecosystem. Compatibility-wise, macOS has done two giant CPU transitions (PowerPC → Intel via Rosetta, Intel → Apple Silicon via Rosetta 2) and lived to tell about it.`},
+
+  {id:'ios',name:'iOS',year:2007,by:'Apple',lin:'darwin',stat:'active',lic:'proprietary',x:1850,parents:['macos'],
+   tag:'iPhone OS → iOS',
+   desc:`Originally branded "iPhone OS" until 2010, iOS is the same Darwin / XNU kernel as macOS, recompiled for ARM with a different UI framework (UIKit instead of AppKit) and a much tighter sandbox model. Notable kernel-level differences: code signing enforcement, mandatory entitlements, KPP/KTRR security mitigations. iPadOS (2019), watchOS (2015), tvOS (2015), and visionOS (2024) all share this same kernel and most of the userland, varying in UI shell.`},
+
+  {id:'macclassic',name:'Classic Mac OS',year:1984,by:'Apple',lin:'macclassic',stat:'historical',lic:'proprietary',x:2200,parents:['applelisa'],
+   tag:'System 1 → Mac OS 9',
+   desc:`Apple's original Macintosh OS, from System 1 (1984) through Mac OS 9 (1999). The single-tasking original was cooperative multitasking by System 7. Famous for the Toolbox API, the resource fork (every file had a "data fork" and a "resource fork", try to copy that to a foreign filesystem), HFS / HFS+ filesystems, and the iconic happy Mac / sad Mac boot icons. By the late '90s the lack of protected memory was untenable, killing Mac apps left and right (a single app fault crashed the system), which is what led Apple to look outside for a replacement kernel, and to NeXT.`},
+  {id:'macos9',name:'Mac OS 9',year:1999,by:'Apple',lin:'macclassic',stat:'historical',lic:'proprietary',x:2200,parents:['macclassic'],
+   tag:'Last classic Mac OS',
+   desc:`Mac OS 9 was the dead-end of the classic Mac line, kept alive in Classic Environment (a virtualization mode) inside Mac OS X 10.0 through 10.4. It had Sherlock 2, multi-user support, and the last gasp of the resource fork as a first-class concept.`},
+
+  {id:'iiagi',name:'A/UX',year:1988,by:'Apple',lin:'unix',stat:'abandoned',lic:'proprietary',x:1850,parents:['sysv','macclassic'],
+   tag:'Apple\u2019s System V on Motorola',
+   desc:`Apple's first attempt to ship Unix, on Macs with Motorola 68k CPUs. A/UX combined a System V Release 2 kernel with a thin Mac System 7 UI layer. NASA used it heavily. It was killed in 1995 when Apple bet on Copland (which itself died, paving the way for the NeXT acquisition).`},
+
+  // === SYSV COMMERCIAL UNIXES =====================================
+  {id:'sunos',name:'SunOS',year:1982,by:'Sun Microsystems',lin:'unix',stat:'historical',lic:'proprietary',x:1500,parents:['bsd'],
+   tag:'BSD on Sun workstations',
+   desc:`Bill Joy, fresh from Berkeley, took BSD code with him to Sun and built SunOS on it. SunOS 1.0 through 4.1.4 were essentially BSD with Sun additions (NFS was invented here, 1984; NIS too). In 1992 Sun switched to System V Release 4 underneath and rebranded as Solaris, severing the BSD genealogy. SunOS 4.x is fondly remembered.`},
+
+  {id:'solaris',name:'Solaris',year:1992,by:'Sun → Oracle',lin:'unix',stat:'dormant',lic:'proprietary',x:1500,parents:['sunos','sysv'],
+   tag:'SVR4-based Sun Unix',
+   desc:`Solaris (originally SunOS 5) was the SVR4 reboot. It dominated workstations and servers through the late '90s and pioneered an extraordinary amount of infrastructure: DTrace, ZFS, Zones (containers, 2004), Service Management Facility, Fault Management Architecture. OpenSolaris (2005) opened most of the source; after Oracle bought Sun in 2010 they closed it again, killing OpenSolaris. Solaris 11.4 is still receiving patches under Oracle's "Continuous Delivery" model but development is famously skeletal.`},
+
+  {id:'illumos',name:'illumos',year:2010,by:'illumos community',lin:'unix',stat:'active',lic:'open',x:1500,parents:['solaris'],
+   tag:'Open-source post-Solaris fork',
+   desc:`When Oracle re-closed OpenSolaris in 2010, the community forked the last open snapshot as illumos. From it: OmniOS, OpenIndiana, and SmartOS, the last being Joyent's image-based hypervisor OS, which kept ZFS, DTrace, and Zones alive and pulled them into wider tech consciousness through Joyent's cloud work. illumos is the technical "real" continuation of Solaris.`},
+
+  {id:'hpux',name:'HP-UX',year:1984,by:'Hewlett-Packard',lin:'unix',stat:'dormant',lic:'proprietary',x:1700,parents:['sysv'],
+   tag:'HP workstation Unix',
+   desc:`HP's System V variant, originally for HP 9000 / PA-RISC machines, later Itanium. HP-UX was a workhorse of '90s financial services and engineering shops, infamous for SAM (System Administration Manager) and for being incomprehensible to anyone arriving from Linux. End of standard support is scheduled for 2025; Itanium hardware end-of-life is the real killing blow.`},
+
+  {id:'aix',name:'AIX',year:1986,by:'IBM',lin:'unix',stat:'active',lic:'proprietary',x:1850,parents:['sysv','bsd'],
+   tag:'IBM POWER Unix',
+   desc:`IBM's Unix, originally a SysV variant with BSD bits and IBM's own quirks (the SMIT menu-driven sysadmin tool, the ODM Object Data Manager that replaces config files with a binary DB, the LVM that predated Linux's LVM by years). AIX runs on POWER CPUs and is still actively developed for banks, airlines, and big-iron customers. IBM's pSeries / Power Systems still ship with it.`},
+
+  {id:'irix',name:'IRIX',year:1988,by:'Silicon Graphics',lin:'unix',stat:'abandoned',lic:'proprietary',x:1700,parents:['sysv'],
+   tag:'SGI MIPS Unix',
+   desc:`SGI's flavor of Unix for MIPS-based workstations. IRIX powered Hollywood VFX for two decades: Jurassic Park's CGI, Toy Story, The Matrix, rendered on IRIX. It pioneered the XFS filesystem (later donated to Linux) and had the most advanced graphics stack of its era (OpenGL grew out of SGI's IRIS GL). SGI's collapse in the 2000s killed it; the last release was 6.5.30 in 2006.`},
+
+  {id:'xenix',name:'Xenix',year:1980,by:'Microsoft / SCO',lin:'unix',stat:'historical',lic:'proprietary',x:1900,parents:['unix'],
+   tag:'Microsoft\u2019s Unix',
+   desc:`Yes, Microsoft's. From 1980 through 1989 Microsoft was actually the largest Unix vendor by units, licensing AT&T Unix and shipping Xenix on PCs, PDP-11s, Z8000, m68k machines. Microsoft eventually traded Xenix to SCO (Santa Cruz Operation) in exchange for a stake; SCO later became famous for the SCO-vs-IBM Linux lawsuit, an entirely different and uglier story.`},
+
+  {id:'minix',name:'Minix',year:1987,by:'Andrew S. Tanenbaum',lin:'unix',stat:'active',lic:'open',x:1100,parents:['unix'],
+   tag:'Microkernel teaching OS',
+   desc:`Tanenbaum wrote Minix as a teaching system to accompany his OS textbook because AT&T's Unix licensing made it impossible to use real Unix source in a classroom. Linus Torvalds learned operating systems on Minix at the University of Helsinki and famously bickered with Tanenbaum (the "Linux is obsolete" Usenet thread, 1992) about microkernel vs monolithic design. Minix 3 (2005) is a complete redesign for embedded reliability; and Minix 3 quietly runs as the firmware on every modern Intel CPU as the Intel Management Engine.`},
+
+  // === GNU & HURD =================================================
+  {id:'gnu',name:'GNU',year:1983,by:'Richard Stallman',lin:'gnu',stat:'active',lic:'open',x:650,parents:['unix'],
+   tag:'Free software project',
+   desc:`Stallman's reaction to MIT's AI Lab being absorbed into proprietary Lisp Machine Inc. The plan: re-implement Unix entirely as free software. The userland tools came first and quickly: gcc, glibc, bash, coreutils, emacs, gdb, autotools. The kernel, Hurd, stalled. Without Linus's kernel arriving in 1991, GNU would have been a userland in search of a foundation forever. As such, "Linux" is properly GNU/Linux: a Linux kernel running a GNU userland.`},
+
+  {id:'hurd',name:'GNU Hurd',year:1990,by:'GNU Project',lin:'gnu',stat:'dormant',lic:'open',x:800,parents:['gnu'],
+   tag:'GNU\u2019s eternal kernel',
+   desc:`The GNU Project's official kernel, designed around the Mach microkernel with a "Hurd of GNU servers" handling everything filesystem, networking, and authentication. Beautifully designed, with the radical idea that user-space servers could be hot-replaced. Also, perpetually unfinished, the running joke is that GNU/Hurd is in beta since 1990. Still actively developed; the Debian Hurd port is the most usable form.`},
+
+  // === LINUX KERNEL & EARLY DISTROS ===============================
+  {id:'linux',name:'Linux',year:1991,by:'Linus Torvalds',lin:'linux',stat:'active',lic:'open',x:550,parents:['minix','gnu'],
+   tag:'GPL\u00B7v2 monolithic kernel',
+   desc:`Posted by Linus Torvalds to comp.os.minix on Aug 25, 1991: "Hello everybody out there using minix - I'm doing a (free) operating system (just a hobby, won't be big and professional like gnu)..." It became, of course, big and professional. By 2025 the Linux kernel is the largest collaborative engineering project in human history, runs essentially all servers, all Android phones, supercomputers, embedded everything. The kernel itself: monolithic but extensively modular (loadable kernel modules), C with strict styling, signed-off-by patch flow via git (also Linus's invention, 2005, because BitKeeper).`},
+
+  {id:'slackware',name:'Slackware',year:1993,by:'Patrick Volkerding',lin:'linux',stat:'active',lic:'open',x:150,parents:['linux'],
+   tag:'Oldest surviving distro',
+   desc:`The oldest Linux distribution still maintained. Patrick Volkerding's hand-curated, conservative, scripts-only approach, no dependency resolution, BSD-style init, minimal opinions. Slackware was many people's first Linux in the '90s. Famously released "when it's ready"; 15.0 took six years after 14.2. The name comes from the Church of the SubGenius.`},
+
+  {id:'debian',name:'Debian',year:1993,by:'Ian Murdock',lin:'linux',stat:'active',lic:'open',x:300,parents:['linux'],
+   tag:'Universal Operating System',
+   desc:`Ian Murdock named it for himself + his girlfriend Debra. Debian's contributions to Linux culture are enormous: the Debian Free Software Guidelines (which became the Open Source Definition), the dpkg/apt package management system, the Debian Constitution (yes, a constitution; the project elects a Project Leader annually), and the largest open package archive on Earth. Notably stable; "stable" releases are old by design, you choose Debian when you want it to keep working for years.`},
+
+  // === RED HAT FAMILY =============================================
+  {id:'redhat',name:'Red Hat',year:1995,by:'Bob Young, Marc Ewing',lin:'linux',stat:'historical',lic:'open',x:700,parents:['linux'],
+   tag:'RHL → RHEL',
+   desc:`Founded by Marc Ewing (the "red hat" was his Cornell lacrosse cap) and Bob Young. RPM (Red Hat Package Manager) was invented here. Red Hat Linux ran from 1995 to 2003, when it forked into community Fedora and commercial RHEL (Red Hat Enterprise Linux). IBM bought Red Hat for $34B in 2019, the largest open-source acquisition ever.`},
+
+  {id:'fedora',name:'Fedora',year:2003,by:'Fedora Project',lin:'linux',stat:'active',lic:'open',x:700,parents:['redhat'],
+   tag:'Community upstream of RHEL',
+   desc:`The community-driven, fast-moving distribution from which Red Hat Enterprise Linux pulls. Fedora is the proving ground for systemd (controversially introduced here), Wayland-by-default, PipeWire, Btrfs-by-default, GNOME's release cycle. Fedora releases land every six months, with maybe one year of support each.`},
+
+  {id:'centos',name:'CentOS',year:2004,by:'CentOS Project',lin:'linux',stat:'historical',lic:'open',x:850,parents:['redhat'],
+   tag:'Free RHEL clone',
+   desc:`The "Community Enterprise Operating System" rebuilt RHEL from source, removing trademarks, giving you binary-compatible RHEL for free. Red Hat acquired CentOS in 2014, then in December 2020 abruptly shifted CentOS to a rolling "CentOS Stream" model that sits between Fedora and RHEL, killing the use case of "free RHEL". This triggered the creation of Rocky Linux and AlmaLinux, both binary-compatible RHEL rebuilds, in 2021.`},
+
+  {id:'rocky',name:'Rocky / Alma',year:2021,by:'Greg Kurtzer / CloudLinux',lin:'linux',stat:'active',lic:'open',x:1000,parents:['centos'],
+   tag:'CentOS replacements',
+   desc:`Rocky Linux was started by Gregory Kurtzer (who originally co-founded CentOS) named after his late co-founder Rocky McGaugh. AlmaLinux is sponsored by CloudLinux. Both promise free, binary-compatible-with-RHEL distros for the long haul. Red Hat retaliated in 2023 by restricting RHEL source access, which led both projects to switch from "1:1 binary-compatible" to "ABI-compatible", built from CentOS Stream sources plus patches.`},
+
+  // === DEBIAN FAMILY ==============================================
+  {id:'ubuntu',name:'Ubuntu',year:2004,by:'Mark Shuttleworth / Canonical',lin:'linux',stat:'active',lic:'open',x:200,parents:['debian'],
+   tag:'Debian for humans',
+   desc:`Mark Shuttleworth, fresh from selling Thawte to VeriSign for ~$575M, funded Ubuntu as a polished Debian. The name comes from the Nguni word for "humanity towards others." Ubuntu nailed the desktop install experience just as Linux desktop adoption was peaking, and Canonical's six-month release cycle (codenamed alphabetically: Warty Warthog, Hoary Hedgehog, … Noble Numbat 24.04) was something nobody had done well before. LTS releases get 5 years of support, 10 with Ubuntu Pro.`},
+  {id:'mint',name:'Linux Mint',year:2006,by:'Clement Lefebvre',lin:'linux',stat:'active',lic:'open',x:200,parents:['ubuntu'],
+   tag:'Ubuntu, more conservative UX',
+   desc:`Linux Mint took Ubuntu but stuck with traditional desktop metaphors when GNOME Shell, then Unity, then GNOME 3 went off in radical directions. Its Cinnamon and MATE desktops are familiar to anyone who remembers GNOME 2 / Windows. Frequently the recommended distro for "just give me Windows but Linux".`},
+  {id:'popos',name:'Pop!_OS',year:2017,by:'System76',lin:'linux',stat:'active',lic:'open',x:350,parents:['ubuntu'],
+   tag:'System76\u2019s Ubuntu',
+   desc:`The OS that ships on System76 hardware (the Denver-based Linux laptop / desktop maker). Ubuntu underneath, with Pop!_Shell tiling extensions, an auto-tiling window manager, NVIDIA drivers preinstalled. System76 is now writing its own Rust-based COSMIC desktop from scratch (using iced/Smithay), with which Pop!_OS will become genuinely architecturally distinct.`},
+  {id:'raspbian',name:'Raspberry Pi OS',year:2012,by:'Raspberry Pi Foundation',lin:'linux',stat:'active',lic:'open',x:350,parents:['debian'],
+   tag:'Debian for Pi',
+   desc:`Originally Raspbian, now officially "Raspberry Pi OS." Debian on ARMv6/7/v8, tuned for the Raspberry Pi family. PIXEL desktop (a tuned LXDE). Massive influence in education and DIY, over 60 million Pis shipped, all running this.`},
+  {id:'kali',name:'Kali Linux',year:2013,by:'Offensive Security',lin:'linux',stat:'active',lic:'open',x:500,parents:['debian'],
+   tag:'Penetration testing distro',
+   desc:`The successor to BackTrack Linux. A Debian-based rolling distro packed with 600+ pre-configured tools for penetration testing, RF analysis, network forensics, web app testing. Default user used to be root; in 2020 they finally added a normal user model. The dragon logo and the rolling-release model have made it the de-facto OS for security pros and CTF players. (Tools: Metasploit, Wireshark, Aircrack-ng, John, Hashcat, Burp.)`},
+  {id:'tails',name:'Tails',year:2009,by:'Tails Project',lin:'linux',stat:'active',lic:'open',x:500,parents:['debian'],
+   tag:'Amnesic incognito live OS',
+   desc:`"The Amnesic Incognito Live System". Live USB Debian-based OS designed to leave no trace: all traffic routed through Tor, no persistent storage by default, RAM wiped on shutdown. Famously used by Edward Snowden in the NSA leaks. Funded in part by Tor Project and Mozilla.`},
+  {id:'qubes',name:'Qubes OS',year:2012,by:'Joanna Rutkowska',lin:'linux',stat:'active',lic:'open',x:650,parents:['linux'],
+   tag:'Security via Xen compartmentalization',
+   desc:`Joanna Rutkowska's "reasonably secure" OS. Each application or activity runs in its own Xen-based VM ("qube"), with colored window borders showing trust level. A USB stick auto-mounts into a disposable VM, not your trusted environment. Snowden has called it "the best OS available today" for security-conscious users. Demanding hardware requirements (lots of RAM, VT-d).`},
+
+  // === SUSE / OPENSUSE ============================================
+  {id:'suse',name:'SUSE',year:1993,by:'SuSE GmbH',lin:'linux',stat:'active',lic:'open',x:850,parents:['slackware'],
+   tag:'German enterprise Linux',
+   desc:`S.u.S.E. (Software- und System-Entwicklung) was originally a German distribution of Slackware in 1993, later switched to using Jurix and then their own packaging. SUSE Linux Enterprise Server (SLES) is the European enterprise counterpart to RHEL. Owned by various private equity firms over the years; currently independent.`},
+  {id:'opensuse',name:'openSUSE',year:2005,by:'openSUSE Project',lin:'linux',stat:'active',lic:'open',x:850,parents:['suse'],
+   tag:'YaST, Leap, Tumbleweed',
+   desc:`The community-driven SUSE. Two flavors: Leap (point releases, based on SLES) and Tumbleweed (true rolling release). YaST is openSUSE's hard-to-categorize centralized system configurator: equally praised and mocked. Btrfs by default with automatic Snapper snapshots and rollback.`},
+
+  // === ARCH FAMILY ================================================
+  {id:'arch',name:'Arch Linux',year:2002,by:'Judd Vinet',lin:'linux',stat:'active',lic:'open',x:1000,parents:['linux'],
+   tag:'Rolling release, minimalist',
+   desc:`Judd Vinet started Arch as a Crux-inspired KISS distro. It's a rolling release: you install once, update forever. The Arch Wiki is widely regarded as the best Linux documentation on the internet, full stop. The Arch User Repository (AUR) has nearly any piece of software anyone has ever wanted, packaged as PKGBUILD scripts. Famous meme: "I use Arch btw."`},
+  {id:'manjaro',name:'Manjaro',year:2011,by:'Manjaro GmbH',lin:'linux',stat:'active',lic:'open',x:1150,parents:['arch'],
+   tag:'Arch with installer',
+   desc:`Arch with a graphical installer, curated updates (Manjaro holds Arch updates back ~2 weeks for stability), and pre-configured desktops. Periodically catches flak for letting SSL certificates expire, but remains popular as a "user-friendly Arch."`},
+  {id:'endeavour',name:'EndeavourOS',year:2019,by:'EndeavourOS team',lin:'linux',stat:'active',lic:'open',x:1150,parents:['arch'],
+   tag:'Pure Arch + installer',
+   desc:`Successor to Antergos. Provides an Arch installer (Calamares) and a small welcome app, then gets out of the way. Stays much closer to vanilla Arch than Manjaro does. The community-favored "easy Arch" of 2024.`},
+  {id:'garuda',name:'Garuda',year:2020,by:'Garuda team',lin:'linux',stat:'active',lic:'open',x:1300,parents:['arch'],
+   tag:'Arch + BTRFS + gaming flair',
+   desc:`Arch-based, with BTRFS-by-default (auto snapshots via Timeshift), Zen kernel, gaming-oriented tooling, performance-optimized defaults. Visually very glassy and animated by default. Includes things like ananicy-cd and a setup wizard for nvidia drivers.`},
+  {id:'steamos',name:'SteamOS',year:2013,by:'Valve',lin:'linux',stat:'active',lic:'open',x:1300,parents:['arch','debian'],
+   tag:'Steam Deck OS',
+   desc:`SteamOS 1/2 (2013-2018) were Debian-based and aimed at Steam Machines, which flopped. SteamOS 3 (2022, Steam Deck) is built on Arch Linux with KDE Plasma, Proton (a Wine fork) for Windows-game compatibility, and the gamescope compositor. The Steam Deck made Linux gaming actually viable for tens of millions of users overnight.`},
+
+  // === OTHER LINUX DISTROS ========================================
+  {id:'gentoo',name:'Gentoo',year:2000,by:'Daniel Robbins',lin:'linux',stat:'active',lic:'open',x:1450,parents:['linux'],
+   tag:'Source-based, USE flags',
+   desc:`Gentoo doesn't ship binaries; you compile everything from source using Portage. USE flags toggle features (e.g., -gnome +kde, +pulseaudio). Compile times are notorious, the customization is unmatched, and Gentoo users have a reputation. Larry the Cow is the mascot. Daniel Robbins later started Funtoo as a rolling fork.`},
+  {id:'alpine',name:'Alpine',year:2005,by:'Natanael Copa',lin:'linux',stat:'active',lic:'open',x:1450,parents:['linux'],
+   tag:'musl + busybox security distro',
+   desc:`Tiny (~5MB base images) Linux distro built on musl libc and BusyBox, with PaX/grsec-like hardening features. Originally for routers, now ubiquitous as the base for Docker container images, most "alpine"-tagged containers shave hundreds of MB off comparable Debian/Ubuntu images. Also the basis of postmarketOS.`},
+  {id:'nixos',name:'NixOS',year:2003,by:'Eelco Dolstra',lin:'linux',stat:'active',lic:'open',x:1600,parents:['linux'],
+   tag:'Declarative, reproducible',
+   desc:`Built on the Nix package manager (Eelco Dolstra's PhD work). The entire system configuration is one declarative .nix file; the OS is built from immutable derivations. Rollback any change. Run multiple versions of any package side by side. Atomic updates. The downside is the learning cliff is sheer: Nix the language is a research project that escaped containment, and the build system reflects it.`},
+  {id:'void',name:'Void',year:2008,by:'Juan RP',lin:'linux',stat:'active',lic:'open',x:1600,parents:['linux'],
+   tag:'runit init, musl option',
+   desc:`Independent (not derived from anything else) Linux distro with runit as PID 1 instead of systemd, XBPS as a fast custom package manager, optional musl libc instead of glibc. Created by ex-NetBSD developer Juan RP. Rolling release. Beloved by people who think systemd is wrong.`},
+  {id:'chromeos',name:'ChromeOS',year:2009,by:'Google',lin:'linux',stat:'active',lic:'mixed',x:1750,parents:['gentoo'],
+   tag:'Gentoo + Chrome browser',
+   desc:`Google's web-centric OS. Built on Gentoo's Portage at the package level, with a Linux kernel and a Chrome-browser shell. Originally pure web-app, now runs Android apps (Crostini) and Linux apps in containers. ChromeOS Flex (2022) is a free version installable on most x86 hardware. Verified Boot with Google-signed firmware is a key security feature.`},
+  {id:'asahi',name:'Asahi Linux',year:2021,by:'Hector Martin et al',lin:'linux',stat:'active',lic:'open',x:1750,parents:['arch'],
+   tag:'Linux on Apple Silicon',
+   desc:`Reverse-engineered, clean-room Linux port for Apple Silicon Macs (M1, M2, M3, M4). Hector "marcan" Martin led the project, ported from Arch ARM, and figured out Apple's bespoke GPU through brutal reverse engineering, Asahi Lina (a vtuber, also actually Hector) wrote the GPU driver in Rust. Project is in a difficult moment as of 2025 with Hector having stepped back, but development continues.`},
+  {id:'pmos',name:'postmarketOS',year:2017,by:'pmOS community',lin:'linux',stat:'active',lic:'open',x:1900,parents:['alpine'],
+   tag:'10-year OS for phones',
+   desc:`Alpine-based mobile OS aimed at giving smartphones a decade of life. Targets dozens of mostly-Android-orphaned phones (Pinephones, OnePlus 6, various Samsung devices). Multiple desktop environments available (Phosh, Plasma Mobile, Sxmo). The community is closely tied to the Linux-mobile movement and to projects like Pine64 and Purism.`},
+
+  // === ANDROID FAMILY =============================================
+  {id:'android',name:'Android',year:2008,by:'Google / OHA',lin:'mobile',stat:'active',lic:'mixed',x:50,parents:['linux'],
+   tag:'Linux kernel + Java userland',
+   desc:`Android, Inc. (2003) was acquired by Google in 2005. First commercial release on the HTC Dream in September 2008. Linux kernel underneath, ART runtime (formerly Dalvik) running Java/Kotlin bytecode on top, a heavily customized userland that does not use GNU. Now powers 3+ billion devices. The kernel has GKI (Generic Kernel Image) split since Android 11 to ease vendor patches.`},
+  {id:'lineage',name:'LineageOS',year:2016,by:'LineageOS team',lin:'mobile',stat:'active',lic:'open',x:50,parents:['android'],
+   tag:'Successor to CyanogenMod',
+   desc:`After Cyanogen, Inc. (the company spun out of CyanogenMod) imploded in 2016, the community forked into LineageOS. Supports hundreds of devices long after manufacturers abandon them. The base for many privacy-focused forks like /e/OS, CalyxOS.`},
+  {id:'graphene',name:'GrapheneOS',year:2014,by:'Daniel Micay',lin:'mobile',stat:'active',lic:'open',x:50,parents:['android'],
+   tag:'Hardened Android',
+   desc:`A security-and-privacy-hardened Android OS, Pixel-only (because Pixels have the strongest secure-element + verified-boot story). Originally CopperheadOS until a project split. Hardened malloc, exec_spawn replacement for zygote, network/sensor toggles per-app. Used by journalists, activists, security-paranoid types.`},
+  {id:'fireos',name:'Fire OS',year:2011,by:'Amazon',lin:'mobile',stat:'active',lic:'proprietary',x:200,parents:['android'],
+   tag:'Amazon AOSP fork',
+   desc:`Amazon's Android fork without Google Play services, instead bundling Amazon Appstore. Powers Fire tablets, Fire TV, and Echo devices. AOSP underneath, very different UX layer on top.`},
+  {id:'harmony',name:'HarmonyOS',year:2019,by:'Huawei',lin:'mobile',stat:'active',lic:'mixed',x:200,parents:['android'],
+   tag:'Distributed OS / next-gen',
+   desc:`Huawei's response to losing Google services in the 2019 US trade restrictions. Early HarmonyOS was an Android fork (OpenHarmony / AOSP-derived). HarmonyOS NEXT (2024) abandons Android entirely with Huawei's own Hongmeng / LiteOS-derived microkernel and an ArkTS application framework, making it actually a distinct OS, no Android compatibility.`},
+  {id:'tizen',name:'Tizen',year:2012,by:'Samsung / Linux Foundation',lin:'mobile',stat:'active',lic:'open',x:350,parents:['linux'],
+   tag:'Wearable/TV Linux',
+   desc:`Born from the merger of Samsung's Bada, Intel's MeeGo, and parts of LiMo. Aspired to be a Samsung-controlled smartphone OS; ended up powering Samsung TVs, Galaxy watches (until they switched back to Wear OS in 2021), refrigerators. Linux kernel + EFL/Enlightenment userland + various app frameworks.`},
+  {id:'firefoxos',name:'Firefox OS',year:2013,by:'Mozilla',lin:'mobile',stat:'abandoned',lic:'open',x:350,parents:['linux'],
+   tag:'B2G / web apps as native',
+   desc:`Mozilla's bet that the web was enough for a phone OS: applications were just HTML/CSS/JS with privileged APIs (Gecko Web Apps). Shipped on dozens of low-end phones from 2013-2016, mostly in emerging markets. Killed in 2016. Resurrected as KaiOS for feature phones.`},
+  {id:'kaios',name:'KaiOS',year:2017,by:'KaiOS Technologies',lin:'mobile',stat:'active',lic:'mixed',x:500,parents:['firefoxos'],
+   tag:'Firefox OS reborn on feature phones',
+   desc:`Took the dead Firefox OS codebase and shipped it on cheap 4G feature phones (think Jio Phone in India, Nokia 8110 4G "banana phone"). Powers hundreds of millions of devices in markets where smartphones are still expensive. Google invested in 2018. Still runs HTML/CSS/JS apps on Gecko under the hood.`},
+  {id:'ubuntutouch',name:'Ubuntu Touch',year:2013,by:'Canonical / UBports',lin:'mobile',stat:'active',lic:'open',x:500,parents:['ubuntu'],
+   tag:'Convergence dream, kept alive',
+   desc:`Canonical's attempt at a phone OS with "convergence", same OS scaled from phone to desktop. Shipped on Meizu and BQ devices 2014-2017. Canonical abandoned it in 2017; UBports community has kept it going on a small but loyal set of devices, now based on Ubuntu 20.04 with Mir display server.`},
+
+  // === PLAN 9 / INFERNO ===========================================
+  {id:'plan9',name:'Plan 9',year:1992,by:'Bell Labs CSRC',lin:'research',stat:'active',lic:'open',x:1750,parents:['unix'],
+   tag:'9P, namespaces, UTF-8',
+   desc:`The Bell Labs team that built Unix (Pike, Thompson, Ritchie, Presotto, Winterbottom) decided Unix's "everything is a file" idea had not been pushed nearly far enough. Plan 9 made every resource, networks, processes, graphics, addressable via the 9P file-server protocol. Each process has its own mutable namespace, layering filesystems however it likes. UTF-8 was invented here in 1992 by Pike & Thompson (sketched out on a placemat at a New Jersey diner). Plan 9 was released by Bell Labs in 1992 to universities; in 2021 Nokia Bell Labs transferred the copyright to the Plan 9 Foundation.`},
+
+  {id:'9front',name:'9front',year:2011,by:'9front community',lin:'research',stat:'active',lic:'open',x:1750,parents:['plan9'],
+   tag:'Active Plan 9 fork',
+   desc:`The active fork of Plan 9 that ate the world Plan 9 didn't. 9front added modern hardware drivers, WiFi, USB, audio, NVMe, and quality of life improvements like a builtin emulator suite, IRC client (irc7), tons of documentation. Monthly releases. The 9front FQA (Frequently Questioned Answers) is one of the funniest pieces of technical writing on the internet.`},
+
+  {id:'inferno',name:'Inferno',year:1996,by:'Bell Labs',lin:'research',stat:'dormant',lic:'open',x:1900,parents:['plan9'],
+   tag:'Plan 9\u2019s portable cousin',
+   desc:`Designed to run as a guest on any host OS or on bare metal, using a Dis virtual machine and the Limbo language (Pike + Dorward), a direct ancestor of Go's concurrency model. Inferno was intended for embedded devices and network appliances. Vita Nuova owns the trademark and has open-sourced it. Mostly dormant now but the design lives on in Go and in 9P's continued use.`},
+
+  // === BeOS & HAIKU ===============================================
+  {id:'beos',name:'BeOS',year:1995,by:'Be Inc / Gassée',lin:'be',stat:'abandoned',lic:'proprietary',x:2050,
+   tag:'Multimedia OS',
+   desc:`Jean-Louis Gassée's startup answered the question "what if we redesigned an OS from scratch for multimedia and pervasive threading?" BeOS featured a multithreaded kernel, the BeFS journaled 64-bit filesystem with database-like indexed attributes (you could query the filesystem like SQL), pervasive symmetric multiprocessing, a clean C++ object-oriented API. Apple nearly bought Be in 1996, Gassée asked $300M, Apple offered $125M, Apple's board went with NeXT instead. Be Inc. was sold to Palm in 2001. <a href="https://en.wikipedia.org/wiki/BeOS" target="_blank">More.</a>`},
+  {id:'haiku',name:'Haiku',year:2001,by:'Haiku, Inc.',lin:'be',stat:'active',lic:'open',x:2050,parents:['beos'],
+   tag:'Open-source BeOS reimplementation',
+   desc:`Started Aug 18, 2001, the day after Palm bought Be, as OpenBeOS by Michael Phipps, then renamed Haiku in 2004 over trademark concerns. It's a complete clean-room reimplementation, binary-compatible with BeOS R5 software on x86 (BeBook + Tracker/Deskbar were released open-source by Be's owners). Hybrid microkernel-style design forked from Travis Geiselbrecht's NewOS. R1/Beta 5 shipped July 2024; pre-final R1 in active development. <a href="https://www.haiku-os.org/" target="_blank">haiku-os.org</a>`},
+
+  // === AMIGA & FRIENDS ============================================
+  {id:'amigaos',name:'AmigaOS',year:1985,by:'Commodore / Amiga',lin:'amiga',stat:'historical',lic:'proprietary',x:2200,
+   tag:'Preemptive multitasking on 7MHz 68000',
+   desc:`Shipped on the original Amiga 1000 in 1985. Genuinely preemptive multitasking on a 7.16 MHz 68000, at a time when DOS was still single-tasking and the Mac was cooperative. Custom co-processors (Agnus, Denise, Paula) handled graphics, sound, blitter operations independently of the CPU. AmigaOS had a beautifully designed message-passing kernel (Exec), the Workbench desktop, AmigaDOS shell. Commodore mismanaged itself into bankruptcy in 1994, but the OS limped on through various owners and forks for decades.`},
+  {id:'amigaos4',name:'AmigaOS 4',year:2006,by:'Hyperion Entertainment',lin:'amiga',stat:'active',lic:'proprietary',x:2200,parents:['amigaos'],
+   tag:'PowerPC-only continuation',
+   desc:`Hyperion's PowerPC-only continuation of the classic AmigaOS line. Runs on AmigaOne hardware. Tiny user base, measured in thousands, but the project genuinely keeps shipping; AmigaOS 4.1 Final Edition Update 2 came in 2021. Ferocious legal battles with Amiga, Inc. and others have shaped its history.`},
+  {id:'aros',name:'AROS',year:1995,by:'Aaron Digulla et al',lin:'amiga',stat:'active',lic:'open',x:2350,parents:['amigaos'],
+   tag:'Open-source AmigaOS reimplementation',
+   desc:`AROS Research Operating System: an open-source, API-compatible reimplementation of AmigaOS 3.1 that targets x86 and other modern architectures. The classic Amiga source code was never released, so this is clean-room work. Icaros Desktop is the most popular distribution, packaging AROS with applications.`},
+  {id:'morphos',name:'MorphOS',year:2002,by:'MorphOS team',lin:'amiga',stat:'active',lic:'proprietary',x:2350,parents:['amigaos'],
+   tag:'Quark microkernel, AmigaOS-compatible',
+   desc:`MorphOS uses the Quark microkernel and an "Amiga box" layer for API compatibility with the classic AmigaOS. Runs on selected PowerPC Macs (G4/G5) and Pegasos hardware. Beautiful Ambient desktop. Still releasing updates as of 2024.`},
+
+  // === HOBBY / CLEAN-ROOM =========================================
+  {id:'reactos',name:'ReactOS',year:1998,by:'ReactOS Foundation',lin:'hobby',stat:'active',lic:'open',x:1900,
+   tag:'Open-source Windows NT clone',
+   desc:`Originally FreeWin95 in 1996, restarted as ReactOS in 1998 with a Windows NT/2000-style architecture instead. Goal: binary-compatible with Windows applications and drivers, without any Microsoft code. Famously survived a 2006 audit triggered by an internal allegation that the codebase had reverse-engineered without proper clean-room procedure. Still in alpha after 25+ years; the scope is staggering. Shares heritage with Wine, which provides much of ReactOS's userland.`},
+  {id:'temple',name:'TempleOS',year:2005,by:'Terry A. Davis',lin:'hobby',stat:'historical',lic:'public-domain',x:1900,
+   tag:'God\u2019s third temple, in HolyC',
+   desc:`Terry A. Davis began TempleOS circa 1993 under various names (J, LoseThos, SparrowOS) and worked on it nearly alone for over a decade. Davis believed God had instructed him to build it, explicitly to specifications including 640×480, 16-color, no networking, all rings in ring 0, single address space. Written in HolyC, a JIT-compiled C variant Davis designed. Over 100,000 lines, all by him. Davis suffered from schizophrenia; he died on August 11, 2018 after being struck by a train. TempleOS remains in the public domain. The community fork ZealOS keeps it under quiet development.`},
+  {id:'serenity',name:'SerenityOS',year:2018,by:'Andreas Kling',lin:'hobby',stat:'active',lic:'open',x:2050,
+   tag:'A love letter to \u201990s desktop UI',
+   desc:`Started in 2018 by Swedish programmer Andreas Kling as he was recovering from addiction, the name comes from the Serenity Prayer. Kling worked at Nokia, then on WebKit at Apple; SerenityOS is his from-scratch Unix-like with a custom kernel, custom C++ standard library (AK), and the unmistakable visual style of late-1990s Windows. The community grew enormously after monthly YouTube progress videos. The internal browser, LibWeb, has been forked into Ladybird, an independent cross-platform browser project. <a href="https://serenityos.org" target="_blank">serenityos.org</a>`},
+  {id:'redox',name:'Redox',year:2015,by:'Jeremy Soller',lin:'hobby',stat:'active',lic:'open',x:2050,
+   tag:'Microkernel OS in Rust',
+   desc:`Initial release April 20, 2015, before Rust 1.0 shipped. Microkernel design heavily influenced by Plan 9; user-space-as-namespace. Written almost entirely in Rust to leverage memory safety. Jeremy Soller is also principal engineer at System76 (the Pop!_OS / COSMIC people). Orbital is Redox's window manager; relibc is its C library. Runs on x86_64, AArch64, RISC-V. Pre-stable but quite usable. <a href="https://redox-os.org" target="_blank">redox-os.org</a>`},
+  {id:'kolibri',name:'KolibriOS',year:2004,by:'Kolibri team',lin:'hobby',stat:'active',lic:'open',x:2200,
+   tag:'Boots in 3 seconds from floppy',
+   desc:`A fork of MenuetOS, entirely in x86 assembly. Boots in ~3 seconds from a single 1.44MB floppy or USB. Has a desktop, browser, games, dev tools, all in a few megabytes. The current build is < 5MB. A delightful proof that modern OSes don't have to be huge.`},
+  {id:'menuet',name:'MenuetOS',year:2000,by:'Ville Turjanmaa',lin:'hobby',stat:'active',lic:'mixed',x:2200,
+   tag:'OS in x86-64 assembly',
+   desc:`Pure assembly OS. The 64-bit version (MenuetOS 64) is proprietary; the 32-bit branch (M32) became Free. Multitasking, GUI, networking, all in handwritten asm. The kernel is about 1.4 MB. KolibriOS forked from Menuet32 in 2004.`},
+  {id:'minix3',name:'Minix 3',year:2005,by:'Andrew Tanenbaum',lin:'hobby',stat:'active',lic:'open',x:2350,parents:['minix'],
+   tag:'Microkernel for embedded reliability',
+   desc:`Rewrite of Minix as a serious microkernel OS aimed at self-healing fault tolerance: drivers run as user-space servers and can crash and be restarted without bringing down the system. Tanenbaum's longstanding bet on microkernels finally paying off in a way, though it became infamous when Intel's Management Engine, embedded in nearly every Intel CPU since ~2008, was revealed in 2017 to be running Minix 3, possibly making Minix the most-deployed OS on Earth.`},
+
+  // === CP/M / DOS / WINDOWS =======================================
+  {id:'msdos',name:'MS-DOS',year:1981,by:'Microsoft / Tim Paterson',lin:'dos',stat:'historical',lic:'proprietary',x:2700,parents:['cpm'],
+   tag:'Bought from Seattle Computer Products',
+   desc:`MS-DOS is descended from 86-DOS, written by Tim Paterson at Seattle Computer Products as "QDOS" (Quick and Dirty Operating System), itself a clone of CP/M. Microsoft bought it for $50,000 (probably the best deal in software history), licensed it to IBM as PC-DOS, and let IBM market it. Through the 1980s, DOS was the platform of the PC ecosystem. MS-DOS 6.22 (1994) was the last standalone retail release; from there it became a substratum under Windows.`},
+  {id:'drdos',name:'DR-DOS',year:1988,by:'Digital Research',lin:'dos',stat:'historical',lic:'proprietary',x:2850,parents:['cpm'],
+   tag:'CP/M company\u2019s DOS',
+   desc:`Digital Research's belated DOS, technically very capable (multitasking earlier than MS-DOS, better memory management). Lost the war anyway because Microsoft had the IBM PC bundling deal. Surprisingly long-lived through Novell, Caldera, Lineo ownership.`},
+  {id:'freedos',name:'FreeDOS',year:1994,by:'Jim Hall et al',lin:'dos',stat:'active',lic:'open',x:2850,parents:['msdos'],
+   tag:'Open MS-DOS compatible',
+   desc:`Started when Microsoft announced MS-DOS was dead in 1994. FreeDOS is binary-compatible with MS-DOS, fully open-source, still actively developed. Used to flash BIOSes, run legacy DOS software in embedded contexts, and as the OS shipping on "no-OS" laptops to satisfy bundling requirements.`},
+  {id:'win1',name:'Windows 1.0',year:1985,by:'Microsoft',lin:'windows',stat:'historical',lic:'proprietary',x:2700,parents:['msdos'],
+   tag:'MS-DOS GUI shell',
+   desc:`Not really an OS but a graphical shell on top of MS-DOS, with tiled windows (Apple's Lisa patents kept Windows from overlapping for a while). Slow, barely usable, but established the brand. Windows 2.0 added overlapping windows, and Apple sued Microsoft and HP, and lost.`},
+  {id:'win3',name:'Windows 3.x',year:1990,by:'Microsoft',lin:'windows',stat:'historical',lic:'proprietary',x:2700,parents:['win1'],
+   tag:'The breakout PC GUI',
+   desc:`Windows 3.0 in 1990 was the breakthrough. Real virtual-memory-aware protected mode on 386s, Program Manager, File Manager, the Trumpet Winsock TCP/IP stack added later (3.11). Windows for Workgroups 3.11 networked them. Solitaire became how people learned to use a mouse.`},
+  {id:'win95',name:'Windows 95',year:1995,by:'Microsoft',lin:'windows',stat:'historical',lic:'proprietary',x:2550,parents:['win3'],
+   tag:'Start menu, taskbar, plug-and-play',
+   desc:`Windows 95 was a hybrid 16/32-bit OS with a real preemptive multitasking kernel (despite the DOS underneath), the Start menu, taskbar, system tray, Plug-and-Play, long filenames on FAT32. The Rolling Stones licensed "Start Me Up" for $3M+ for the launch campaign. Internet Explorer was bundled, triggering the antitrust case that defined the late '90s. The 9x line continued through 98, 98 SE, and dead-ended at the buggy ME (2000).`},
+  {id:'winme',name:'Windows ME',year:2000,by:'Microsoft',lin:'windows',stat:'abandoned',lic:'proprietary',x:2550,parents:['win95'],
+   tag:'Millennium Edition (\u201CMistake Edition\u201D)',
+   desc:`The notorious dead-end of the 9x line. Targeted home consumers, stripped real-mode DOS access, full of bugs at launch. Less than two years of support. Many users went back to 98 SE; many more went to XP when it shipped a year later.`},
+  {id:'winnt',name:'Windows NT',year:1993,by:'Dave Cutler / Microsoft',lin:'windows',stat:'historical',lic:'proprietary',x:2850,parents:['vms','os2'],
+   tag:'New Technology kernel',
+   desc:`Dave Cutler, fresh from DEC where he built VMS, joined Microsoft in 1988 to build a from-scratch 32-bit kernel. NT was originally going to be OS/2 3.0 (in partnership with IBM), but Microsoft pulled out and pivoted it to "Windows NT 3.1" in 1993. Microkernel-ish hybrid design, kernel-mode subsystems for Win32, OS/2, POSIX. The Cutler NT lineage runs through NT 3.51, 4.0, 2000, XP, Vista, 7, 8, 10, 11, and even into Xbox.`},
+  {id:'winxp',name:'Windows XP',year:2001,by:'Microsoft',lin:'windows',stat:'historical',lic:'proprietary',x:2850,parents:['winnt','winme'],
+   tag:'NT for consumers',
+   desc:`Microsoft finally merged the consumer (9x/ME) and business (NT/2000) lines. XP took NT's stability mass-market with a friendlier UI (Luna theme, Bliss wallpaper). 13 years of support before its 2014 end-of-life, and a stubborn long tail of XP-only embedded systems still in production. Service Pack 2 (2004) was a serious security overhaul triggered by Blaster/Sasser worms.`},
+  {id:'winvista',name:'Vista / 7',year:2007,by:'Microsoft',lin:'windows',stat:'historical',lic:'proprietary',x:3000,parents:['winxp'],
+   tag:'UAC, DWM, kernel rework',
+   desc:`Vista (2007) introduced User Account Control, the Desktop Window Manager (compositing), a rewritten audio/video stack, mandatory kernel driver signing on x64. It was widely hated for performance and breakage. Windows 7 (2009) was Vista's redemption: same architecture, polished UX, taskbar redesign, the most-loved Windows since XP.`},
+  {id:'win10',name:'Windows 10 / 11',year:2015,by:'Microsoft',lin:'windows',stat:'active',lic:'proprietary',x:3000,parents:['winvista'],
+   tag:'\u201CLast Windows ever\u201D (until 11)',
+   desc:`Windows 10 (2015) was pitched as a service rather than a product, "the last Windows you'll need." Brought back the Start menu after Windows 8's tile-fronted experiment. WSL (Windows Subsystem for Linux) was added in 2016; WSL2 (2019) is essentially a Linux kernel in a lightweight Hyper-V VM. Windows 11 (2021) pulled the rug from 10's "last" promise; UI refresh, stricter hardware requirements (TPM 2.0, Secure Boot, specific CPU lists).`},
+
+  // === OS/2 / ArcaOS ==============================================
+  {id:'os2',name:'OS/2',year:1987,by:'IBM + Microsoft',lin:'proprietary',stat:'abandoned',lic:'proprietary',x:3150,
+   tag:'IBM\u2019s would-be Windows killer',
+   desc:`Originally a joint IBM/Microsoft project to succeed DOS. Microsoft bailed in 1990 to focus on Windows; IBM continued solo through OS/2 1.x, 2.x ("a better DOS than DOS, a better Windows than Windows"), and Warp (1994). Genuinely advanced, preemptive multitasking, REXX scripting, the Workplace Shell, but Microsoft outmaneuvered IBM in OEM bundling and developer mindshare. Famously kept alive for decades by ATMs (the NYC Subway's old MetroCard machines ran it), banks, and the like.`},
+  {id:'ecomstation',name:'eComStation',year:2001,by:'Serenity Systems',lin:'proprietary',stat:'abandoned',lic:'proprietary',x:3150,parents:['os2'],
+   tag:'Licensed OS/2 continuation',
+   desc:`Serenity Systems International licensed OS/2 from IBM and shipped it as eComStation, adding updates and modern hardware support. Continued through 2.2 Beta 2 in 2014, then dwindled. The company itself dissolved; the torch passed to Arca Noae.`},
+  {id:'arcaos',name:'ArcaOS',year:2017,by:'Arca Noae',lin:'proprietary',stat:'active',lic:'proprietary',x:3150,parents:['ecomstation'],
+   tag:'Modern OS/2',
+   desc:`Arca Noae continues to license and ship OS/2 to enterprise customers as ArcaOS, 5.0 in 2017, 5.1 in 2023. Updated kernel, USB, networking, ACPI, current hardware drivers. Niche but genuinely shipping. Some industrial-automation and banking customers still rely on it.`},
+
+  // === MOBILE / EMBEDDED PROPRIETARY ==============================
+  {id:'palmos',name:'Palm OS',year:1996,by:'Palm Inc',lin:'mobile',stat:'abandoned',lic:'proprietary',x:1700,
+   tag:'PDA dominant OS',
+   desc:`Palm OS ran on PalmPilots, Palm V, Treos, and Sony Cliés. Famously fast and battery-friendly on 16-33MHz Dragonball CPUs; an entire PDA-software-as-shareware economy grew around it. Replaced by Palm webOS in 2009, which is itself a Linux-based OS with a JavaScript app layer, later spun out to LG for TVs (where it's still shipping in 2024).`},
+  {id:'symbian',name:'Symbian',year:1997,by:'Symbian Ltd / Nokia',lin:'mobile',stat:'abandoned',lic:'mixed',x:1850,
+   tag:'EPOC → Symbian → S60',
+   desc:`Originally Psion's EPOC, became Symbian when Psion spun out the OS as a joint venture with Nokia, Ericsson, Motorola in 1998. Powered ~250 million Nokia phones at its peak; the world's #1 smartphone OS until ~2010. Nokia open-sourced it in 2010, then killed it after the Microsoft alliance. Some Japanese carriers kept it until 2018.`},
+  {id:'webos',name:'webOS',year:2009,by:'Palm → HP → LG',lin:'mobile',stat:'active',lic:'mixed',x:1700,parents:['palmos','linux'],
+   tag:'Linux + web apps; now on TVs',
+   desc:`Palm's last hurrah on the Palm Pre and Pixi. Linux kernel, Mojo SDK with HTML/CSS/JS app model, gorgeous card-based multitasking that influenced every mobile OS afterward. HP bought Palm in 2010, killed mobile hardware in 2011, open-sourced webOS in 2012, sold to LG in 2013. LG has used it on TVs ever since, chances are you've used webOS without realizing it.`},
+  {id:'wince',name:'Windows CE',year:1996,by:'Microsoft',lin:'mobile',stat:'abandoned',lic:'proprietary',x:2000,parents:['winnt'],
+   tag:'Pocket PC, Windows Mobile',
+   desc:`Microsoft's mobile/embedded OS, from CE 1.0 (1996) on Handheld PCs through Windows Mobile (Pocket PC) through Zune through automotive infotainment. The kernel was unrelated to NT until Windows Embedded Compact 7. End-of-life 2018.`},
+  {id:'winphone',name:'Windows Phone',year:2010,by:'Microsoft',lin:'mobile',stat:'abandoned',lic:'proprietary',x:2000,parents:['wince','winnt'],
+   tag:'WP 7 → 8 → 10 Mobile',
+   desc:`Microsoft's attempt to reset for the iPhone era. Tile-based "Metro" UI. WP7 was CE-based, WP8/8.1 switched to the NT kernel, WP10 went further into Universal Windows Platform unity. Killed in 2017. Nokia Lumia hardware was beautiful; ecosystem never recovered from the late start.`},
+
+  // === EMBEDDED / RTOS ============================================
+  {id:'qnx',name:'QNX',year:1982,by:'Quantum/BlackBerry',lin:'embed',stat:'active',lic:'proprietary',x:1450,
+   tag:'POSIX microkernel RTOS',
+   desc:`Gordon Bell + Dan Dodge wrote QNX for the 8088 in 1982. Genuine microkernel: filesystem, networking, drivers all in user space, communicating by synchronous IPC. POSIX-compliant. Runs in nuclear plants, surgical equipment, automotive (most car infotainment), the International Space Station's Canadarm, and originally BlackBerry 10 / PlayBook. RIM bought QNX in 2010, BlackBerry kept it after the company's mobile collapse. Free for non-commercial use since 2024.`},
+  {id:'sel4',name:'seL4',year:2009,by:'NICTA / UNSW',lin:'embed',stat:'active',lic:'open',x:1600,
+   tag:'Formally verified microkernel',
+   desc:`The first OS kernel to be formally verified end-to-end, a machine-checked mathematical proof that the C implementation matches a Haskell specification. Started at NICTA in Sydney, now the seL4 Foundation. Used in DARPA HACMS (a hijack-proof helicopter), automotive safety systems, mixed-criticality embedded designs. Tiny, ~10,000 lines of C. Capability-based security from the ground up.`},
+  {id:'vxworks',name:'VxWorks',year:1987,by:'Wind River',lin:'embed',stat:'active',lic:'proprietary',x:1600,
+   tag:'Dominant aerospace RTOS',
+   desc:`The RTOS behind Mars Pathfinder (1997), Spirit & Opportunity, the Mars rovers Curiosity and Perseverance, the Hubble Space Telescope, the Boeing 787, the BMW iDrive, much industrial automation. Real-time, priority-based scheduling, hard determinism. Wind River was acquired by Intel in 2009, then by TPG in 2018, then by Aptiv in 2022.`},
+  {id:'freertos',name:'FreeRTOS',year:2003,by:'Richard Barry',lin:'embed',stat:'active',lic:'open',x:1750,
+   tag:'Tiny MIT-licensed RTOS',
+   desc:`Tiny (a few KB), MIT-licensed RTOS that runs on dozens of microcontroller families, STM32, ESP32, AVR, PIC32, Cortex-M, etc. Acquired by AWS in 2017; AWS uses it as the basis for FreeRTOS Kernel + AWS IoT integration. Probably the most-shipped RTOS on Earth by unit count.`},
+  {id:'zephyr',name:'Zephyr',year:2016,by:'Linux Foundation',lin:'embed',stat:'active',lic:'open',x:1900,
+   tag:'Linux Foundation\u2019s RTOS',
+   desc:`Modern, scalable, Apache-licensed RTOS. Wind River donated Rocket; Intel contributed. Strong security focus, native IPv4/IPv6, BLE, Thread, support for hundreds of boards from Cortex-M0 up to RISC-V and x86. Increasingly the default choice for new embedded projects.`},
+
+  // === MAINFRAME ==================================================
+  {id:'zos',name:'z/OS',year:2001,by:'IBM',lin:'mainframe',stat:'active',lic:'proprietary',x:2700,
+   tag:'IBM mainframe OS',
+   desc:`The continuation of OS/360 (1966) → MVS → OS/390 → z/OS. Powers IBM Z mainframes. The most expensive, most-supported, most paranoid OS in production, still running banks, airlines, and large governments. Programs from 1966 generally still run on z/OS. JCL (Job Control Language) is the world's most syntactically punishing config format.`},
+  {id:'ibmi',name:'IBM i',year:1988,by:'IBM',lin:'mainframe',stat:'active',lic:'proprietary',x:2850,
+   tag:'OS/400 → i5/OS → IBM i',
+   desc:`Originally OS/400, the OS of the IBM AS/400 midrange (1988). Database-centric (the OS is built around DB2 at the kernel level), with a Single-Level Storage architecture that unifies RAM and disk into one address space. Object-based, files, programs, libraries are all "objects." Programs compiled for the original 1988 AS/400 can still run on a 2024 IBM Power server.`},
+
+  // === GOOGLE FUCHSIA ==============================================
+  {id:'fuchsia',name:'Fuchsia',year:2016,by:'Google',lin:'research',stat:'active',lic:'open',x:200,
+   tag:'Zircon microkernel',
+   desc:`Google's non-Linux OS, in development since 2016, public since 2018. Zircon microkernel (capability-based, written in C++), Flutter-based UI. Ships on Google Nest Hub since 2021, silently replacing the Linux-based Cast OS in firmware updates. The endgame is unclear; conceivable answer: Google wants an OS it owns from kernel to UI, without the Linux GPL constraints, for the device fleet of the future.`},
+
+  // === MORE OBSCURE / NETWORK =====================================
+  {id:'openwrt',name:'OpenWrt',year:2004,by:'OpenWrt project',lin:'embed',stat:'active',lic:'open',x:50,parents:['linux'],
+   tag:'Linux for routers',
+   desc:`Started after Linksys was forced (by GPL) to release the WRT54G firmware sources in 2003. OpenWrt grew into a complete embedded Linux distro for hundreds of router models. The package manager opkg, UCI configuration system, LuCI web interface. Most "open-source firmware" homelab tinkering goes through OpenWrt. DD-WRT and Tomato are friendly competing projects.`},
+  {id:'pfsense',name:'pfSense / OPNsense',year:2004,by:'Rubicon / Deciso',lin:'embed',stat:'active',lic:'open',x:1050,parents:['freebsd'],
+   tag:'FreeBSD-based firewall',
+   desc:`Forked from m0n0wall in 2004. pfSense is FreeBSD with the pf packet filter + a web UI, an enormous package ecosystem (Suricata, OpenVPN, WireGuard, Snort), and is probably the most-deployed open-source firewall stack. OPNsense forked from pfSense in 2015 over licensing concerns and ships a cleaner, more open codebase.`},
+  {id:'truenas',name:'TrueNAS',year:2005,by:'iXsystems',lin:'embed',stat:'active',lic:'open',x:1200,parents:['freebsd'],
+   tag:'ZFS NAS, FreeBSD-based',
+   desc:`Formerly FreeNAS. FreeBSD-based NAS distro built around ZFS, with a web UI for management, SMB/AFP/NFS/iSCSI sharing. TrueNAS SCALE (2022+) is a parallel Debian-based variant offering Linux containers + K3s. Both share the same web UI codebase. The ZFS story makes TrueNAS the safest place to put a home media library.`},
+  {id:'proxmox',name:'Proxmox VE',year:2008,by:'Proxmox Server Solutions',lin:'linux',stat:'active',lic:'open',x:350,parents:['debian'],
+   tag:'Debian + KVM/LXC virtualization',
+   desc:`Debian-based hypervisor distro: KVM for full virtualization, LXC for containers, ZFS or LVM-thin storage, Ceph for clustering, all wrapped in a web UI. Has become the default homelab and small-business virtualization platform, especially after VMware/Broadcom's pricing changes in 2024.`},
+
+  // === MISC HISTORICAL ============================================
+  {id:'riscos',name:'RISC OS',year:1987,by:'Acorn Computers',lin:'proprietary',stat:'dormant',lic:'mixed',x:2500,
+   tag:'OS of the Acorn Archimedes',
+   desc:`Acorn's RISC OS shipped on the Archimedes, the world's first home ARM-based computer (1987). The earliest version of the ARM architecture was designed in part to run this OS. Cooperative multitasking, draggable window pane scrollbars, an excellent vector-drawing application. Still developed by RISC OS Open Limited and runs on the Raspberry Pi natively. ARM as a CPU went on to take over the world; this OS did not, but it's where ARM started.`},
+  {id:'atariosgemtos',name:'TOS / GEM',year:1985,by:'Atari / Digital Research',lin:'macclassic',stat:'historical',lic:'proprietary',x:2500,
+   tag:'Atari ST OS',
+   desc:`TOS (The Operating System) was Atari's OS for the ST line of 68000-based home computers; the GUI layer was Digital Research's GEM (Graphical Environment Manager), the same product that ran on PCs from DRI but was kneecapped after an Apple lawsuit. Used heavily in MIDI / music studios, the ST's hardware MIDI ports + TOS's predictable timing made it a studio standard well into the late '90s.`},
+  {id:'geos',name:'GEOS',year:1986,by:'Berkeley Softworks',lin:'macclassic',stat:'historical',lic:'proprietary',x:2500,
+   tag:'GUI for Commodore 64',
+   desc:`A GUI OS for the Commodore 64 (later C128, then PC) shipping in 1986. Squeezed a Mac-like desktop, mouse cursor, drag-and-drop, vector fonts, and applications (geoWrite, geoPaint) into 64KB of RAM. A genuinely impressive engineering feat. Later spun off PC/GEOS, which became Nokia's smartphone OS for the 9000-series Communicator.`},
+];
+
+/* ---------- AUTO-LAYOUT: assign X coordinates by lineage lane ----------- */
+const LANE_W = 100;
+const NODE_W = 92;
+const NODE_H = 56;
+
+/* generous lanes for the heavy lineages */
+const LANE_PREFER = {
+  linux:      [0, 1, 2, 3],
+  gnu:        [4],
+  hobby:      [5],
+  unix:       [6, 7],
+  bsd:        [8],
+  darwin:     [9],
+  macclassic: [10],
+  be:         [11],
+  mobile:     [12, 13],
+  research:   [14],
+  amiga:      [15],
+  embed:      [16],
+  mainframe:  [17],
+  dos:        [18],
+  windows:    [19],
+  proprietary:[16, 17, 18, 19]
+};
+
+const NODE_BY_ID = Object.fromEntries(NODES.map(n=>[n.id,n]));
+
+function autoLayout(){
+  const byYear = {};
+  NODES.forEach(n => (byYear[n.year] = byYear[n.year] || []).push(n));
+  const years = Object.keys(byYear).map(Number).sort((a,b)=>a-b);
+
+  years.forEach(year => {
+    const group = byYear[year];
+    group.sort((a,b) => LANE_PREFER[a.lin][0] - LANE_PREFER[b.lin][0]);
+
+    const used = new Set();
+    group.forEach(n => {
+      let chosen = null;
+      const pref = LANE_PREFER[n.lin];
+
+      /* heuristic: try parent's lane if same lineage and free */
+      const sameLinParents = (n.parents||[])
+        .map(p => NODE_BY_ID[p])
+        .filter(p => p && p.lin === n.lin && p.lane !== undefined);
+      for(const p of sameLinParents){
+        if(!used.has(p.lane) && pref.includes(p.lane)){ chosen = p.lane; break; }
+      }
+
+      /* try preferred lanes in order */
+      if(chosen===null){
+        for(const l of pref){
+          if(!used.has(l)){ chosen = l; break; }
+        }
+      }
+
+      /* expand outward from primary preferred lane */
+      if(chosen===null){
+        const primary = pref[0];
+        for(let d=1; d<25; d++){
+          if(!used.has(primary+d)){ chosen = primary+d; break; }
+          if(primary-d>=0 && !used.has(primary-d)){ chosen = primary-d; break; }
+        }
+      }
+
+      if(chosen===null) chosen = pref[0];
+      used.add(chosen);
+      n.lane = chosen;
+      n.x = chosen * LANE_W;
+    });
+  });
+}
+
+autoLayout();
+NODES.forEach(n => { n.y = yr(n.year); });
+
+/* ---------- EDGES -------------------------------------------------------- */
+const EDGES=[];
+NODES.forEach(n=>{
+  (n.parents||[]).forEach(p=>EDGES.push({from:p,to:n.id,style:n.style||'descent'}));
+});
+const INSPIRED=[
+  ['multics','unix'],['unix','minix'],['minix','linux'],
+  ['plan9','inferno'],
+  ['alto','applelisa'],['applelisa','macclassic'],
+  ['cpm','msdos'],['vms','winnt']
+];
+INSPIRED.forEach(([a,b])=>{
+  const exists = EDGES.some(e=>e.from===a&&e.to===b);
+  if(!exists)EDGES.push({from:a,to:b,style:'inspired'});
+});
+
+/* ---------- BUILD DOM --------------------------------------------------- */
+const world = document.getElementById('world');
+const links = document.getElementById('links');
+
+let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+NODES.forEach(n=>{
+  if(n.x<minX)minX=n.x; if(n.x+NODE_W>maxX)maxX=n.x+NODE_W;
+  if(n.y<minY)minY=n.y; if(n.y+NODE_H>maxY)maxY=n.y+NODE_H;
+});
+const PAD=120;
+const WORLD_W = (maxX-minX)+PAD*2;
+const WORLD_H = (maxY-minY)+PAD*2;
+const OFFX = PAD - minX;
+const OFFY = PAD - minY;
+
+world.style.width = WORLD_W+'px';
+world.style.height = WORLD_H+'px';
+links.setAttribute('width', WORLD_W);
+links.setAttribute('height', WORLD_H);
+links.setAttribute('viewBox', `0 0 ${WORLD_W} ${WORLD_H}`);
+
+/* year rulers */
+for(let y=1961; y<=2026; y+=1){
+  const py = yr(y) + OFFY;
+  const ruler = document.createElement('div');
+  ruler.className='year-mark' + (y%10===0?' decade':'') + (y%5===0&&y%10!==0?' half':'');
+  ruler.style.top = (py-1)+'px';
+  if(y%5===0)ruler.innerHTML = `<span>${y}</span>`;
+  world.appendChild(ruler);
+}
+
+/* era section dividers */
+const ERAS = [
+  { start: 1961, label: 'The Mainframe Era' },
+  { start: 1975, label: 'The Personal Era' },
+  { start: 1990, label: 'The Internet Era' },
+  { start: 2005, label: 'The Mobile Era' },
+  { start: 2015, label: 'The Modern Era' }
+];
+ERAS.forEach(era => {
+  const py = yr(era.start) + OFFY;
+  const div = document.createElement('div');
+  div.className = 'era-divider';
+  div.style.top = (py - 30) + 'px';
+  div.innerHTML = `
+    <div class="era-line"></div>
+    <div class="era-label">${era.label}</div>
+  `;
+  world.appendChild(div);
+});
+
+/* edges */
+EDGES.forEach(e=>{
+  const a = NODE_BY_ID[e.from], b = NODE_BY_ID[e.to];
+  if(!a||!b)return;
+  const x1 = a.x + OFFX + NODE_W/2;
+  const y1 = a.y + OFFY + NODE_H;
+  const x2 = b.x + OFFX + NODE_W/2;
+  const y2 = b.y + OFFY;
+  const dy = Math.max(20,(y2-y1)*0.55);
+  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+  path.setAttribute('d',`M ${x1} ${y1} C ${x1} ${y1+dy} ${x2} ${y2-dy} ${x2} ${y2}`);
+  path.classList.add(e.style==='inspired'?'inspired':'descent');
+  path.dataset.from = e.from; path.dataset.to = e.to;
+  links.appendChild(path);
+});
+
+/* nodes */
+NODES.forEach(n=>{
+  const el = document.createElement('div');
+  el.className = 'node '+n.lin;
+  el.dataset.id = n.id;
+  el.dataset.status = n.stat;
+  el.dataset.license = n.lic;
+  el.dataset.lineage = n.lin;
+  el.style.left = (n.x + OFFX)+'px';
+  el.style.top  = (n.y + OFFY)+'px';
+  el.style.width = NODE_W+'px';
+  el.style.height = NODE_H+'px';
+  el.innerHTML = `
+    <div class="yr"><span>${n.year}</span><span class="status">${n.stat.substring(0,4)}</span></div>
+    <div class="nm" title="${n.name}">${n.name}</div>
+    <div class="by" title="${n.by}">${n.by}</div>
+  `;
+  world.appendChild(el);
+});
+
+/* ---------- PAN / ZOOM -------------------------------------------------- */
+const stage = document.getElementById('stage');
+let scale=1, tx=0, ty=0;
+const MIN_S=0.18, MAX_S=2.6;
+
+function apply(){
+  world.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
+  document.getElementById('sb-zoom').textContent = 'Zoom: '+Math.round(scale*100)+'%';
+  updateMinimap();
+}
+
+function fit(animate=true){
+  const r = stage.getBoundingClientRect();
+  const sx = r.width / WORLD_W;
+  const sy = r.height / WORLD_H;
+  const s = Math.min(sx,sy)*0.94;
+  scale = Math.max(MIN_S,Math.min(MAX_S,s));
+  tx = (r.width - WORLD_W*scale)/2;
+  ty = (r.height - WORLD_H*scale)/2;
+  if(!animate)world.classList.add('notrans');
+  apply();
+  if(!animate)requestAnimationFrame(()=>world.classList.remove('notrans'));
+}
+
+function fitWidth(animate=true){
+  const r = stage.getBoundingClientRect();
+  const s = (r.width / WORLD_W) * 0.96;
+  scale = Math.max(MIN_S, Math.min(MAX_S, s));
+  tx = (r.width - WORLD_W*scale)/2;
+  ty = 20;
+  if(!animate)world.classList.add('notrans');
+  apply();
+  if(!animate)requestAnimationFrame(()=>world.classList.remove('notrans'));
+}
+
+function zoomAt(cx, cy, factor){
+  const r = stage.getBoundingClientRect();
+  const px = cx - r.left;
+  const py = cy - r.top;
+  const wx = (px - tx)/scale;
+  const wy = (py - ty)/scale;
+  let ns = scale*factor;
+  ns = Math.max(MIN_S,Math.min(MAX_S,ns));
+  tx = px - wx*ns;
+  ty = py - wy*ns;
+  scale = ns;
+  apply();
+}
+
+function zoomBy(factor){
+  const r = stage.getBoundingClientRect();
+  zoomAt(r.left+r.width/2, r.top+r.height/2, factor);
+}
+
+/* smart focus: only pan if node is off-screen or near edges */
+function focusOnNode(id){
+  const n = NODE_BY_ID[id];
+  if(!n) return;
+  const r = stage.getBoundingClientRect();
+  const screenX = (n.x + OFFX + NODE_W/2)*scale + tx;
+  const screenY = (n.y + OFFY + NODE_H/2)*scale + ty;
+  const margin = 80;
+  /* if node is well within viewport, don't disrupt */
+  if(screenX > margin && screenX < r.width - margin &&
+     screenY > margin && screenY < r.height - margin){
+    return;
+  }
+  /* otherwise pan node to center */
+  const nx = n.x + OFFX + NODE_W/2;
+  const ny = n.y + OFFY + NODE_H/2;
+  tx = r.width/2 - nx*scale;
+  ty = r.height/2 - ny*scale;
+  apply();
+}
+
+let wheelTimeout = null;
+stage.addEventListener('wheel',e=>{
+  e.preventDefault();
+  if(!wheelTimeout) world.classList.add('notrans');
+  clearTimeout(wheelTimeout);
+  wheelTimeout = setTimeout(() => { world.classList.remove('notrans'); wheelTimeout = null; }, 120);
+  const factor = e.deltaY<0 ? 1.12 : 1/1.12;
+  zoomAt(e.clientX,e.clientY,factor);
+},{passive:false});
+
+/* drag with click-detection: if pointer didn't move much and didn't hit a node,
+   treat as click-on-empty-canvas and close any open detail */
+let dragging=false, dx=0, dy0=0, pointerStart=null;
+stage.addEventListener('pointerdown',e=>{
+  if(e.target.closest('.node'))return;
+  if(e.target.closest('#legend')||e.target.closest('#mini'))return;
+  pointerStart = { x: e.clientX, y: e.clientY, target: e.target };
+  dragging=true;
+  dx=e.clientX - tx; dy0=e.clientY - ty;
+  stage.setPointerCapture(e.pointerId);
+  stage.classList.add('dragging');
+  world.classList.add('notrans');
+});
+stage.addEventListener('pointermove',e=>{
+  if(!dragging)return;
+  tx = e.clientX - dx;
+  ty = e.clientY - dy0;
+  apply();
+});
+stage.addEventListener('pointerup',e=>{
+  if(pointerStart){
+    const moved = Math.hypot(e.clientX - pointerStart.x, e.clientY - pointerStart.y);
+    if(moved < 4 && !pointerStart.target.closest('.node')
+       && !pointerStart.target.closest('#legend')
+       && !pointerStart.target.closest('#mini')){
+      /* click on empty canvas */
+      if(detail.classList.contains('open')) closeDetail();
+    }
+  }
+  pointerStart = null;
+  dragging=false;
+  stage.classList.remove('dragging');
+  world.classList.remove('notrans');
+});
+stage.addEventListener('pointercancel',()=>{pointerStart=null;dragging=false;stage.classList.remove('dragging');world.classList.remove('notrans');});
+
+let pinch=null;
+stage.addEventListener('touchstart',e=>{
+  if(e.touches.length===2){
+    const [a,b]=e.touches;
+    pinch={d:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),cx:(a.clientX+b.clientX)/2,cy:(a.clientY+b.clientY)/2};
+  }
+},{passive:true});
+stage.addEventListener('touchmove',e=>{
+  if(pinch && e.touches.length===2){
+    e.preventDefault();
+    const [a,b]=e.touches;
+    const d = Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    const factor = d / pinch.d;
+    zoomAt(pinch.cx,pinch.cy,factor);
+    pinch.d = d;
+  }
+},{passive:false});
+stage.addEventListener('touchend',()=>{pinch=null;});
+
+document.getElementById('zin').onclick=()=>zoomBy(1.3);
+document.getElementById('zout').onclick=()=>zoomBy(1/1.3);
+document.getElementById('fit').onclick=()=>fit(true);
+document.getElementById('fit-w').onclick=()=>fitWidth(true);
+
+/* ---------- NODE INTERACTION -------------------------------------------- */
+const tip = document.getElementById('tip');
+const detail = document.getElementById('detail');
+
+world.addEventListener('mousemove',e=>{
+  const n = e.target.closest('.node');
+  if(!n){tip.classList.remove('show');return;}
+  const d = NODE_BY_ID[n.dataset.id];
+  tip.innerHTML = `<div class="tip-name">${d.name}</div><div class="tip-meta">${d.year} - ${d.by}</div>${d.tag?`<div class="tip-tag">${d.tag}</div>`:''}`;
+  tip.style.left=(e.clientX+14)+'px';
+  tip.style.top=(e.clientY+14)+'px';
+  tip.classList.add('show');
+  setStatusInfo(d.name+' ('+d.year+') - '+d.by);
+});
+world.addEventListener('mouseleave',()=>{tip.classList.remove('show');if(!detail.classList.contains('open'))setStatusInfo('Ready');});
+
+world.addEventListener('click',e=>{
+  const n = e.target.closest('.node');
+  if(!n)return;
+  openDetail(n.dataset.id);
+});
+
+function setStatusInfo(text){ document.getElementById('sb-info-text').textContent = text; }
+
+function setMainActive(active){
+  document.getElementById('main-titlebar').classList.toggle('inactive', !active);
+}
+
+function traceAncestors(id){
+  const out=new Set();
+  function walk(nid){
+    if(out.has(nid))return;
+    out.add(nid);
+    const n = NODE_BY_ID[nid];
+    if(!n)return;
+    (n.parents||[]).forEach(walk);
+  }
+  (NODE_BY_ID[id].parents||[]).forEach(walk);
+  return out;
+}
+function traceDescendants(id){
+  const out=new Set();
+  function walk(nid){
+    NODES.forEach(n=>{
+      if((n.parents||[]).includes(nid) && !out.has(n.id)){
+        out.add(n.id);
+        walk(n.id);
+      }
+    });
+  }
+  walk(id);
+  return out;
+}
+
+function openDetail(id){
+  const d = NODE_BY_ID[id];
+  if(!d)return;
+
+  const ancestors = traceAncestors(id);
+  const descendants = traceDescendants(id);
+  document.querySelectorAll('.node').forEach(x=>{
+    x.classList.remove('active','ancestor','descendant','faded','dim');
+    const xid = x.dataset.id;
+    if(xid===id) x.classList.add('active');
+    else if(ancestors.has(xid)) x.classList.add('ancestor');
+    else if(descendants.has(xid)) x.classList.add('descendant');
+    else x.classList.add('faded');
+  });
+
+  document.querySelectorAll('svg#links path').forEach(p=>{
+    p.classList.remove('hl-ancestor','hl-descendant','dim');
+    const from=p.dataset.from, to=p.dataset.to;
+    const ancestorChain = (ancestors.has(from)||from===id) && (ancestors.has(to)||to===id);
+    const descendantChain = (descendants.has(from)||from===id) && (descendants.has(to)||to===id);
+    if(ancestorChain) p.classList.add('hl-ancestor');
+    else if(descendantChain) p.classList.add('hl-descendant');
+    else p.classList.add('dim');
+  });
+
+  const lc = getComputedStyle(document.documentElement).getPropertyValue('--c-'+d.lin).trim();
+  document.documentElement.style.setProperty('--c-active', lc);
+
+  document.getElementById('d-titlebar-text').textContent = d.name + ' - Information';
+  document.getElementById('d-year').textContent = 'Anno '+d.year;
+  document.getElementById('d-name').textContent = d.name;
+  document.getElementById('d-by').textContent = d.by;
+  document.querySelector('.d-banner-stripe').style.background = lc;
+
+  document.getElementById('d-tags').innerHTML = `
+    <span class="t lin" style="background:${lc}">${d.lin}</span>
+    <span class="t lic">${d.lic}</span>
+    <span class="t stat ${d.stat}">${d.stat}</span>
+  `;
+  document.getElementById('d-desc').innerHTML = d.desc || '';
+
+  const parents = (d.parents||[]).map(p=>NODE_BY_ID[p]).filter(Boolean);
+  const children = NODES.filter(x=>(x.parents||[]).includes(d.id));
+  document.getElementById('d-rels').innerHTML = `
+    ${parents.length?`<h4>Parents <span class="count">(${parents.length})</span></h4><ul>${parents.map(p=>`<li><a data-go="${p.id}" class="${p.lin}" style="--lin-color:var(--c-${p.lin})">${p.name}</a></li>`).join('')}</ul>`:''}
+    ${children.length?`<h4>Descendants <span class="count">(${children.length})</span></h4><ul>${children.map(c=>`<li><a data-go="${c.id}" class="${c.lin}" style="--lin-color:var(--c-${c.lin})">${c.name}</a></li>`).join('')}</ul>`:''}
+    ${!parents.length&&!children.length?'<h4 style="color:#808080">No recorded relationships</h4>':''}
+  `;
+  document.querySelectorAll('#d-rels a[data-go]').forEach(a=>{
+    a.onclick=()=>openDetail(a.dataset.go);
+  });
+
+  detail.classList.add('open');
+  setStatusInfo('Selected: '+d.name+' ('+ancestors.size+' ancestors, '+descendants.size+' descendants)');
+  requestAnimationFrame(()=>focusOnNode(id));
+}
+
+function closeDetail(){
+  detail.classList.remove('open');
+  document.querySelectorAll('.node').forEach(x=>{
+    x.classList.remove('active','ancestor','descendant','faded','dim');
+  });
+  document.querySelectorAll('svg#links path').forEach(p=>{
+    p.classList.remove('hl-ancestor','hl-descendant','dim');
+  });
+  setStatusInfo('Ready');
+}
+document.getElementById('d-close').onclick=closeDetail;
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    closeDetail();
+    if(document.getElementById('about').classList.contains('show')){
+      document.getElementById('about').classList.remove('show');
+      setMainActive(true);
+    }
+    closeMenus();
+  }
+  if(e.key==='/' && e.target.tagName!=='INPUT' && e.target.tagName!=='SELECT'){
+    e.preventDefault();
+    document.getElementById('search').focus();
+  }
+});
+
+/* ---------- DRAGGABLE DIALOGS ------------------------------------------- */
+function makeDraggable(handle, target){
+  let dr = null;
+  handle.addEventListener('mousedown', e => {
+    if(e.target.closest('.cbtn')||e.target.closest('.sysmenu-box'))return;
+    const rect = target.getBoundingClientRect();
+    dr = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if(!dr) return;
+    target.style.left = (e.clientX - dr.dx) + 'px';
+    target.style.top = (e.clientY - dr.dy) + 'px';
+    target.style.transform = 'none';
+    target.style.right = 'auto';
+  });
+  document.addEventListener('mouseup', () => { dr = null; });
+}
+makeDraggable(document.getElementById('detail-titlebar'), document.getElementById('detail'));
+makeDraggable(document.getElementById('about-titlebar'), document.querySelector('#about .dlg'));
+
+/* ---------- MENUS ------------------------------------------------------- */
+function closeMenus(){
+  document.querySelectorAll('.menu-popup').forEach(m=>m.classList.remove('show'));
+  document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('open'));
+}
+document.querySelectorAll('.menu-item').forEach(mi=>{
+  mi.onclick = (e)=>{
+    const key = mi.dataset.menu;
+    const popup = document.getElementById('menu-'+key);
+    const wasOpen = popup.classList.contains('show');
+    closeMenus();
+    if(!wasOpen){
+      mi.classList.add('open');
+      popup.classList.add('show');
+      const rect = mi.getBoundingClientRect();
+      popup.style.left = rect.left + 'px';
+    }
+    e.stopPropagation();
+  };
+});
+document.addEventListener('click', e => {
+  if(!e.target.closest('.menu-item') && !e.target.closest('.menu-popup'))closeMenus();
+});
+
+/* ---------- LEGEND / FILTER / SEARCH ------------------------------------ */
+const fStat = document.getElementById('filter-status');
+const fLic  = document.getElementById('filter-license');
+const fSrch = document.getElementById('search');
+const legendBody = document.getElementById('legend-body');
+
+const LINEAGES = [
+  ['linux','Linux'],
+  ['gnu','GNU'],
+  ['hobby','Hobby'],
+  ['unix','Unix'],
+  ['bsd','BSD'],
+  ['darwin','Darwin/macOS'],
+  ['macclassic','Apple/Xerox'],
+  ['be','BeOS/Haiku'],
+  ['mobile','Mobile'],
+  ['research','Research'],
+  ['amiga','Amiga'],
+  ['embed','Embedded'],
+  ['mainframe','Mainframe'],
+  ['dos','DOS'],
+  ['windows','Windows'],
+  ['proprietary','Other']
+];
+const lineageOn = new Set(LINEAGES.map(l=>l[0]));
+LINEAGES.forEach(([id,label])=>{
+  const col = getComputedStyle(document.documentElement).getPropertyValue('--c-'+id).trim();
+  const it = document.createElement('div');
+  it.className='item';
+  it.dataset.lin=id;
+  it.innerHTML = `<span class="swatch" style="background:${col}"></span><span>${label}</span>`;
+  it.onclick = ()=>{
+    if(lineageOn.has(id))lineageOn.delete(id); else lineageOn.add(id);
+    it.classList.toggle('muted', !lineageOn.has(id));
+    applyFilter();
+  };
+  legendBody.appendChild(it);
+});
+
+function toggleLegend(){
+  document.getElementById('legend').classList.toggle('collapsed');
+}
+
+function applyFilter(){
+  const st = fStat.value, lc = fLic.value;
+  const q  = fSrch.value.trim().toLowerCase();
+  let visible = 0;
+  document.querySelectorAll('.node').forEach(n=>{
+    const d = NODE_BY_ID[n.dataset.id];
+    let ok = lineageOn.has(d.lin);
+    if(st && d.stat!==st)ok=false;
+    if(lc && d.lic!==lc)ok=false;
+    if(q){
+      const hay = (d.name+' '+d.by+' '+(d.tag||'')+' '+(d.desc||'')).toLowerCase();
+      if(!hay.includes(q))ok=false;
+    }
+    n.classList.toggle('dim', !ok);
+    if(ok)visible++;
+  });
+  document.getElementById('sb-count').textContent = visible+' of '+NODES.length+' systems';
+}
+fStat.onchange = applyFilter;
+fLic.onchange = applyFilter;
+fSrch.oninput = applyFilter;
+
+/* ---------- MINIMAP ----------------------------------------------------- */
+const mini = document.getElementById('mini');
+const miniFrame = mini.querySelector('.mini-frame');
+const miniCanvas = mini.querySelector('canvas');
+const miniView = document.getElementById('miniview');
+function drawMinimap(){
+  const w=miniFrame.clientWidth, h=miniFrame.clientHeight;
+  miniCanvas.width=w*2;miniCanvas.height=h*2;
+  const ctx=miniCanvas.getContext('2d');
+  ctx.scale(2,2);
+  ctx.clearRect(0,0,w,h);
+  const sx = w/WORLD_W, sy=h/WORLD_H;
+  const s = Math.min(sx,sy);
+  const ox = (w - WORLD_W*s)/2;
+  const oy = (h - WORLD_H*s)/2;
+  NODES.forEach(n=>{
+    const col = getComputedStyle(document.documentElement).getPropertyValue('--c-'+n.lin).trim() || '#404040';
+    ctx.fillStyle = col;
+    ctx.fillRect(ox+(n.x+OFFX)*s, oy+(n.y+OFFY)*s, Math.max(1.5,NODE_W*s), Math.max(1.5,NODE_H*s));
+  });
+  mini._s=s;mini._ox=ox;mini._oy=oy;
+}
+function updateMinimap(){
+  const w=miniFrame.clientWidth, h=miniFrame.clientHeight;
+  const s = mini._s||1, ox=mini._ox||0, oy=mini._oy||0;
+  const r = stage.getBoundingClientRect();
+  const viewW = r.width/scale, viewH=r.height/scale;
+  const viewX = -tx/scale, viewY=-ty/scale;
+  miniView.style.left = (ox + viewX*s)+'px';
+  miniView.style.top  = (oy + viewY*s)+'px';
+  miniView.style.width = (viewW*s)+'px';
+  miniView.style.height= (viewH*s)+'px';
+}
+miniFrame.addEventListener('click',e=>{
+  const r=miniFrame.getBoundingClientRect();
+  const px = e.clientX-r.left, py=e.clientY-r.top;
+  const s = mini._s, ox=mini._ox, oy=mini._oy;
+  const wx = (px-ox)/s, wy=(py-oy)/s;
+  const sr = stage.getBoundingClientRect();
+  tx = sr.width/2 - wx*scale;
+  ty = sr.height/2 - wy*scale;
+  apply();
+});
+
+document.getElementById('about-btn').onclick=()=>{
+  document.getElementById('about').classList.add('show');
+  setMainActive(false);
+};
+
+/* clicking outside the about dialog closes it (and reactivates main) */
+document.getElementById('about').addEventListener('click', e => {
+  if(e.target.id==='about'){
+    e.currentTarget.classList.remove('show');
+    setMainActive(true);
+  }
+});
+
+window.addEventListener('resize',()=>{drawMinimap();updateMinimap();});
+
+/* BOOT */
+drawMinimap();
+fitWidth(false);
+</script>
+</body>
+</html>
