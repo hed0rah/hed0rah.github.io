@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archive &amp; Compression Formats — Technical Comparison Reference</title>
+<style>
+  /* ============================================================
+     ARCHIVE & COMPRESSION FORMATS — REFERENCE
+     Single-file. No build step. Edit DATA arrays at bottom of
+     <script> to change anything. Style is editorial/technical.
+     ============================================================ */
+
+  @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Spline+Sans+Mono:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap');
+
+  :root {
+    --ink:        #14110f;
+    --paper:      #f4f1ea;
+    --paper-2:    #ebe7dd;
+    --rule:       #14110f;
+    --rule-soft:  #c9c3b6;
+    --accent:     #b3231f;   /* oxidized red */
+    --accent-2:   #1d5e8c;   /* archival blue */
+    --muted:      #6f685c;
+    --good:       #2e6b3e;
+    --partial:    #9a6a14;
+    --no:         #97433f;
+
+    --mono: 'Spline Sans Mono', ui-monospace, monospace;
+    --display: 'Archivo', sans-serif;
+    --serif: 'Newsreader', Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--display);
+    font-size: 15px;
+    line-height: 1.5;
+    background-image:
+      linear-gradient(var(--rule-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: -1px -1px;
+    background-blend-mode: multiply;
+  }
+
+  .sheet {
+    max-width: 1180px;
+    margin: 0 auto;
+    background: var(--paper);
+    border-left: 1px solid var(--rule-soft);
+    border-right: 1px solid var(--rule-soft);
+    padding: 0;
+    box-shadow: 0 0 0 1px rgba(20,17,15,0.04), 28px 28px 60px -30px rgba(20,17,15,0.35);
+  }
+
+  /* ---------- MASTHEAD ---------- */
+  header.masthead {
+    padding: 46px 44px 26px;
+    border-bottom: 3px solid var(--ink);
+    position: relative;
+  }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin: 0 0 14px;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--rule-soft);
+    padding-bottom: 10px;
+  }
+  .kicker .kicker-links { text-transform: none; letter-spacing: 0.04em; }
+  .kicker a {
+    color: var(--accent-2);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .kicker a:hover { border-bottom-color: var(--accent-2); }
+  .kicker .sep { color: var(--rule-soft); padding: 0 6px; }
+
+  h1.title {
+    font-family: var(--display);
+    font-weight: 900;
+    font-size: clamp(38px, 6vw, 72px);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-transform: uppercase;
+  }
+  h1.title .amp {
+    color: var(--accent);
+    font-style: normal;
+  }
+  .subtitle {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 19px;
+    color: var(--muted);
+    margin: 14px 0 0;
+    max-width: 620px;
+  }
+  .edge-mark {
+    position: absolute;
+    top: 46px; right: 44px;
+    width: 8px; height: 64px;
+    background: var(--accent);
+  }
+
+  /* ---------- LEGEND STRIP ---------- */
+  .legend-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-bottom: 1px solid var(--rule);
+  }
+  .legend-cell {
+    padding: 18px 24px;
+    border-right: 1px solid var(--rule-soft);
+  }
+  .legend-cell:last-child { border-right: none; }
+  .legend-cell h3 {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 10px;
+    font-weight: 600;
+  }
+  .type-key { display: flex; gap: 16px; flex-wrap: wrap; }
+  .type-key .item { display: flex; align-items: baseline; gap: 7px; font-size: 13px; }
+  .badge {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 12px;
+    width: 19px; height: 19px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1.5px solid var(--ink);
+    flex-shrink: 0;
+  }
+  .badge.A { background: var(--ink); color: var(--paper); }
+  .badge.C { background: var(--paper); color: var(--ink); }
+  .badge.B { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+
+  .pipeline-mini { font-family: var(--mono); font-size: 12.5px; line-height: 1.9; }
+  .pipeline-mini .op { color: var(--accent); font-weight: 700; padding: 0 3px; }
+  .pipeline-mini .out { color: var(--accent-2); font-weight: 600; }
+
+  .gen-key .item { font-size: 12.5px; margin-bottom: 5px; display: flex; gap: 8px; }
+  .gen-key .tag {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 1px 6px; border: 1px solid var(--rule-soft);
+    min-width: 64px; text-align: center;
+  }
+  .tag.modern { background: var(--accent-2); color: var(--paper); border-color: var(--accent-2); }
+  .tag.active { background: var(--paper-2); color: var(--ink); }
+  .tag.legacy { background: transparent; color: var(--muted); }
+
+  /* ---------- MAIN TABLE ---------- */
+  .table-wrap { overflow-x: auto; }
+  table.matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    min-width: 980px;
+  }
+  table.matrix thead th {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    text-align: left;
+    padding: 14px 10px 10px;
+    border-bottom: 2px solid var(--ink);
+    vertical-align: bottom;
+    line-height: 1.25;
+  }
+  table.matrix thead th .sub { color: var(--rule-soft); font-weight: 500; display: block; margin-top: 2px; }
+  table.matrix tbody td {
+    padding: 13px 10px;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+    line-height: 1.4;
+  }
+  table.matrix tbody tr:hover { background: rgba(29,94,140,0.05); }
+
+  .fmt-num { font-family: var(--mono); color: var(--rule-soft); font-weight: 600; font-size: 12px; }
+  .fmt-name {
+    font-family: var(--display); font-weight: 800; font-size: 15px;
+    letter-spacing: -0.01em; line-height: 1.1;
+  }
+  .fmt-name .ext { display: block; font-family: var(--mono); font-weight: 400; font-size: 10px; color: var(--muted); letter-spacing: 0.04em; margin-top: 2px; }
+  .fmt-name.is-modern { color: var(--accent-2); }
+
+  .algo { font-size: 12px; }
+  .algo .tech { color: var(--muted); font-size: 11px; display: block; margin-top: 2px; }
+
+  .ratio { font-family: var(--mono); font-weight: 700; font-size: 13px; white-space: nowrap; }
+  .ratio .best { display: block; font-weight: 400; font-size: 11px; color: var(--muted); }
+
+  .speed { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+  .speed .label { display: block; font-size: 10px; color: var(--muted); }
+
+  .cell-flag { font-family: var(--mono); font-size: 11.5px; font-weight: 600; }
+  .cell-flag .note { display: block; font-weight: 400; font-size: 10px; color: var(--muted); }
+  .f-yes { color: var(--good); }
+  .f-no  { color: var(--no); }
+  .f-part { color: var(--partial); }
+  .f-na  { color: var(--rule-soft); }
+
+  .window { font-family: var(--mono); font-size: 11.5px; white-space: nowrap; }
+  .window .max { display: block; font-size: 10px; color: var(--muted); }
+
+  .uses { font-size: 11.5px; color: var(--ink); }
+  .uses li { margin: 0 0 2px; padding-left: 11px; position: relative; list-style: none; }
+  .uses li::before { content: ''; position: absolute; left: 0; top: 7px; width: 4px; height: 4px; background: var(--accent); }
+  .uses ul { margin: 0; padding: 0; }
+
+  sup.fn { color: var(--accent); font-weight: 700; font-size: 9px; }
+
+  /* ---------- NOTES BAR ---------- */
+  .notes-bar {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px 28px;
+    background: var(--paper-2);
+  }
+  .notes-bar .fn-num { color: var(--accent); font-weight: 700; }
+
+  /* ---------- LOWER PANELS ---------- */
+  .panels {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+  }
+  .panel {
+    padding: 28px 28px 30px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .panel.left { border-right: 1px solid var(--rule); }
+  .panel h2 {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 18px;
+    font-weight: 600;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  /* scatter */
+  .scatter { position: relative; }
+  svg.chart { width: 100%; height: auto; display: block; }
+  svg.chart text { font-family: var(--mono); }
+
+  /* window bars */
+  .winbars { display: flex; flex-direction: column; gap: 9px; }
+  .winrow { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 10px; font-family: var(--mono); font-size: 11px; }
+  .winrow .name { color: var(--muted); }
+  .winrow .bar-track { position: relative; height: 14px; background: var(--paper-2); border: 1px solid var(--rule-soft); }
+  .winrow .bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent-2); }
+  .winrow .bar-label { position: absolute; left: 7px; top: 50%; transform: translateY(-50%); font-size: 9.5px; color: var(--ink); white-space: nowrap; }
+
+  /* selection guide */
+  .guide { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .guide td { padding: 8px 4px; border-bottom: 1px solid var(--rule-soft); }
+  .guide td:first-child { color: var(--ink); }
+  .guide td:last-child { font-family: var(--mono); font-weight: 700; color: var(--accent-2); text-align: right; white-space: nowrap; }
+
+  .recovery dl { margin: 0; }
+  .recovery .rrow { display: grid; grid-template-columns: 78px 1fr; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--rule-soft); font-size: 12px; }
+  .recovery .lvl { font-family: var(--mono); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .recovery .lvl.strong { color: var(--good); }
+  .recovery .lvl.block { color: var(--partial); }
+  .recovery .lvl.weak { color: var(--no); }
+
+  /* ---------- PIPELINE PANEL ---------- */
+  .pipeline-full { padding: 28px; border-bottom: 1px solid var(--rule); }
+  .pipeline-full h2 {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 20px; font-weight: 600;
+    padding-bottom: 8px; border-bottom: 1px solid var(--rule-soft);
+  }
+  .pipe-row { display: flex; align-items: center; gap: 0; margin-bottom: 16px; flex-wrap: wrap; font-family: var(--mono); font-size: 12px; }
+  .pipe-node {
+    border: 1.5px solid var(--ink); padding: 9px 16px; background: var(--paper);
+    font-weight: 600; position: relative;
+  }
+  .pipe-node .role { display: block; font-size: 9px; color: var(--muted); font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+  .pipe-node.archive { background: var(--ink); color: var(--paper); }
+  .pipe-node.archive .role { color: var(--rule-soft); }
+  .pipe-node.compress { background: var(--paper); }
+  .pipe-node.out { background: var(--accent-2); color: var(--paper); border-color: var(--accent-2); }
+  .pipe-node.out .role { color: rgba(255,255,255,0.7); }
+  .pipe-arrow { padding: 0 14px; color: var(--accent); font-weight: 700; font-size: 16px; }
+  .pipe-note { font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--muted); margin: 18px 0 0; max-width: 640px; }
+
+  /* ---------- COLOPHON ---------- */
+  footer.colophon {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  footer.colophon div { padding: 16px 18px; border-right: 1px solid var(--rule-soft); }
+  footer.colophon div:last-child { border-right: none; }
+  footer.colophon strong { color: var(--ink); display: block; font-weight: 700; margin-bottom: 3px; }
+
+  @media (max-width: 820px) {
+    .legend-strip, .notes-bar, .panels, footer.colophon { grid-template-columns: 1fr; }
+    .panel.left { border-right: none; }
+    header.masthead { padding: 32px 22px 20px; }
+    .edge-mark { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="masthead">
+    <div class="edge-mark"></div>
+    <p class="kicker">
+      <span>Technical Comparison Reference</span>
+      <span class="kicker-links">
+        <a href="https://hed0rah.github.io" target="_blank" rel="noopener">hed0rah.github.io</a>
+        <span class="sep">/</span>
+        <a href="https://x.com/r3l0z" target="_blank" rel="noopener">@r3l0z</a>
+      </span>
+    </p>
+    <h1 class="title">Archive <span class="amp">&amp;</span><br>Compression Formats</h1>
+    <p class="subtitle">Compression / Archive Formats Field Guide</p>
+  </header>
+
+  <section class="legend-strip">
+    <div class="legend-cell">
+      <h3>Type</h3>
+      <div class="type-key">
+        <span class="item"><span class="badge A">A</span> Archive — stores files</span>
+        <span class="item"><span class="badge C">C</span> Compression — data only</span>
+        <span class="item"><span class="badge B">B</span> Both</span>
+      </div>
+      <div style="margin-top:14px;font-size:11.5px;color:var(--muted);font-family:var(--mono);line-height:1.6;">
+        <span class="f-yes">Yes</span> supported &nbsp;·&nbsp;
+        <span class="f-no">No</span> unsupported &nbsp;·&nbsp;
+        <span class="f-part">Part</span> limited / conditional &nbsp;·&nbsp;
+        <span class="f-na">—</span> n/a
+      </div>
+    </div>
+    <div class="legend-cell">
+      <h3>Composition Examples</h3>
+      <div class="pipeline-mini">
+        TAR <span class="op">+</span> GZIP <span class="op">=</span> <span class="out">.tar.gz</span><br>
+        TAR <span class="op">+</span> XZ <span class="op">=</span> <span class="out">.tar.xz</span><br>
+        TAR <span class="op">+</span> ZSTD <span class="op">=</span> <span class="out">.tar.zst</span><br>
+        7-Zip <span class="op">=</span> <span class="out">.7z</span> &nbsp; ZIP <span class="op">=</span> <span class="out">.zip</span>
+      </div>
+    </div>
+    <div class="legend-cell">
+      <h3>Generations</h3>
+      <div class="gen-key">
+        <div class="item"><span class="tag modern">Modern</span> actively developed, current default</div>
+        <div class="item"><span class="tag active">Active</span> widely used, mature</div>
+        <div class="item"><span class="tag legacy">Legacy</span> compatibility only</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="table-wrap">
+    <table class="matrix">
+      <thead>
+        <tr>
+          <th style="width:26px;">#</th>
+          <th style="width:104px;">Format</th>
+          <th style="width:40px;">Type</th>
+          <th style="width:150px;">Algorithm<span class="sub">techniques</span></th>
+          <th style="width:90px;">Ratio<span class="sub">typ / best</span></th>
+          <th style="width:78px;">Compress<span class="sub">vs zstd-3 <sup class="fn">1</sup></span></th>
+          <th style="width:78px;">Decompress<span class="sub">vs zstd-3 <sup class="fn">1</sup></span></th>
+          <th style="width:62px;">Solid</th>
+          <th style="width:74px;">Stream</th>
+          <th style="width:70px;">Seek</th>
+          <th style="width:84px;">Recovery</th>
+          <th style="width:78px;">Multi-thread</th>
+          <th style="width:100px;">Window<span class="sub">typ / max</span></th>
+          <th>Typical Use</th>
+        </tr>
+      </thead>
+      <tbody id="matrix-body"></tbody>
+    </table>
+  </div>
+
+  <div class="notes-bar" id="notes-bar"></div>
+
+  <section class="pipeline-full">
+    <h2>Pipeline — Layered View</h2>
+    <div id="pipelines"></div>
+    <p class="pipe-note">TAR carries no compression of its own; it is the archive layer that bundles files and metadata, then a separate codec compresses the resulting stream. This separation is why <span style="font-family:var(--mono);">.tar.*</span> combinations exist at all — pick the archive once, swap the compressor to taste.</p>
+  </section>
+
+  <div class="panels">
+    <div class="panel left">
+      <h2>Compression Ratio vs Speed</h2>
+      <div class="scatter" id="scatter"></div>
+      <p style="font-family:var(--serif);font-style:italic;font-size:13px;color:var(--muted);margin:14px 0 0;">
+        Higher = better ratio. Right = faster compression. Normalized to zstd level 3 (1.00x). Upper-left is the slow-but-dense corner; lower-right is the fast-but-loose corner.
+      </p>
+    </div>
+    <div class="panel">
+      <h2>Window / Dictionary Range</h2>
+      <div class="winbars" id="winbars"></div>
+    </div>
+  </div>
+
+  <div class="panels">
+    <div class="panel left">
+      <h2>Quick Selection Guide</h2>
+      <table class="guide" id="guide"></table>
+    </div>
+    <div class="panel recovery">
+      <h2>Error Recovery</h2>
+      <div id="recovery"></div>
+      <h2 style="margin-top:26px;">Benchmark Notes</h2>
+      <p style="font-size:11.5px;color:var(--muted);font-family:var(--mono);line-height:1.7;">
+        Ratios &amp; speeds aggregated from public corpora (Calgary, Silesia, enwik8/9), large text/JSON logs, and OS image sets, 2023–2024. Reference system: Ryzen 9 7950X (16C/32T), 64 GB DDR5, Ubuntu 24.04 LTS. Tools: zstd 1.5.6, 7-Zip 24.07, xz 5.6.2, gzip 1.13, brotli 1.1.0, lz4 1.9.4, zlib-ng 2.1.6. Single-core unless noted. Real numbers vary with data, level, and hardware.
+      </p>
+    </div>
+  </div>
+
+  <footer class="colophon">
+    <div><strong>Reference</strong>Compression Formats v2.0</div>
+    <div><strong>Built</strong>2026 · vanilla HTML/CSS/JS</div>
+    <div><strong>Refs</strong>RFCs · 7-Zip / zstd docs</div>
+    <div><strong>Note</strong>No build step · edit DATA in source</div>
+  </footer>
+
+</div>
+
+<script>
+/* ================================================================
+   ALL DATA LIVES HERE. To edit the reference, change these arrays.
+   Each FORMATS entry maps 1:1 to a table row.
+   ================================================================ */
+
+const FORMATS = [
+  { n:1,  name:"ZIP",       ext:".zip",            type:"B", gen:"active",
+    algo:"DEFLATE", tech:"LZ77 + Huffman",
+    ratio:"2:1 – 4:1", best:"10:1+",
+    comp:"-0.45x", decomp:"-0.35x",
+    solid:["no","per file"], stream:["yes","sequential"], seek:["yes","per file"],
+    recovery:["part","tools vary"], mt:["part","tools vary"],
+    win:"32 KB", winmax:"32 KB (deflate)",
+    uses:["Software distribution","Documents, assets","Cross-platform","Legacy compatibility"] },
+
+  { n:2,  name:"TAR",       ext:"",                type:"A", gen:"active",
+    algo:"— (none)", tech:"POSIX ustar / pax",
+    ratio:"1:1", best:"1:1",
+    comp:"n/a", decomp:"n/a",
+    solid:["no",""], stream:["yes","sequential"], seek:["no","sequential"],
+    recovery:["no","none"], mt:["no",""],
+    win:"—", winmax:"",
+    uses:["Backups","Packaging","Pairs with a compressor"] },
+
+  { n:3,  name:"GZIP",      ext:".gz",             type:"C", gen:"active",
+    algo:"DEFLATE", tech:"LZ77 + Huffman",
+    ratio:"2:1 – 6:1", best:"10:1+",
+    comp:"-0.60x", decomp:"-0.35x",
+    solid:["no",""], stream:["yes","sequential"], seek:["no","sequential"],
+    recovery:["no","none"], mt:["part","pigz \u00B2"],
+    win:"32 KB", winmax:"32 KB (deflate)",
+    uses:["Web content (HTTP)","Logs, text","tar.gz archives"] },
+
+  { n:4,  name:"BZIP2",     ext:".bz2",            type:"C", gen:"legacy",
+    algo:"BWT + RLE + Huffman", tech:"block-sorting",
+    ratio:"3:1 – 5:1", best:"rarely 6:1+",
+    comp:"-0.25x", decomp:"-0.30x",
+    solid:["no",""], stream:["yes","sequential"], seek:["no","sequential"],
+    recovery:["no","none"], mt:["no",""],
+    win:"100\u2013900 KB", winmax:"block size",
+    uses:["Text compression","Better ratio than gzip","Legacy systems"] },
+
+  { n:5,  name:"XZ",        ext:".xz / LZMA2",     type:"C", gen:"active",
+    algo:"LZMA2", tech:"LZ77 + range coder + BCJ",
+    ratio:"5:1 – 8:1", best:"rarely 10:1+",
+    comp:"-0.15x", decomp:"-0.25x",
+    solid:["no",""], stream:["yes","sequential"], seek:["yes","mt decode"],
+    recovery:["no","none"], mt:["yes","mt decode"],
+    win:"64 MB", winmax:"~4 GB max",
+    uses:["Maximum compression","OS images","Backups, ISOs"] },
+
+  { n:6,  name:"7-ZIP",     ext:".7z",             type:"B", gen:"active",
+    algo:"LZMA2", tech:"BCJ + range coder + others",
+    ratio:"5:1 – 8:1", best:"rarely 10:1+",
+    comp:"-0.15x", decomp:"-0.25x",
+    solid:["yes","default"], stream:["part","seq. read"], seek:["no","sequential"],
+    recovery:["no","CRC only"], mt:["yes",""],
+    win:"64 MB", winmax:"~4 GB max",
+    uses:["High compression","Backups, archives","Large datasets"] },
+
+  { n:7,  name:"RAR",       ext:"v5 · proprietary",type:"B", gen:"legacy",
+    algo:"LZSS variant + range coder", tech:"predictive filters; PPMd text mode",
+    ratio:"3:1 – 6:1", best:"rarely 7:1+",
+    comp:"-0.30x", decomp:"-0.35x",
+    solid:["yes","default"], stream:["part","seq. read"], seek:["no","sequential"],
+    recovery:["yes","recovery record"], mt:["yes",""],
+    win:"1.3 GB", winmax:"window size",
+    uses:["Archival w/ recovery","Large files","Windows ecosystem"] },
+
+  { n:8,  name:"ZSTANDARD", ext:".zst · RFC 8878", type:"C", gen:"modern",
+    algo:"LZ77 + FSE", tech:"finite state entropy",
+    ratio:"2:1 – 4:1", best:"rarely 5:1+",
+    comp:"1.00x", decomp:"1.00x",
+    solid:["no",""], stream:["yes","seekable"], seek:["yes","seekable"],
+    recovery:["yes","strong"], mt:["yes",""],
+    win:"128 MB", winmax:"\u22642 GB (trained dict \u22642 GB)",
+    uses:["Modern default choice","Fast + efficient","Logs, backups, data","ML, containers"] },
+
+  { n:9,  name:"LZ4",       ext:".lz4",            type:"C", gen:"modern",
+    algo:"LZ77 (very fast)", tech:"no entropy coding",
+    ratio:"2:1 – 2.5:1", best:"rarely 3:1+",
+    comp:"~4.0x+", decomp:"~10.0x+",
+    solid:["no",""], stream:["yes","seekable"], seek:["yes","seekable"],
+    recovery:["yes","very strong"], mt:["yes",""],
+    win:"64 KB", winmax:"64 KB (window)",
+    uses:["High-speed compression","Real-time systems","DB caches, game assets"] },
+
+  { n:10, name:"LZIP",      ext:".lz",             type:"C", gen:"active",
+    algo:"LZMA1", tech:"simpler container, integrity checks",
+    ratio:"4:1 – 8:1", best:"rarely 10:1+",
+    comp:"-0.20x", decomp:"-0.30x",
+    solid:["no",""], stream:["yes","sequential"], seek:["no","sequential"],
+    recovery:["yes","lziprecover"], mt:["no",""],
+    win:"1 GB", winmax:"dict size",
+    uses:["Long-term archival","Format simplicity","Alternative to XZ"] },
+
+  { n:11, name:"ZLIB",      ext:"deflate · RFC 1950",type:"C", gen:"active",
+    algo:"DEFLATE", tech:"LZ77 + Huffman",
+    ratio:"2:1 – 4:1", best:"10:1+",
+    comp:"-0.20x", decomp:"-0.35x",
+    solid:["no",""], stream:["yes","sequential"], seek:["no","sequential"],
+    recovery:["no","none"], mt:["no","zlib-ng \u00B3"],
+    win:"32 KB", winmax:"32 KB (window)",
+    uses:["Embedded systems","PNG, zlib streams","Base for gzip, zip"] },
+
+  { n:12, name:"BROTLI",    ext:".br · RFC 7932",  type:"C", gen:"modern",
+    algo:"LZ77 + static dict", tech:"~120 KB web tokens + Huffman",
+    ratio:"4:1 – 8:1", best:"rarely 10:1+",
+    comp:"-0.60x", decomp:"-0.50x",
+    solid:["no",""], stream:["yes","sequential"], seek:["no","sequential"],
+    recovery:["part","block"], mt:["yes",""],
+    win:"16 MB", winmax:"1 GB (large-window ext)",
+    uses:["Web (HTTPS, Brotli)","Text & fonts","Better ratio than gzip"] },
+];
+
+const FOOTNOTES = [
+  ["1","Speed relative to zstd level 3 (1.00x baseline), single-core, modern x86-64. Higher / more positive is faster. Decompression is always faster than compression for the same format."],
+  ["2","pigz: parallel gzip implementation (compression multi-threading)."],
+  ["3","zlib-ng: drop-in zlib replacement with SIMD; enables faster decode."],
+];
+
+const PIPELINES = [
+  { steps:[["FILES / DIRS","input","compress"],["TAR","archive","archive"],["GZIP","compress","compress"]], out:".tar.gz" },
+  { steps:[["FILES / DIRS","input","compress"],["TAR","archive","archive"],["XZ","compress","compress"]], out:".tar.xz" },
+  { steps:[["FILES / DIRS","input","compress"],["TAR","archive","archive"],["ZSTD","compress","compress"]], out:".tar.zst" },
+];
+
+/* Scatter: x = compress speed (log, zstd=1.0), y = ratio rank (higher=denser).
+   Coordinates are illustrative positions matching the table's qualitative story. */
+const SCATTER = [
+  { name:"XZ",    x:0.18, y:7.5 },
+  { name:"7-ZIP", x:0.20, y:7.0 },
+  { name:"BROTLI",x:0.35, y:6.6 },
+  { name:"LZIP",  x:0.28, y:6.8 },
+  { name:"RAR",   x:0.42, y:5.2 },
+  { name:"BZIP2", x:0.62, y:4.3 },
+  { name:"ZSTD",  x:1.00, y:3.2 },
+  { name:"GZIP",  x:0.55, y:3.0 },
+  { name:"ZIP",   x:0.60, y:2.7 },
+  { name:"ZLIB",  x:0.58, y:2.6 },
+  { name:"LZ4",   x:4.2,  y:2.2 },
+];
+
+/* window/dict sizes in bytes for the bar panel */
+const WINDOWS = [
+  { name:"ZIP",   label:"32 KB",      bytes:32*1024 },
+  { name:"GZIP",  label:"32 KB",      bytes:32*1024 },
+  { name:"ZLIB",  label:"32 KB",      bytes:32*1024 },
+  { name:"BZIP2", label:"900 KB",     bytes:900*1024 },
+  { name:"LZ4",   label:"64 KB",      bytes:64*1024 },
+  { name:"BROTLI",label:"16 MB / 1 GB",bytes:16*1024*1024 },
+  { name:"XZ",    label:"64 MB / 4 GB",bytes:64*1024*1024 },
+  { name:"7-ZIP", label:"64 MB / 4 GB",bytes:64*1024*1024 },
+  { name:"ZSTD",  label:"128 MB / 2 GB",bytes:128*1024*1024 },
+  { name:"LZIP",  label:"up to 1 GB", bytes:512*1024*1024 },
+  { name:"RAR",   label:"up to 1.3 GB",bytes:1300*1024*1024 },
+];
+
+const GUIDE = [
+  ["Best balance (ratio + speed)","Zstandard"],
+  ["Need maximum compression","XZ / 7-Zip"],
+  ["Need maximum speed","LZ4"],
+  ["Web / text compression","Brotli"],
+  ["Need error recovery","RAR"],
+  ["Need long-term auditability","LZIP"],
+  ["Need simple archive (no compress)","TAR"],
+];
+
+const RECOVERY = [
+  ["strong","Strong","Recovers from corrupted data (RAR recovery record, zstd checks)."],
+  ["block","Block-level","Recovers to next block / frame boundary (bzip2, brotli)."],
+  ["weak","Weak / none","Corruption typically breaks the rest of the stream (gzip, zlib)."],
+];
+
+/* ---------------- RENDER ---------------- */
+
+const F = (k) => k==="yes"?"f-yes":k==="no"?"f-no":k==="part"?"f-part":"f-na";
+const FT = (k) => k==="yes"?"Yes":k==="no"?"No":k==="part"?"Part":k==="n/a"?"\u2014":k;
+
+function flagCell([state,note]) {
+  const cls = F(state);
+  return `<span class="cell-flag ${cls}">${FT(state)}${note?`<span class="note">${note}</span>`:""}</span>`;
+}
+
+function renderMatrix() {
+  const body = document.getElementById("matrix-body");
+  body.innerHTML = FORMATS.map(f => `
+    <tr>
+      <td class="fmt-num">${String(f.n).padStart(2,"0")}</td>
+      <td><span class="fmt-name ${f.gen==="modern"?"is-modern":""}">${f.name}${f.ext?`<span class="ext">${f.ext}</span>`:""}</span></td>
+      <td><span class="badge ${f.type}">${f.type}</span></td>
+      <td class="algo">${f.algo}<span class="tech">${f.tech}</span></td>
+      <td class="ratio">${f.ratio}<span class="best">${f.best}</span></td>
+      <td class="speed">${f.comp}</td>
+      <td class="speed">${f.decomp}</td>
+      <td>${flagCell(f.solid)}</td>
+      <td>${flagCell(f.stream)}</td>
+      <td>${flagCell(f.seek)}</td>
+      <td>${flagCell(f.recovery)}</td>
+      <td>${flagCell(f.mt)}</td>
+      <td class="window">${f.win}${f.winmax?`<span class="max">${f.winmax}</span>`:""}</td>
+      <td class="uses"><ul>${f.uses.map(u=>`<li>${u}</li>`).join("")}</ul></td>
+    </tr>`).join("");
+}
+
+function renderNotes() {
+  document.getElementById("notes-bar").innerHTML =
+    FOOTNOTES.map(([n,t])=>`<div><span class="fn-num">${n}.</span> ${t}</div>`).join("");
+}
+
+function renderPipelines() {
+  const el = document.getElementById("pipelines");
+  el.innerHTML = PIPELINES.map(p => {
+    const nodes = p.steps.map((s,i) => {
+      const arrow = i>0 ? `<span class="pipe-arrow">\u2192</span>` : "";
+      return `${arrow}<span class="pipe-node ${s[2]}">${s[0]}<span class="role">${s[1]}</span></span>`;
+    }).join("");
+    return `<div class="pipe-row">${nodes}<span class="pipe-arrow">\u2192</span><span class="pipe-node out">${p.out}<span class="role">file</span></span></div>`;
+  }).join("");
+}
+
+function renderScatter() {
+  const W=520, H=300, pad={l:46,r:18,t:14,b:42};
+  const xs = SCATTER.map(d=>d.x), ys = SCATTER.map(d=>d.y);
+  const xmin=Math.log10(0.1), xmax=Math.log10(10);
+  const ymin=1, ymax=8;
+  const X = v => pad.l + (Math.log10(v)-xmin)/(xmax-xmin)*(W-pad.l-pad.r);
+  const Y = v => H-pad.b - (v-ymin)/(ymax-ymin)*(H-pad.t-pad.b);
+
+  const xticks=[0.1,1,10], xlab={0.1:"0.1x",1:"1x (zstd)",10:"10x"};
+  const yticks=[1,2,5,8], ylab={1:"1:1",2:"2:1",5:"5:1",8:"15:1"};
+
+  let g="";
+  // grid + axes
+  xticks.forEach(t=>{ g+=`<line x1="${X(t)}" y1="${pad.t}" x2="${X(t)}" y2="${H-pad.b}" stroke="#c9c3b6" stroke-width="1" stroke-dasharray="2 3"/>`;
+    g+=`<text x="${X(t)}" y="${H-pad.b+16}" font-size="9" fill="#6f685c" text-anchor="middle">${xlab[t]}</text>`; });
+  yticks.forEach(t=>{ g+=`<line x1="${pad.l}" y1="${Y(t)}" x2="${W-pad.r}" y2="${Y(t)}" stroke="#c9c3b6" stroke-width="1" stroke-dasharray="2 3"/>`;
+    g+=`<text x="${pad.l-8}" y="${Y(t)+3}" font-size="9" fill="#6f685c" text-anchor="end">${ylab[t]}</text>`; });
+  // frame
+  g+=`<line x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${H-pad.b}" stroke="#14110f" stroke-width="1.5"/>`;
+  g+=`<line x1="${pad.l}" y1="${H-pad.b}" x2="${W-pad.r}" y2="${H-pad.b}" stroke="#14110f" stroke-width="1.5"/>`;
+  // axis labels
+  g+=`<text x="${(pad.l+W-pad.r)/2}" y="${H-4}" font-size="9" fill="#14110f" text-anchor="middle" letter-spacing="1">SLOWER  \u2014  COMPRESS SPEED  \u2014  FASTER</text>`;
+  g+=`<text transform="translate(13,${(pad.t+H-pad.b)/2}) rotate(-90)" font-size="9" fill="#14110f" text-anchor="middle" letter-spacing="1">BETTER RATIO \u2192</text>`;
+  // points
+  SCATTER.forEach(d=>{
+    const cx=X(d.x), cy=Y(d.y);
+    const modern = ["ZSTD","LZ4","BROTLI"].includes(d.name);
+    const col = modern ? "#1d5e8c" : "#14110f";
+    g+=`<circle cx="${cx}" cy="${cy}" r="4.5" fill="${col}"/>`;
+    const anchor = d.x>2 ? "end" : "start";
+    const dx = d.x>2 ? -8 : 8;
+    g+=`<text x="${cx+dx}" y="${cy+3}" font-size="9.5" font-weight="600" fill="${col}" text-anchor="${anchor}">${d.name}</text>`;
+  });
+
+  document.getElementById("scatter").innerHTML =
+    `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${g}</svg>`;
+}
+
+function renderWinbars() {
+  const max = Math.log10(WINDOWS.reduce((m,w)=>Math.max(m,w.bytes),0));
+  const min = Math.log10(16*1024);
+  document.getElementById("winbars").innerHTML = WINDOWS.map(w=>{
+    const pct = Math.max(6,(Math.log10(w.bytes)-min)/(max-min)*100);
+    return `<div class="winrow"><span class="name">${w.name}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div><span class="bar-label">${w.label}</span></div></div>`;
+  }).join("");
+}
+
+function renderGuide() {
+  document.getElementById("guide").innerHTML =
+    GUIDE.map(([q,a])=>`<tr><td>${q}</td><td>${a}</td></tr>`).join("");
+}
+
+function renderRecovery() {
+  document.getElementById("recovery").innerHTML =
+    RECOVERY.map(([cls,lvl,desc])=>`<div class="rrow"><span class="lvl ${cls}">${lvl}</span><span>${desc}</span></div>`).join("");
+}
+
+renderMatrix();
+renderNotes();
+renderPipelines();
+renderScatter();
+renderWinbars();
+renderGuide();
+renderRecovery();
+</script>
+</body>
+</html>
