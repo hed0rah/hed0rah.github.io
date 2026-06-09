@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Satellite Signal Decode Field Reference</title>
+<meta name="description" content="A working cheatsheet for taking raw IQ from a dish or SDR down to decoded telemetry frames. Modulation, FEC, framing, tooling." />
+<meta property="og:title" content="Satellite Signal Decode Field Reference" />
+<meta property="og:type" content="article" />
+<style>
+/* theme variables - BLUEPRINT */
+:root{
+  --paper:#1a2838;
+  --ink:#e8f0f8;
+  --muted:#7a98b8;
+  --line:#2f4561;
+  --soft:rgba(255,255,255,0.015);
+  --accent-deep:#9fd4e8;
+  --accent-hot:#f0d878;
+  --accent-warm:#fae8a8;
+  --accent-warm-soft:rgba(250,232,168,0.10);
+  --accent-hot-soft:rgba(240,216,120,0.10);
+  --accent-deep-soft:rgba(159,212,232,0.08);
+  --code-bg:#0e1825;
+  --code-fg:#c8d8e8;
+  --ex-bg:#1f3045;
+  --pin-bg:rgba(240,216,120,0.16);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);background:var(--paper);font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;line-height:1.45}
+.page{max-width:1240px;margin:0 auto;padding:24px 16px 44px}
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:26px;align-items:start}
+.paper{min-width:0;border-top:2px solid var(--accent-deep);border-bottom:1px solid var(--line);padding:20px 0 24px}
+
+.eyebrow{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:var(--accent-hot);font-weight:600}
+h1,h2,h3{margin:0;font-weight:600;line-height:1.2}
+h1{font-size:clamp(1.55rem,2.1vw,1.9rem);letter-spacing:-0.02em;margin-bottom:6px;color:var(--accent-deep)}
+h2{font-size:0.92rem;margin-top:20px;margin-bottom:6px;padding-top:10px;border-top:1px solid var(--line);color:var(--accent-deep);text-transform:uppercase;letter-spacing:0.05em}
+h3{font-size:0.86rem;margin:8px 0 4px;color:var(--ink)}
+p{margin:0 0 6px;font-size:0.86rem}
+.lede{font-size:0.9rem;color:#cfe0f0;margin:6px 0 14px}
+
+code{font-family:"SFMono-Regular","SF Mono",Menlo,Consolas,monospace;font-size:0.85em;background:rgba(159,212,232,0.10);padding:0.04rem 0.22rem;border-radius:1px}
+.chip{display:inline-block;margin:0 3px 3px 0;padding:1px 6px;border:1px solid var(--line);border-radius:2px;font-size:0.69rem;letter-spacing:0.02em;color:var(--muted)}
+.chip.hot{border-color:var(--accent-hot);color:var(--accent-hot);background:var(--accent-hot-soft)}
+.spec-line{display:inline-block;padding:2px 8px;border:1px solid var(--accent-deep);background:var(--accent-deep-soft);font-family:"SFMono-Regular",monospace;font-size:0.74rem;color:var(--accent-deep);margin-right:6px;letter-spacing:0.03em}
+
+.term{cursor:pointer;border-bottom:1px dotted var(--accent-deep);color:var(--accent-deep);transition:.1s;padding:0 1px;font-weight:500}
+.term:hover,.term:focus-visible,.term.is-active{background:var(--accent-warm-soft);color:var(--accent-hot);border-bottom-color:var(--accent-hot);outline:none}
+.term.is-pinned{background:var(--pin-bg);color:var(--accent-hot);border-bottom-style:solid}
+
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:6px;margin:10px 0 14px}
+.stat{padding:8px 10px;border:1px solid var(--line);background:var(--paper)}
+.stat .num{font-family:"Iowan Old Style",Georgia,serif;font-size:1.45rem;font-weight:600;color:var(--accent-deep);line-height:1.1}
+.stat .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px}
+
+.compare{width:100%;border-collapse:collapse;font-size:0.82rem;margin:6px 0 8px}
+.compare th,.compare td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top}
+.compare th{background:var(--accent-deep-soft);color:var(--accent-deep);font-weight:600;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em}
+.compare td.good{color:var(--accent-deep)}
+.compare td.bad{color:var(--accent-hot)}
+.compare td.note{color:var(--muted);font-style:italic;font-size:0.78rem}
+.compare td code{font-size:0.78em}
+
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:6px;margin:6px 0 10px}
+.comp{padding:7px 10px;border:1px solid var(--line);background:var(--paper);transition:.15s}
+.comp:hover{border-color:var(--accent-hot);background:var(--accent-hot-soft)}
+.comp .name{font-size:0.88rem;font-weight:600;color:var(--accent-deep);margin-bottom:1px}
+.comp .role{font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;font-family:"SFMono-Regular",monospace}
+.comp .desc{font-size:0.76rem;margin-top:3px;color:#cfe0f0;line-height:1.4}
+
+.bul{list-style:none;padding:0;margin:4px 0 8px}
+.bul li{padding:2px 0 2px 16px;font-size:0.84rem;position:relative;line-height:1.5;color:#dce8f4}
+.bul li::before{content:"\00b7";position:absolute;left:5px;color:var(--accent-hot);font-weight:700;font-size:1.1rem;line-height:1}
+.bul li strong{color:var(--accent-deep);font-weight:600}
+.bul li code{font-size:0.82em}
+
+.phase-list{margin:5px 0 10px;padding:0;list-style:none;counter-reset:phase}
+.phase-list li{counter-increment:phase;padding:5px 10px 5px 34px;border-left:1px solid var(--line);position:relative;margin-bottom:2px;background:rgba(255,255,255,0.015);font-size:0.84rem;line-height:1.5}
+.phase-list li::before{content:"P" counter(phase);position:absolute;left:5px;top:5px;font-family:"SFMono-Regular",monospace;font-size:0.70rem;color:var(--accent-hot);font-weight:700;letter-spacing:0.05em}
+.phase-list li strong{color:var(--accent-deep)}
+.phase-list li .meta{font-size:0.70rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-left:6px;font-style:italic}
+
+.wireblock{font-family:"SFMono-Regular",Menlo,Consolas,monospace;font-size:0.75rem;background:var(--code-bg);color:var(--code-fg);padding:10px 12px;margin:6px 0 10px;line-height:1.55;overflow-x:auto;white-space:pre;border-left:3px solid var(--accent-hot)}
+.wireblock .kw{color:#f5b06b}
+.wireblock .hdr{color:#5cc0b0}
+.wireblock .cm{color:#7d8a99;font-style:italic}
+.wireblock .num{color:#e0b060}
+.wireblock .str{color:#a8d39a}
+
+.figure{margin:8px 0 12px;border:1px solid var(--line);background:var(--ex-bg);padding:10px}
+.figure svg{display:block;max-width:100%;height:auto;margin:0 auto}
+.figure .cap{font-size:0.74rem;color:var(--muted);text-align:center;margin-top:6px;font-style:italic;letter-spacing:0.02em}
+
+.repo-link{display:inline-block;margin-top:4px;padding:3px 8px;border:1px solid var(--accent-deep);background:var(--paper);color:var(--accent-deep);text-decoration:none;font-size:0.72rem;letter-spacing:0.04em;font-family:"SFMono-Regular",monospace}
+.repo-link:hover{background:var(--accent-deep);color:var(--paper)}
+
+.refs{font-size:0.78rem;line-height:1.55;margin:6px 0}
+.refs .ref-row{display:grid;grid-template-columns:130px 1fr;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line)}
+.refs .ref-row:last-child{border-bottom:none}
+.refs .ref-row .key{font-family:"SFMono-Regular",monospace;font-size:0.72rem;color:var(--accent-deep);font-weight:600;text-transform:uppercase;letter-spacing:0.03em}
+.refs .ref-row .val a{color:var(--accent-hot);text-decoration:none;border-bottom:1px dotted var(--accent-hot)}
+.refs .ref-row .val a:hover{background:var(--accent-hot-soft)}
+.refs .ref-row .val .desc{color:var(--muted);font-style:italic;font-size:0.74rem;margin-left:6px}
+
+.margin{position:sticky;top:18px;border-top:2px solid var(--accent-deep);padding-top:10px;font-size:0.82rem;color:var(--muted)}
+.margin-card{border:1px solid var(--line);border-left:3px solid var(--accent-hot);background:rgba(255,255,255,0.015);padding:12px 12px 10px;min-height:340px;transition:border-left-color .15s,background .15s}
+.margin-card.is-pinned{border-left-color:var(--accent-deep);background:var(--accent-deep-soft)}
+.margin h3{font-size:0.9rem;margin-bottom:6px;color:var(--accent-deep)}
+.margin p{margin-bottom:7px;font-size:0.8rem}
+.margin-code{display:inline-block;margin-top:2px;margin-bottom:6px;color:var(--accent-hot)}
+.margin-meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin:7px 0 8px;padding:7px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:#dce8f4}
+.margin-meta strong{display:block;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.margin-meta span{font-size:0.8rem}
+.margin-section{margin-top:10px}
+.margin-section .label{font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:3px}
+.margin-section ul{margin:0;padding:0;list-style:none}
+.margin-section li{padding:2px 0;border-top:1px solid rgba(47,69,97,0.7);font-size:0.76rem;color:#dce8f4;font-family:"SFMono-Regular",Menlo,Consolas,monospace}
+.margin-section li:first-child{border-top:none}
+.margin-section .more{color:var(--muted);font-style:italic;font-family:inherit}
+.margin-section a{color:var(--accent-hot);text-decoration:none;border-bottom:1px dotted var(--accent-hot);font-family:inherit;word-break:break-word}
+.margin-section a:hover{background:var(--accent-hot-soft);color:var(--accent-deep)}
+.margin-section li.link-item{white-space:normal;font-family:inherit;padding:4px 0}
+.margin-section li.link-item .src{display:block;font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:1px;font-family:"SFMono-Regular",monospace}
+.margin-pin-bar{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:7px;border-top:1px solid var(--line)}
+.margin-hint{font-size:0.72rem;color:var(--muted)}
+.margin-hint kbd{font-family:"SFMono-Regular",Menlo,Consolas,monospace;font-size:0.7rem;padding:0 4px;border:1px solid var(--line);border-radius:2px;background:var(--soft)}
+.margin-unpin{font-family:inherit;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;padding:2px 7px;border:1px solid var(--accent-hot);background:transparent;color:var(--accent-hot);cursor:pointer;border-radius:2px;display:none}
+.margin-card.is-pinned ~ .margin-pin-bar .margin-unpin{display:inline-block}
+.margin-card.is-pinned .margin-status{color:var(--accent-hot);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;font-size:9px}
+
+.footer{margin-top:20px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font-size:0.76rem}
+.footer .signoff{color:var(--accent-deep);font-weight:600;letter-spacing:0.05em}
+
+@media (max-width:980px){
+  .sheet{grid-template-columns:1fr}
+  .margin{position:static;order:2;border-top:1px solid var(--line)}
+  .comp-grid,.stat-grid{grid-template-columns:1fr}
+  .compare{font-size:0.76rem}
+  .refs .ref-row{grid-template-columns:100px 1fr}
+}
+@media print{
+  body{background:#fff;color:#111}
+  .path-bar,.margin,.term{cursor:default}
+  .term{border-bottom:none;color:var(--accent-deep)!important;background:transparent!important}
+}
+</style>
+</head>
+<body>
+<div class="page"><div class="sheet">
+
+<article class="paper">
+  <p class="eyebrow">Signals / SDR / Field Reference</p>
+  <h1>Satellite Signal Decode: From IQ to Frames</h1>
+  <p class="lede">
+    <span class="spec-line">raw iq &rarr; telemetry</span>
+    <span class="spec-line">ccsds / dsn lineage</span>
+    The path from a recorded baseband file to decoded spacecraft telemetry is a fixed pipeline: demodulate the carrier, recover symbols, undo the channel coding, find the frames. Each stage has a small set of knobs, and a failure at one stage has a recognizable signature in the next. This is the working reference for that pipeline, with the Dwingeloo Tianwen-2 X-band capture as the running example.
+  </p>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="num">7</div><div class="lbl">pipeline stages</div></div>
+    <div class="stat"><div class="num">r=1/2</div><div class="lbl">typical inner code</div></div>
+    <div class="stat"><div class="num">255,223</div><div class="lbl">classic RS outer</div></div>
+    <div class="stat"><div class="num">0x1ACFFC1D</div><div class="lbl">ccsds asm</div></div>
+  </div>
+
+  <h2>The pipeline, end to end</h2>
+  <p>Every coherent digital downlink decodes along the same spine. Read it top to bottom; each stage consumes the output of the one above. The failure mode that matters most is the silent one: a stage that locks while the next refuses to sync, which always means the break is downstream of where it looks.</p>
+
+  <div class="figure">
+    <svg viewBox="0 0 700 132" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Decode pipeline block diagram">
+      <defs>
+        <marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#9fd4e8"/>
+        </marker>
+      </defs>
+      <g font-family="monospace" font-size="10" fill="#e8f0f8" text-anchor="middle">
+        <rect x="6"   y="40" width="78" height="34" fill="none" stroke="#2f4561"/>
+        <text x="45"  y="54">IQ file</text><text x="45" y="66" fill="#7a98b8" font-size="8">ci16/cf32</text>
+        <rect x="104" y="40" width="78" height="34" fill="none" stroke="#9fd4e8"/>
+        <text x="143" y="54">carrier</text><text x="143" y="66" fill="#7a98b8" font-size="8">PLL / costas</text>
+        <rect x="202" y="40" width="78" height="34" fill="none" stroke="#9fd4e8"/>
+        <text x="241" y="54">symbols</text><text x="241" y="66" fill="#7a98b8" font-size="8">TED / clock</text>
+        <rect x="300" y="40" width="78" height="34" fill="none" stroke="#9fd4e8"/>
+        <text x="339" y="54">viterbi</text><text x="339" y="66" fill="#7a98b8" font-size="8">inner FEC</text>
+        <rect x="398" y="40" width="78" height="34" fill="none" stroke="#9fd4e8"/>
+        <text x="437" y="54">ASM sync</text><text x="437" y="66" fill="#7a98b8" font-size="8">+ derand</text>
+        <rect x="496" y="40" width="78" height="34" fill="none" stroke="#9fd4e8"/>
+        <text x="535" y="54">RS decode</text><text x="535" y="66" fill="#7a98b8" font-size="8">outer FEC</text>
+        <rect x="594" y="40" width="100" height="34" fill="none" stroke="#f0d878"/>
+        <text x="644" y="54" fill="#f0d878">frames</text><text x="644" y="66" fill="#7a98b8" font-size="8">CADU / packets</text>
+        <g stroke="#9fd4e8" fill="none" marker-end="url(#ar)">
+          <line x1="84"  y1="57" x2="102" y2="57"/>
+          <line x1="182" y1="57" x2="200" y2="57"/>
+          <line x1="280" y1="57" x2="298" y2="57"/>
+          <line x1="378" y1="57" x2="396" y2="57"/>
+          <line x1="476" y1="57" x2="494" y2="57"/>
+          <line x1="574" y1="57" x2="592" y2="57"/>
+        </g>
+        <text x="350" y="18" fill="#f0d878" font-size="9">DEMOD</text>
+        <line x1="6" y1="24" x2="280" y2="24" stroke="#2f4561"/>
+        <text x="490" y="18" fill="#f0d878" font-size="9">FEC + FRAMING</text>
+        <line x1="300" y1="24" x2="694" y2="24" stroke="#2f4561"/>
+        <text x="350" y="100" fill="#7a98b8" font-size="8">if a stage locks but the next will not sync, the fault is downstream of the locked stage</text>
+      </g>
+    </svg>
+    <div class="cap">fig 1. the decode spine. demod recovers bits; FEC and framing turn bits into trusted frames.</div>
+  </div>
+
+  <h2>Stage 1 &middot; Know your IQ file</h2>
+  <p>Before any DSP, read the container. A baseband recording is just interleaved samples, and getting the <span class="term" data-term="sample-format">sample format</span> wrong produces noise that looks plausibly like a weak signal. <span class="term" data-term="sigmf">SigMF</span> files carry the answer in a sidecar JSON; trust it over the filename. The three numbers you must have before touching anything: sample rate, datatype, and center frequency.</p>
+  <div class="wireblock"><span class="cm"># ci16_le: interleaved int16 I,Q little-endian, 4 bytes/sample</span>
+raw = np.fromfile(path, dtype=<span class="str">"&lt;i2"</span>)
+iq  = (raw[<span class="num">0</span>::<span class="num">2</span>] + <span class="num">1j</span>*raw[<span class="num">1</span>::<span class="num">2</span>]).astype(np.complex64) / <span class="num">32768.0</span>
+<span class="cm"># cf32: already complex float, just view it</span>
+iq  = np.fromfile(path, dtype=np.complex64)</div>
+  <ul class="bul">
+    <li><strong>Nyquist check:</strong> the recorded bandwidth is the sample rate. A 2 Msps file holds plus or minus 1 MHz around the center. If your signal is wider, it is clipped and no decode will be clean.</li>
+    <li><strong>Sanity FFT first:</strong> plot the power spectrum before anything else. You are looking for the <span class="term" data-term="residual-carrier">carrier</span>, the symmetric data sidebands, and where they sit relative to DC.</li>
+  </ul>
+
+  <h2>Stage 2 &middot; Identify the modulation</h2>
+  <p>The spectrum tells you most of it. A sharp spike with symmetric humps either side is <span class="term" data-term="residual-carrier">residual-carrier PM</span>, the deep-space default: most power parked in the carrier for tracking, data riding a <span class="term" data-term="subcarrier">subcarrier</span> on the shoulders. No central spike, just a hump, means suppressed-carrier <span class="term" data-term="psk">PSK</span> where all power is in the data. The <span class="term" data-term="constellation">constellation</span> after coarse lock confirms the order: two blobs is BPSK, four is QPSK.</p>
+  <table class="compare">
+    <thead><tr><th>spectrum signature</th><th>likely modulation</th><th>recover with</th></tr></thead>
+    <tbody>
+      <tr><td>sharp central spike + symmetric sidebands</td><td class="good">residual-carrier PCM/PSK/PM</td><td><code>PLL on carrier, then subcarrier costas</code></td></tr>
+      <tr><td>single smooth hump, no spike</td><td class="good">suppressed-carrier BPSK/QPSK</td><td><code>costas loop</code></td></tr>
+      <tr><td>two humps, constant envelope</td><td class="good">FSK / GFSK</td><td><code>quadrature demod</code></td></tr>
+      <tr><td>flat-topped wideband block</td><td class="note">OQPSK / high-rate, or oversampled</td><td><code>poly-phase clock sync</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Stage 3 &middot; Recover carrier and symbols</h2>
+  <p>Two loops, in order. First lock the carrier: an FFT-peak estimate de-rotates the bulk of the offset, a <span class="term" data-term="pll">PLL</span> or <span class="term" data-term="costas">Costas loop</span> tracks the rest. For residual-carrier signals you then mix down to the subcarrier and Costas-lock that. Second, recover symbol timing with a <span class="term" data-term="ted">timing error detector</span> (Gardner is the workhorse) so you sample at the eye center. BPSK Costas recovery costs you absolute phase, which is why a <span class="term" data-term="phase-ambiguity">180 degree ambiguity</span> follows you into the decoder.</p>
+
+  <h2>Stage 4 &middot; Undo the inner code</h2>
+  <p>Most coherent downlinks wrap the data in a <span class="term" data-term="conv-code">convolutional code</span>, decoded by a <span class="term" data-term="viterbi">Viterbi</span> decoder. The CCSDS baseline is rate 1/2, constraint length 7, polynomials <code>0o171</code> and <code>0o133</code>. Viterbi will report a lock state and a <span class="term" data-term="ber">bit error rate</span>. A synced Viterbi at low BER means your demod is good. This is the most important diagnostic in the whole chain: if Viterbi locks but frames never appear, stop touching the demod. The fault is in framing or the outer code.</p>
+
+  <h2>Stage 5 &middot; Find the frames</h2>
+  <p>Decoded bits are a continuous stream. Framing finds structure in it. A correlator slides along looking for the <span class="term" data-term="asm">attached sync marker</span>, the known 32-bit pattern <code>0x1ACFFC1D</code> for CCSDS. Once locked, the stream is sliced into fixed-length frames, the <span class="term" data-term="randomizer">pseudo-randomizer</span> is reversed, and the <span class="term" data-term="reed-solomon">Reed-Solomon</span> outer code corrects residual errors. This is where Chinese-lineage probes bite you: they often use RS in the <span class="term" data-term="rs-basis">conventional basis</span>, not the CCSDS-default dual basis, and they <span class="term" data-term="interleave">interleave</span> several codewords per frame. A generic CCSDS deframer with the wrong basis or depth correlates the ASM fine and then fails every RS codeword, which presents as permanent deframer NOSYNC.</p>
+
+  <h2>Stage 6 &middot; Parse the telemetry</h2>
+  <p>Corrected frames are <span class="term" data-term="cadu">transfer frames</span> carrying <span class="term" data-term="space-packet">space packets</span> on virtual channels. Split by APID, watch lengths, and start charting channels over time. Oscillating values are often attitude or spin. A slow exponential decay is usually a thermal control loop. Float32 fields that are not unit-norm are probably not quaternions. Without a secondary header there is no per-packet timestamp, so the frame counter is your clock.</p>
+
+  <h2>The NOSYNC decision tree</h2>
+  <p>The single most common failure once you have signal. Work it in this order; each step is cheap to test and the order is by probability.</p>
+  <ol class="phase-list">
+    <li><strong>Viterbi not syncing?</strong> The problem is upstream, in demod. Check subcarrier frequency, symbol rate, and that you are actually locked to the carrier. <span class="meta">demod fault</span></li>
+    <li><strong>Viterbi synced, deframer NOSYNC?</strong> The demod is fine. Everything below is framing or outer FEC. <span class="meta">framing fault</span></li>
+    <li><strong>Sweep RS interleave depth.</strong> Wrong depth means the deinterleaver scrambles every codeword. Try the documented depth, then 1, 4, 5. <span class="meta">most likely</span></li>
+    <li><strong>Toggle RS basis.</strong> Conventional vs dual. Chinese probes use conventional; generic decoders default to dual. <span class="meta">very likely</span></li>
+    <li><strong>Confirm frame length and ASM.</strong> A wrong frame size desyncs immediately after the first marker. <span class="meta">check</span></li>
+    <li><strong>Try both symbol polarities.</strong> The 180 degree BPSK ambiguity. Run normal and bit-inverted deframers in parallel. <span class="meta">cheap</span></li>
+    <li><strong>Toggle the derandomizer.</strong> If it is off when it should be on, RS sees garbage. <span class="meta">cheap</span></li>
+  </ol>
+
+  <h2>Worked example &middot; Tianwen-2 X-band</h2>
+  <p>The Dwingeloo 25 m dish recorded Tianwen-2 on its 8428.190 MHz downlink. Live SatDump showed Viterbi SYNCED at BER 0.0049 but the deframer stuck at NOSYNC. By the decision tree above, the demod was fine and the fault was framing. The fix was the RS configuration, confirmed against a published decode of the same recordings.</p>
+  <table class="compare">
+    <thead><tr><th>parameter</th><th>value</th><th>note</th></tr></thead>
+    <tbody>
+      <tr><td>center / rate</td><td class="good">8428.190 MHz / 2 Msps</td><td class="note">ci16_le SigMF</td></tr>
+      <tr><td>modulation</td><td class="good">residual-carrier PM, BPSK on subcarrier</td><td class="note">65536 Hz subcarrier</td></tr>
+      <tr><td>symbol rate</td><td class="good">16384 baud</td><td class="note"></td></tr>
+      <tr><td>inner code</td><td class="good">conv r=1/2, K=7 (0o171/0o133)</td><td class="note">Viterbi</td></tr>
+      <tr><td>outer code</td><td class="bad">RS(255,223) conventional, interleave 4</td><td class="note">NOT dual basis</td></tr>
+      <tr><td>frame</td><td class="good">892 bytes, 1.000 s, AOS, VC1, SCID 0xED</td><td class="note">4 x 223</td></tr>
+      <tr><td>scrambler</td><td class="good">CCSDS pseudo-randomizer ON</td><td class="note"></td></tr>
+    </tbody>
+  </table>
+  <p>The two knobs that resolved NOSYNC were <strong>interleave depth 4</strong> and <strong>conventional basis</strong>, exactly steps 3 and 4 of the tree.</p>
+
+  <h2>Tooling map</h2>
+  <div class="comp-grid">
+    <div class="comp"><div class="name">SatDump</div><div class="role">gui / offline</div><div class="desc">prebuilt pipelines for most spacecraft. fastest path when a matching pipeline exists. the residual-carrier PM + CCSDS concatenated chain is built in.</div></div>
+    <div class="comp"><div class="name">gr-satellites</div><div class="role">gnu radio</div><div class="desc">Estevez. deframers with the basis and interleave knobs exposed. has handled Tianwen lineage before. the right tool when SatDump will not lock.</div></div>
+    <div class="comp"><div class="name">GNU Radio</div><div class="role">flowgraph</div><div class="desc">build the chain block by block when nothing prebuilt fits. full control over every loop.</div></div>
+    <div class="comp"><div class="name">inspectrum</div><div class="role">visual</div><div class="desc">eyeball the subcarrier, measure symbol rate off the waterfall, find bursts before committing to a decode config.</div></div>
+    <div class="comp"><div class="name">numpy / python</div><div class="role">scratch</div><div class="desc">load IQ, FFT, prototype carrier removal. good for the front-end learning exercise. do not hand-roll Viterbi or RS, reuse a library.</div></div>
+    <div class="comp"><div class="name">SigMF tools</div><div class="role">metadata</div><div class="desc">parse the sidecar so sample rate, datatype, and frequency come from the recording, not a guess.</div></div>
+  </div>
+
+  <h2>References</h2>
+  <div class="refs">
+    <div class="ref-row"><span class="key">ccsds 131</span><span class="val"><a href="https://public.ccsds.org/Pubs/131x0b5.pdf" target="_blank" rel="noopener">TM Synchronization and Channel Coding</a><span class="desc">RS, convolutional, ASM, randomizer specs</span></span></div>
+    <div class="ref-row"><span class="key">decode</span><span class="val"><a href="https://destevez.net/2026/05/decoding-tianwen-2/" target="_blank" rel="noopener">Decoding Tianwen-2</a><span class="desc">Estevez, the worked-example parameters</span></span></div>
+    <div class="ref-row"><span class="key">timestamp</span><span class="val"><a href="https://destevez.net/2026/05/an-update-about-tianwen-2-telemetry/" target="_blank" rel="noopener">Tianwen-2 telemetry update</a><span class="desc">insert-zone epoch</span></span></div>
+    <div class="ref-row"><span class="key">tool</span><span class="val"><a href="https://github.com/daniestevez/gr-satellites" target="_blank" rel="noopener">gr-satellites</a><span class="desc">deframer with basis / interleave knobs</span></span></div>
+    <div class="ref-row"><span class="key">tool</span><span class="val"><a href="https://github.com/SatDump/SatDump" target="_blank" rel="noopener">SatDump</a><span class="desc">prebuilt decode pipelines</span></span></div>
+    <div class="ref-row"><span class="key">data</span><span class="val"><a href="https://data.camras.nl/satellites/raw/" target="_blank" rel="noopener">CAMRAS raw archive</a><span class="desc">the Dwingeloo IQ recordings, CC-BY 4.0</span></span></div>
+    <div class="ref-row"><span class="key">spec</span><span class="val"><a href="https://sigmf.org" target="_blank" rel="noopener">SigMF</a><span class="desc">signal metadata format</span></span></div>
+  </div>
+
+  <div class="footer"><span class="signoff">grivt dynamics</span> &middot; satellite decode field reference &middot; hover terms for detail, click to pin, esc to release</div>
+</article>
+
+<aside class="margin">
+  <div class="margin-card" id="margin-card">
+    <p class="margin-code" style="display:block;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted)">
+      Reference Inspector <span class="margin-status"></span>
+    </p>
+    <h3 id="m-title">Hover any underlined term</h3>
+    <code class="margin-code" id="m-code">&middot;</code>
+    <p id="m-body">Move the cursor over any dotted-underline term to load details. Click a term to pin the card so it persists while you read elsewhere.</p>
+    <div class="margin-meta" id="m-meta"></div>
+    <div class="margin-section" id="m-rel"><div class="label">Related</div><ul><li class="more">&middot;</li></ul></div>
+    <div class="margin-section" id="m-notes"><div class="label">Notes</div><ul><li class="more">&middot;</li></ul></div>
+    <div class="margin-section" id="m-links"><div class="label">Sources</div><ul><li class="more">&middot;</li></ul></div>
+  </div>
+  <div class="margin-pin-bar">
+    <span class="margin-hint">hover &middot; click to pin &middot; <kbd>esc</kbd> unpin</span>
+    <button class="margin-unpin" id="margin-unpin" aria-label="Unpin reference card">unpin</button>
+  </div>
+</aside>
+
+</div></div>
+
+<script id="reference-data" type="application/json">
+{
+  "sample-format": {
+    "title": "Sample format",
+    "code": "ci16_le / cf32 / cs8",
+    "body": "How IQ samples are packed on disk. ci16_le is interleaved signed 16-bit integers, I then Q, little-endian, 4 bytes per sample. cf32 is interleaved 32-bit floats. Reading it wrong yields plausible-looking noise.",
+    "meta": {"ci16_le": "4 B/samp", "cf32": "8 B/samp", "cs8": "2 B/samp", "scale int16": "/32768"},
+    "rel": ["sigmf"],
+    "notes": ["read the metadata, do not infer from filename", "normalize int types to float before DSP", "byte order matters: _le vs _be"],
+    "links": [{"label": "SigMF datatypes", "url": "https://sigmf.org"}]
+  },
+  "sigmf": {
+    "title": "SigMF",
+    "code": "Signal Metadata Format",
+    "body": "An open standard pairing a binary .sigmf-data IQ file with a .sigmf-meta JSON sidecar. The sidecar carries sample rate, datatype, center frequency, and capture annotations. Always parse it first.",
+    "meta": {"data": ".sigmf-data", "meta": ".sigmf-meta", "fields": "core:sample_rate, core:datatype, core:frequency"},
+    "rel": ["sample-format"],
+    "notes": ["the meta is authoritative over the filename", "annotations can mark bursts and events in time"],
+    "links": [{"label": "SigMF spec", "url": "https://sigmf.org"}]
+  },
+  "residual-carrier": {
+    "title": "Residual-carrier PM",
+    "code": "PCM/PSK/PM",
+    "body": "A phase-modulation scheme that deliberately leaves a strong unmodulated carrier component. The receiver locks and Doppler-tracks the carrier while data rides a subcarrier on the sidebands. The deep-space standard because the carrier aids ranging and tracking.",
+    "meta": {"spectrum": "spike + sidebands", "carrier": "tracked by PLL", "data": "on subcarrier", "used by": "DSN-class links"},
+    "rel": ["subcarrier", "pll", "psk"],
+    "notes": ["the tall central FFT spike is the residual carrier", "modulation index sets carrier-vs-data power split"],
+    "links": [{"label": "CCSDS 131", "url": "https://public.ccsds.org/Pubs/131x0b5.pdf"}]
+  },
+  "subcarrier": {
+    "title": "Subcarrier",
+    "code": "square or sine",
+    "body": "An intermediate carrier between the RF carrier and the data. In residual-carrier links the BPSK data modulates a subcarrier, which sits as symmetric humps offset from the carrier. You mix down to it before recovering symbols.",
+    "meta": {"tianwen-2": "65536 Hz", "shape": "often square wave", "position": "symmetric about carrier"},
+    "rel": ["residual-carrier", "costas"],
+    "notes": ["square-wave subcarriers add odd harmonics in the spectrum", "find its frequency from the sideband offset"],
+    "links": []
+  },
+  "psk": {
+    "title": "Phase-shift keying",
+    "code": "BPSK / QPSK / OQPSK",
+    "body": "Digital modulation encoding bits in carrier phase. BPSK uses two phases (one bit per symbol), QPSK four (two bits). The constellation after lock shows the order directly: count the blobs.",
+    "meta": {"BPSK": "2 phases", "QPSK": "4 phases", "ambiguity": "180 (BPSK), 90 (QPSK)"},
+    "rel": ["constellation", "costas", "phase-ambiguity"],
+    "notes": ["suppressed-carrier PSK has no central spike", "OQPSK offsets Q by half a symbol to limit envelope dips"],
+    "links": []
+  },
+  "constellation": {
+    "title": "Constellation diagram",
+    "code": "IQ scatter",
+    "body": "A scatter plot of recovered symbols in the IQ plane. Tight, well-separated blobs mean a clean lock. Two blobs is BPSK, four is QPSK. Smearing or rotation means a loop has not converged.",
+    "meta": {"2 blobs": "BPSK", "4 blobs": "QPSK", "rotating": "carrier not locked", "smeared": "low SNR or bad timing"},
+    "rel": ["psk", "costas", "ted"],
+    "notes": ["a slowly rotating constellation is a small residual frequency offset", "diagonal smear suggests a timing problem"],
+    "links": []
+  },
+  "pll": {
+    "title": "Phase-locked loop",
+    "code": "carrier tracking",
+    "body": "A feedback loop that tracks a carrier's phase and frequency. For residual-carrier signals it locks the strong carrier component directly. Loop bandwidth trades acquisition speed against tracking noise.",
+    "meta": {"locks": "carrier phase", "tradeoff": "BW vs noise", "use": "residual-carrier"},
+    "rel": ["costas", "residual-carrier"],
+    "notes": ["start with an FFT-peak estimate to seed the loop", "too wide a loop BW tracks noise into the phase"],
+    "links": []
+  },
+  "costas": {
+    "title": "Costas loop",
+    "code": "suppressed-carrier PLL",
+    "body": "A PLL variant that recovers a carrier with no discrete carrier component, by squaring out the modulation. The standard recovery for suppressed-carrier BPSK and QPSK. Loses absolute phase, which creates the decode-time ambiguity.",
+    "meta": {"recovers": "suppressed carrier", "cost": "phase ambiguity", "BPSK": "order-2", "QPSK": "order-4"},
+    "rel": ["pll", "psk", "phase-ambiguity"],
+    "notes": ["BPSK Costas leaves a 180 degree ambiguity", "resolve ambiguity downstream by trying both polarities"],
+    "links": []
+  },
+  "ted": {
+    "title": "Timing error detector",
+    "code": "symbol clock recovery",
+    "body": "The element that finds where in each symbol to sample, recovering the symbol clock from the signal itself. Gardner is the common choice for PSK because it works at two samples per symbol and is carrier-phase independent.",
+    "meta": {"common": "Gardner, M&M", "samples/sym": ">= 2", "goal": "sample at eye center"},
+    "rel": ["constellation"],
+    "notes": ["wrong symbol rate means the TED never settles", "a matched filter before the TED improves the eye"],
+    "links": []
+  },
+  "conv-code": {
+    "title": "Convolutional code",
+    "code": "inner FEC",
+    "body": "A continuous error-correcting code where each output depends on a sliding window of input bits. The CCSDS baseline is rate 1/2, constraint length 7, generator polynomials 0o171 and 0o133. Decoded by Viterbi.",
+    "meta": {"CCSDS rate": "1/2", "K": "7", "polys": "0o171, 0o133", "decoder": "Viterbi"},
+    "rel": ["viterbi", "ber"],
+    "notes": ["rate 1/2 means two coded bits per data bit", "some links puncture to higher rates like 7/8"],
+    "links": [{"label": "CCSDS 131", "url": "https://public.ccsds.org/Pubs/131x0b5.pdf"}]
+  },
+  "viterbi": {
+    "title": "Viterbi decoder",
+    "code": "ML convolutional decode",
+    "body": "The maximum-likelihood decoder for convolutional codes. Reports a sync state and a bit error rate. A synced Viterbi at low BER is the cleanest proof your demodulator is working correctly.",
+    "meta": {"decodes": "convolutional", "reports": "lock + BER", "good BER": "< 1e-2 here"},
+    "rel": ["conv-code", "ber"],
+    "notes": ["Viterbi locked + no frames means look downstream", "BER trend shows whether the demod is marginal"],
+    "links": []
+  },
+  "ber": {
+    "title": "Bit error rate",
+    "code": "link quality metric",
+    "body": "The fraction of bits in error. Post-Viterbi BER is the headline demod-health number. The Tianwen-2 capture ran 0.0049, comfortably low, which told us the demod was not the problem.",
+    "meta": {"tianwen-2": "0.0049", "meaning": "lower is better", "stage": "post-Viterbi"},
+    "rel": ["viterbi"],
+    "notes": ["a low pre-RS BER means RS will clean up the rest", "rising BER points at carrier or timing drift"],
+    "links": []
+  },
+  "asm": {
+    "title": "Attached sync marker",
+    "code": "0x1ACFFC1D",
+    "body": "A known bit pattern prepended to each frame so a correlator can find frame boundaries in the bit stream. The CCSDS marker is the 32-bit 0x1ACFFC1D. The deframer slides a correlator until it matches, then slices fixed-length frames.",
+    "meta": {"CCSDS": "0x1ACFFC1D", "length": "32 bits", "role": "frame boundary"},
+    "rel": ["randomizer", "cadu", "phase-ambiguity"],
+    "notes": ["inverted polarity inverts the ASM too, hence dual deframers", "a turbo or LDPC link uses a different marker"],
+    "links": [{"label": "CCSDS 131", "url": "https://public.ccsds.org/Pubs/131x0b5.pdf"}]
+  },
+  "randomizer": {
+    "title": "Pseudo-randomizer",
+    "code": "scrambler",
+    "body": "A fixed pseudo-random sequence XORed into the data before transmission to guarantee bit transitions for clock recovery. The receiver XORs the same sequence back out. If left on or off incorrectly, the RS stage sees garbage.",
+    "meta": {"op": "XOR with PRN", "purpose": "transition density", "CCSDS": "standard polynomial"},
+    "rel": ["asm", "reed-solomon"],
+    "notes": ["applied after RS encode, so removed before RS decode", "a wrong on/off state fails every codeword silently"],
+    "links": [{"label": "CCSDS 131", "url": "https://public.ccsds.org/Pubs/131x0b5.pdf"}]
+  },
+  "reed-solomon": {
+    "title": "Reed-Solomon",
+    "code": "RS(255,223) outer FEC",
+    "body": "A block code over GF(256) that corrects up to 16 symbol errors per 255-symbol codeword. The CCSDS outer code, applied across the convolutional inner code in a concatenated scheme. Two representation bases exist and they are not interchangeable.",
+    "meta": {"n,k": "255, 223", "corrects": "16 symbols", "field": "GF(256)", "bases": "conventional, dual"},
+    "rel": ["rs-basis", "interleave", "randomizer"],
+    "notes": ["basis mismatch fails decode after the ASM correlates", "(255,223) leaves 32 parity symbols per codeword"],
+    "links": [{"label": "CCSDS 131", "url": "https://public.ccsds.org/Pubs/131x0b5.pdf"}]
+  },
+  "rs-basis": {
+    "title": "RS representation basis",
+    "code": "conventional vs dual",
+    "body": "Reed-Solomon over GF(256) can represent field elements in two bases. CCSDS specifies the dual (Berlekamp) basis, but Chinese-lineage probes commonly use the conventional basis. A generic decoder defaulting to dual will fail on them.",
+    "meta": {"CCSDS default": "dual", "tianwen": "conventional", "symptom": "RS fails, ASM ok"},
+    "rel": ["reed-solomon", "interleave"],
+    "notes": ["this is the most common reason a CCSDS decoder fails on Chinese probes", "toggle it before assuming the data is bad"],
+    "links": [{"label": "gr-satellites", "url": "https://github.com/daniestevez/gr-satellites"}]
+  },
+  "interleave": {
+    "title": "RS interleaving",
+    "code": "depth I",
+    "body": "Several RS codewords are interleaved symbol-by-symbol within one transfer frame so a burst error spreads across codewords instead of overwhelming one. The depth must match exactly or the deinterleaver scrambles every codeword.",
+    "meta": {"tianwen-2": "depth 4", "frame": "4 x 223 = 892 B", "wrong depth": "all codewords fail"},
+    "rel": ["reed-solomon", "rs-basis", "cadu"],
+    "notes": ["depth 4 gives a clean 892-byte one-second frame here", "Tianwen-1 used a single truncated codeword instead"],
+    "links": []
+  },
+  "phase-ambiguity": {
+    "title": "Phase ambiguity",
+    "code": "180 deg (BPSK)",
+    "body": "Costas recovery of a suppressed or subcarrier BPSK signal cannot tell the true phase from its 180-degree rotation, so the recovered bit stream may be inverted. Resolved by running normal and inverted deframers in parallel and keeping whichever syncs.",
+    "meta": {"BPSK": "180 deg", "QPSK": "90 deg", "fix": "dual deframers"},
+    "rel": ["costas", "asm", "psk"],
+    "notes": ["the ASM correlator also matches the inverted marker", "cheap to test, so rule it out early"],
+    "links": []
+  },
+  "cadu": {
+    "title": "Transfer frame / CADU",
+    "code": "AOS frame",
+    "body": "The fixed-length frame the framing stage produces: sync marker plus the frame data unit. For AOS it carries a primary header with spacecraft and virtual-channel IDs, an optional insert zone, then the data field with packets.",
+    "meta": {"tianwen-2": "892 B, 1.000 s", "SCID": "0xED", "VC": "VC1 only", "insert zone": "8 B timestamp"},
+    "rel": ["asm", "space-packet", "interleave"],
+    "notes": ["no OCF or FECF on this link", "insert-zone timestamp is 2^-16 s ticks from a 2020 epoch"],
+    "links": []
+  },
+  "space-packet": {
+    "title": "CCSDS space packet",
+    "code": "APID-tagged",
+    "body": "The application-layer unit inside the transfer frame data field, carried via M_PDU. Each packet is tagged with an APID identifying its source or type. Split by APID to separate telemetry channels, then chart each over time.",
+    "meta": {"id": "APID", "tianwen-2 size": "~100-200 B", "secondary hdr": "absent here", "clock": "frame count"},
+    "rel": ["cadu"],
+    "notes": ["no secondary header means no per-packet time, use frame count", "fixed lengths per APID make parsing easy once mapped"],
+    "links": []
+  }
+}
+</script>
+
+<script>
+(()=>{
+  const D = JSON.parse(document.getElementById('reference-data').textContent);
+  const card = document.getElementById('margin-card');
+  const els = {
+    t: document.getElementById('m-title'),
+    c: document.getElementById('m-code'),
+    b: document.getElementById('m-body'),
+    m: document.getElementById('m-meta'),
+    r: document.getElementById('m-rel'),
+    n: document.getElementById('m-notes'),
+    l: document.getElementById('m-links'),
+    s: card.querySelector('.margin-status')
+  };
+  const unpinBtn = document.getElementById('margin-unpin');
+  let pinnedKey = null;
+
+  function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+  function host(u){try{return new URL(u).hostname.replace(/^www\./,'');}catch(e){return '';}}
+
+  function paint(k){
+    const x = D[k];
+    if(!x) return;
+    els.t.textContent = x.title;
+    els.c.textContent = x.code || '\u00b7';
+    els.b.textContent = x.body || '';
+    els.m.innerHTML = Object.entries(x.meta||{}).map(([k,v])=>`<div><strong>${esc(k)}</strong><span>${esc(v)}</span></div>`).join('');
+    els.r.querySelector('ul').innerHTML = (x.rel||[]).map(r=>{const o=D[r];return o?`<li>&rsaquo; ${esc(o.title)}</li>`:'';}).join('') || '<li class="more">&middot;</li>';
+    els.n.querySelector('ul').innerHTML = (x.notes||[]).map(n=>`<li style="white-space:normal;font-family:inherit;font-size:0.76rem">&middot; ${esc(n)}</li>`).join('') || '<li class="more">&middot;</li>';
+    els.l.querySelector('ul').innerHTML = (x.links||[]).map(L=>`<li class="link-item"><a href="${esc(L.url)}" target="_blank" rel="noopener noreferrer">${esc(L.label)}</a><span class="src">${esc(host(L.url))}</span></li>`).join('') || '<li class="more">&middot;</li>';
+  }
+
+  function setActive(el){
+    document.querySelectorAll('.term.is-active').forEach(x=>{if(x!==el)x.classList.remove('is-active');});
+    if(el) el.classList.add('is-active');
+  }
+
+  function pin(key, el){
+    pinnedKey = key;
+    paint(key);
+    card.classList.add('is-pinned');
+    els.s.textContent = 'pinned';
+    unpinBtn.style.display = 'inline-block';
+    document.querySelectorAll('.term.is-pinned').forEach(x=>x.classList.remove('is-pinned'));
+    if(el) el.classList.add('is-pinned');
+  }
+
+  function unpin(){
+    pinnedKey = null;
+    card.classList.remove('is-pinned');
+    els.s.textContent = '';
+    unpinBtn.style.display = 'none';
+    document.querySelectorAll('.term.is-pinned').forEach(x=>x.classList.remove('is-pinned'));
+  }
+
+  document.addEventListener('mouseover', e => {
+    if(pinnedKey) return;
+    const t = e.target.closest('.term');
+    if(!t) return;
+    paint(t.getAttribute('data-term'));
+    setActive(t);
+  });
+
+  document.querySelectorAll('.term').forEach(el => {
+    el.setAttribute('tabindex', '0');
+    el.addEventListener('click', e => {
+      e.preventDefault();
+      const key = el.getAttribute('data-term');
+      if(pinnedKey === key) { unpin(); return; }
+      pin(key, el);
+    });
+    el.addEventListener('keydown', e => {
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        const key = el.getAttribute('data-term');
+        if(pinnedKey === key) { unpin(); return; }
+        pin(key, el);
+      }
+    });
+    el.addEventListener('focus', () => { if(!pinnedKey) paint(el.getAttribute('data-term')); });
+  });
+
+  unpinBtn.addEventListener('click', unpin);
+  document.addEventListener('keydown', e => { if(e.key === 'Escape' && pinnedKey) unpin(); });
+})();
+</script>
+</body>
+</html>
