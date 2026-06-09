@@ -1,0 +1,2557 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="classic-cream">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>The Communication Stack</title>
+<style>
+:root{
+  --paper:#fcfcfa;--ink:#151515;--muted:#64625c;--line:#d8d5ce;--soft:rgba(0,0,0,0.012);
+  --accent-deep:#1A2F3F;--accent-hot:#EC503A;--accent-warm:#F78F82;
+  --accent-warm-soft:rgba(247,143,130,0.10);--accent-hot-soft:rgba(236,80,58,0.08);
+  --accent-deep-soft:rgba(26,47,63,0.05);--code-bg:#1A2F3F;--code-fg:#cbd2da;
+  --ex-bg:#faf8f3;--pin-bg:rgba(236,80,58,0.14);
+  --done:#2e7d32;--proxy:#9e9d24;--hard:#ef6c00;--open:#9e9e9e;
+  --done-t:rgba(46,125,50,0.09);--proxy-t:rgba(158,157,36,0.12);--hard-t:rgba(239,108,0,0.09);--open-t:rgba(158,158,158,0.11);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);background:var(--paper);font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;line-height:1.45}
+.page{max-width:1480px;margin:0 auto;padding:22px 18px 60px}
+.eyebrow{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:var(--accent-hot);font-weight:600}
+h1,h2,h3{margin:0;font-weight:600;line-height:1.2}
+h1{font-size:clamp(1.6rem,2.3vw,2.05rem);letter-spacing:-0.02em;margin-bottom:6px;color:var(--accent-deep)}
+h2{font-size:0.92rem;margin-top:24px;margin-bottom:8px;padding-top:10px;border-top:1px solid var(--line);color:var(--accent-deep);text-transform:uppercase;letter-spacing:0.05em}
+p{margin:0 0 6px;font-size:0.86rem}
+.lede{font-size:0.92rem;color:#242424;margin:6px 0 14px;max-width:78ch}
+code{font-family:"SFMono-Regular","SF Mono",Menlo,Consolas,monospace;font-size:0.85em;background:rgba(217,215,209,0.30);padding:0.04rem 0.22rem;border-radius:1px}
+.mono{font-family:"SFMono-Regular","SF Mono",Menlo,Consolas,monospace}
+.spec-line{display:inline-block;padding:2px 8px;border:1px solid var(--accent-deep);background:var(--accent-deep-soft);font-family:"SFMono-Regular",monospace;font-size:0.74rem;color:var(--accent-deep);margin-right:6px;letter-spacing:0.03em}
+.term{cursor:pointer}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:6px;margin:12px 0 6px}
+.stat{padding:8px 10px;border:1px solid var(--line);background:var(--paper)}
+.stat .num{font-size:1.5rem;font-weight:600;color:var(--accent-deep);line-height:1.1}
+.stat .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:8px 0 4px;font-size:0.74rem;color:var(--muted)}
+.legend .sw{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+/* ---- stack matrix ---- */
+.matrix-wrap{overflow-x:auto;border:1px solid var(--line);margin:6px 0 4px}
+.matrix{display:grid;min-width:880px}
+.mh{position:sticky;top:0;z-index:2;background:var(--accent-deep);color:var(--paper);padding:7px 8px;font-size:0.72rem;font-weight:600;letter-spacing:0.03em;border-left:1px solid rgba(255,255,255,0.12)}
+.mh.corner{background:var(--accent-deep);border-left:none}
+.mh .gate{display:block;font-size:0.62rem;font-weight:400;color:rgba(255,255,255,0.65);font-family:"SFMono-Regular",monospace;text-transform:none;margin-top:1px}
+.mh .term{color:var(--paper);border-bottom:1px dotted rgba(255,255,255,0.5)}
+.mh .term:hover{color:var(--accent-warm)}
+.gut{background:var(--ex-bg);border-top:1px solid var(--line);border-right:1px solid var(--line);padding:7px 9px}
+.gut .ly{font-family:"SFMono-Regular",monospace;font-size:0.62rem;color:var(--accent-hot);letter-spacing:0.06em}
+.gut .nm{font-size:0.8rem;font-weight:600;color:var(--accent-deep);margin:1px 0}
+.gut .bl{font-size:0.66rem;color:var(--muted);line-height:1.35}
+.cell{border-top:1px solid var(--line);border-left:1px solid var(--line);padding:5px;display:flex;flex-direction:column;gap:4px;min-height:46px}
+.cell.empty{background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(0,0,0,0.018) 6px,rgba(0,0,0,0.018) 7px)}
+.cell.s-done{background:var(--done-t)}.cell.s-proxy{background:var(--proxy-t)}.cell.s-hard{background:var(--hard-t)}.cell.s-open{background:var(--open-t)}
+.ftile{display:block;border-left:4px solid var(--open);background:var(--paper);padding:3px 5px;font-size:0.68rem;line-height:1.25;color:#222;border-radius:1px;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);transition:.1s;position:relative}
+.ftile.f-done{border-left-color:var(--done)}.ftile.f-proxy{border-left-color:var(--proxy)}.ftile.f-hard{border-left-color:var(--hard)}.ftile.f-open{border-left-color:var(--open)}
+.ftile:hover,.ftile.is-active{background:var(--accent-warm-soft);border-color:var(--accent-hot)}
+.ftile.is-pinned{background:var(--pin-bg);border-color:var(--accent-hot)}
+.ftile .ti{font-family:"SFMono-Regular",monospace;font-size:0.56rem;color:var(--muted);position:absolute;top:2px;right:4px}
+.ftile .nm{display:block;padding-right:14px;font-weight:500;color:var(--accent-deep)}
+
+/* ---- duality + coverage + tables ---- */
+.compare{width:100%;border-collapse:collapse;font-size:0.8rem;margin:6px 0 8px}
+.compare th,.compare td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top}
+.compare th{background:var(--accent-deep-soft);color:var(--accent-deep);font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em}
+.refs{font-size:0.76rem;line-height:1.55;margin:6px 0}
+.refs .ref-row{display:grid;grid-template-columns:150px 1fr;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line)}
+.refs .ref-row:last-child{border-bottom:none}
+.refs .key{font-family:"SFMono-Regular",monospace;font-size:0.7rem;color:var(--accent-deep);font-weight:600}
+.refs .tag{font-size:0.64rem;color:var(--muted);font-style:italic}
+
+/* ---- linear style (kept copy) ---- */
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+.mxcol{min-width:0}
+.paper{min-width:0;border-top:2px solid var(--accent-deep);border-bottom:1px solid var(--line);padding:20px 0 24px}
+.bul{list-style:none;padding:0;margin:4px 0 10px}
+.bul li{padding:2px 0 2px 16px;font-size:0.86rem;position:relative;line-height:1.6;color:#222}
+.bul li::before{content:"\00b7";position:absolute;left:5px;color:var(--accent-hot);font-weight:700;font-size:1.1rem;line-height:1}
+.bul .term{border-bottom:1px dotted var(--accent-deep);color:var(--accent-deep);font-weight:500;padding:0 1px}
+.bul .term:hover,.bul .term.is-active{background:var(--accent-warm-soft);color:var(--accent-hot)}
+.bul .term.is-pinned{background:var(--pin-bg);color:var(--accent-hot);border-bottom-style:solid}
+.st{display:inline-block;margin-left:5px;padding:0 5px;border-radius:2px;font-size:0.6rem;font-family:"SFMono-Regular",monospace;text-transform:uppercase;color:#fff;vertical-align:1px}
+.st-done{background:var(--done)}.st-proxy{background:var(--proxy)}.st-hard{background:var(--hard)}.st-open{background:var(--open)}
+.mtag{font-size:0.6rem;font-family:"SFMono-Regular",monospace;color:var(--muted);margin-left:4px}
+
+/* ---- inspector (shared) ---- */
+.insp-card{border:1px solid var(--line);border-left:3px solid var(--accent-hot);background:var(--paper);padding:12px 12px 10px;transition:border-left-color .15s,background .15s}
+.insp-card.is-pinned{border-left-color:var(--accent-deep);background:var(--accent-deep-soft)}
+.insp h3{font-size:0.92rem;margin-bottom:5px;color:var(--accent-deep)}
+.insp p{margin-bottom:7px;font-size:0.8rem}
+.insp-code{display:inline-block;margin:2px 0 6px;color:var(--accent-hot);font-family:"SFMono-Regular",monospace;font-size:0.74rem}
+.insp-meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin:7px 0 8px;padding:7px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.insp-meta strong{display:block;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.insp-meta span{font-size:0.8rem}
+.insp-sec{margin-top:9px}
+.insp-sec .label{font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:3px}
+.insp-sec ul{margin:0;padding:0;list-style:none}
+.insp-sec li{padding:2px 0;border-top:1px solid rgba(216,213,206,0.7);font-size:0.76rem;color:#2a2a2a}
+.insp-sec li:first-child{border-top:none}
+.insp-sec .more{color:var(--muted);font-style:italic}
+.insp-bar{display:flex;align-items:center;justify-content:space-between;margin-top:9px;padding-top:7px;border-top:1px solid var(--line)}
+.insp-hint{font-size:0.72rem;color:var(--muted)}
+.insp-hint kbd{font-family:"SFMono-Regular",monospace;font-size:0.7rem;padding:0 4px;border:1px solid var(--line);border-radius:2px}
+.insp-unpin{font-family:inherit;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;padding:2px 7px;border:1px solid var(--accent-hot);background:transparent;color:var(--accent-hot);cursor:pointer;border-radius:2px;display:none}
+.insp-card.is-pinned .insp-status{color:var(--accent-hot);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;font-size:9px}
+.insp-eyebrow{display:block;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:2px}
+
+/* fixed floating inspector (matrix page) */
+.insp-fixed{position:fixed;bottom:16px;right:16px;width:330px;max-height:74vh;overflow:auto;z-index:30;box-shadow:0 6px 26px rgba(26,47,63,0.22)}
+.insp-fixed .insp-card{min-height:0}
+/* sticky column inspector (linear page) */
+.margin{position:sticky;top:18px;border-top:2px solid var(--accent-deep);padding-top:10px}
+.margin .insp-card{min-height:340px}
+
+.footer{margin-top:24px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font-size:0.76rem}
+.footer .signoff{color:var(--accent-deep);font-weight:600;letter-spacing:0.05em}
+@media (max-width:980px){
+  .sheet{grid-template-columns:1fr}.margin{position:static}
+  .insp-fixed{position:static;width:auto;max-height:none;box-shadow:none;margin-top:14px}
+  .stat-grid{grid-template-columns:1fr 1fr}
+}
+@media print{body{background:#fff}.insp-fixed{display:none}.term{cursor:default}.toolbar,.wires{display:none}}
+
+/* theme overrides (set via <html data-theme="...">) */
+:root[data-theme="blueprint"]{--paper:#1a2838;--ink:#e8f0f8;--muted:#7a98b8;--line:#2f4561;--soft:rgba(255,255,255,0.015);--accent-deep:#9fd4e8;--accent-hot:#f0d878;--accent-warm:#fae8a8;--accent-warm-soft:rgba(250,232,168,0.10);--accent-hot-soft:rgba(240,216,120,0.10);--accent-deep-soft:rgba(159,212,232,0.10);--code-bg:#0e1825;--code-fg:#c8d8e8;--ex-bg:#1f3045;--pin-bg:rgba(240,216,120,0.16)}
+:root[data-theme="parchment"]{--paper:#f7efe0;--ink:#2a1f15;--muted:#7a6b56;--line:#d4c5a8;--soft:rgba(74,52,28,0.025);--accent-deep:#5c2018;--accent-hot:#b8651a;--accent-warm:#d49856;--accent-warm-soft:rgba(212,152,86,0.14);--accent-hot-soft:rgba(184,101,26,0.10);--accent-deep-soft:rgba(92,32,24,0.07);--code-bg:#3a2818;--code-fg:#e8dcc4;--ex-bg:#f0e5cc;--pin-bg:rgba(184,101,26,0.16)}
+:root[data-theme="dark-vellum"]{--paper:#16181c;--ink:#e4e1d4;--muted:#7d7f87;--line:#2e323a;--soft:rgba(255,255,255,0.02);--accent-deep:#6db4d4;--accent-hot:#ff8a5c;--accent-warm:#ffb38a;--accent-warm-soft:rgba(255,179,138,0.10);--accent-hot-soft:rgba(255,138,92,0.10);--accent-deep-soft:rgba(109,180,212,0.10);--code-bg:#0c0e12;--code-fg:#a8b3c0;--ex-bg:#1c1f25;--pin-bg:rgba(255,138,92,0.18)}
+:root[data-theme="monochrome-iron"]{--paper:#f5f5f3;--ink:#1a1a1a;--muted:#6a6a68;--line:#cccccc;--soft:rgba(0,0,0,0.015);--accent-deep:#2a2a2a;--accent-hot:#c8201c;--accent-warm:#d85048;--accent-warm-soft:rgba(216,80,72,0.08);--accent-hot-soft:rgba(200,32,28,0.07);--accent-deep-soft:rgba(42,42,42,0.06);--code-bg:#1a1a1a;--code-fg:#d0d0cc;--ex-bg:#ededeb;--pin-bg:rgba(200,32,28,0.14)}
+
+/* toolbar: theme switch + wire toggle */
+.toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:10px 0 2px;padding:7px 10px;border:1px solid var(--line);background:var(--ex-bg);font-size:0.72rem}
+.toolbar .grp{display:flex;align-items:center;gap:5px}
+.toolbar .tl{font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-right:2px}
+.tbtn{font-family:"SFMono-Regular",monospace;font-size:0.7rem;padding:2px 8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:2px}
+.tbtn:hover{border-color:var(--accent-hot);color:var(--accent-hot)}
+.tbtn.active{background:var(--accent-deep);color:var(--paper);border-color:var(--accent-deep)}
+
+/* relation wires (svg overlay over the matrix) */
+.matrix-wrap{position:relative}
+.wires{position:absolute;left:0;top:0;pointer-events:none;z-index:4;overflow:visible}
+.matrix-wrap.wires-off .wires{opacity:0;visibility:hidden}
+.wire{fill:none;stroke-width:1.4;opacity:0.10;transition:opacity .12s,stroke-width .12s}
+.wire.lit{opacity:0.95;stroke-width:2.4}
+.wire.dim{opacity:0.025}
+.wire-redundant-with{stroke:#b8651a;stroke-dasharray:2 3}
+.wire-trades-off-with{stroke:#EC503A;stroke-dasharray:5 3}
+.wire-contributes-to{stroke:#1A2F3F}
+.wire-measures-same{stroke:#9e9e9e;stroke-dasharray:1 3}
+.wire-promotes{stroke:#2e7d32}
+.wire-constrains{stroke:#6a6a68;stroke-dasharray:6 2 1 2}
+.wlegend{display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:0.7rem;color:var(--muted)}
+.wlegend .wl{display:inline-block;width:18px;height:0;border-top:2px solid;margin-right:5px;vertical-align:3px}
+.help-btn{margin-left:auto;width:24px;height:24px;border-radius:50%;border:1px solid var(--accent-deep);background:var(--paper);color:var(--accent-deep);font-weight:700;cursor:pointer;font-family:inherit;line-height:1}
+.help-btn:hover{background:var(--accent-deep);color:var(--paper)}
+
+/* help overlay */
+.overlay{position:fixed;inset:0;background:rgba(10,16,24,0.55);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:5vh 16px;overflow:auto}
+.overlay.open{display:flex}
+.modal{background:var(--paper);color:var(--ink);border:1px solid var(--line);border-top:3px solid var(--accent-hot);max-width:760px;width:100%;padding:20px 24px 26px;box-shadow:0 14px 50px rgba(10,16,24,0.4)}
+.modal h2{border:none;margin-top:16px;padding-top:0}
+.modal h2:first-of-type{margin-top:6px}
+.modal .x{float:right;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;font-size:0.8rem;padding:2px 9px;border-radius:2px;font-family:inherit}
+.modal .x:hover{border-color:var(--accent-hot);color:var(--accent-hot)}
+.modal p,.modal li{font-size:0.84rem;line-height:1.5}
+.modal .tworow{display:grid;grid-template-columns:160px 1fr;gap:4px 12px;font-size:0.82rem;margin:4px 0}
+.modal .tworow .k{font-family:"SFMono-Regular",monospace;color:var(--accent-deep);font-size:0.76rem}
+.modal .pill{display:inline-block;padding:0 6px;border-radius:2px;color:#fff;font-size:0.66rem;font-family:"SFMono-Regular",monospace;margin-right:4px}
+</style>
+</head>
+<body>
+<div class="page"><p class="eyebrow">Human communication / kernel-level reference</p><h1>The Communication Stack</h1><p class="lede"><span class="spec-line">strace(language)</span>Every place an idea is encoded, laid out as a stack: meaning on top, the raw wire (bytes and tokens) at the bottom, with one column per channel we transmit on. Each tile is a facet; its color is how well we can measure it today. Hover a tile to inspect it, click to pin. This is the eBPF view of how humans, and machines, carry meaning.</p><div class="stat-grid"><div class="stat"><div class="num">121</div><div class="lbl">facets mapped</div></div><div class="stat"><div class="num">17</div><div class="lbl">measurable now</div></div><div class="stat"><div class="num">11</div><div class="lbl">modalities (columns)</div></div><div class="stat"><div class="num">8</div><div class="lbl">levels (the stack)</div></div></div><div class="legend"><span><span class="sw" style="background:var(--done)"></span>done</span><span><span class="sw" style="background:var(--proxy)"></span>proxy</span><span><span class="sw" style="background:var(--hard)"></span>hard</span><span><span class="sw" style="background:var(--open)"></span>open</span><span class="mono">tier A = the language affords it &middot; tier B = the producer chooses it</span></div><div class="toolbar"><div class="grp"><span class="tl">theme</span><button class="tbtn" data-set-theme="classic-cream">cream</button><button class="tbtn" data-set-theme="blueprint">blueprint</button><button class="tbtn" data-set-theme="parchment">parchment</button><button class="tbtn" data-set-theme="dark-vellum">dark</button><button class="tbtn" data-set-theme="monochrome-iron">iron</button></div><div class="grp"><span class="tl">wires</span><button class="tbtn active" id="wire-toggle">on</button></div><div class="wlegend"><span><span class="wl" style="border-color:#1A2F3F"></span>contributes-to</span><span><span class="wl" style="border-color:#EC503A"></span>trades-off-with</span><span><span class="wl" style="border-color:#b8651a"></span>redundant-with</span><span><span class="wl" style="border-color:#2e7d32"></span>promotes</span><span><span class="wl" style="border-color:#9e9e9e"></span>measures-same</span></div><button class="help-btn" id="help-open" aria-label="How to read this map" title="How to read this map">?</button></div><div class="sheet"><div class="mxcol"><div class="matrix-wrap"><svg class="wires" id="wires"></svg><div class="matrix" style="grid-template-columns:170px repeat(11,minmax(0,1fr))"><div class="mh corner">layer &darr; / channel &rarr;</div><div class="mh"><span class="term" data-term="mod:amodal">Amodal</span><span class="gate">-</span></div><div class="mh"><span class="term" data-term="mod:speech">Speech</span><span class="gate">-</span></div><div class="mh"><span class="term" data-term="mod:writing">Writing</span><span class="gate">-</span></div><div class="mh"><span class="term" data-term="mod:sign">Sign language</span><span class="gate">-</span></div><div class="mh"><span class="term" data-term="mod:gesture">Co-speech gesture</span><span class="gate">-</span></div><div class="mh"><span class="term" data-term="mod:facial">Facial expression</span><span class="gate">[|~] partial</span></div><div class="mh"><span class="term" data-term="mod:paralinguistic">Paralanguage (prosody, tone, volume)</span><span class="gate">-</span></div><div class="mh"><span class="term" data-term="mod:music">Music (melody, notation)</span><span class="gate">[|~] partial</span></div><div class="mh"><span class="term" data-term="mod:iconographic">Iconography (emoji, glyphs, notation)</span><span class="gate">[|~] partial</span></div><div class="mh"><span class="term" data-term="mod:tactile">Touch (Protactile, Braille)</span><span class="gate">[|~] partial</span></div><div class="mh"><span class="term" data-term="mod:non-human">Non-human communication</span><span class="gate">[|~] partial</span></div><div class="gut"><div class="ly">L8</div><div class="nm">semantic-pragmatic</div><div class="bl">meaning in context: what is conveyed, and inferred.</div></div><div class="cell s-hard"><span class="term ftile f-hard" id="tile-proposition-count" data-term="proposition-count"><span class="ti">A</span><span class="nm">Proposition count</span></span><span class="term ftile f-hard" id="tile-cross-cultural-decipherability" data-term="cross-cultural-decipherability"><span class="ti">B</span><span class="nm">Cross-cultural decipherability</span></span><span class="term ftile f-open" id="tile-core-geometry-prelinguistic" data-term="core-geometry-prelinguistic"><span class="ti">A</span><span class="nm">Pre-linguistic core knowledge</span></span><span class="term ftile f-open" id="tile-innate-recognition" data-term="innate-recognition"><span class="ti">A</span><span class="nm">Innate signal recognition</span></span><span class="term ftile f-open" id="tile-implicature" data-term="implicature"><span class="ti">B</span><span class="nm">Conversational implicature</span></span><span class="term ftile f-open" id="tile-presupposition" data-term="presupposition"><span class="ti">A</span><span class="nm">Presupposition</span></span><span class="term ftile f-open" id="tile-deixis" data-term="deixis"><span class="ti">A</span><span class="nm">Deixis</span></span><span class="term ftile f-open" id="tile-sign-type-peircean" data-term="sign-type-peircean"><span class="ti">A</span><span class="nm">Sign type (icon / index / symbol)</span></span><span class="term ftile f-open" id="tile-archetypal-universality" data-term="archetypal-universality"><span class="ti">B</span><span class="nm">Archetypal universality (contested)</span></span><span class="term ftile f-open" id="tile-no-shared-code-message" data-term="no-shared-code-message"><span class="ti">B</span><span class="nm">No-shared-code message</span></span><span class="term ftile f-open" id="tile-zero-as-number" data-term="zero-as-number"><span class="ti">A</span><span class="nm">Zero as a number</span></span><span class="term ftile f-open" id="tile-decipherment-validation-gap" data-term="decipherment-validation-gap"><span class="ti">B</span><span class="nm">Decipherment validation gap</span></span></div><div class="cell s-hard"><span class="term ftile f-hard" id="tile-speech-information-rate" data-term="speech-information-rate"><span class="ti">A</span><span class="nm">Speech information rate (~39 bits/sec)</span></span></div><div class="cell s-done"><span class="term ftile f-done" id="tile-embedding-alignment" data-term="embedding-alignment"><span class="ti">A</span><span class="nm">Cross-lingual embedding alignment</span></span><span class="term ftile f-open" id="tile-typographic-connotation" data-term="typographic-connotation"><span class="ti">B</span><span class="nm">Typographic connotation</span></span><span class="term ftile f-open" id="tile-paralinguistic-text-substitution" data-term="paralinguistic-text-substitution"><span class="ti">B</span><span class="nm">Paralinguistic text substitution</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-sign-information-rate" data-term="sign-information-rate"><span class="ti">A</span><span class="nm">Sign language information rate</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-gesture-motion-semantics" data-term="gesture-motion-semantics"><span class="ti">B</span><span class="nm">Co-speech gesture (motion/space semantics)</span></span><span class="term ftile f-open" id="tile-gesture-development-pointing" data-term="gesture-development-pointing"><span class="ti">B</span><span class="nm">Prelinguistic pointing</span></span><span class="term ftile f-open" id="tile-gesture-primate" data-term="gesture-primate"><span class="ti">A</span><span class="nm">Gesture in great apes (comparative)</span></span></div><div class="cell s-hard"><span class="term ftile f-hard" id="tile-facial-affect" data-term="facial-affect"><span class="ti">B</span><span class="nm">Facial affect signalling</span></span><span class="term ftile f-open" id="tile-facial-affect-universality" data-term="facial-affect-universality"><span class="ti">A</span><span class="nm">Facial-affect universality (contested)</span></span><span class="term ftile f-open" id="tile-social-referencing" data-term="social-referencing"><span class="ti">B</span><span class="nm">Social referencing</span></span><span class="term ftile f-open" id="tile-neonatal-imitation" data-term="neonatal-imitation"><span class="ti">A</span><span class="nm">Neonatal imitation (contested)</span></span><span class="term ftile f-open" id="tile-facial-affect-development" data-term="facial-affect-development"><span class="ti">B</span><span class="nm">Facial-affect development</span></span><span class="term ftile f-open" id="tile-facial-affect-primate" data-term="facial-affect-primate"><span class="ti">A</span><span class="nm">Facial affect in primates (comparative)</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-tone-of-voice" data-term="tone-of-voice"><span class="ti">B</span><span class="nm">Tone of voice (vocal affect)</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-musical-affect" data-term="musical-affect"><span class="ti">A</span><span class="nm">Musical affect</span></span></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell s-open"><span class="term ftile f-open" id="tile-referential-alarm-call" data-term="referential-alarm-call"><span class="ti">A</span><span class="nm">Referential alarm calls</span></span><span class="term ftile f-open" id="tile-displaced-reference" data-term="displaced-reference"><span class="ti">A</span><span class="nm">Displaced reference (waggle dance)</span></span></div><div class="gut"><div class="ly">L7</div><div class="nm">rhetorical</div><div class="bl">argument shape: framing, examples, redundancy.</div></div><div class="cell s-open"><span class="term ftile f-open" id="tile-redundancy" data-term="redundancy"><span class="ti">B</span><span class="nm">Redundancy</span></span><span class="term ftile f-open" id="tile-exemplification" data-term="exemplification"><span class="ti">B</span><span class="nm">Examples and analogy</span></span></div><div class="cell empty"></div><div class="cell s-open"><span class="term ftile f-open" id="tile-given-new-structure" data-term="given-new-structure"><span class="ti">B</span><span class="nm">Given-new ordering</span></span><span class="term ftile f-open" id="tile-argument-structure" data-term="argument-structure"><span class="ti">B</span><span class="nm">Argument structure</span></span><span class="term ftile f-open" id="tile-hedging-stance" data-term="hedging-stance"><span class="ti">B</span><span class="nm">Hedging and stance</span></span><span class="term ftile f-open" id="tile-mathematical-notation-symbolism" data-term="mathematical-notation-symbolism"><span class="ti">B</span><span class="nm">Mathematical notation symbolism</span></span></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell empty"></div><div class="gut"><div class="ly">L6</div><div class="nm">discourse</div><div class="bl">across sentences: reference, cohesion, punctuation.</div></div><div class="cell s-open"><span class="term ftile f-open" id="tile-high-context-encoding" data-term="high-context-encoding"><span class="ti">A</span><span class="nm">High- vs low-context encoding</span></span><span class="term ftile f-open" id="tile-multichannel-overlay" data-term="multichannel-overlay"><span class="ti">A</span><span class="nm">Multi-channel overlay (one mark, many channels)</span></span><span class="term ftile f-open" id="tile-joint-attention" data-term="joint-attention"><span class="ti">A</span><span class="nm">Joint attention</span></span><span class="term ftile f-open" id="tile-reading-mode-oral-silent" data-term="reading-mode-oral-silent"><span class="ti">B</span><span class="nm">Reading mode (oral vs silent)</span></span></div><div class="cell empty"></div><div class="cell s-done"><span class="term ftile f-done" id="tile-punctuation-profile" data-term="punctuation-profile"><span class="ti">B</span><span class="nm">Punctuation profile</span></span><span class="term ftile f-hard" id="tile-connective-density" data-term="connective-density"><span class="ti">B</span><span class="nm">Connective density</span></span><span class="term ftile f-open" id="tile-cohesion" data-term="cohesion"><span class="ti">B</span><span class="nm">Cohesion (reference, connectives)</span></span></div><div class="cell empty"></div><div class="cell s-open"><span class="term ftile f-open" id="tile-gesture-production-internal" data-term="gesture-production-internal"><span class="ti">B</span><span class="nm">Gesture as production-internal</span></span><span class="term ftile f-open" id="tile-beat-gesture" data-term="beat-gesture"><span class="ti">B</span><span class="nm">Beat gestures</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-gaze-turntaking" data-term="gaze-turntaking"><span class="ti">B</span><span class="nm">Eye gaze (turn-taking)</span></span></div><div class="cell s-hard"><span class="term ftile f-hard" id="tile-prosody-structure" data-term="prosody-structure"><span class="ti">B</span><span class="nm">Prosodic structure (focus, phrasing)</span></span><span class="term ftile f-open" id="tile-loudness-emphasis" data-term="loudness-emphasis"><span class="ti">B</span><span class="nm">Loudness and emphasis</span></span></div><div class="cell empty"></div><div class="cell s-open"><span class="term ftile f-open" id="tile-emoji-affect" data-term="emoji-affect"><span class="ti">B</span><span class="nm">Emoji as paralanguage</span></span></div><div class="cell empty"></div><div class="cell s-open"><span class="term ftile f-open" id="tile-song-cultural-transmission" data-term="song-cultural-transmission"><span class="ti">B</span><span class="nm">Song cultural transmission</span></span></div><div class="gut"><div class="ly">L5</div><div class="nm">syntactic</div><div class="bl">sentence structure: how clauses nest.</div></div><div class="cell s-open"><span class="term ftile f-open" id="tile-recursion-affordance" data-term="recursion-affordance"><span class="ti">A</span><span class="nm">Recursion as an affordance</span></span></div><div class="cell empty"></div><div class="cell s-proxy"><span class="term ftile f-proxy" id="tile-mean-sentence-length" data-term="mean-sentence-length"><span class="ti">B</span><span class="nm">Mean sentence length</span></span><span class="term ftile f-hard" id="tile-syntactic-complexity" data-term="syntactic-complexity"><span class="ti">B</span><span class="nm">Syntactic complexity</span></span><span class="term ftile f-open" id="tile-structural-ambiguity" data-term="structural-ambiguity"><span class="ti">A</span><span class="nm">Structural ambiguity</span></span><span class="term ftile f-open" id="tile-prosodic-syntactic-overlay" data-term="prosodic-syntactic-overlay"><span class="ti">A</span><span class="nm">Prosodic-syntactic overlay (cantillation)</span></span><span class="term ftile f-open" id="tile-prosodic-vs-syntactic-punctuation" data-term="prosodic-vs-syntactic-punctuation"><span class="ti">A</span><span class="nm">Prosodic vs syntactic punctuation</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-spatial-grammar" data-term="spatial-grammar"><span class="ti">A</span><span class="nm">Spatial grammar</span></span><span class="term ftile f-open" id="tile-emergence-of-grammar" data-term="emergence-of-grammar"><span class="ti">A</span><span class="nm">Emergence of grammar</span></span></div><div class="cell empty"></div><div class="cell s-open"><span class="term ftile f-open" id="tile-nonmanual-grammar" data-term="nonmanual-grammar"><span class="ti">A</span><span class="nm">Non-manual grammar (brow/head as syntax)</span></span></div><div class="cell empty"></div><div class="cell s-open"><span class="term ftile f-open" id="tile-musical-syntax" data-term="musical-syntax"><span class="ti">A</span><span class="nm">Musical syntax (tonal hierarchy)</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-math-notation" data-term="math-notation"><span class="ti">A</span><span class="nm">Mathematical notation</span></span><span class="term ftile f-open" id="tile-visual-narrative-grammar" data-term="visual-narrative-grammar"><span class="ti">A</span><span class="nm">Visual narrative grammar</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-protactile-grammar" data-term="protactile-grammar"><span class="ti">A</span><span class="nm">Protactile grammar</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-phonological-syntax" data-term="phonological-syntax"><span class="ti">A</span><span class="nm">Phonological syntax (birdsong)</span></span><span class="term ftile f-open" id="tile-call-combinatoriality" data-term="call-combinatoriality"><span class="ti">A</span><span class="nm">Call combinatoriality (primate proto-syntax)</span></span></div><div class="gut"><div class="ly">L4</div><div class="nm">lexical</div><div class="bl">word choice and vocabulary: richness, density.</div></div><div class="cell s-hard"><span class="term ftile f-hard" id="tile-iconicity-degree" data-term="iconicity-degree"><span class="ti">B</span><span class="nm">Iconicity degree</span></span><span class="term ftile f-open" id="tile-lexical-minimalism" data-term="lexical-minimalism"><span class="ti">B</span><span class="nm">Lexical minimalism</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-counting-cap" data-term="counting-cap"><span class="ti">A</span><span class="nm">Counting ceiling (one-two-many)</span></span></div><div class="cell s-done"><span class="term ftile f-done" id="tile-type-token-ratio" data-term="type-token-ratio"><span class="ti">B</span><span class="nm">Type-token ratio</span></span><span class="term ftile f-done" id="tile-mattr" data-term="mattr"><span class="ti">B</span><span class="nm">Moving-average TTR (length-stable)</span></span><span class="term ftile f-hard" id="tile-lexical-density" data-term="lexical-density"><span class="ti">B</span><span class="nm">Lexical density</span></span><span class="term ftile f-hard" id="tile-function-word-ratio" data-term="function-word-ratio"><span class="ti">B</span><span class="nm">Function-word ratio</span></span><span class="term ftile f-hard" id="tile-positional-encoding" data-term="positional-encoding"><span class="ti">A</span><span class="nm">Positional encoding (representational length)</span></span><span class="term ftile f-open" id="tile-polysemy" data-term="polysemy"><span class="ti">A</span><span class="nm">Polysemy load</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-fingerspelling" data-term="fingerspelling"><span class="ti">B</span><span class="nm">Fingerspelling</span></span><span class="term ftile f-open" id="tile-alternate-sign-lingua-franca" data-term="alternate-sign-lingua-franca"><span class="ti">A</span><span class="nm">Alternate sign lingua franca</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-gesture-emblems" data-term="gesture-emblems"><span class="ti">A</span><span class="nm">Emblems (conventional gestures)</span></span></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell s-hard"><span class="term ftile f-hard" id="tile-numeral-system-type" data-term="numeral-system-type"><span class="ti">A</span><span class="nm">Numeral-system type</span></span><span class="term ftile f-open" id="tile-logograph-information" data-term="logograph-information"><span class="ti">A</span><span class="nm">Logographic information</span></span></div><div class="cell empty"></div><div class="cell s-hard"><span class="term ftile f-hard" id="tile-zipf-in-animal-signals" data-term="zipf-in-animal-signals"><span class="ti">B</span><span class="nm">Zipf&#x27;s law in animal signals</span></span></div><div class="gut"><div class="ly">L3</div><div class="nm">morphological</div><div class="bl">word-internal structure: grammar packed per word.</div></div><div class="cell s-open"><span class="term ftile f-open" id="tile-morphological-packing-ceiling" data-term="morphological-packing-ceiling"><span class="ti">A</span><span class="nm">Morphological packing ceiling</span></span></div><div class="cell empty"></div><div class="cell s-done"><span class="term ftile f-done" id="tile-morphological-typology" data-term="morphological-typology"><span class="ti">A</span><span class="nm">Morphological typology</span></span><span class="term ftile f-proxy" id="tile-mean-word-length" data-term="mean-word-length"><span class="ti">B</span><span class="nm">Mean word length</span></span><span class="term ftile f-proxy" id="tile-morphemes-per-word" data-term="morphemes-per-word"><span class="ti">B</span><span class="nm">Morphemes per word</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-sign-simultaneity" data-term="sign-simultaneity"><span class="ti">A</span><span class="nm">Simultaneous morphology</span></span><span class="term ftile f-open" id="tile-classifier-predicates" data-term="classifier-predicates"><span class="ti">A</span><span class="nm">Classifier predicates</span></span></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell s-open"><span class="term ftile f-open" id="tile-coda-combinatoriality" data-term="coda-combinatoriality"><span class="ti">A</span><span class="nm">Coda combinatoriality (sperm whales)</span></span></div><div class="gut"><div class="ly">L2</div><div class="nm">phonological</div><div class="bl">sound system: the syllable, unit of the speech-rate model.</div></div><div class="cell s-open"><span class="term ftile f-open" id="tile-duality-of-patterning" data-term="duality-of-patterning"><span class="ti">A</span><span class="nm">Duality of patterning</span></span></div><div class="cell s-done"><span class="term ftile f-done" id="tile-syllable-inventory" data-term="syllable-inventory"><span class="ti">A</span><span class="nm">Syllable inventory size</span></span><span class="term ftile f-proxy" id="tile-syllable-info-density" data-term="syllable-info-density"><span class="ti">A</span><span class="nm">Information density per syllable</span></span><span class="term ftile f-hard" id="tile-speech-rate" data-term="speech-rate"><span class="ti">A</span><span class="nm">Speech rate</span></span><span class="term ftile f-hard" id="tile-sound-symbolism-strength" data-term="sound-symbolism-strength"><span class="ti">A</span><span class="nm">Sound-symbolism strength</span></span><span class="term ftile f-open" id="tile-phoneme-inventory" data-term="phoneme-inventory"><span class="ti">A</span><span class="nm">Phoneme inventory size</span></span></div><div class="cell s-hard"><span class="term ftile f-hard" id="tile-orthographic-depth" data-term="orthographic-depth"><span class="ti">A</span><span class="nm">Orthographic depth</span></span><span class="term ftile f-open" id="tile-grapheme-phoneme-entropy" data-term="grapheme-phoneme-entropy"><span class="ti">A</span><span class="nm">Grapheme-phoneme entropy</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-sign-phonology" data-term="sign-phonology"><span class="ti">A</span><span class="nm">Sign phonology (sublexical units)</span></span></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell s-hard"><span class="term ftile f-hard" id="tile-melodic-information" data-term="melodic-information"><span class="ti">B</span><span class="nm">Melodic information density</span></span></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell s-hard"><span class="term ftile f-hard" id="tile-animal-signal-entropy" data-term="animal-signal-entropy"><span class="ti">B</span><span class="nm">Animal-signal entropy</span></span></div><div class="gut"><div class="ly">L1</div><div class="nm">channel</div><div class="bl">the wire: bytes, graphemes, tokens.</div></div><div class="cell s-open"><span class="term ftile f-open" id="tile-underspecified-notation" data-term="underspecified-notation"><span class="ti">A</span><span class="nm">Underspecified notation (oral completion)</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-whistled-speech" data-term="whistled-speech"><span class="ti">B</span><span class="nm">Whistled speech</span></span><span class="term ftile f-open" id="tile-drum-language" data-term="drum-language"><span class="ti">B</span><span class="nm">Talking drums</span></span></div><div class="cell s-done"><span class="term ftile f-done" id="tile-utf8-byte-size" data-term="utf8-byte-size"><span class="ti">A</span><span class="nm">UTF-8 byte size</span></span><span class="term ftile f-done" id="tile-grapheme-count" data-term="grapheme-count"><span class="ti">A</span><span class="nm">Grapheme count</span></span><span class="term ftile f-done" id="tile-tokenizer-tax-tir" data-term="tokenizer-tax-tir"><span class="ti">A</span><span class="nm">Token-to-Information Ratio (tokenizer tax)</span></span><span class="term ftile f-done" id="tile-subword-fertility" data-term="subword-fertility"><span class="ti">A</span><span class="nm">Subword fertility</span></span><span class="term ftile f-done" id="tile-char-entropy" data-term="char-entropy"><span class="ti">B</span><span class="nm">Character entropy (zeroth order)</span></span><span class="term ftile f-done" id="tile-conditional-entropy" data-term="conditional-entropy"><span class="ti">B</span><span class="nm">Conditional (n-gram) entropy</span></span><span class="term ftile f-done" id="tile-symbol-inventory-size" data-term="symbol-inventory-size"><span class="ti">A</span><span class="nm">Symbol-inventory size</span></span><span class="term ftile f-hard" id="tile-writing-system-type" data-term="writing-system-type"><span class="ti">A</span><span class="nm">Writing-system type</span></span><span class="term ftile f-hard" id="tile-word-segmentation-spacing" data-term="word-segmentation-spacing"><span class="ti">A</span><span class="nm">Word segmentation / spacing</span></span><span class="term ftile f-open" id="tile-decipherment-recoverability" data-term="decipherment-recoverability"><span class="ti">B</span><span class="nm">Decipherment recoverability</span></span><span class="term ftile f-open" id="tile-orthography-tokenizer-bridge" data-term="orthography-tokenizer-bridge"><span class="ti">A</span><span class="nm">Orthography-to-tokenizer bridge</span></span></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell empty"></div><div class="cell s-hard"><span class="term ftile f-hard" id="tile-score-underdetermination" data-term="score-underdetermination"><span class="ti">B</span><span class="nm">Score under-determination (notation lossiness)</span></span><span class="term ftile f-hard" id="tile-notation-decode" data-term="notation-decode"><span class="ti">B</span><span class="nm">Notation decode (optical music recognition)</span></span><span class="term ftile f-open" id="tile-music-notation-system" data-term="music-notation-system"><span class="ti">A</span><span class="nm">Music notation system</span></span><span class="term ftile f-open" id="tile-notation-bandwidth-over-time" data-term="notation-bandwidth-over-time"><span class="ti">A</span><span class="nm">Notation bandwidth over time</span></span></div><div class="cell empty"></div><div class="cell s-open"><span class="term ftile f-open" id="tile-braille" data-term="braille"><span class="ti">A</span><span class="nm">Braille</span></span><span class="term ftile f-open" id="tile-material-encoding" data-term="material-encoding"><span class="ti">A</span><span class="nm">Material encoding (quipu, wampum, tallies)</span></span></div><div class="cell s-open"><span class="term ftile f-open" id="tile-bioacoustic-channel" data-term="bioacoustic-channel"><span class="ti">A</span><span class="nm">Bioacoustic channel</span></span><span class="term ftile f-open" id="tile-animal-decoding-ml" data-term="animal-decoding-ml"><span class="ti">B</span><span class="nm">Machine decoding of animal signals</span></span><span class="term ftile f-open" id="tile-cross-species-representation-transfer" data-term="cross-species-representation-transfer"><span class="ti">B</span><span class="nm">Cross-species representation transfer</span></span></div></div></div><p style="font-size:0.72rem;color:var(--muted);margin-top:4px">Striped cells are unmapped intersections: territory the map has not reached, not territory that is empty.</p></div>
+<aside class="insp margin">
+  <div class="insp-card" id="insp-card">
+    <span class="insp-eyebrow">Reference Inspector <span class="insp-status"></span></span>
+    <h3 id="i-title">Hover any facet</h3>
+    <code class="insp-code" id="i-code">&middot;</code>
+    <p id="i-body">Hover a facet tile for its definition, how it is measured, and its sources. Click to pin while you read elsewhere. Esc unpins.</p>
+    <div class="insp-meta" id="i-meta"></div>
+    <div class="insp-sec" id="i-rel"><div class="label">Related facets</div><ul><li class="more">&middot;</li></ul></div>
+    <div class="insp-sec" id="i-notes"><div class="label">Measure &amp; sources</div><ul><li class="more">&middot;</li></ul></div>
+    <div class="insp-bar">
+      <span class="insp-hint">hover &middot; click to pin &middot; <kbd>esc</kbd></span>
+      <button class="insp-unpin" id="insp-unpin" aria-label="Unpin">unpin</button>
+    </div>
+  </div>
+</aside></div><h2>references</h2><div class="refs"><div class="ref-row"><span class="key">ahia-2023</span><span class="val">Ahia, Kumar, Gonen, Kasai, Mortensen, Smith &amp; Tsvetkov (2023). Do All Languages Cost the Same? Tokenization in the Era of Commercial Language Models. arXiv:2305.13707. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">andreas-2021-ceti</span><span class="val">Andreas, Begus, Bronstein, Gero, Goldwasser, Payne et al. (2021). Cetacean Translation Initiative (CETI): a roadmap to deciphering the communication of sperm whales. arXiv:2104.08614. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">apel-1949</span><span class="val">Apel, W. (1949/1953). The Notation of Polyphonic Music, 900-1600. Medieval Academy of America. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">arnold-zuberbuhler-2006</span><span class="val">Arnold, K. &amp; Zuberbuhler, K. (2006). Semantic combinations in primate calls. Nature 441:303. DOI 10.1038/441303a. (putty-nosed monkey pyow-hack; combinatorial not compositional). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">arnon-2025</span><span class="val">Arnon, Kirby, Allen, Garrigue, Carroll &amp; Garland (2025). Whale song shows language-like statistical structure. Science 387:eadq7055. DOI 10.1126/science.adq7055. (Zipfian recurrent subsequences via transitional-probability segmentation). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">barrett-2017</span><span class="val">Barrett, L. F. (2017). How Emotions Are Made: The Secret Life of the Brain. Houghton Mifflin Harcourt. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">barrett-2019</span><span class="val">Barrett, L. F., Adolphs, R., Marsella, S., Martinez, A. &amp; Pollak, S. (2019). Emotional expressions reconsidered. Psychological Science in the Public Interest 20(1):1-68. DOI 10.1177/1529100619832930. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">begus-southgate-2012</span><span class="val">Begus, K. &amp; Southgate, V. (2012). Infant pointing serves an interrogative function. Developmental Science 15(5):611-617. DOI 10.1111/j.1467-7687.2012.01160.x. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">bellugi-fischer-1972</span><span class="val">Bellugi, U. &amp; Fischer, S. (1972). A comparison of sign language and spoken language. Cognition 1(2-3):173-200. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">bentz-2022</span><span class="val">Bentz, Dediu, Verkerk &amp; Jager (2022). Complexity trade-offs and equi-complexity in natural languages: a meta-analysis. Linguistics Vanguard. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">berwick-2011</span><span class="val">Berwick, Okanoya, Beckers &amp; Bolhuis (2011). Songs to syntax: the linguistics of birdsong. Trends in Cognitive Sciences 15(3):113-121. DOI 10.1016/j.tics.2011.01.002. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">blasi-2016</span><span class="val">Blasi, Wichmann, Hammarstrom, Stadler &amp; Christiansen (2016). Sound-meaning association biases evidenced across thousands of languages. PNAS 113(39):10818-10823. DOI 10.1073/pnas.1605782113. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">borgwaldt-2005</span><span class="val">Borgwaldt, S. R., Hellwig, F. M. &amp; De Groot, A. M. B. (2005). Onset entropy matters - letter-to-phoneme mappings in seven languages. Written Language &amp; Literacy 8(2). DOI 10.1075/wll.7.2.03bor. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">brahmagupta-628</span><span class="val">Brahmagupta (628 CE). Brahmasphutasiddhanta. First text giving operational rules for zero and negative numbers. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">brentari-2019</span><span class="val">Brentari, D. (2019). Sign Language Phonology. Cambridge University Press. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">brooks-meltzoff-2008</span><span class="val">Brooks, R. &amp; Meltzoff, A. N. (2008). Infant gaze following and pointing predict accelerated vocabulary growth. Journal of Child Language 35(1):207-220. DOI 10.1017/s030500090700829x. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">byrne-2017</span><span class="val">Byrne, R. W., Cartmill, E., Genty, E., Graham, K. E., Hobaiter, C. &amp; Tanner, J. (2017). Great ape gestures: intentional communication with a rich set of innate signals. Animal Cognition 20:755-769. DOI 10.1007/s10071-017-1096-4. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">cajori-1928</span><span class="val">Cajori, F. (1928-1929). A History of Mathematical Notations (2 vols). Open Court. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">call-tomasello-2007</span><span class="val">Call, J. &amp; Tomasello, M. (eds.) (2007). The Gestural Communication of Apes and Monkeys. Lawrence Erlbaum / Psychology Press. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">calvo-zaragoza-2020</span><span class="val">Calvo-Zaragoza, Hajic Jr. &amp; Pacha (2020). Understanding Optical Music Recognition. ACM Computing Surveys 53(4). DOI 10.1145/3397499. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">carpenter-1998</span><span class="val">Carpenter, M., Nagell, K. &amp; Tomasello, M. (1998). Social cognition, joint attention, and communicative competence from 9 to 15 months. Monographs SRCD 63(4). DOI 10.2307/1166214. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">carrington-1949</span><span class="val">Carrington, J. F. (1949). A Comparative Study of Some Central African Gong-Languages. Falk. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">chrisomalis-2010</span><span class="val">Chrisomalis, S. (2010). Numerical Notation: A Comparative History. Cambridge University Press. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">cohn-2012</span><span class="val">Cohn, N. (2012). Visual narrative structure. Cognitive Science 37(3):413-452. DOI 10.1111/cogs.12016. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">comrie-1989</span><span class="val">Comrie, B. (1989). Language Universals and Linguistic Typology (2nd ed.). Blackwell. <span class="tag">[unverified]</span></span></div><div class="ref-row"><span class="key">cotterell-2018</span><span class="val">Cotterell, Kirov, Hulden &amp; Eisner (2018). On the Complexity and Typology of Inflectional Morphological Systems. TACL 7. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">coulmas-2003</span><span class="val">Coulmas, F. (2003). Writing Systems: An Introduction to Their Linguistic Analysis. Cambridge University Press. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">coupe-2019</span><span class="val">Coupe, Oh, Dediu &amp; Pellegrino (2019). Different languages, similar encoding efficiency. Science Advances 5(9):eaaw2594. DOI 10.1126/sciadv.aaw2594. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">cwiek-2021</span><span class="val">Cwiek, Fuchs, Draxler et al. (2021). The bouba/kiki effect is robust across cultures and writing systems. Phil. Trans. R. Soc. B 376:20200390. DOI 10.1098/rstb.2020.0390. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">dachkovsky-sandler-2009</span><span class="val">Dachkovsky, S. &amp; Sandler, W. (2009). Visual intonation in the prosody of a sign language. Language and Speech 52(2-3):287-314. DOI 10.1177/0023830909103175. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">daniels-bright-1996</span><span class="val">Daniels, P. T. &amp; Bright, W. (eds.) (1996). The World&#x27;s Writing Systems. Oxford University Press. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">darwin-1872</span><span class="val">Darwin, C. (1872). The Expression of the Emotions in Man and Animals. John Murray. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">dehaene-2006</span><span class="val">Dehaene, Izard, Pica &amp; Spelke (2006). Core knowledge of geometry in an Amazonian indigene group. Science 311(5759):381-384. DOI 10.1126/science.1121739. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">dingemanse-2015</span><span class="val">Dingemanse, Blasi, Lupyan, Monaghan &amp; Christiansen (2015). Arbitrariness, Iconicity, and Systematicity in Language. Trends in Cognitive Sciences 19(10):603-615. DOI 10.1016/j.tics.2015.07.013. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">dingemanse-2016</span><span class="val">Dingemanse, Schuerman, Reinisch, Tufvesson &amp; Mitterer (2016). What sound symbolism can and cannot do. Language 92(2):e117-e133. DOI 10.1353/lan.2016.0034. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">dyer-2002</span><span class="val">Dyer, F. C. (2002). The biology of the dance language. Annual Review of Entomology 47:917-949. DOI 10.1146/annurev.ento.47.091201.145306. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">eco-1976</span><span class="val">Eco, U. (1976). A Theory of Semiotics. Indiana University Press. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">ekman-1971</span><span class="val">Ekman, P. &amp; Friesen, W. V. (1971). Constants across cultures in the face and emotion. J. Personality and Social Psychology 17(2):124-129. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">evans-2017</span><span class="val">Evans, V. (2017). The Emoji Code. Michael O&#x27;Mara Books. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">everett-2005</span><span class="val">Everett, D. L. (2005). Cultural constraints on grammar and cognition in Piraha. Current Anthropology 46(4):621-646. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">farnell-1995</span><span class="val">Farnell, B. (1995). Do You See What I Mean? Plains Indian Sign Talk and the Embodiment of Action. Univ. of Texas Press. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">finney-2001</span><span class="val">Finney, E. M., Fine, I. &amp; Dobkins, K. R. (2001). Visual stimuli activate auditory cortex in the deaf. Nature Neuroscience 4:1171-1173. DOI 10.1038/nn763. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">frank-2008</span><span class="val">Frank, M. C., Everett, D. L., Fedorenko, E. &amp; Gibson, E. (2008). Number as a cognitive technology: evidence from Piraha language and cognition. Cognition 108(3):819-824. DOI 10.1016/j.cognition.2008.04.001. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">goldin-meadow-2003</span><span class="val">Goldin-Meadow, S. (2003). Hearing Gesture: How Our Hands Help Us Think. Harvard University Press. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">gordon-2004</span><span class="val">Gordon, P. (2004). Numerical cognition without words: evidence from Amazonia. Science 306(5695):496-499. DOI 10.1126/science.1094492. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">gould-1979</span><span class="val">Gould, S. J. (1979). Mickey Mouse Meets Konrad Lorenz. Natural History 88(5):30-36. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">grice-1975</span><span class="val">Grice, H. P. (1975). Logic and Conversation. In Syntax and Semantics 3: Speech Acts. <span class="tag">[unverified]</span></span></div><div class="ref-row"><span class="key">gunraj-2016</span><span class="val">Gunraj, D. N., Drumm-Hewitt, A. C. et al. (2016). Texting insincerely: the role of the period in text messaging. Computers in Human Behavior 55:1067-1075. DOI 10.1016/j.chb.2015.11.003. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">hagel-2010</span><span class="val">Hagel, S. (2010). Ancient Greek Music: A New Technical History. Cambridge University Press. DOI 10.1017/cbo9780511691591. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">haik-vantoura-1976</span><span class="val">Haik-Vantoura, S. (1976/1991). The Music of the Bible Revealed. CONTESTED: melodic reconstruction from the accents, largely rejected by scholars as anachronistic. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">hall-1976</span><span class="val">Hall, E. T. (1976). Beyond Culture. Anchor Press/Doubleday. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">halliday-1985</span><span class="val">Halliday, M. A. K. (1985). Spoken and Written Language. Deakin University Press. <span class="tag">[unverified]</span></span></div><div class="ref-row"><span class="key">hockett-1960</span><span class="val">Hockett, C. F. (1960). The origin of speech. Scientific American 203(3):88-96. DOI 10.1038/scientificamerican0960-88. (the 13 design features; duality of patterning, displacement, productivity). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">iverson-goldinmeadow-1998</span><span class="val">Iverson, J. M. &amp; Goldin-Meadow, S. (1998). Why people gesture when they speak. Nature 396:228. DOI 10.1038/24300. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">jack-2012</span><span class="val">Jack, R. E., Garrod, O., Yu, H., Caldara, R. &amp; Schyns, P. (2012). Facial expressions of emotion are not culturally universal. PNAS 109(19):7241-7244. DOI 10.1073/pnas.1200155109. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">jin-2011</span><span class="val">Jin, D. Z. &amp; Kozhevnikov, A. A. (2011). A compact statistical model of the song syntax in Bengalese finch. PLoS Computational Biology 7(3):e1001108. DOI 10.1371/journal.pcbi.1001108. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">jung-1959</span><span class="val">Jung, C. G. (1959). The Archetypes and the Collective Unconscious. CONTESTED: cited as the historical origin of the universal-symbol claim; the construct is non-empirical and unfalsifiable. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">katz-frost-1992</span><span class="val">Katz, L. &amp; Frost, R. (1992). The Orthographic Depth Hypothesis. Advances in Psychology 94:67-84. DOI 10.1016/s0166-4115(08)62789-2. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">kelly-2014</span><span class="val">Kelly, T. F. (2014). Capturing Music: The Story of Notation. W. W. Norton. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">kendon-2004</span><span class="val">Kendon, A. (2004). Gesture: Visible Action as Utterance. Cambridge University Press. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">kershenbaum-2014</span><span class="val">Kershenbaum, Blumstein, Roch et al. (2014). Acoustic sequences in non-human animals: a tutorial review and prospectus. Biological Reviews 91(1):13-52. DOI 10.1111/brv.12160. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">kershenbaum-2020</span><span class="val">Kershenbaum, Demartsev, Gammon &amp; Geffen (2020/2021). Shannon entropy as a robust estimator of Zipf&#x27;s Law in animal vocal communication repertoires. Methods in Ecology &amp; Evolution. DOI 10.1111/2041-210X.13536. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">khan-2020</span><span class="val">Khan, G. (2020). The Tiberian Pronunciation Tradition of Biblical Hebrew. Open Book Publishers. DOI 10.11647/obp.0163. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">klima-bellugi-1979</span><span class="val">Klima, E. &amp; Bellugi, U. (1979). The Signs of Language. Harvard University Press. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">knopoff-1983</span><span class="val">Knopoff, L. &amp; Hutchinson, W. (1983). Entropy as a measure of style: the influence of sample length. Journal of Music Theory 27(1):75-97. DOI 10.2307/843561. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">knox-1968</span><span class="val">Knox, B. M. W. (1968). Silent Reading in Antiquity. Greek, Roman and Byzantine Studies 9:421-435. (counterweight to Saenger). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">kotsoni-2001</span><span class="val">Kotsoni, E., de Haan, M. &amp; Johnson, M. H. (2001). Categorical perception of facial expressions by 7-month-old infants. Perception 30(9):1115-1125. DOI 10.1068/p3155. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">lerdahl-jackendoff-1983</span><span class="val">Lerdahl, F. &amp; Jackendoff, R. (1983). A Generative Theory of Tonal Music. MIT Press. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">levinson-1983</span><span class="val">Levinson, S. C. (1983). Pragmatics. Cambridge University Press. <span class="tag">[unverified]</span></span></div><div class="ref-row"><span class="key">lorenz-1943</span><span class="val">Lorenz, K. (1943). Die angeborenen Formen moeglicher Erfahrung (the Kindchenschema). Zeitschrift fuer Tierpsychologie 5(2):235-409. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">mann-thompson-1988</span><span class="val">Mann, W. C. &amp; Thompson, S. A. (1988). Rhetorical Structure Theory. Text 8(3):243-281. <span class="tag">[unverified]</span></span></div><div class="ref-row"><span class="key">mccowan-1999</span><span class="val">McCowan, Hanser &amp; Doyle (1999). Quantitative tools for comparing animal communication systems: information theory applied to bottlenose dolphin whistle repertoires. Animal Behaviour 57:409-419. DOI 10.1006/anbe.1998.1000. (Zipf slope ~ -1; higher-order conditional entropy). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">mcneill-2005</span><span class="val">McNeill, D. (2005). Gesture and Thought. University of Chicago Press. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">meltzoff-moore-1977</span><span class="val">Meltzoff, A. N. &amp; Moore, M. K. (1977). Imitation of facial and manual gestures by human neonates. Science 198(4312):75-78. DOI 10.1126/science.198.4312.75. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">meyer-2015</span><span class="val">Meyer, J. (2015). Whistled Languages: A Worldwide Inquiry on Human Whistled Speech. Springer. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">morfessor-2002</span><span class="val">Creutz, M. &amp; Lagus, K. (2002). Unsupervised discovery of morphemes. ACL SIGPHON Workshop. <span class="tag">[unverified]</span></span></div><div class="ref-row"><span class="key">nevins-2009</span><span class="val">Nevins, Pesetsky &amp; Rodrigues (2009). Piraha exceptionality: a reassessment. Language 85(2):355-404. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">noad-2000</span><span class="val">Noad, Cato, Bryden, Jenner &amp; Jenner (2000). Cultural revolution in whale songs. Nature 408:537. DOI 10.1038/35046199. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">ohman-mineka-2001</span><span class="val">Ohman, A. &amp; Mineka, S. (2001). Fears, phobias, and preparedness. Psychological Review 108(3):483-522. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">oostenbroek-2016</span><span class="val">Oostenbroek, J. et al. (2016). Comprehensive longitudinal study challenges the existence of neonatal imitation in humans. Current Biology 26(10):1334-1338. DOI 10.1016/j.cub.2016.03.047. (failed replication of Meltzoff &amp; Moore 1977). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">ouattara-2009</span><span class="val">Ouattara, Lemasson &amp; Zuberbuhler (2009). Campbell&#x27;s monkeys concatenate vocalizations into context-specific call sequences. PNAS 106:22026-22031. DOI 10.1073/pnas.0908118106. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">paradise-2025-wham</span><span class="val">Paradise, Muralikrishnan, ... Goldwasser et al. (2025). WhAM: Towards A Translative Model of Sperm Whale Vocalization. arXiv:2512.02206 (NeurIPS 2025). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">parkes-1992</span><span class="val">Parkes, M. B. (1992). Pause and Effect: An Introduction to the History of Punctuation in the West. Univ. of California Press. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">parr-2007</span><span class="val">Parr, L. A., Waller, B. M., Vick, S. J. &amp; Bard, K. A. (2007). Classifying chimpanzee facial expressions using muscle action. Emotion 7(1):172-181. DOI 10.1037/1528-3542.7.1.172. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">payne-1971</span><span class="val">Payne, R. S. &amp; McVay, S. (1971). Songs of Humpback Whales. Science 173(3997):585-597. DOI 10.1126/science.173.3997.585. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">pearce-2006</span><span class="val">Pearce, M. T. &amp; Wiggins, G. A. (2006). Expectation in melody: the influence of context and learning (IDyOM). Music Perception 23(5):377-405. DOI 10.1525/mp.2006.23.5.377. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">pellegrino-2011</span><span class="val">Pellegrino, Coupe &amp; Marsico (2011). A Cross-Language Perspective on Speech Information Rate. Language 87(3):539-558. DOI 10.1353/lan.2011.0057. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">perniss-2010</span><span class="val">Perniss, Thompson &amp; Vigliocco (2010). Iconicity as a general property of language. Frontiers in Psychology 1:227. DOI 10.3389/fpsyg.2010.00227. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">petrov-2023</span><span class="val">Petrov, La Malfa, Torr &amp; Bibi (2023). Language Model Tokenizers Introduce Unfairness Between Languages. NeurIPS 36. arXiv:2305.15425. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">pica-2004</span><span class="val">Pica, Lemer, Izard &amp; Dehaene (2004). Exact and approximate arithmetic in an Amazonian indigene group. Science 306(5695):499-503. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">price-1990</span><span class="val">Price, J. D. (1990). The Syntax of Masoretic Accents in the Hebrew Bible. Edwin Mellen Press. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">ramachandran-2001</span><span class="val">Ramachandran, V. S. &amp; Hubbard, E. M. (2001). Synaesthesia: a window into perception, thought and language. Journal of Consciousness Studies 8(12):3-34. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">rankin-2018</span><span class="val">Rankin, S. (2018). Writing Sounds in Carolingian Europe: The Invention of Musical Notation. Cambridge University Press. DOI 10.1017/9781108368605. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">robinson-2024-naturelm</span><span class="val">Robinson et al. (2024). NatureLM-audio: an Audio-Language Foundation Model for Bioacoustics. arXiv:2411.07186 (ICLR 2025). (BEATs encoder + Llama; zero-shot to unseen taxa; BEANS-Zero). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">roland-2014-mei</span><span class="val">Roland, Hankinson &amp; Pugin (2014). Early music and the Music Encoding Initiative. Early Music 42(4):605-611. DOI 10.1093/em/cau098. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">russell-1994</span><span class="val">Russell, J. A. (1994). Is there universal recognition of emotion from facial expression? A review. Psychological Bulletin 115(1):102-141. DOI 10.1037/0033-2909.115.1.102. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">rust-2021</span><span class="val">Rust, P., Pfeiffer, J., Vulic, I., Ruder, S. &amp; Gurevych, I. (2021). How Good is Your Tokenizer? On the Monolingual Performance of Multilingual Language Models. ACL. DOI 10.18653/v1/2021.acl-long.243. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">sadato-1996</span><span class="val">Sadato, N. et al. (1996). Activation of the primary visual cortex by Braille reading in blind subjects. Nature 380:526-528. DOI 10.1038/380526a0. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">saenger-1997</span><span class="val">Saenger, P. (1997). Space Between Words: The Origins of Silent Reading. Stanford University Press. CONTESTED strong silent-reading thesis. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">sandler-2005</span><span class="val">Sandler, W., Meir, I., Padden, C. &amp; Aronoff, M. (2005). The emergence of grammar: systematic structure in a new language (Al-Sayyid Bedouin SL). PNAS 102(7):2661-2665. DOI 10.1073/pnas.0405448102. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">sandler-lillomartin-2006</span><span class="val">Sandler, W. &amp; Lillo-Martin, D. (2006). Sign Language and Linguistic Universals. Cambridge University Press. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">sarkar-2025</span><span class="val">Sarkar, E. &amp; Magimai-Doss, M. (2025). Comparing SSL models pre-trained on human speech and animal vocalizations for bioacoustics. arXiv:2501.05987. (speech-pretrained models transfer; distance between channels). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">schmalz-2015</span><span class="val">Schmalz, V., Marinus, E., Coltheart, M. &amp; Castles, A. (2015). Getting to the bottom of orthographic depth. Psychonomic Bulletin &amp; Review 22:1614-1629. DOI 10.3758/s13423-015-0835-2. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">scholes-willis-1990</span><span class="val">Scholes, R. J. &amp; Willis, B. J. (1990). Prosodic and syntactic functions of punctuation. Reading and Writing 2(3). DOI 10.1007/bf01809416. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">scott-phillips-2013</span><span class="val">Scott-Phillips, T. C. &amp; Blythe, R. A. (2013). Why is combinatorial communication rare in the natural world, and why is language an exception to this trend? J. Royal Society Interface 10:20130520. DOI 10.1098/rsif.2013.0520 (arXiv:1308.4780). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">semple-2021</span><span class="val">Semple, Ferrer-i-Cancho &amp; Gustison (2021). Linguistic laws in biology. Trends in Ecology &amp; Evolution 37(1):53-66. DOI 10.1016/j.tree.2021.08.012. (Zipf rank-frequency, law of abbreviation, Menzerath across taxa). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">senghas-2004</span><span class="val">Senghas, A., Kita, S. &amp; Ozyurek, A. (2004). Children creating core properties of language: evidence from Nicaraguan Sign Language. Science 305:1779-1782. DOI 10.1126/science.1100199. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">seyfarth-1980</span><span class="val">Seyfarth, Cheney &amp; Marler (1980). Vervet monkey alarm calls: semantic communication in a free-ranging primate. Animal Behaviour 28:1070-1094. DOI 10.1016/S0003-3472(80)80097-2. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">seymour-2003</span><span class="val">Seymour, P. H. K., Aro, M. &amp; Erskine, J. M. (2003). Foundation literacy acquisition in European orthographies. British Journal of Psychology 94(2):143-174. DOI 10.1348/000712603321661859. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">shaikh-chaparro-2007</span><span class="val">Shaikh, A. D. &amp; Chaparro, B. S. (2007). Psychology of onscreen type: typeface personality, appropriateness, and font selection. (typeface-personality literature). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">shannon-1948</span><span class="val">Shannon, C. E. (1948). A Mathematical Theory of Communication. Bell System Technical Journal 27. <span class="tag">[unverified]</span></span></div><div class="ref-row"><span class="key">sharma-2024</span><span class="val">Sharma, Gero, Payne, Gruber, Rus, Torralba &amp; Andreas (2024). Contextual and combinatorial structure in sperm whale vocalisations. Nature Communications 15:3617. DOI 10.1038/s41467-024-47221-8. (8,719 codas; rhythm/tempo/rubato/ornamentation; structure not semantics). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">siegelman-2020</span><span class="val">Siegelman, N., Kearns, D. M. &amp; Rueckl, J. G. (2020). Using information-theoretic measures to characterize the structure of the writing system: orthographic-phonological regularities in English. Behavior Research Methods 52:1292-1312. DOI 10.3758/s13428-019-01317-y. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">smith-2014</span><span class="val">Smith, R. D. (2014). Complexity in animal communication: estimating the size of N-Gram structures. Entropy 16(1):526-542. DOI 10.3390/e16010526 (arXiv:1308.3616). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">sorce-1985</span><span class="val">Sorce, J. F., Emde, R. N., Campos, J. J. &amp; Klinnert, M. D. (1985). Maternal emotional signaling: its effect on the visual cliff behavior of 1-year-olds. Developmental Psychology 21(1):195-200. DOI 10.1037/0012-1649.21.1.195. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">stokoe-1960</span><span class="val">Stokoe, W. C. (1960). Sign Language Structure. Studies in Linguistics, Occasional Papers 8. <span class="tag">[verified]</span></span></div><div class="ref-row"><span class="key">suzuki-2004</span><span class="val">Suzuki, Buck &amp; Tyack (2004). The use of Zipf&#x27;s law in animal communication analysis. Animal Behaviour 69:F9-F17. DOI 10.1016/j.anbehav.2004.08.004. (CRITIQUE: Zipf-like distributions arise from random processes; weak evidence). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">suzuki-2006</span><span class="val">Suzuki, Buck &amp; Tyack (2006). Information entropy of humpback whale songs. JASA 119(3):1849-1866. DOI 10.1121/1.2161827. (periodicities 6-8 and 180-400 units; no finite Markov model fits). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">takahashi-2018</span><span class="val">Takahashi &amp; Tanaka-Ishii (2018). Cross Entropy of Neural Language Models at Infinity - A New Bound of the Entropy Rate. Entropy 20(11):839. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">tomasello-2007</span><span class="val">Tomasello, M., Carpenter, M. &amp; Liszkowski, U. (2007). A New Look at Infant Pointing. Child Development 78(3):705-722. DOI 10.1111/j.1467-8624.2007.01025.x. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">ure-1971</span><span class="val">Ure, J. (1971). Lexical density and register differentiation. In Applications of Linguistics (Cambridge). <span class="tag">[unverified]</span></span></div><div class="ref-row"><span class="key">vick-2006</span><span class="val">Vick, S. J., Waller, B. M., Parr, L. A., Smith Pasqualini, M. C. &amp; Bard, K. A. (2006). A cross-species comparison of facial morphology and movement using FACS (ChimpFACS). Journal of Nonverbal Behavior 30:1-20. DOI 10.1007/s10919-006-0017-z. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">vonfrisch-1967</span><span class="val">von Frisch, K. (1967). The Dance Language and Orientation of Bees. Harvard University Press. (Nobel Prize 1973; waggle run encodes direction + distance to absent food). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">wals-22a</span><span class="val">Dryer &amp; Haspelmath (eds.) WALS Online, feature 22A Inflectional Synthesis of the Verb. wals.info. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">wario-2017</span><span class="val">Wario, Wild, Rojas &amp; Landgraf (2017). Automatic detection and decoding of honey bee waggle dances. PLoS ONE 12(11):e0188626. DOI 10.1371/journal.pone.0188626 (arXiv:1708.06590). <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">wickes-1881</span><span class="val">Wickes, W. (1881/1887). A Treatise on the Accentuation of the Three Poetical Books / the Twenty-One Prose Books of the Old Testament. Clarendon Press, Oxford. <span class="tag">[secondary]</span></span></div><div class="ref-row"><span class="key">zender-2014</span><span class="val">Zender, M. &amp; Cassedy, A. (2014). (Mis)understanding: Icon comprehension in different cultural contexts. Visible Language 48(1). <span class="tag">[secondary]</span></span></div></div><div class="footer"><span class="signoff">lingbench</span> &middot; generated from research/facets/ by make map &middot; companion: facet-map-linear.html</div></div>
+<div class="overlay" id="help-overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="How to read this map">
+    <button class="x" id="help-close">close (esc)</button>
+    <h2 style="color:var(--accent-deep)">How to read this map</h2>
+    <p>Every facet is a place an idea gets encoded, located by three coordinates and marked by how
+    well we can measure it. The grid is a stack: meaning on top, the raw wire at the bottom, one
+    column per channel we transmit on.</p>
+
+    <h2 style="color:var(--accent-deep)">Levels (the stack, rows)</h2>
+    <div class="tworow"><span class="k">channel</span><span>the wire: bytes, graphemes, tokens.</span></div><div class="tworow"><span class="k">phonological</span><span>sound system: the syllable, unit of the speech-rate model.</span></div><div class="tworow"><span class="k">morphological</span><span>word-internal structure: grammar packed per word.</span></div><div class="tworow"><span class="k">lexical</span><span>word choice and vocabulary: richness, density.</span></div><div class="tworow"><span class="k">syntactic</span><span>sentence structure: how clauses nest.</span></div><div class="tworow"><span class="k">discourse</span><span>across sentences: reference, cohesion, punctuation.</span></div><div class="tworow"><span class="k">rhetorical</span><span>argument shape: framing, examples, redundancy.</span></div><div class="tworow"><span class="k">semantic-pragmatic</span><span>meaning in context: what is conveyed, and inferred.</span></div>
+
+    <h2 style="color:var(--accent-deep)">Modalities (columns) and the duality gate</h2>
+    <p>The gate asks whether a channel is doubly articulated (meaningless units recombine into
+    meaningful ones). Channels that pass carry language-grade information; the rest carry
+    affect-grade information.</p>
+    <div class="tworow"><span class="k">Amodal</span><span>- &middot; not a carrier; the bucket for facets that hold regardless of channel (e.g. proposition count).</span></div><div class="tworow"><span class="k">Speech</span><span>- &middot; phonemes -&gt; morphemes -&gt; words -&gt; clauses. the canonical doubly-articulated channel.</span></div><div class="tworow"><span class="k">Writing</span><span>- &middot; graphemes -&gt; words -&gt; sentences. includes the human-to-machine encoding layer (tokens).</span></div><div class="tworow"><span class="k">Sign language</span><span>- &middot; full grammatical language in the visual modality; handshape/location/movement are sublexical (Stokoe 1960; Brentari 2019).</span></div><div class="tworow"><span class="k">Co-speech gesture</span><span>- &middot; imagistic and gradient, not segmented into recombinable units; complements speech rather than encoding independently (McNeill 2005).</span></div><div class="tworow"><span class="k">Facial expression</span><span>[|~] partial &middot; affect-grade by default; doubly articulated and GRAMMATICAL inside sign languages (brow/head mark conditionals, questions). a signal that changes level by population.</span></div><div class="tworow"><span class="k">Paralanguage (prosody, tone, volume)</span><span>- &middot; gradient affect/emphasis carrier; intonation has structure but is not segmental in the duality sense.</span></div><div class="tworow"><span class="k">Music (melody, notation)</span><span>[|~] partial &middot; a sonic-symbolic channel distinct from speech and paralanguage; conveys affect and structure. has hierarchical/recursive structure debated as syntax-like (Lerdahl &amp; Jackendoff 1983), but whether it is doubly articulated is contested. its notation is the iconographic/written rendering.</span></div><div class="tworow"><span class="k">Iconography (emoji, glyphs, notation)</span><span>[|~] partial &middot; emoji are largely paralinguistic (not compositional/productive); logographic scripts and math notation do pass, but those sit under writing. mixed by instance (Evans 2017).</span></div><div class="tworow"><span class="k">Touch (Protactile, Braille)</span><span>[|~] partial &middot; Braille is writing rendered to touch (passes); Protactile is an emerging doubly-articulated tactile language under DeafBlindness. touch-as-affect does not pass.</span></div><div class="tworow"><span class="k">Non-human communication</span><span>[|~] partial &middot; animal signal systems (whale codas, birdsong, primate calls, the bee waggle dance). mostly NO duality (holistic signals), but contested partial cases exist - sperm whale codas show combinatorial structure (Sharma 2024) and birdsong has phonological syntax without semantics (Berwick 2011). the human exception is having BOTH duality and productivity (Hockett 1960). spans acoustic and non-acoustic (kinetic waggle dance) channels.</span></div>
+
+    <h2 style="color:var(--accent-deep)">Tier</h2>
+    <p><strong>A</strong> = what the language or system affords (fixed per language).
+    <strong>B</strong> = what the producer chooses (varies per text or utterance). The corner of
+    each tile shows A or B.</p>
+
+    <h2 style="color:var(--accent-deep)">Status (tile color)</h2>
+    <p><span class="pill" style="background:var(--done)">done</span><span class="pill" style="background:var(--proxy)">proxy</span><span class="pill" style="background:var(--hard)">hard</span><span class="pill" style="background:var(--open)">open</span> &mdash; done = a lingbench function computes it; proxy = an approximate measure;
+    hard = measurable but needs real work or data; open = no agreed measure yet. Striped cells are
+    unmapped intersections.</p>
+
+    <h2 style="color:var(--accent-deep)">Relation wires</h2>
+    <p>Arcs connect related facets; hover a facet to light up its wires. Kinds:</p>
+    <div class="tworow"><span class="k">contributes-to</span><span>one facet feeds another</span></div><div class="tworow"><span class="k">trades-off-with</span><span>more of one means less of the other</span></div><div class="tworow"><span class="k">redundant-with</span><span>both carry the same idea in parallel</span></div><div class="tworow"><span class="k">promotes</span><span>a signal is raised to a higher level (e.g. affect to grammar)</span></div><div class="tworow"><span class="k">measures-same</span><span>two measures of one underlying thing</span></div><div class="tworow"><span class="k">constrains</span><span>one bounds the other</span></div>
+
+    <h2 style="color:var(--accent-deep)">Controls</h2>
+    <p>Hover a tile to inspect it, click to pin, <kbd>esc</kbd> to unpin. Switch theme or toggle
+    wires in the toolbar. Everything is generated from research/facets/ by make map.</p>
+  </div>
+</div>
+<script id="reference-data" type="application/json">
+{
+"utf8-byte-size": {
+"title": "UTF-8 byte size",
+"code": "writing / channel / tier A",
+"body": "bytes needed to encode the text in UTF-8. the rawest channel cost; scripts differ ~3x per character before any tokenizer.",
+"meta": {
+"status": "done",
+"modality": "writing",
+"level": "channel",
+"tier": "A",
+"lingbench": "util.byte_length"
+},
+"rel": [
+"grapheme-count",
+"tokenizer-tax-tir"
+],
+"notes": [
+"measured (UDHR): EN 170 B · 120-499 (Swahili-Hindi), n=10",
+"measure: len(text.encode utf-8)",
+"source: Petrov, La Malfa, Torr & Bibi (2023). Language Model Tokenizers Introduce Unfairness Between Languages. NeurIPS 36. arXiv:2305.15425."
+]
+},
+"grapheme-count": {
+"title": "Grapheme count",
+"code": "writing / channel / tier A",
+"body": "user-perceived characters (extended grapheme clusters). the fairest \"how long is it on screen\" count across scripts.",
+"meta": {
+"status": "done",
+"modality": "writing",
+"level": "channel",
+"tier": "A",
+"lingbench": "util.grapheme_length"
+},
+"rel": [],
+"notes": [
+"measured (UDHR): EN 170 · 43-183 (Mandarin (Simplified)-Vietnamese), n=10",
+"measure: regex \\X segmentation over NFC text"
+]
+},
+"tokenizer-tax-tir": {
+"title": "Token-to-Information Ratio (tokenizer tax)",
+"code": "writing / channel / tier A",
+"body": "tokens an LLM tokenizer spends per aligned unit of meaning, vs English. the headline human-to-machine cost; non-English pays a multiplier (Hindi ~5.5x under cl100k).",
+"meta": {
+"status": "done",
+"modality": "writing",
+"level": "channel",
+"tier": "A",
+"lingbench": "tir.tir_table"
+},
+"rel": [
+"subword-fertility",
+"utf8-byte-size"
+],
+"notes": [
+"measured (UDHR): EN 1.0x · up to 3.8x (Hindi)",
+"measure: tokenizer.count over UDHR Article 1, ratio to English",
+"source: Petrov, La Malfa, Torr & Bibi (2023). Language Model Tokenizers Introduce Unfairness Between Languages. NeurIPS 36. arXiv:2305.15425.",
+"source: Ahia, Kumar, Gonen, Kasai, Mortensen, Smith & Tsvetkov (2023). Do All Languages Cost the Same? Tokenization in the Era of Commercial Language Models. arXiv:2305.13707."
+]
+},
+"subword-fertility": {
+"title": "Subword fertility",
+"code": "writing / channel / tier A",
+"body": "tokens per character a tokenizer emits (content-light efficiency measure). register-comparable tax measure; casual text raises it ~15-25% for all languages (see Benchmark-Findings).",
+"meta": {
+"status": "done",
+"modality": "writing",
+"level": "channel",
+"tier": "A",
+"lingbench": "tokenizers.fertility"
+},
+"rel": [
+"tokenizer-tax-tir"
+],
+"notes": [
+"measured (UDHR): EN 0.18 tok/ch · 0.18-0.86 (English-Japanese), n=10",
+"measure: tokenizer.count(text) / NFC codepoints",
+"source: Petrov, La Malfa, Torr & Bibi (2023). Language Model Tokenizers Introduce Unfairness Between Languages. NeurIPS 36. arXiv:2305.15425."
+]
+},
+"char-entropy": {
+"title": "Character entropy (zeroth order)",
+"code": "writing / channel / tier B",
+"body": "Shannon entropy of the character distribution. bits/char. information density of the written symbol stream; CJK scripts pack more bits/char.",
+"meta": {
+"status": "done",
+"modality": "writing",
+"level": "channel",
+"tier": "B",
+"lingbench": "entropy_calculators.char_entropy"
+},
+"rel": [
+"conditional-entropy"
+],
+"notes": [
+"measured (UDHR): EN 4.22 b/ch · 4.10-7.71 (Swahili-Mandarin (Simplified)), n=10",
+"measure: -sum p log2 p over graphemes",
+"source: Shannon, C. E. (1948). A Mathematical Theory of Communication. Bell System Technical Journal 27."
+]
+},
+"conditional-entropy": {
+"title": "Conditional (n-gram) entropy",
+"code": "writing / channel / tier B",
+"body": "entropy of a character given the previous n. bits/char. exposes sequential redundancy zeroth-order misses; the predictability the speech model needs.",
+"meta": {
+"status": "done",
+"modality": "writing",
+"level": "channel",
+"tier": "B",
+"lingbench": "entropy_calculators.conditional_entropy"
+},
+"rel": [],
+"notes": [
+"measured (UDHR): EN 3.22 b/ch · 2.48-3.45 (Mandarin (Simplified)-Arabic (Standard)), n=10",
+"measure: empirical plug-in over (context, next) counts",
+"source: Shannon, C. E. (1948). A Mathematical Theory of Communication. Bell System Technical Journal 27.",
+"source: Coupe, Oh, Dediu & Pellegrino (2019). Different languages, similar encoding efficiency. Science Advances 5(9):eaaw2594. DOI 10.1126/sciadv.aaw2594.",
+"source: Takahashi & Tanaka-Ishii (2018). Cross Entropy of Neural Language Models at Infinity - A New Bound of the Entropy Rate. Entropy 20(11):839."
+]
+},
+"type-token-ratio": {
+"title": "Type-token ratio",
+"code": "writing / lexical / tier B",
+"body": "distinct word types / total tokens. a first proxy for vocabulary richness and (via inflection) morphological packing.",
+"meta": {
+"status": "done",
+"modality": "writing",
+"level": "lexical",
+"tier": "B",
+"lingbench": "stylometrics.type_token_ratio"
+},
+"rel": [
+"mattr"
+],
+"notes": [
+"measured (UDHR): EN 0.34 · 0.26-1.00 (Vietnamese-Mandarin (Simplified)), n=10",
+"measure: distinct words / total words"
+]
+},
+"mattr": {
+"title": "Moving-average TTR (length-stable)",
+"code": "writing / lexical / tier B",
+"body": "TTR averaged over a sliding window, removing the length bias of plain TTR. lets richness be compared across unequal-length texts fairly.",
+"meta": {
+"status": "done",
+"modality": "writing",
+"level": "lexical",
+"tier": "B",
+"lingbench": "morphology.moving_average_ttr"
+},
+"rel": [],
+"notes": [
+"measured (UDHR): EN 0.74 · 0.74-1.00 (English-Mandarin (Simplified)), n=10",
+"measure: mean per-window TTR"
+]
+},
+"lexical-density": {
+"title": "Lexical density",
+"code": "writing / lexical / tier B",
+"body": "share of tokens that are content words (vs function words). denser text packs more propositional content per word; a core register signal.",
+"meta": {
+"status": "hard",
+"modality": "writing",
+"level": "lexical",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: POS-tag, content/total ratio",
+"source: Ure, J. (1971). Lexical density and register differentiation. In Applications of Linguistics (Cambridge).",
+"source: Halliday, M. A. K. (1985). Spoken and Written Language. Deakin University Press."
+]
+},
+"mean-word-length": {
+"title": "Mean word length",
+"code": "writing / morphological / tier B",
+"body": "average characters per whitespace word. a no-dependency proxy for synthesis; agglutinative languages run longer.",
+"meta": {
+"status": "proxy",
+"modality": "writing",
+"level": "morphological",
+"tier": "B",
+"lingbench": "morphology.mean_word_length"
+},
+"rel": [],
+"notes": [
+"measured (UDHR): EN 5.11 ch/w · 3.42-7.85 (Vietnamese-Finnish), n=8",
+"measure: chars / words"
+]
+},
+"morphemes-per-word": {
+"title": "Morphemes per word",
+"code": "writing / morphological / tier B",
+"body": "mean morphs per word (unsupervised segmentation). the direct measure of morphological packing; agglutinative > fusional > isolating.",
+"meta": {
+"status": "proxy",
+"modality": "writing",
+"level": "morphological",
+"tier": "B",
+"lingbench": "morphology.morphemes_per_word"
+},
+"rel": [],
+"notes": [
+"measure: Morfessor segmentation, mean morph count",
+"source: Creutz, M. & Lagus, K. (2002). Unsupervised discovery of morphemes. ACL SIGPHON Workshop.",
+"source: Cotterell, Kirov, Hulden & Eisner (2018). On the Complexity and Typology of Inflectional Morphological Systems. TACL 7."
+]
+},
+"morphological-typology": {
+"title": "Morphological typology",
+"code": "writing / morphological / tier A",
+"body": "isolating / fusional / agglutinative / polysynthetic class of a language. the affordance that sets how much grammar a single word can carry.",
+"meta": {
+"status": "done",
+"modality": "writing",
+"level": "morphological",
+"tier": "A",
+"lingbench": "morphology.typology_of"
+},
+"rel": [
+"morphemes-per-word",
+"function-word-ratio"
+],
+"notes": [
+"measure: reference label per ISO 639-3 (WALS-grounded)",
+"source: Comrie, B. (1989). Language Universals and Linguistic Typology (2nd ed.). Blackwell.",
+"source: Dryer & Haspelmath (eds.) WALS Online, feature 22A Inflectional Synthesis of the Verb. wals.info.",
+"source: Bentz, Dediu, Verkerk & Jager (2022). Complexity trade-offs and equi-complexity in natural languages: a meta-analysis. Linguistics Vanguard."
+]
+},
+"mean-sentence-length": {
+"title": "Mean sentence length",
+"code": "writing / syntactic / tier B",
+"body": "average words (or chars) per sentence. register and era signal; formal UDHR runs ~28 w/sentence, casual Tatoeba ~8.",
+"meta": {
+"status": "proxy",
+"modality": "writing",
+"level": "syntactic",
+"tier": "B",
+"lingbench": "stylometrics.mean_sentence_length"
+},
+"rel": [],
+"notes": [
+"measured (UDHR): EN 27.6 w/s · 18.3-37.3 (Finnish-Vietnamese), n=8",
+"measure: split on sentence punctuation, average length"
+]
+},
+"syntactic-complexity": {
+"title": "Syntactic complexity",
+"code": "writing / syntactic / tier B",
+"body": "depth and branching of clause structure (e.g. parse-tree depth, dependency length). structure carries propositional relations; deeper trees pack more relations per sentence.",
+"meta": {
+"status": "hard",
+"modality": "writing",
+"level": "syntactic",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: dependency parse, depth / mean dependency distance"
+]
+},
+"punctuation-profile": {
+"title": "Punctuation profile",
+"code": "writing / discourse / tier B",
+"body": "density and class distribution of punctuation marks. punctuation is prosody for writing; carries grouping, emphasis, and tone.",
+"meta": {
+"status": "done",
+"modality": "writing",
+"level": "discourse",
+"tier": "B",
+"lingbench": "stylometrics.punctuation_profile"
+},
+"rel": [
+"prosody-structure"
+],
+"notes": [
+"measured (UDHR): EN 0.016 · 0.013-0.071 (Arabic (Standard)-Mandarin (Simplified)), n=10",
+"measure: per-char density by unicode punctuation class"
+]
+},
+"cohesion": {
+"title": "Cohesion (reference, connectives)",
+"code": "writing / discourse / tier B",
+"body": "how sentences bind into a text (anaphora, conjunction, lexical chains). cross-sentence binding is where an argument lives; absent it, sentences do not add up to an idea.",
+"meta": {
+"status": "open",
+"modality": "writing",
+"level": "discourse",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: coreference chains, connective density, lexical-overlap cohesion",
+"source: Halliday, M. A. K. (1985). Spoken and Written Language. Deakin University Press."
+]
+},
+"syllable-inventory": {
+"title": "Syllable inventory size",
+"code": "speech / phonological / tier A",
+"body": "number of distinct syllables a language uses; log2 bounds bits/syllable. the ceiling on per-syllable information; English ~7931, Japanese ~416.",
+"meta": {
+"status": "done",
+"modality": "speech",
+"level": "phonological",
+"tier": "A",
+"lingbench": "phonology.max_bits_per_syllable"
+},
+"rel": [
+"syllable-info-density"
+],
+"notes": [
+"measure: log2(inventory) from corpus counts (Pellegrino 2011 Table 2)",
+"source: Pellegrino, Coupe & Marsico (2011). A Cross-Language Perspective on Speech Information Rate. Language 87(3):539-558. DOI 10.1353/lan.2011.0057."
+]
+},
+"syllable-info-density": {
+"title": "Information density per syllable",
+"code": "speech / phonological / tier A",
+"body": "bits carried by an average syllable (predictability-based). one factor of the speech information rate; trades off against speech rate.",
+"meta": {
+"status": "proxy",
+"modality": "speech",
+"level": "phonological",
+"tier": "A",
+"lingbench": "entropy_calculators.density_per_syllable"
+},
+"rel": [
+"speech-information-rate"
+],
+"notes": [
+"measure: conditional entropy x symbols / syllable count",
+"source: Pellegrino, Coupe & Marsico (2011). A Cross-Language Perspective on Speech Information Rate. Language 87(3):539-558. DOI 10.1353/lan.2011.0057."
+]
+},
+"speech-information-rate": {
+"title": "Speech information rate (~39 bits/sec)",
+"code": "speech / semantic-pragmatic / tier A",
+"body": "information transmitted per second of speech = density x syllable rate. the only widely-cited absolute figure for human language bandwidth; a floor, not a ceiling.",
+"meta": {
+"status": "hard",
+"modality": "speech",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [
+"syllable-info-density",
+"gesture-motion-semantics"
+],
+"notes": [
+"measure: bits/syllable x syllables/sec from a spoken corpus",
+"source: Coupe, Oh, Dediu & Pellegrino (2019). Different languages, similar encoding efficiency. Science Advances 5(9):eaaw2594. DOI 10.1126/sciadv.aaw2594.",
+"source: Pellegrino, Coupe & Marsico (2011). A Cross-Language Perspective on Speech Information Rate. Language 87(3):539-558. DOI 10.1353/lan.2011.0057."
+]
+},
+"gesture-motion-semantics": {
+"title": "Co-speech gesture (motion/space semantics)",
+"code": "gesture / semantic-pragmatic / tier B",
+"body": "spatial and motion content a speaker expresses in the hands alongside speech. some meaning is carried only gesturally; speech and gesture are one system (growth point).",
+"meta": {
+"status": "open",
+"modality": "gesture",
+"level": "semantic-pragmatic",
+"tier": "B"
+},
+"rel": [
+"speech-information-rate"
+],
+"notes": [
+"measure: gesture annotation + cross-channel mutual information with speech",
+"source: McNeill, D. (2005). Gesture and Thought. University of Chicago Press.",
+"source: Kendon, A. (2004). Gesture: Visible Action as Utterance. Cambridge University Press."
+]
+},
+"gesture-production-internal": {
+"title": "Gesture as production-internal",
+"code": "gesture / discourse / tier B",
+"body": "gesture that accompanies speech even when no one can see it (congenitally blind speakers). shows gesture is integral to language production, not just listener-directed signalling.",
+"meta": {
+"status": "open",
+"modality": "gesture",
+"level": "discourse",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: gesture rate in no-visual-access conditions",
+"source: Goldin-Meadow, S. (2003). Hearing Gesture: How Our Hands Help Us Think. Harvard University Press.",
+"source: Iverson, J. M. & Goldin-Meadow, S. (1998). Why people gesture when they speak. Nature 396:228. DOI 10.1038/24300."
+]
+},
+"sign-information-rate": {
+"title": "Sign language information rate",
+"code": "sign / semantic-pragmatic / tier A",
+"body": "propositions per second in a signed language (manual + non-manual tiers). tests whether the ~39 bits/sec convergence holds in the visual modality; likely undercounted.",
+"meta": {
+"status": "open",
+"modality": "sign",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: signs are slower than words but propositions/sec roughly match speech; non-manual tier adds parallel load",
+"source: Brentari, D. (2019). Sign Language Phonology. Cambridge University Press.",
+"source: Bellugi, U. & Fischer, S. (1972). A comparison of sign language and spoken language. Cognition 1(2-3):173-200."
+]
+},
+"nonmanual-grammar": {
+"title": "Non-manual grammar (brow/head as syntax)",
+"code": "facial / syntactic / tier A",
+"body": "facial and head movements that mark conditionals, questions, relative clauses in sign. the cleanest case of a signal changing level - affect-grade for hearing people, grammar in sign.",
+"meta": {
+"status": "open",
+"modality": "facial",
+"level": "syntactic",
+"tier": "A"
+},
+"rel": [
+"facial-affect"
+],
+"notes": [
+"measure: annotation of obligatory non-manual markers",
+"under constraint: in hearing populations this signal is paralinguistic affect; under deafness it is promoted to syntax (modality budget).",
+"source: Sandler, W. & Lillo-Martin, D. (2006). Sign Language and Linguistic Universals. Cambridge University Press.",
+"source: Dachkovsky, S. & Sandler, W. (2009). Visual intonation in the prosody of a sign language. Language and Speech 52(2-3):287-314. DOI 10.1177/0023830909103175."
+]
+},
+"facial-affect": {
+"title": "Facial affect signalling",
+"code": "facial / semantic-pragmatic / tier B",
+"body": "emotional/attitudinal information carried by the face. a parallel affect channel; whether its mapping is universal is itself a facet (see facial-affect-universality).",
+"meta": {
+"status": "hard",
+"modality": "facial",
+"level": "semantic-pragmatic",
+"tier": "B"
+},
+"rel": [
+"facial-affect-universality"
+],
+"notes": [
+"measure: FACS action-unit coding; cross-cultural recognition rates",
+"source: Darwin, C. (1872). The Expression of the Emotions in Man and Animals. John Murray.",
+"source: Ekman, P. & Friesen, W. V. (1971). Constants across cultures in the face and emotion. J. Personality and Social Psychology 17(2):124-129.",
+"source: Barrett, L. F. (2017). How Emotions Are Made: The Secret Life of the Brain. Houghton Mifflin Harcourt."
+]
+},
+"emoji-affect": {
+"title": "Emoji as paralanguage",
+"code": "iconographic / discourse / tier B",
+"body": "affect, emphasis, and gesture-like marking emoji add to text. contemporary instance of icon-based transfer; largely paralinguistic, not a compositional language.",
+"meta": {
+"status": "open",
+"modality": "iconographic",
+"level": "discourse",
+"tier": "B"
+},
+"rel": [
+"facial-affect",
+"tone-of-voice"
+],
+"notes": [
+"measure: position/co-text analysis; compositionality and productivity tests",
+"source: Evans, V. (2017). The Emoji Code. Michael O'Mara Books."
+]
+},
+"protactile-grammar": {
+"title": "Protactile grammar",
+"code": "tactile / syntactic / tier A",
+"body": "grammatical structure emerging in tactile DeafBlind communication. the double-constraint case - both vision and hearing gone, grammar moves to touch.",
+"meta": {
+"status": "open",
+"modality": "tactile",
+"level": "syntactic",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: emergence/structure analysis of Protactile",
+"under constraint: under DeafBlindness the load redistributes to touch and tactile signals are promoted to grammar.",
+"source: Sadato, N. et al. (1996). Activation of the primary visual cortex by Braille reading in blind subjects. Nature 380:526-528. DOI 10.1038/380526a0.",
+"source: Finney, E. M., Fine, I. & Dobkins, K. R. (2001). Visual stimuli activate auditory cortex in the deaf. Nature Neuroscience 4:1171-1173. DOI 10.1038/nn763."
+]
+},
+"proposition-count": {
+"title": "Proposition count",
+"code": "amodal / semantic-pragmatic / tier A",
+"body": "number of distinct propositions a message asserts, independent of how it is encoded. the meaning-side denominator; bandwidth claims need an aligned unit of meaning (UDHR Article 1 is our stand-in).",
+"meta": {
+"status": "hard",
+"modality": "amodal",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: proposition/semantic-role annotation"
+]
+},
+"core-geometry-prelinguistic": {
+"title": "Pre-linguistic core knowledge",
+"code": "amodal / semantic-pragmatic / tier A",
+"body": "concepts available without language (e.g. geometry in the Munduruku, who lack the vocabulary). shows not all information transmission is linguistic; bounds Sapir-Whorf (language shapes, not constitutes, thought).",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: cross-cultural cognition tasks without lexical support",
+"source: Dehaene, Izard, Pica & Spelke (2006). Core knowledge of geometry in an Amazonian indigene group. Science 311(5759):381-384. DOI 10.1126/science.1121739.",
+"source: Pica, Lemer, Izard & Dehaene (2004). Exact and approximate arithmetic in an Amazonian indigene group. Science 306(5695):499-503."
+]
+},
+"innate-recognition": {
+"title": "Innate signal recognition",
+"code": "amodal / semantic-pragmatic / tier A",
+"body": "signals recognized with little or no learning (baby schema; prepared snake/spider fear). some communicative bandwidth is pre-installed at the species level, not culturally taught.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: developmental and cross-species recognition studies",
+"source: Lorenz, K. (1943). Die angeborenen Formen moeglicher Erfahrung (the Kindchenschema). Zeitschrift fuer Tierpsychologie 5(2):235-409.",
+"source: Ohman, A. & Mineka, S. (2001). Fears, phobias, and preparedness. Psychological Review 108(3):483-522.",
+"source: Gould, S. J. (1979). Mickey Mouse Meets Konrad Lorenz. Natural History 88(5):30-36."
+]
+},
+"high-context-encoding": {
+"title": "High- vs low-context encoding",
+"code": "amodal / discourse / tier A",
+"body": "the fraction of meaning carried by situation and relationship vs explicit words. cultures and registers differ in how much is verbalized vs contextually inferred (a bandwidth split).",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "discourse",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: contested; Hall's framework is influential but empirically under-tested",
+"source: Hall, E. T. (1976). Beyond Culture. Anchor Press/Doubleday."
+]
+},
+"recursion-affordance": {
+"title": "Recursion as an affordance",
+"code": "amodal / syntactic / tier A",
+"body": "whether a language affords embedding structures inside structures without bound. claimed universal (unbounded expressive capacity); the Piraha case contests it.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "syntactic",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: grammaticality of center-embedding; contested (Everett vs Nevins et al.)",
+"source: Everett, D. L. (2005). Cultural constraints on grammar and cognition in Piraha. Current Anthropology 46(4):621-646.",
+"source: Nevins, Pesetsky & Rodrigues (2009). Piraha exceptionality: a reassessment. Language 85(2):355-404."
+]
+},
+"prosody-structure": {
+"title": "Prosodic structure (focus, phrasing)",
+"code": "paralinguistic / discourse / tier B",
+"body": "intonation and timing that mark focus, phrase boundaries, and turn-taking. prosody is the spoken analogue of punctuation; it groups and weights information.",
+"meta": {
+"status": "hard",
+"modality": "paralinguistic",
+"level": "discourse",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: F0/duration/intensity contour analysis"
+]
+},
+"tone-of-voice": {
+"title": "Tone of voice (vocal affect)",
+"code": "paralinguistic / semantic-pragmatic / tier B",
+"body": "affective and attitudinal information carried by voice quality. a parallel affect channel riding on speech; gradient, not segmental (fails the duality gate).",
+"meta": {
+"status": "open",
+"modality": "paralinguistic",
+"level": "semantic-pragmatic",
+"tier": "B"
+},
+"rel": [
+"facial-affect"
+],
+"notes": [
+"measure: acoustic affect features; perceptual ratings"
+]
+},
+"whistled-speech": {
+"title": "Whistled speech",
+"code": "speech / channel / tier B",
+"body": "speech transposed to a whistled carrier (Silbo Gomero, Kus dili). tests how much linguistic information survives a drastically reduced acoustic channel.",
+"meta": {
+"status": "open",
+"modality": "speech",
+"level": "channel",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: intelligibility and information rate of whistled vs spoken renditions",
+"source: Meyer, J. (2015). Whistled Languages: A Worldwide Inquiry on Human Whistled Speech. Springer."
+]
+},
+"drum-language": {
+"title": "Talking drums",
+"code": "speech / channel / tier B",
+"body": "linguistic messages sent by mapping the tone and rhythm of a tonal language to drums. another reduced carrier; redundancy and stock phrases compensate for the lost segmental detail.",
+"meta": {
+"status": "open",
+"modality": "speech",
+"level": "channel",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: message reconstruction rate; redundancy analysis",
+"source: Carrington, J. F. (1949). A Comparative Study of Some Central African Gong-Languages. Falk."
+]
+},
+"sign-phonology": {
+"title": "Sign phonology (sublexical units)",
+"code": "sign / phonological / tier A",
+"body": "handshape, location, and movement as the meaningless recombinable units of sign. establishes sign as doubly articulated, hence a full language and not pantomime (Stokoe's result).",
+"meta": {
+"status": "open",
+"modality": "sign",
+"level": "phonological",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: minimal-pair analysis of sign parameters",
+"source: Stokoe, W. C. (1960). Sign Language Structure. Studies in Linguistics, Occasional Papers 8.",
+"source: Klima, E. & Bellugi, U. (1979). The Signs of Language. Harvard University Press.",
+"source: Brentari, D. (2019). Sign Language Phonology. Cambridge University Press."
+]
+},
+"sign-simultaneity": {
+"title": "Simultaneous morphology",
+"code": "sign / morphological / tier A",
+"body": "space, classifiers, and movement that encode several meaning components at once. the visual modality can pack parallel information that speech must serialize, a possible bandwidth edge.",
+"meta": {
+"status": "open",
+"modality": "sign",
+"level": "morphological",
+"tier": "A"
+},
+"rel": [
+"sign-information-rate"
+],
+"notes": [
+"measure: classifier and agreement-verb analysis",
+"source: Brentari, D. (2019). Sign Language Phonology. Cambridge University Press."
+]
+},
+"gesture-emblems": {
+"title": "Emblems (conventional gestures)",
+"code": "gesture / lexical / tier A",
+"body": "gestures with fixed conventional meaning (thumbs-up, the ok sign) on the Kendon continuum. the point on the continuum where gesture becomes language-like (listable, conventional) vs imagistic.",
+"meta": {
+"status": "open",
+"modality": "gesture",
+"level": "lexical",
+"tier": "A"
+},
+"rel": [
+"gesture-motion-semantics"
+],
+"notes": [
+"measure: catalog of conventional form-meaning pairs per culture",
+"source: Kendon, A. (2004). Gesture: Visible Action as Utterance. Cambridge University Press."
+]
+},
+"redundancy": {
+"title": "Redundancy",
+"code": "amodal / rhetorical / tier B",
+"body": "deliberate restatement that trades efficiency for reliability over a noisy channel. the lever every reduced channel (drums, whistles, sign) pulls; bandwidth is not just raw capacity.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "rhetorical",
+"tier": "B"
+},
+"rel": [
+"drum-language"
+],
+"notes": [
+"measure: compression ratio; repeated-content detection",
+"source: Shannon, C. E. (1948). A Mathematical Theory of Communication. Bell System Technical Journal 27."
+]
+},
+"given-new-structure": {
+"title": "Given-new ordering",
+"code": "writing / rhetorical / tier B",
+"body": "ordering known information before new information within and across sentences. information packaging controls how easily an idea lands; mis-ordering raises processing cost.",
+"meta": {
+"status": "open",
+"modality": "writing",
+"level": "rhetorical",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: information-status annotation; entity-given/new tagging",
+"source: Halliday, M. A. K. (1985). Spoken and Written Language. Deakin University Press."
+]
+},
+"argument-structure": {
+"title": "Argument structure",
+"code": "writing / rhetorical / tier B",
+"body": "the claim / evidence / warrant scaffolding that binds sentences into an argument. this is where an idea actually gets conveyed at length; the rhetorical-relation graph (RST).",
+"meta": {
+"status": "open",
+"modality": "writing",
+"level": "rhetorical",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: rhetorical structure parsing (RST trees)",
+"source: Mann, W. C. & Thompson, S. A. (1988). Rhetorical Structure Theory. Text 8(3):243-281."
+]
+},
+"exemplification": {
+"title": "Examples and analogy",
+"code": "amodal / rhetorical / tier B",
+"body": "conveying an abstract idea by mapping it to a concrete or familiar one. often the highest-bandwidth move for hard concepts; orthogonal to literal density.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "rhetorical",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: example/analogy detection; comprehension gain"
+]
+},
+"hedging-stance": {
+"title": "Hedging and stance",
+"code": "writing / rhetorical / tier B",
+"body": "epistemic markers (maybe, clearly, suggests) that signal certainty and stance. carries the speaker's confidence, a real information layer above the proposition.",
+"meta": {
+"status": "open",
+"modality": "writing",
+"level": "rhetorical",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: hedge/booster lexicon density"
+]
+},
+"connective-density": {
+"title": "Connective density",
+"code": "writing / discourse / tier B",
+"body": "frequency of conjunctions and discourse connectives (because, however, then). connectives make relations between propositions explicit rather than left to inference.",
+"meta": {
+"status": "hard",
+"modality": "writing",
+"level": "discourse",
+"tier": "B"
+},
+"rel": [
+"cohesion"
+],
+"notes": [
+"measure: connective-lexicon density",
+"source: Halliday, M. A. K. (1985). Spoken and Written Language. Deakin University Press."
+]
+},
+"gaze-turntaking": {
+"title": "Eye gaze (turn-taking)",
+"code": "facial / discourse / tier B",
+"body": "gaze direction that regulates turns and signals attention in face-to-face talk. a visual discourse channel with no spoken equivalent; carries the conversational traffic control.",
+"meta": {
+"status": "open",
+"modality": "facial",
+"level": "discourse",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: gaze annotation aligned to turn boundaries",
+"source: Kendon, A. (2004). Gesture: Visible Action as Utterance. Cambridge University Press."
+]
+},
+"beat-gesture": {
+"title": "Beat gestures",
+"code": "gesture / discourse / tier B",
+"body": "rhythmic hand beats that mark emphasis and information structure. prosody-like structuring in the manual channel, parallel to stress in speech.",
+"meta": {
+"status": "open",
+"modality": "gesture",
+"level": "discourse",
+"tier": "B"
+},
+"rel": [
+"prosody-structure"
+],
+"notes": [
+"measure: beat detection aligned to prosodic peaks",
+"source: McNeill, D. (2005). Gesture and Thought. University of Chicago Press."
+]
+},
+"function-word-ratio": {
+"title": "Function-word ratio",
+"code": "writing / lexical / tier B",
+"body": "share of tokens that are function words rather than content words. isolating languages carry grammar in separate function words (high); agglutinative fold it into affixes (low).",
+"meta": {
+"status": "hard",
+"modality": "writing",
+"level": "lexical",
+"tier": "B"
+},
+"rel": [
+"lexical-density"
+],
+"notes": [
+"measure: POS-tag, function/total ratio (needs per-language lists)"
+]
+},
+"polysemy": {
+"title": "Polysemy load",
+"code": "writing / lexical / tier A",
+"body": "how many distinct senses a word form carries. ambiguity the reader must resolve from context; higher polysemy shifts load to inference.",
+"meta": {
+"status": "open",
+"modality": "writing",
+"level": "lexical",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: sense counts (WordNet/Wiktionary); contextual disambiguation difficulty"
+]
+},
+"implicature": {
+"title": "Conversational implicature",
+"code": "amodal / semantic-pragmatic / tier B",
+"body": "meaning conveyed beyond the literal, inferred via conversational maxims. a large fraction of conveyed meaning is never said; pure off-channel bandwidth.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "semantic-pragmatic",
+"tier": "B"
+},
+"rel": [
+"high-context-encoding"
+],
+"notes": [
+"measure: implicature annotation; inference tasks",
+"source: Grice, H. P. (1975). Logic and Conversation. In Syntax and Semantics 3: Speech Acts."
+]
+},
+"presupposition": {
+"title": "Presupposition",
+"code": "amodal / semantic-pragmatic / tier A",
+"body": "backgrounded assumptions triggered by particular forms (e.g. \"stopped\" presupposes prior). packs information into the background of an utterance, cheaply, via grammatical triggers.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [
+"high-context-encoding"
+],
+"notes": [
+"measure: presupposition-trigger detection",
+"source: Levinson, S. C. (1983). Pragmatics. Cambridge University Press."
+]
+},
+"deixis": {
+"title": "Deixis",
+"code": "amodal / semantic-pragmatic / tier A",
+"body": "reference that depends on context (I, you, here, now, this). offloads information onto the shared situation; ties to high-context encoding.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [
+"high-context-encoding"
+],
+"notes": [
+"measure: deictic-term inventory and resolution",
+"source: Levinson, S. C. (1983). Pragmatics. Cambridge University Press."
+]
+},
+"structural-ambiguity": {
+"title": "Structural ambiguity",
+"code": "writing / syntactic / tier A",
+"body": "parses a grammar permits for one surface string. ambiguity the channel allows; resolved by context, at a comprehension cost.",
+"meta": {
+"status": "open",
+"modality": "writing",
+"level": "syntactic",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: parse-count / attachment-ambiguity rate"
+]
+},
+"phoneme-inventory": {
+"title": "Phoneme inventory size",
+"code": "speech / phonological / tier A",
+"body": "number of contrastive sounds a language uses. bounds information per segment; trades against syllable complexity and rate.",
+"meta": {
+"status": "open",
+"modality": "speech",
+"level": "phonological",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: phoneme counts (PHOIBLE-style inventories)"
+]
+},
+"speech-rate": {
+"title": "Speech rate",
+"code": "speech / phonological / tier A",
+"body": "syllables produced per second. the second factor of the information rate; high rate pairs with low per-syllable density.",
+"meta": {
+"status": "hard",
+"modality": "speech",
+"level": "phonological",
+"tier": "A"
+},
+"rel": [
+"speech-information-rate",
+"syllable-info-density"
+],
+"notes": [
+"measure: syllables/sec from a spoken corpus",
+"source: Pellegrino, Coupe & Marsico (2011). A Cross-Language Perspective on Speech Information Rate. Language 87(3):539-558. DOI 10.1353/lan.2011.0057.",
+"source: Coupe, Oh, Dediu & Pellegrino (2019). Different languages, similar encoding efficiency. Science Advances 5(9):eaaw2594. DOI 10.1126/sciadv.aaw2594."
+]
+},
+"fingerspelling": {
+"title": "Fingerspelling",
+"code": "sign / lexical / tier B",
+"body": "spelling spoken-language words letter by letter on the hands. a borrowing channel into sign; the contact point between signed and written modalities.",
+"meta": {
+"status": "open",
+"modality": "sign",
+"level": "lexical",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: fingerspelling rate vs lexical signing",
+"source: Brentari, D. (2019). Sign Language Phonology. Cambridge University Press."
+]
+},
+"spatial-grammar": {
+"title": "Spatial grammar",
+"code": "sign / syntactic / tier A",
+"body": "use of signing space to set up referents and mark agreement. a syntactic resource with no spoken analogue; encodes relations geometrically.",
+"meta": {
+"status": "open",
+"modality": "sign",
+"level": "syntactic",
+"tier": "A"
+},
+"rel": [
+"sign-simultaneity"
+],
+"notes": [
+"measure: loci/agreement-verb analysis",
+"source: Sandler, W. & Lillo-Martin, D. (2006). Sign Language and Linguistic Universals. Cambridge University Press."
+]
+},
+"braille": {
+"title": "Braille",
+"code": "tactile / channel / tier A",
+"body": "writing rendered as raised six-dot cells read by touch. the tactile encoding of writing; channel cost in cells, and recruits visual cortex in readers.",
+"meta": {
+"status": "open",
+"modality": "tactile",
+"level": "channel",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: cells per aligned unit; reading rate",
+"source: Sadato, N. et al. (1996). Activation of the primary visual cortex by Braille reading in blind subjects. Nature 380:526-528. DOI 10.1038/380526a0."
+]
+},
+"math-notation": {
+"title": "Mathematical notation",
+"code": "iconographic / syntactic / tier A",
+"body": "a compositional, productive symbol system for formal relations. unlike emoji, notation passes the duality gate; an iconographic system that is fully language-grade.",
+"meta": {
+"status": "open",
+"modality": "iconographic",
+"level": "syntactic",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: parse structure; symbol-per-proposition density"
+]
+},
+"logograph-information": {
+"title": "Logographic information",
+"code": "iconographic / lexical / tier A",
+"body": "morpheme-level meaning carried by a single character (Chinese hanzi). very high information per glyph; the reason CJK is short on screen yet dense (ties to the tokenizer tax).",
+"meta": {
+"status": "open",
+"modality": "iconographic",
+"level": "lexical",
+"tier": "A"
+},
+"rel": [
+"tokenizer-tax-tir"
+],
+"notes": [
+"measure: bits per glyph; morphemes per character"
+]
+},
+"loudness-emphasis": {
+"title": "Loudness and emphasis",
+"code": "paralinguistic / discourse / tier B",
+"body": "amplitude and stress used to foreground parts of an utterance. a continuous channel marking what matters; the spoken counterpart of bold/italics.",
+"meta": {
+"status": "open",
+"modality": "paralinguistic",
+"level": "discourse",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: intensity peaks aligned to focus"
+]
+},
+"embedding-alignment": {
+"title": "Cross-lingual embedding alignment",
+"code": "writing / semantic-pragmatic / tier A",
+"body": "how tightly a model's embedding space places the SAME meaning across languages (mean pairwise cosine of aligned texts). the \"geometry\" half of plumbing+geometry; non-English meaning scatters unless the model is built to align.",
+"meta": {
+"status": "done",
+"modality": "writing",
+"level": "semantic-pragmatic",
+"tier": "A",
+"lingbench": "vertical.udhr_geometry"
+},
+"rel": [
+"tokenizer-tax-tir"
+],
+"notes": [
+"measure: cosine geometry of UDHR Article 1 across the 10 languages (see Benchmark-Findings)",
+"source: Petrov, La Malfa, Torr & Bibi (2023). Language Model Tokenizers Introduce Unfairness Between Languages. NeurIPS 36. arXiv:2305.15425."
+]
+},
+"typographic-connotation": {
+"title": "Typographic connotation",
+"code": "writing / semantic-pragmatic / tier B",
+"body": "affective/semantic meaning a typeface carries beyond the words (personality, formality, ideology). a parallel meaning channel in writing; the same words in a different font transmit a different message (see Josh-ideas/).",
+"meta": {
+"status": "open",
+"modality": "writing",
+"level": "semantic-pragmatic",
+"tier": "B"
+},
+"rel": [
+"tone-of-voice",
+"facial-affect"
+],
+"notes": [
+"measure: semantic-differential ratings; congruence/credibility studies",
+"source: Shaikh, A. D. & Chaparro, B. S. (2007). Psychology of onscreen type: typeface personality, appropriateness, and font selection. (typeface-personality literature)."
+]
+},
+"sign-type-peircean": {
+"title": "Sign type (icon / index / symbol)",
+"code": "amodal / semantic-pragmatic / tier A",
+"body": "Peirce's classification of the form-meaning relation as resemblance (icon), correlation (index), or convention (symbol). the same idea conveyed as icon, index, or symbol carries a different prior-knowledge cost to decode.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"source: Eco, U. (1976). A Theory of Semiotics. Indiana University Press."
+]
+},
+"iconicity-degree": {
+"title": "Iconicity degree",
+"code": "amodal / lexical / tier B",
+"body": "where a form sits on the arbitrary-to-iconic continuum. iconic forms are partly guessable without prior convention; arbitrariness is the baseline null.",
+"meta": {
+"status": "hard",
+"modality": "amodal",
+"level": "lexical",
+"tier": "B"
+},
+"rel": [
+"sign-type-peircean"
+],
+"notes": [
+"source: Dingemanse, Blasi, Lupyan, Monaghan & Christiansen (2015). Arbitrariness, Iconicity, and Systematicity in Language. Trends in Cognitive Sciences 19(10):603-615. DOI 10.1016/j.tics.2015.07.013.",
+"source: Perniss, Thompson & Vigliocco (2010). Iconicity as a general property of language. Frontiers in Psychology 1:227. DOI 10.3389/fpsyg.2010.00227."
+]
+},
+"sound-symbolism-strength": {
+"title": "Sound-symbolism strength",
+"code": "speech / phonological / tier A",
+"body": "systematic non-arbitrary association between sound and meaning, such as the bouba/kiki shape mapping. a thin but real universal signal under lexical arbitrariness, replicable across cultures and scripts.",
+"meta": {
+"status": "hard",
+"modality": "speech",
+"level": "phonological",
+"tier": "A"
+},
+"rel": [
+"iconicity-degree"
+],
+"notes": [
+"source: Blasi, Wichmann, Hammarstrom, Stadler & Christiansen (2016). Sound-meaning association biases evidenced across thousands of languages. PNAS 113(39):10818-10823. DOI 10.1073/pnas.1605782113.",
+"source: Cwiek, Fuchs, Draxler et al. (2021). The bouba/kiki effect is robust across cultures and writing systems. Phil. Trans. R. Soc. B 376:20200390. DOI 10.1098/rstb.2020.0390.",
+"source: Ramachandran, V. S. & Hubbard, E. M. (2001). Synaesthesia: a window into perception, thought and language. Journal of Consciousness Studies 8(12):3-34."
+]
+},
+"cross-cultural-decipherability": {
+"title": "Cross-cultural decipherability",
+"code": "amodal / semantic-pragmatic / tier B",
+"body": "fraction of intended meaning a person outside the source language or culture can recover unaided. a literal cross-lingual bandwidth number, measurable via ideophone-guessing and icon-comprehension studies.",
+"meta": {
+"status": "hard",
+"modality": "amodal",
+"level": "semantic-pragmatic",
+"tier": "B"
+},
+"rel": [
+"iconicity-degree"
+],
+"notes": [
+"source: Dingemanse, Schuerman, Reinisch, Tufvesson & Mitterer (2016). What sound symbolism can and cannot do. Language 92(2):e117-e133. DOI 10.1353/lan.2016.0034.",
+"source: Zender, M. & Cassedy, A. (2014). (Mis)understanding: Icon comprehension in different cultural contexts. Visible Language 48(1)."
+]
+},
+"visual-narrative-grammar": {
+"title": "Visual narrative grammar",
+"code": "iconographic / syntactic / tier A",
+"body": "rule-governed structure of sequential images (comics panels) analogous to linguistic syntax. pictorial storytelling has a grammar, not just a sequence of pictures.",
+"meta": {
+"status": "open",
+"modality": "iconographic",
+"level": "syntactic",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"source: Cohn, N. (2012). Visual narrative structure. Cognitive Science 37(3):413-452. DOI 10.1111/cogs.12016."
+]
+},
+"archetypal-universality": {
+"title": "Archetypal universality (contested)",
+"code": "amodal / semantic-pragmatic / tier B",
+"body": "claimed innate cross-human symbols shared via a collective unconscious (Jungian archetypes). included as the failed STRONG form of universal meaning; non-empirical and unfalsifiable, kept for honesty, not as evidence.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "semantic-pragmatic",
+"tier": "B"
+},
+"rel": [
+"innate-recognition"
+],
+"notes": [
+"source: Jung, C. G. (1959). The Archetypes and the Collective Unconscious. CONTESTED: cited as the historical origin of the universal-symbol claim; the construct is non-empirical and unfalsifiable."
+]
+},
+"prosodic-syntactic-overlay": {
+"title": "Prosodic-syntactic overlay (cantillation)",
+"code": "writing / syntactic / tier A",
+"body": "diacritic marks that encode a recursive binary parse tree over text, as in the Hebrew te'amim disjunctive hierarchy. a notation layer that behaves as a formal parser; the accents both punctuate and mark phrase structure.",
+"meta": {
+"status": "open",
+"modality": "writing",
+"level": "syntactic",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"source: Wickes, W. (1881/1887). A Treatise on the Accentuation of the Three Poetical Books / the Twenty-One Prose Books of the Old Testament. Clarendon Press, Oxford.",
+"source: Price, J. D. (1990). The Syntax of Masoretic Accents in the Hebrew Bible. Edwin Mellen Press."
+]
+},
+"multichannel-overlay": {
+"title": "Multi-channel overlay (one mark, many channels)",
+"code": "amodal / discourse / tier A",
+"body": "a single signal that transmits several independent channels simultaneously, as te'amim carry parse plus stress plus melody. captures the bandwidth multiplier of overlaying channels on one mark versus three separate notations.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "discourse",
+"tier": "A"
+},
+"rel": [
+"prosodic-syntactic-overlay",
+"redundancy"
+],
+"notes": [
+"source: Khan, G. (2020). The Tiberian Pronunciation Tradition of Biblical Hebrew. Open Book Publishers. DOI 10.11647/obp.0163."
+]
+},
+"underspecified-notation": {
+"title": "Underspecified notation (oral completion)",
+"code": "amodal / channel / tier A",
+"body": "notation that fixes some channels but needs an external oral tradition or codebook to instantiate the rest, as the te'amim fix parse and stress but leave the melody to tradition. a written invariant completed by an oral variable; a lossy code finished by a human codebook.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "channel",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"source: Khan, G. (2020). The Tiberian Pronunciation Tradition of Biblical Hebrew. Open Book Publishers. DOI 10.11647/obp.0163.",
+"source: Haik-Vantoura, S. (1976/1991). The Music of the Bible Revealed. CONTESTED: melodic reconstruction from the accents, largely rejected by scholars as anachronistic."
+]
+},
+"music-notation-system": {
+"title": "Music notation system",
+"code": "music / channel / tier A",
+"body": "the symbolic system that encodes music (neume, staff, mensural, tablature, MEI, MusicXML). a code with measurable expressive completeness, directly parallel to text tokenizers and serialization formats.",
+"meta": {
+"status": "open",
+"modality": "music",
+"level": "channel",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"source: Rankin, S. (2018). Writing Sounds in Carolingian Europe: The Invention of Musical Notation. Cambridge University Press. DOI 10.1017/9781108368605.",
+"source: Kelly, T. F. (2014). Capturing Music: The Story of Notation. W. W. Norton.",
+"source: Roland, Hankinson & Pugin (2014). Early music and the Music Encoding Initiative. Early Music 42(4):605-611. DOI 10.1093/em/cau098."
+]
+},
+"score-underdetermination": {
+"title": "Score under-determination (notation lossiness)",
+"code": "music / channel / tier B",
+"body": "how much a written score leaves unspecified (timing, dynamics, timbre, articulation) for the performer to supply. the music-channel analog of lossy compression; the gap between symbol and sound never fully closes.",
+"meta": {
+"status": "hard",
+"modality": "music",
+"level": "channel",
+"tier": "B"
+},
+"rel": [
+"underspecified-notation"
+],
+"notes": [
+"source: Apel, W. (1949/1953). The Notation of Polyphonic Music, 900-1600. Medieval Academy of America."
+]
+},
+"melodic-information": {
+"title": "Melodic information density",
+"code": "music / phonological / tier B",
+"body": "predictability or entropy of a melody, the average information of the next note given context. melody has measurable information density, a channel-capacity analog for the music modality.",
+"meta": {
+"status": "hard",
+"modality": "music",
+"level": "phonological",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"source: Pearce, M. T. & Wiggins, G. A. (2006). Expectation in melody: the influence of context and learning (IDyOM). Music Perception 23(5):377-405. DOI 10.1525/mp.2006.23.5.377.",
+"source: Knopoff, L. & Hutchinson, W. (1983). Entropy as a measure of style: the influence of sample length. Journal of Music Theory 27(1):75-97. DOI 10.2307/843561.",
+"source: Shannon, C. E. (1948). A Mathematical Theory of Communication. Bell System Technical Journal 27."
+]
+},
+"musical-syntax": {
+"title": "Musical syntax (tonal hierarchy)",
+"code": "music / syntactic / tier A",
+"body": "hierarchical, recursive structure in music (cadence, tension and resolution, prolongation). music has structure debated as syntax-like; a non-linguistic test of the recursion affordance.",
+"meta": {
+"status": "open",
+"modality": "music",
+"level": "syntactic",
+"tier": "A"
+},
+"rel": [
+"recursion-affordance"
+],
+"notes": [
+"source: Lerdahl, F. & Jackendoff, R. (1983). A Generative Theory of Tonal Music. MIT Press."
+]
+},
+"musical-affect": {
+"title": "Musical affect",
+"code": "music / semantic-pragmatic / tier A",
+"body": "conveyance of emotion and mood through melody, harmony, tempo, and timbre. the primary meaning channel of music; emotion recognition is partly cross-cultural, partly learned.",
+"meta": {
+"status": "open",
+"modality": "music",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [],
+"notes": []
+},
+"notation-bandwidth-over-time": {
+"title": "Notation bandwidth over time",
+"code": "music / channel / tier A",
+"body": "the historical growth of information a notation encodes, from contour-only neumes to pitch (staff) to pitch-plus-rhythm (mensural) to digital. a channel-capacity growth series running across the whole history of music notation.",
+"meta": {
+"status": "open",
+"modality": "music",
+"level": "channel",
+"tier": "A"
+},
+"rel": [
+"music-notation-system"
+],
+"notes": [
+"source: Rankin, S. (2018). Writing Sounds in Carolingian Europe: The Invention of Musical Notation. Cambridge University Press. DOI 10.1017/9781108368605.",
+"source: Hagel, S. (2010). Ancient Greek Music: A New Technical History. Cambridge University Press. DOI 10.1017/cbo9780511691591."
+]
+},
+"notation-decode": {
+"title": "Notation decode (optical music recognition)",
+"code": "music / channel / tier B",
+"body": "automated recovery of machine-readable music from an image of notation. decipherment of the notation code; a decode benchmark for the symbolic music channel.",
+"meta": {
+"status": "hard",
+"modality": "music",
+"level": "channel",
+"tier": "B"
+},
+"rel": [
+"music-notation-system"
+],
+"notes": [
+"source: Calvo-Zaragoza, Hajic Jr. & Pacha (2020). Understanding Optical Music Recognition. ACM Computing Surveys 53(4). DOI 10.1145/3397499."
+]
+},
+"decipherment-recoverability": {
+"title": "Decipherment recoverability",
+"code": "writing / channel / tier B",
+"body": "how much meaning can be recovered from an under-determined or unknown code, from solved (Linear B) to open (Voynich, rongorongo). redundancy is what makes decipherment possible; this is the recoverability axis of a code.",
+"meta": {
+"status": "open",
+"modality": "writing",
+"level": "channel",
+"tier": "B"
+},
+"rel": [],
+"notes": []
+},
+"no-shared-code-message": {
+"title": "No-shared-code message",
+"code": "amodal / semantic-pragmatic / tier B",
+"body": "messages designed to be understood with no prior shared convention, such as Lincos and the Arecibo and Pioneer messages. decipherment in reverse; tests what meaning can bootstrap from first principles alone.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "semantic-pragmatic",
+"tier": "B"
+},
+"rel": [],
+"notes": []
+},
+"lexical-minimalism": {
+"title": "Lexical minimalism",
+"code": "amodal / lexical / tier B",
+"body": "deliberately tiny vocabularies that force meaning through abstraction and combination, as in Damin (~200 words) and Toki Pona (~120). a floor on how few units can still convey arbitrary meaning; compression by abstraction.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "lexical",
+"tier": "B"
+},
+"rel": [],
+"notes": []
+},
+"morphological-packing-ceiling": {
+"title": "Morphological packing ceiling",
+"code": "amodal / morphological / tier A",
+"body": "the upper bound of meaning packed into a single word, from natural polysynthesis to the engineered maximum of Ithkuil. brackets the morphological-packing axis from above; one word can equal a whole sentence.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "morphological",
+"tier": "A"
+},
+"rel": [
+"morphemes-per-word"
+],
+"notes": []
+},
+"material-encoding": {
+"title": "Material encoding (quipu, wampum, tallies)",
+"code": "tactile / channel / tier A",
+"body": "ideas encoded in physical objects rather than marks, such as Inca quipu knots, wampum belts, tally sticks, and message sticks. durable, pre- and para-literate information storage; a channel that is read by hand and eye, not voice.",
+"meta": {
+"status": "open",
+"modality": "tactile",
+"level": "channel",
+"tier": "A"
+},
+"rel": [],
+"notes": []
+},
+"gesture-development-pointing": {
+"title": "Prelinguistic pointing",
+"code": "gesture / semantic-pragmatic / tier B",
+"body": "the deictic point that infants produce before speech to direct another's attention to a referent. reference exists as a gesture before it exists as a word; infant pointing even serves an interrogative (\"what is that?\") function.",
+"meta": {
+"status": "open",
+"modality": "gesture",
+"level": "semantic-pragmatic",
+"tier": "B"
+},
+"rel": [
+"deixis",
+"joint-attention"
+],
+"notes": [
+"source: Tomasello, M., Carpenter, M. & Liszkowski, U. (2007). A New Look at Infant Pointing. Child Development 78(3):705-722. DOI 10.1111/j.1467-8624.2007.01025.x.",
+"source: Begus, K. & Southgate, V. (2012). Infant pointing serves an interrogative function. Developmental Science 15(5):611-617. DOI 10.1111/j.1467-7687.2012.01160.x."
+]
+},
+"joint-attention": {
+"title": "Joint attention",
+"code": "amodal / discourse / tier A",
+"body": "the shared-attention substrate (gaze-following, pointing, checking back) on which referential communication is built. coordinating attention to the same thing is the precondition for reference; its onset at ~9-12 months predicts later vocabulary growth.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "discourse",
+"tier": "A"
+},
+"rel": [
+"gesture-development-pointing",
+"gaze-turntaking"
+],
+"notes": [
+"source: Carpenter, M., Nagell, K. & Tomasello, M. (1998). Social cognition, joint attention, and communicative competence from 9 to 15 months. Monographs SRCD 63(4). DOI 10.2307/1166214.",
+"source: Brooks, R. & Meltzoff, A. N. (2008). Infant gaze following and pointing predict accelerated vocabulary growth. Journal of Child Language 35(1):207-220. DOI 10.1017/s030500090700829x."
+]
+},
+"emergence-of-grammar": {
+"title": "Emergence of grammar",
+"code": "sign / syntactic / tier A",
+"body": "grammatical structure self-organizing in a new language, observed across cohorts of Nicaraguan Sign Language signers and within Al-Sayyid Bedouin Sign Language. sign is where linguists can watch syntax appear in real time; the clearest evidence that structure comes from the learners, not the input.",
+"meta": {
+"status": "open",
+"modality": "sign",
+"level": "syntactic",
+"tier": "A"
+},
+"rel": [
+"recursion-affordance"
+],
+"notes": [
+"source: Senghas, A., Kita, S. & Ozyurek, A. (2004). Children creating core properties of language: evidence from Nicaraguan Sign Language. Science 305:1779-1782. DOI 10.1126/science.1100199.",
+"source: Sandler, W., Meir, I., Padden, C. & Aronoff, M. (2005). The emergence of grammar: systematic structure in a new language (Al-Sayyid Bedouin SL). PNAS 102(7):2661-2665. DOI 10.1073/pnas.0405448102."
+]
+},
+"facial-affect-universality": {
+"title": "Facial-affect universality (contested)",
+"code": "facial / semantic-pragmatic / tier A",
+"body": "whether discrete facial configurations map to discrete emotions across all human cultures. the live Darwin/Ekman (universal basic emotions) vs Barrett/Russell (constructed, context-dependent) debate; genuinely unresolved.",
+"meta": {
+"status": "open",
+"modality": "facial",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [
+"facial-affect",
+"cross-cultural-decipherability"
+],
+"notes": [
+"source: Darwin, C. (1872). The Expression of the Emotions in Man and Animals. John Murray.",
+"source: Russell, J. A. (1994). Is there universal recognition of emotion from facial expression? A review. Psychological Bulletin 115(1):102-141. DOI 10.1037/0033-2909.115.1.102.",
+"source: Jack, R. E., Garrod, O., Yu, H., Caldara, R. & Schyns, P. (2012). Facial expressions of emotion are not culturally universal. PNAS 109(19):7241-7244. DOI 10.1073/pnas.1200155109.",
+"source: Barrett, L. F., Adolphs, R., Marsella, S., Martinez, A. & Pollak, S. (2019). Emotional expressions reconsidered. Psychological Science in the Public Interest 20(1):1-68. DOI 10.1177/1529100619832930."
+]
+},
+"social-referencing": {
+"title": "Social referencing",
+"code": "facial / semantic-pragmatic / tier B",
+"body": "a pre-verbal child reading a caregiver's facial expression to decide how to act in an ambiguous situation. the face used as a one-bit go/no-go signal; at the visual cliff, 1-year-olds cross if the parent looks happy and freeze if afraid.",
+"meta": {
+"status": "open",
+"modality": "facial",
+"level": "semantic-pragmatic",
+"tier": "B"
+},
+"rel": [
+"facial-affect",
+"joint-attention"
+],
+"notes": [
+"source: Sorce, J. F., Emde, R. N., Campos, J. J. & Klinnert, M. D. (1985). Maternal emotional signaling: its effect on the visual cliff behavior of 1-year-olds. Developmental Psychology 21(1):195-200. DOI 10.1037/0012-1649.21.1.195."
+]
+},
+"neonatal-imitation": {
+"title": "Neonatal imitation (contested)",
+"code": "facial / semantic-pragmatic / tier A",
+"body": "the claim that newborns reproduce observed facial gestures (e.g. tongue protrusion). would imply an innate perception-to-production link for the facial channel; a large 2016 longitudinal study failed to replicate it, so it is genuinely disputed.",
+"meta": {
+"status": "open",
+"modality": "facial",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [
+"facial-affect-development"
+],
+"notes": [
+"source: Meltzoff, A. N. & Moore, M. K. (1977). Imitation of facial and manual gestures by human neonates. Science 198(4312):75-78. DOI 10.1126/science.198.4312.75.",
+"source: Oostenbroek, J. et al. (2016). Comprehensive longitudinal study challenges the existence of neonatal imitation in humans. Current Biology 26(10):1334-1338. DOI 10.1016/j.cub.2016.03.047. (failed replication of Meltzoff & Moore 1977)."
+]
+},
+"facial-affect-development": {
+"title": "Facial-affect development",
+"code": "facial / semantic-pragmatic / tier B",
+"body": "how infants come to discriminate and categorize facial expressions over the first year. 7-month-olds already perceive expressions categorically, not as a continuum; tracks the facial channel coming online.",
+"meta": {
+"status": "open",
+"modality": "facial",
+"level": "semantic-pragmatic",
+"tier": "B"
+},
+"rel": [
+"facial-affect"
+],
+"notes": [
+"source: Kotsoni, E., de Haan, M. & Johnson, M. H. (2001). Categorical perception of facial expressions by 7-month-old infants. Perception 30(9):1115-1125. DOI 10.1068/p3155."
+]
+},
+"facial-affect-primate": {
+"title": "Facial affect in primates (comparative)",
+"code": "facial / semantic-pragmatic / tier A",
+"body": "facial expression and musculature shared with other primates, measured by cross-species FACS. chimpanzees share most of our facial action units, so the affect channel predates our species.",
+"meta": {
+"status": "open",
+"modality": "facial",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [
+"facial-affect"
+],
+"notes": [
+"source: Vick, S. J., Waller, B. M., Parr, L. A., Smith Pasqualini, M. C. & Bard, K. A. (2006). A cross-species comparison of facial morphology and movement using FACS (ChimpFACS). Journal of Nonverbal Behavior 30:1-20. DOI 10.1007/s10919-006-0017-z.",
+"source: Parr, L. A., Waller, B. M., Vick, S. J. & Bard, K. A. (2007). Classifying chimpanzee facial expressions using muscle action. Emotion 7(1):172-181. DOI 10.1037/1528-3542.7.1.172."
+]
+},
+"gesture-primate": {
+"title": "Gesture in great apes (comparative)",
+"code": "gesture / semantic-pragmatic / tier A",
+"body": "the large repertoire of intentional manual gestures great apes use to communicate. situates human co-speech gesture in a primate lineage; apes deploy gestures flexibly and on purpose.",
+"meta": {
+"status": "open",
+"modality": "gesture",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [
+"gesture-motion-semantics"
+],
+"notes": [
+"source: Byrne, R. W., Cartmill, E., Genty, E., Graham, K. E., Hobaiter, C. & Tanner, J. (2017). Great ape gestures: intentional communication with a rich set of innate signals. Animal Cognition 20:755-769. DOI 10.1007/s10071-017-1096-4.",
+"source: Call, J. & Tomasello, M. (eds.) (2007). The Gestural Communication of Apes and Monkeys. Lawrence Erlbaum / Psychology Press."
+]
+},
+"classifier-predicates": {
+"title": "Classifier predicates",
+"code": "sign / morphological / tier A",
+"body": "handshapes that stand for object classes and depict their location and motion within a single sign. a productive depicting morphology unique to the visual modality, sitting on the gradient between morphology and gesture.",
+"meta": {
+"status": "open",
+"modality": "sign",
+"level": "morphological",
+"tier": "A"
+},
+"rel": [
+"sign-simultaneity"
+],
+"notes": [
+"source: Sandler, W. & Lillo-Martin, D. (2006). Sign Language and Linguistic Universals. Cambridge University Press.",
+"source: Brentari, D. (2019). Sign Language Phonology. Cambridge University Press."
+]
+},
+"alternate-sign-lingua-franca": {
+"title": "Alternate sign lingua franca",
+"code": "sign / lexical / tier A",
+"body": "manual sign systems used by hearing communities for contact or during speech taboos, such as Plains Indian Sign Talk. shows the visual-manual modality recruited as a cross-language bridge; ranges from full languages to lexical codes.",
+"meta": {
+"status": "open",
+"modality": "sign",
+"level": "lexical",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"source: Farnell, B. (1995). Do You See What I Mean? Plains Indian Sign Talk and the Embodiment of Action. Univ. of Texas Press."
+]
+},
+"writing-system-type": {
+"title": "Writing-system type",
+"code": "writing / channel / tier A",
+"body": "the typological class of a script - logographic, syllabary, abjad, abugida, alphabet, or featural. the top-level trade-off between symbol-inventory size and per-symbol payload; sets the script's whole encoding strategy.",
+"meta": {
+"status": "hard",
+"modality": "writing",
+"level": "channel",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: lookup per language by ISO 15924 script and reference typology",
+"source: Daniels, P. T. & Bright, W. (eds.) (1996). The World's Writing Systems. Oxford University Press.",
+"source: Coulmas, F. (2003). Writing Systems: An Introduction to Their Linguistic Analysis. Cambridge University Press."
+]
+},
+"symbol-inventory-size": {
+"title": "Symbol-inventory size",
+"code": "writing / channel / tier A",
+"body": "count of distinct symbols a script uses (per-text proxy = distinct grapheme clusters). separates the script types numerically - alphabets ~20-40, syllabaries ~50-100s, logographies in the thousands.",
+"meta": {
+"status": "done",
+"modality": "writing",
+"level": "channel",
+"tier": "A",
+"lingbench": "util.symbol_inventory_size"
+},
+"rel": [
+"writing-system-type"
+],
+"notes": [
+"measured (UDHR): EN 47 types · 47-529 (English-Mandarin (Simplified)), n=10",
+"measure: distinct grapheme clusters over NFC text",
+"source: Daniels, P. T. & Bright, W. (eds.) (1996). The World's Writing Systems. Oxford University Press."
+]
+},
+"orthographic-depth": {
+"title": "Orthographic depth",
+"code": "writing / phonological / tier A",
+"body": "how predictably pronunciation follows from spelling (feedforward) and spelling from pronunciation (feedback). shallow scripts (Finnish, Spanish) map one letter to one sound; deep ones (English, French) are irregular and cost ~2x longer to learn to read.",
+"meta": {
+"status": "hard",
+"modality": "writing",
+"level": "phonological",
+"tier": "A"
+},
+"rel": [
+"grapheme-phoneme-entropy"
+],
+"notes": [
+"measure: G2P entropy / consistency from a pronunciation lexicon (WikiPron)",
+"source: Katz, L. & Frost, R. (1992). The Orthographic Depth Hypothesis. Advances in Psychology 94:67-84. DOI 10.1016/s0166-4115(08)62789-2.",
+"source: Schmalz, V., Marinus, E., Coltheart, M. & Castles, A. (2015). Getting to the bottom of orthographic depth. Psychonomic Bulletin & Review 22:1614-1629. DOI 10.3758/s13423-015-0835-2.",
+"source: Seymour, P. H. K., Aro, M. & Erskine, J. M. (2003). Foundation literacy acquisition in European orthographies. British Journal of Psychology 94(2):143-174. DOI 10.1348/000712603321661859."
+]
+},
+"grapheme-phoneme-entropy": {
+"title": "Grapheme-phoneme entropy",
+"code": "writing / phonological / tier A",
+"body": "Shannon entropy of the grapheme-to-phoneme distribution, in bits per grapheme (feedforward) or phoneme (feedback). a concrete, computable number for orthographic depth; the feedforward/feedback split distinguishes reading from spelling difficulty.",
+"meta": {
+"status": "open",
+"modality": "writing",
+"level": "phonological",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: align graphemes to phonemes (WikiPron), compute -sum p log2 p per symbol",
+"source: Borgwaldt, S. R., Hellwig, F. M. & De Groot, A. M. B. (2005). Onset entropy matters - letter-to-phoneme mappings in seven languages. Written Language & Literacy 8(2). DOI 10.1075/wll.7.2.03bor.",
+"source: Siegelman, N., Kearns, D. M. & Rueckl, J. G. (2020). Using information-theoretic measures to characterize the structure of the writing system: orthographic-phonological regularities in English. Behavior Research Methods 52:1292-1312. DOI 10.3758/s13428-019-01317-y."
+]
+},
+"orthography-tokenizer-bridge": {
+"title": "Orthography-to-tokenizer bridge",
+"code": "writing / channel / tier A",
+"body": "whether a script's depth, symbol-inventory size, and per-character entropy predict its LLM tokenizer fertility. tests if the human reading cost of a writing system and the machine tokenizer tax share a cause; a novel computable correlation.",
+"meta": {
+"status": "open",
+"modality": "writing",
+"level": "channel",
+"tier": "A"
+},
+"rel": [
+"subword-fertility",
+"orthographic-depth"
+],
+"notes": [
+"measure: correlate o200k fertility vs depth / inventory / char-entropy across UDHR languages",
+"source: Rust, P., Pfeiffer, J., Vulic, I., Ruder, S. & Gurevych, I. (2021). How Good is Your Tokenizer? On the Monolingual Performance of Multilingual Language Models. ACL. DOI 10.18653/v1/2021.acl-long.243.",
+"source: Ahia, Kumar, Gonen, Kasai, Mortensen, Smith & Tsvetkov (2023). Do All Languages Cost the Same? Tokenization in the Era of Commercial Language Models. arXiv:2305.13707."
+]
+},
+"numeral-system-type": {
+"title": "Numeral-system type",
+"code": "iconographic / lexical / tier A",
+"body": "the structure of a numeral system - additive, multiplicative, ciphered, or positional (place-value). sets how compactly magnitude is written and how cheaply you can compute with it.",
+"meta": {
+"status": "hard",
+"modality": "iconographic",
+"level": "lexical",
+"tier": "A"
+},
+"rel": [
+"positional-encoding"
+],
+"notes": [
+"measure: classify per Chrisomalis's typology",
+"source: Chrisomalis, S. (2010). Numerical Notation: A Comparative History. Cambridge University Press."
+]
+},
+"positional-encoding": {
+"title": "Positional encoding (representational length)",
+"code": "writing / lexical / tier A",
+"body": "written length of a number as a function of its magnitude across systems. place value plus zero makes length grow with the logarithm of the number, near information-theoretically optimal; unary grows linearly.",
+"meta": {
+"status": "hard",
+"modality": "writing",
+"level": "lexical",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: digit-count for the same value across Roman, decimal, binary, sexagesimal",
+"source: Chrisomalis, S. (2010). Numerical Notation: A Comparative History. Cambridge University Press.",
+"source: Brahmagupta (628 CE). Brahmasphutasiddhanta. First text giving operational rules for zero and negative numbers."
+]
+},
+"zero-as-number": {
+"title": "Zero as a number",
+"code": "amodal / semantic-pragmatic / tier A",
+"body": "whether the system has an explicit zero and treats it as a manipulable number, not just a placeholder gap. zero-as-number (Brahmagupta 628 CE) completes positional notation and makes written arithmetic algorithmic.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [
+"positional-encoding"
+],
+"notes": [
+"source: Brahmagupta (628 CE). Brahmasphutasiddhanta. First text giving operational rules for zero and negative numbers."
+]
+},
+"counting-cap": {
+"title": "Counting ceiling (one-two-many)",
+"code": "speech / lexical / tier A",
+"body": "the largest exact cardinality a language's numeral lexicon can express, from bounded (Piraha one-two-many) to unbounded generative systems. without a numeral code, exact large-number cognition is limited; numerals are a cognitive technology.",
+"meta": {
+"status": "open",
+"modality": "speech",
+"level": "lexical",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"measure: bounded vs generative structure of the numeral lexicon",
+"source: Gordon, P. (2004). Numerical cognition without words: evidence from Amazonia. Science 306(5695):496-499. DOI 10.1126/science.1094492.",
+"source: Frank, M. C., Everett, D. L., Fedorenko, E. & Gibson, E. (2008). Number as a cognitive technology: evidence from Piraha language and cognition. Cognition 108(3):819-824. DOI 10.1016/j.cognition.2008.04.001."
+]
+},
+"mathematical-notation-symbolism": {
+"title": "Mathematical notation symbolism",
+"code": "writing / rhetorical / tier B",
+"body": "the choice of operators and symbolic conventions (=, +, exponents, Leibniz vs Newton calculus) that make some operations cognitively cheap. notation is cognitive technology; good symbolism turns hard reasoning into mechanical manipulation.",
+"meta": {
+"status": "open",
+"modality": "writing",
+"level": "rhetorical",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"source: Cajori, F. (1928-1929). A History of Mathematical Notations (2 vols). Open Court."
+]
+},
+"word-segmentation-spacing": {
+"title": "Word segmentation / spacing",
+"code": "writing / channel / tier A",
+"body": "whether a script marks word boundaries with whitespace, versus scriptio continua or natively unspaced scripts (Chinese, Thai). explicit word gaps are an error-correction layer that lowers parsing cost and, by one major thesis, enabled silent reading.",
+"meta": {
+"status": "hard",
+"modality": "writing",
+"level": "channel",
+"tier": "A"
+},
+"rel": [
+"reading-mode-oral-silent"
+],
+"notes": [
+"measure: presence and regularity of inter-word whitespace in a corpus",
+"source: Saenger, P. (1997). Space Between Words: The Origins of Silent Reading. Stanford University Press. CONTESTED strong silent-reading thesis."
+]
+},
+"reading-mode-oral-silent": {
+"title": "Reading mode (oral vs silent)",
+"code": "amodal / discourse / tier B",
+"body": "whether reading is performed aloud or silently - enabled but not strictly determined by page layout. scriptio continua pushed readers toward voicing the text; word spacing and punctuation made silent, faster reading widespread. CONTESTED (the Saenger debate).",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "discourse",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"source: Saenger, P. (1997). Space Between Words: The Origins of Silent Reading. Stanford University Press. CONTESTED strong silent-reading thesis.",
+"source: Knox, B. M. W. (1968). Silent Reading in Antiquity. Greek, Roman and Byzantine Studies 9:421-435. (counterweight to Saenger)."
+]
+},
+"prosodic-vs-syntactic-punctuation": {
+"title": "Prosodic vs syntactic punctuation",
+"code": "writing / syntactic / tier A",
+"body": "whether a punctuation system primarily encodes breath/intonation for reading aloud or grammatical structure for the eye. punctuation began prosodic (Aristophanes' breath marks) and migrated to syntactic over the medieval and print eras.",
+"meta": {
+"status": "open",
+"modality": "writing",
+"level": "syntactic",
+"tier": "A"
+},
+"rel": [
+"punctuation-profile"
+],
+"notes": [
+"measure: classify marks by prosodic vs syntactic function",
+"source: Parkes, M. B. (1992). Pause and Effect: An Introduction to the History of Punctuation in the West. Univ. of California Press.",
+"source: Scholes, R. J. & Willis, B. J. (1990). Prosodic and syntactic functions of punctuation. Reading and Writing 2(3). DOI 10.1007/bf01809416."
+]
+},
+"paralinguistic-text-substitution": {
+"title": "Paralinguistic text substitution",
+"code": "writing / semantic-pragmatic / tier B",
+"body": "emoji, emoticons, ALL-CAPS, ellipses, and the \"cold period\" as compensatory cues for prosody and facial signal lost in the text channel. when a channel drops prosody, writers re-add affect with punctuation and symbols; the texting period now reads as curt.",
+"meta": {
+"status": "open",
+"modality": "writing",
+"level": "semantic-pragmatic",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"measure: frequency and pragmatic coding of affective marks",
+"source: Gunraj, D. N., Drumm-Hewitt, A. C. et al. (2016). Texting insincerely: the role of the period in text messaging. Computers in Human Behavior 55:1067-1075. DOI 10.1016/j.chb.2015.11.003."
+]
+},
+"bioacoustic-channel": {
+"title": "Bioacoustic channel",
+"code": "non-human / channel / tier A",
+"body": "the physical signal medium of an animal system - whale click/coda, whistle, birdsong, primate call, or the kinetic bee waggle. the carrier sets the channel capacity and the segmentation problem (where one unit ends is often unclear).",
+"meta": {
+"status": "open",
+"modality": "non-human",
+"level": "channel",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"source: Kershenbaum, Blumstein, Roch et al. (2014). Acoustic sequences in non-human animals: a tutorial review and prospectus. Biological Reviews 91(1):13-52. DOI 10.1111/brv.12160."
+]
+},
+"animal-signal-entropy": {
+"title": "Animal-signal entropy",
+"code": "non-human / phonological / tier B",
+"body": "Shannon and higher-order conditional entropy of an animal repertoire, and how entropy decays with Markov order. the same machinery we run on text; humpback song needs no finite Markov model (Suzuki 2006) and dolphin whistles show ~3rd-order structure (McCowan 1999).",
+"meta": {
+"status": "hard",
+"modality": "non-human",
+"level": "phonological",
+"tier": "B"
+},
+"rel": [
+"conditional-entropy"
+],
+"notes": [
+"source: McCowan, Hanser & Doyle (1999). Quantitative tools for comparing animal communication systems: information theory applied to bottlenose dolphin whistle repertoires. Animal Behaviour 57:409-419. DOI 10.1006/anbe.1998.1000. (Zipf slope ~ -1; higher-order conditional entropy).",
+"source: Suzuki, Buck & Tyack (2006). Information entropy of humpback whale songs. JASA 119(3):1849-1866. DOI 10.1121/1.2161827. (periodicities 6-8 and 180-400 units; no finite Markov model fits).",
+"source: Smith, R. D. (2014). Complexity in animal communication: estimating the size of N-Gram structures. Entropy 16(1):526-542. DOI 10.3390/e16010526 (arXiv:1308.3616)."
+]
+},
+"zipf-in-animal-signals": {
+"title": "Zipf's law in animal signals",
+"code": "non-human / lexical / tier B",
+"body": "rank-frequency power-law (slope near -1) and the law of abbreviation (frequent signals are shorter) in animal repertoires. a cross-species complexity yardstick - but weak evidence alone, since Zipf-like distributions arise from random processes (the animal monkey-typing caveat).",
+"meta": {
+"status": "hard",
+"modality": "non-human",
+"level": "lexical",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"source: McCowan, Hanser & Doyle (1999). Quantitative tools for comparing animal communication systems: information theory applied to bottlenose dolphin whistle repertoires. Animal Behaviour 57:409-419. DOI 10.1006/anbe.1998.1000. (Zipf slope ~ -1; higher-order conditional entropy).",
+"source: Suzuki, Buck & Tyack (2004). The use of Zipf's law in animal communication analysis. Animal Behaviour 69:F9-F17. DOI 10.1016/j.anbehav.2004.08.004. (CRITIQUE: Zipf-like distributions arise from random processes; weak evidence).",
+"source: Kershenbaum, Demartsev, Gammon & Geffen (2020/2021). Shannon entropy as a robust estimator of Zipf's Law in animal vocal communication repertoires. Methods in Ecology & Evolution. DOI 10.1111/2041-210X.13536.",
+"source: Semple, Ferrer-i-Cancho & Gustison (2021). Linguistic laws in biology. Trends in Ecology & Evolution 37(1):53-66. DOI 10.1016/j.tree.2021.08.012. (Zipf rank-frequency, law of abbreviation, Menzerath across taxa)."
+]
+},
+"phonological-syntax": {
+"title": "Phonological syntax (birdsong)",
+"code": "non-human / syntactic / tier A",
+"body": "learned rules sequencing meaningless sound units, as in Bengalese finch song - structure at one level, without word-like semantics. the first rung above holistic signals; patterning of sound but not of meaning. Whether any bird has true recursion is contested (Gentner 2006 vs van Heijningen 2009).",
+"meta": {
+"status": "open",
+"modality": "non-human",
+"level": "syntactic",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"source: Berwick, Okanoya, Beckers & Bolhuis (2011). Songs to syntax: the linguistics of birdsong. Trends in Cognitive Sciences 15(3):113-121. DOI 10.1016/j.tics.2011.01.002.",
+"source: Jin, D. Z. & Kozhevnikov, A. A. (2011). A compact statistical model of the song syntax in Bengalese finch. PLoS Computational Biology 7(3):e1001108. DOI 10.1371/journal.pcbi.1001108."
+]
+},
+"coda-combinatoriality": {
+"title": "Coda combinatoriality (sperm whales)",
+"code": "non-human / morphological / tier A",
+"body": "sperm whale codas built from combinable features - rhythm, tempo, rubato, ornamentation - yielding 143+ types from ~21 (Sharma 2024). the strongest claim of combinatoriality / duality-of-patterning outside humans. Structure, NOT demonstrated meaning (no playback experiments).",
+"meta": {
+"status": "open",
+"modality": "non-human",
+"level": "morphological",
+"tier": "A"
+},
+"rel": [
+"duality-of-patterning"
+],
+"notes": [
+"source: Sharma, Gero, Payne, Gruber, Rus, Torralba & Andreas (2024). Contextual and combinatorial structure in sperm whale vocalisations. Nature Communications 15:3617. DOI 10.1038/s41467-024-47221-8. (8,719 codas; rhythm/tempo/rubato/ornamentation; structure not semantics).",
+"source: Paradise, Muralikrishnan, ... Goldwasser et al. (2025). WhAM: Towards A Translative Model of Sperm Whale Vocalization. arXiv:2512.02206 (NeurIPS 2025)."
+]
+},
+"referential-alarm-call": {
+"title": "Referential alarm calls",
+"code": "non-human / semantic-pragmatic / tier A",
+"body": "distinct calls for distinct referents that trigger distinct responses, as in vervet eagle/leopard/snake alarms. functionally referential meaning without combinatoriality - the closest non-human case of a signal being \"about\" a specific thing.",
+"meta": {
+"status": "open",
+"modality": "non-human",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"source: Seyfarth, Cheney & Marler (1980). Vervet monkey alarm calls: semantic communication in a free-ranging primate. Animal Behaviour 28:1070-1094. DOI 10.1016/S0003-3472(80)80097-2."
+]
+},
+"call-combinatoriality": {
+"title": "Call combinatoriality (primate proto-syntax)",
+"code": "non-human / syntactic / tier A",
+"body": "fixed combinations of calls with context-specific meaning, as in putty-nosed \"pyow-hack\" or Campbell's monkey concatenation. the high-water mark of primate proto-syntax - combinatorial but not productive or fully compositional.",
+"meta": {
+"status": "open",
+"modality": "non-human",
+"level": "syntactic",
+"tier": "A"
+},
+"rel": [
+"duality-of-patterning"
+],
+"notes": [
+"source: Arnold, K. & Zuberbuhler, K. (2006). Semantic combinations in primate calls. Nature 441:303. DOI 10.1038/441303a. (putty-nosed monkey pyow-hack; combinatorial not compositional).",
+"source: Ouattara, Lemasson & Zuberbuhler (2009). Campbell's monkeys concatenate vocalizations into context-specific call sequences. PNAS 106:22026-22031. DOI 10.1073/pnas.0908118106."
+]
+},
+"displaced-reference": {
+"title": "Displaced reference (waggle dance)",
+"code": "non-human / semantic-pragmatic / tier A",
+"body": "communicating about something not present, as the honeybee waggle dance encodes direction and distance to absent food (~2.9 bits direction, ~4.5 bits distance). displacement is a Hockett design feature thought near-unique to language, yet a clear case appears in an insect.",
+"meta": {
+"status": "open",
+"modality": "non-human",
+"level": "semantic-pragmatic",
+"tier": "A"
+},
+"rel": [],
+"notes": [
+"source: von Frisch, K. (1967). The Dance Language and Orientation of Bees. Harvard University Press. (Nobel Prize 1973; waggle run encodes direction + distance to absent food).",
+"source: Dyer, F. C. (2002). The biology of the dance language. Annual Review of Entomology 47:917-949. DOI 10.1146/annurev.ento.47.091201.145306.",
+"source: Wario, Wild, Rojas & Landgraf (2017). Automatic detection and decoding of honey bee waggle dances. PLoS ONE 12(11):e0188626. DOI 10.1371/journal.pone.0188626 (arXiv:1708.06590)."
+]
+},
+"song-cultural-transmission": {
+"title": "Song cultural transmission",
+"code": "non-human / discourse / tier B",
+"body": "hierarchical song (units-phrases-themes) that is learned, culturally transmitted, and evolves - including population-wide humpback song \"revolutions.\" signal systems can be cultural and changing, not fixed; humpback song even shows Zipfian statistical structure (Arnon 2025).",
+"meta": {
+"status": "open",
+"modality": "non-human",
+"level": "discourse",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"source: Payne, R. S. & McVay, S. (1971). Songs of Humpback Whales. Science 173(3997):585-597. DOI 10.1126/science.173.3997.585.",
+"source: Noad, Cato, Bryden, Jenner & Jenner (2000). Cultural revolution in whale songs. Nature 408:537. DOI 10.1038/35046199.",
+"source: Arnon, Kirby, Allen, Garrigue, Carroll & Garland (2025). Whale song shows language-like statistical structure. Science 387:eadq7055. DOI 10.1126/science.adq7055. (Zipfian recurrent subsequences via transitional-probability segmentation)."
+]
+},
+"animal-decoding-ml": {
+"title": "Machine decoding of animal signals",
+"code": "non-human / channel / tier B",
+"body": "ML/foundation models applied to animal sound to discover structure - CETI on sperm whales, FinchGPT, WhAM, NatureLM-audio. live decipherment with no Rosetta stone; can recover structure and generate realistic signals, but not (yet) meaning.",
+"meta": {
+"status": "open",
+"modality": "non-human",
+"level": "channel",
+"tier": "B"
+},
+"rel": [
+"decipherment-recoverability"
+],
+"notes": [
+"source: Andreas, Begus, Bronstein, Gero, Goldwasser, Payne et al. (2021). Cetacean Translation Initiative (CETI): a roadmap to deciphering the communication of sperm whales. arXiv:2104.08614.",
+"source: Robinson et al. (2024). NatureLM-audio: an Audio-Language Foundation Model for Bioacoustics. arXiv:2411.07186 (ICLR 2025). (BEATs encoder + Llama; zero-shot to unseen taxa; BEANS-Zero).",
+"source: Paradise, Muralikrishnan, ... Goldwasser et al. (2025). WhAM: Towards A Translative Model of Sperm Whale Vocalization. arXiv:2512.02206 (NeurIPS 2025)."
+]
+},
+"cross-species-representation-transfer": {
+"title": "Cross-species representation transfer",
+"code": "non-human / channel / tier B",
+"body": "models pretrained on human speech transferring to animal vocalizations with little loss. implies a shared acoustic-statistical substrate - a measurable \"distance between channels\" between human and animal sound.",
+"meta": {
+"status": "open",
+"modality": "non-human",
+"level": "channel",
+"tier": "B"
+},
+"rel": [],
+"notes": [
+"source: Sarkar, E. & Magimai-Doss, M. (2025). Comparing SSL models pre-trained on human speech and animal vocalizations for bioacoustics. arXiv:2501.05987. (speech-pretrained models transfer; distance between channels).",
+"source: Robinson et al. (2024). NatureLM-audio: an Audio-Language Foundation Model for Bioacoustics. arXiv:2411.07186 (ICLR 2025). (BEATs encoder + Llama; zero-shot to unseen taxa; BEANS-Zero)."
+]
+},
+"duality-of-patterning": {
+"title": "Duality of patterning",
+"code": "amodal / phonological / tier A",
+"body": "Hockett's design feature - meaningless units combine into meaningful units that combine into larger structures, two levels of patterning. duality plus productivity is the human exception; modeling why combinatorial communication is rare explains the gap (Scott-Phillips & Blythe 2013).",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "phonological",
+"tier": "A"
+},
+"rel": [
+"recursion-affordance"
+],
+"notes": [
+"source: Hockett, C. F. (1960). The origin of speech. Scientific American 203(3):88-96. DOI 10.1038/scientificamerican0960-88. (the 13 design features; duality of patterning, displacement, productivity).",
+"source: Scott-Phillips, T. C. & Blythe, R. A. (2013). Why is combinatorial communication rare in the natural world, and why is language an exception to this trend? J. Royal Society Interface 10:20130520. DOI 10.1098/rsif.2013.0520 (arXiv:1308.4780)."
+]
+},
+"decipherment-validation-gap": {
+"title": "Decipherment validation gap",
+"code": "amodal / semantic-pragmatic / tier B",
+"body": "the gap between recovering a code's STRUCTURE and recovering its MEANING, when there is no ground truth to check against. animal decoding's hardest edge - a model that predicts the next coda, or synthesizes a realistic one, has not thereby understood it.",
+"meta": {
+"status": "open",
+"modality": "amodal",
+"level": "semantic-pragmatic",
+"tier": "B"
+},
+"rel": [
+"decipherment-recoverability",
+"no-shared-code-message"
+],
+"notes": [
+"source: Andreas, Begus, Bronstein, Gero, Goldwasser, Payne et al. (2021). Cetacean Translation Initiative (CETI): a roadmap to deciphering the communication of sperm whales. arXiv:2104.08614.",
+"source: Sharma, Gero, Payne, Gruber, Rus, Torralba & Andreas (2024). Contextual and combinatorial structure in sperm whale vocalisations. Nature Communications 15:3617. DOI 10.1038/s41467-024-47221-8. (8,719 codas; rhythm/tempo/rubato/ornamentation; structure not semantics)."
+]
+},
+"mod:amodal": {
+"title": "Amodal",
+"code": "modality / duality-of-patterning gate",
+"body": "not a carrier; the bucket for facets that hold regardless of channel (e.g. proposition count).",
+"meta": {
+"duality": "na"
+},
+"rel": [],
+"notes": [
+"doubly articulated -> language-grade; otherwise affect-grade."
+]
+},
+"mod:speech": {
+"title": "Speech",
+"code": "modality / duality-of-patterning gate",
+"body": "phonemes -> morphemes -> words -> clauses. the canonical doubly-articulated channel.",
+"meta": {
+"duality": true
+},
+"rel": [],
+"notes": [
+"doubly articulated -> language-grade; otherwise affect-grade."
+]
+},
+"mod:writing": {
+"title": "Writing",
+"code": "modality / duality-of-patterning gate",
+"body": "graphemes -> words -> sentences. includes the human-to-machine encoding layer (tokens).",
+"meta": {
+"duality": true
+},
+"rel": [],
+"notes": [
+"doubly articulated -> language-grade; otherwise affect-grade."
+]
+},
+"mod:sign": {
+"title": "Sign language",
+"code": "modality / duality-of-patterning gate",
+"body": "full grammatical language in the visual modality; handshape/location/movement are sublexical (Stokoe 1960; Brentari 2019).",
+"meta": {
+"duality": true
+},
+"rel": [],
+"notes": [
+"doubly articulated -> language-grade; otherwise affect-grade."
+]
+},
+"mod:gesture": {
+"title": "Co-speech gesture",
+"code": "modality / duality-of-patterning gate",
+"body": "imagistic and gradient, not segmented into recombinable units; complements speech rather than encoding independently (McNeill 2005).",
+"meta": {
+"duality": false
+},
+"rel": [],
+"notes": [
+"doubly articulated -> language-grade; otherwise affect-grade."
+]
+},
+"mod:facial": {
+"title": "Facial expression",
+"code": "modality / duality-of-patterning gate",
+"body": "affect-grade by default; doubly articulated and GRAMMATICAL inside sign languages (brow/head mark conditionals, questions). a signal that changes level by population.",
+"meta": {
+"duality": "partial"
+},
+"rel": [],
+"notes": [
+"doubly articulated -> language-grade; otherwise affect-grade."
+]
+},
+"mod:paralinguistic": {
+"title": "Paralanguage (prosody, tone, volume)",
+"code": "modality / duality-of-patterning gate",
+"body": "gradient affect/emphasis carrier; intonation has structure but is not segmental in the duality sense.",
+"meta": {
+"duality": false
+},
+"rel": [],
+"notes": [
+"doubly articulated -> language-grade; otherwise affect-grade."
+]
+},
+"mod:music": {
+"title": "Music (melody, notation)",
+"code": "modality / duality-of-patterning gate",
+"body": "a sonic-symbolic channel distinct from speech and paralanguage; conveys affect and structure. has hierarchical/recursive structure debated as syntax-like (Lerdahl & Jackendoff 1983), but whether it is doubly articulated is contested. its notation is the iconographic/written rendering.",
+"meta": {
+"duality": "partial"
+},
+"rel": [],
+"notes": [
+"doubly articulated -> language-grade; otherwise affect-grade."
+]
+},
+"mod:iconographic": {
+"title": "Iconography (emoji, glyphs, notation)",
+"code": "modality / duality-of-patterning gate",
+"body": "emoji are largely paralinguistic (not compositional/productive); logographic scripts and math notation do pass, but those sit under writing. mixed by instance (Evans 2017).",
+"meta": {
+"duality": "partial"
+},
+"rel": [],
+"notes": [
+"doubly articulated -> language-grade; otherwise affect-grade."
+]
+},
+"mod:tactile": {
+"title": "Touch (Protactile, Braille)",
+"code": "modality / duality-of-patterning gate",
+"body": "Braille is writing rendered to touch (passes); Protactile is an emerging doubly-articulated tactile language under DeafBlindness. touch-as-affect does not pass.",
+"meta": {
+"duality": "partial"
+},
+"rel": [],
+"notes": [
+"doubly articulated -> language-grade; otherwise affect-grade."
+]
+},
+"mod:non-human": {
+"title": "Non-human communication",
+"code": "modality / duality-of-patterning gate",
+"body": "animal signal systems (whale codas, birdsong, primate calls, the bee waggle dance). mostly NO duality (holistic signals), but contested partial cases exist - sperm whale codas show combinatorial structure (Sharma 2024) and birdsong has phonological syntax without semantics (Berwick 2011). the human exception is having BOTH duality and productivity (Hockett 1960). spans acoustic and non-acoustic (kinetic waggle dance) channels.",
+"meta": {
+"duality": "partial"
+},
+"rel": [],
+"notes": [
+"doubly articulated -> language-grade; otherwise affect-grade."
+]
+}
+}
+</script>
+<script id="wire-data" type="application/json">
+[{"from": "utf8-byte-size", "to": "grapheme-count", "kind": "trades-off-with"}, {"from": "utf8-byte-size", "to": "tokenizer-tax-tir", "kind": "contributes-to"}, {"from": "tokenizer-tax-tir", "to": "subword-fertility", "kind": "measures-same"}, {"from": "char-entropy", "to": "conditional-entropy", "kind": "measures-same"}, {"from": "type-token-ratio", "to": "mattr", "kind": "measures-same"}, {"from": "morphological-typology", "to": "morphemes-per-word", "kind": "constrains"}, {"from": "morphological-typology", "to": "function-word-ratio", "kind": "constrains"}, {"from": "punctuation-profile", "to": "prosody-structure", "kind": "measures-same"}, {"from": "syllable-inventory", "to": "syllable-info-density", "kind": "constrains"}, {"from": "syllable-info-density", "to": "speech-information-rate", "kind": "contributes-to"}, {"from": "speech-information-rate", "to": "syllable-info-density", "kind": "trades-off-with"}, {"from": "speech-information-rate", "to": "gesture-motion-semantics", "kind": "redundant-with"}, {"from": "nonmanual-grammar", "to": "facial-affect", "kind": "promotes"}, {"from": "facial-affect", "to": "facial-affect-universality", "kind": "contributes-to"}, {"from": "emoji-affect", "to": "facial-affect", "kind": "redundant-with"}, {"from": "emoji-affect", "to": "tone-of-voice", "kind": "redundant-with"}, {"from": "tone-of-voice", "to": "facial-affect", "kind": "redundant-with"}, {"from": "sign-simultaneity", "to": "sign-information-rate", "kind": "contributes-to"}, {"from": "gesture-emblems", "to": "gesture-motion-semantics", "kind": "trades-off-with"}, {"from": "redundancy", "to": "drum-language", "kind": "trades-off-with"}, {"from": "connective-density", "to": "cohesion", "kind": "contributes-to"}, {"from": "beat-gesture", "to": "prosody-structure", "kind": "redundant-with"}, {"from": "function-word-ratio", "to": "lexical-density", "kind": "measures-same"}, {"from": "implicature", "to": "high-context-encoding", "kind": "contributes-to"}, {"from": "presupposition", "to": "high-context-encoding", "kind": "contributes-to"}, {"from": "deixis", "to": "high-context-encoding", "kind": "contributes-to"}, {"from": "speech-rate", "to": "speech-information-rate", "kind": "contributes-to"}, {"from": "speech-rate", "to": "syllable-info-density", "kind": "trades-off-with"}, {"from": "spatial-grammar", "to": "sign-simultaneity", "kind": "contributes-to"}, {"from": "logograph-information", "to": "tokenizer-tax-tir", "kind": "contributes-to"}, {"from": "embedding-alignment", "to": "tokenizer-tax-tir", "kind": "redundant-with"}, {"from": "typographic-connotation", "to": "tone-of-voice", "kind": "redundant-with"}, {"from": "typographic-connotation", "to": "facial-affect", "kind": "redundant-with"}, {"from": "iconicity-degree", "to": "sign-type-peircean", "kind": "contributes-to"}, {"from": "sound-symbolism-strength", "to": "iconicity-degree", "kind": "contributes-to"}, {"from": "cross-cultural-decipherability", "to": "iconicity-degree", "kind": "measures-same"}, {"from": "archetypal-universality", "to": "innate-recognition", "kind": "contributes-to"}, {"from": "multichannel-overlay", "to": "prosodic-syntactic-overlay", "kind": "contributes-to"}, {"from": "multichannel-overlay", "to": "redundancy", "kind": "redundant-with"}, {"from": "score-underdetermination", "to": "underspecified-notation", "kind": "measures-same"}, {"from": "musical-syntax", "to": "recursion-affordance", "kind": "contributes-to"}, {"from": "notation-bandwidth-over-time", "to": "music-notation-system", "kind": "contributes-to"}, {"from": "notation-decode", "to": "music-notation-system", "kind": "measures-same"}, {"from": "morphological-packing-ceiling", "to": "morphemes-per-word", "kind": "measures-same"}, {"from": "gesture-development-pointing", "to": "deixis", "kind": "contributes-to"}, {"from": "gesture-development-pointing", "to": "joint-attention", "kind": "contributes-to"}, {"from": "joint-attention", "to": "gesture-development-pointing", "kind": "promotes"}, {"from": "joint-attention", "to": "gaze-turntaking", "kind": "contributes-to"}, {"from": "emergence-of-grammar", "to": "recursion-affordance", "kind": "contributes-to"}, {"from": "facial-affect-universality", "to": "facial-affect", "kind": "measures-same"}, {"from": "facial-affect-universality", "to": "cross-cultural-decipherability", "kind": "contributes-to"}, {"from": "social-referencing", "to": "facial-affect", "kind": "contributes-to"}, {"from": "social-referencing", "to": "joint-attention", "kind": "contributes-to"}, {"from": "neonatal-imitation", "to": "facial-affect-development", "kind": "contributes-to"}, {"from": "facial-affect-development", "to": "facial-affect", "kind": "contributes-to"}, {"from": "facial-affect-primate", "to": "facial-affect", "kind": "contributes-to"}, {"from": "gesture-primate", "to": "gesture-motion-semantics", "kind": "contributes-to"}, {"from": "classifier-predicates", "to": "sign-simultaneity", "kind": "measures-same"}, {"from": "symbol-inventory-size", "to": "writing-system-type", "kind": "contributes-to"}, {"from": "orthographic-depth", "to": "grapheme-phoneme-entropy", "kind": "measures-same"}, {"from": "orthography-tokenizer-bridge", "to": "subword-fertility", "kind": "contributes-to"}, {"from": "orthography-tokenizer-bridge", "to": "orthographic-depth", "kind": "contributes-to"}, {"from": "numeral-system-type", "to": "positional-encoding", "kind": "contributes-to"}, {"from": "zero-as-number", "to": "positional-encoding", "kind": "promotes"}, {"from": "word-segmentation-spacing", "to": "reading-mode-oral-silent", "kind": "promotes"}, {"from": "prosodic-vs-syntactic-punctuation", "to": "punctuation-profile", "kind": "measures-same"}, {"from": "animal-signal-entropy", "to": "conditional-entropy", "kind": "measures-same"}, {"from": "coda-combinatoriality", "to": "duality-of-patterning", "kind": "contributes-to"}, {"from": "call-combinatoriality", "to": "duality-of-patterning", "kind": "contributes-to"}, {"from": "animal-decoding-ml", "to": "decipherment-recoverability", "kind": "contributes-to"}, {"from": "duality-of-patterning", "to": "recursion-affordance", "kind": "contributes-to"}, {"from": "decipherment-validation-gap", "to": "decipherment-recoverability", "kind": "measures-same"}, {"from": "decipherment-validation-gap", "to": "no-shared-code-message", "kind": "contributes-to"}]
+</script>
+<script>
+(()=>{
+  const D = JSON.parse(document.getElementById('reference-data').textContent);
+  const card = document.getElementById('insp-card');
+  const els = {
+    t: document.getElementById('i-title'), c: document.getElementById('i-code'),
+    b: document.getElementById('i-body'), m: document.getElementById('i-meta'),
+    r: document.getElementById('i-rel'), n: document.getElementById('i-notes'),
+    s: card.querySelector('.insp-status')
+  };
+  const unpinBtn = document.getElementById('insp-unpin');
+  let pinned = null;
+  function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+  function paint(k){
+    const x=D[k]; if(!x) return;
+    els.t.textContent=x.title; els.c.textContent=x.code||'\u00b7'; els.b.textContent=x.body||'';
+    els.m.innerHTML=Object.entries(x.meta||{}).map(([k,v])=>`<div><strong>${esc(k)}</strong><span>${esc(v)}</span></div>`).join('');
+    els.r.querySelector('ul').innerHTML=(x.rel||[]).map(r=>{const o=D[r];return o?`<li>&rsaquo; ${esc(o.title)}</li>`:'';}).join('')||'<li class="more">\u00b7</li>';
+    els.n.querySelector('ul').innerHTML=(x.notes||[]).map(z=>`<li style="white-space:normal">\u00b7 ${esc(z)}</li>`).join('')||'<li class="more">\u00b7</li>';
+  }
+  function active(el){document.querySelectorAll('.is-active').forEach(x=>{if(x!==el)x.classList.remove('is-active');});if(el)el.classList.add('is-active');}
+  function pin(k,el){pinned=k;paint(k);card.classList.add('is-pinned');els.s.textContent='pinned';unpinBtn.style.display='inline-block';document.querySelectorAll('.is-pinned').forEach(x=>x.classList.remove('is-pinned'));card.classList.add('is-pinned');if(el)el.classList.add('is-pinned');}
+  function unpin(){pinned=null;card.classList.remove('is-pinned');els.s.textContent='';unpinBtn.style.display='none';document.querySelectorAll('.is-pinned').forEach(x=>x.classList.remove('is-pinned'));}
+  document.addEventListener('mouseover',e=>{if(pinned)return;const t=e.target.closest('.term');if(!t)return;paint(t.getAttribute('data-term'));active(t);});
+  document.querySelectorAll('.term').forEach(el=>{
+    el.setAttribute('tabindex','0');
+    el.addEventListener('click',e=>{e.preventDefault();const k=el.getAttribute('data-term');if(pinned===k){unpin();return;}pin(k,el);});
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();const k=el.getAttribute('data-term');if(pinned===k){unpin();return;}pin(k,el);}});
+    el.addEventListener('focus',()=>{if(!pinned)paint(el.getAttribute('data-term'));});
+  });
+  unpinBtn.addEventListener('click',unpin);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&pinned)unpin();});
+
+  // theme switch (persisted)
+  const root=document.documentElement;
+  const saved=localStorage.getItem('fmtheme'); if(saved) root.setAttribute('data-theme',saved);
+  function syncThemeBtns(){const cur=root.getAttribute('data-theme')||'classic-cream';document.querySelectorAll('[data-set-theme]').forEach(b=>b.classList.toggle('active',b.getAttribute('data-set-theme')===cur));}
+  document.querySelectorAll('[data-set-theme]').forEach(btn=>{
+    btn.addEventListener('click',()=>{const t=btn.getAttribute('data-set-theme');root.setAttribute('data-theme',t);localStorage.setItem('fmtheme',t);syncThemeBtns();if(window.__drawWires)window.__drawWires();});
+  });
+  syncThemeBtns();
+
+  // help overlay
+  const ov=document.getElementById('help-overlay');
+  if(ov){
+    const ob=document.getElementById('help-open'), cb=document.getElementById('help-close');
+    const show=()=>ov.classList.add('open'), hide=()=>ov.classList.remove('open');
+    if(ob) ob.addEventListener('click',show);
+    if(cb) cb.addEventListener('click',hide);
+    ov.addEventListener('click',e=>{if(e.target===ov)hide();});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});
+  }
+})();
+</script>
+<script>
+(()=>{
+  const WIRES = JSON.parse(document.getElementById('wire-data').textContent);
+  const wrap = document.querySelector('.matrix-wrap');
+  const svg = document.getElementById('wires');
+  if(!wrap || !svg) return;
+  let focusId=null, pinId=null;
+  function applyFocus(){
+    const id = pinId || focusId;
+    svg.querySelectorAll('.wire').forEach(p=>{
+      if(!id){ p.classList.remove('lit','dim'); return; }
+      const on = p.getAttribute('data-a')===id || p.getAttribute('data-b')===id;
+      p.classList.toggle('lit',on); p.classList.toggle('dim',!on);
+    });
+  }
+  function draw(){
+    const cr = wrap.getBoundingClientRect();
+    const W = wrap.scrollWidth, H = wrap.scrollHeight;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.style.width = W+'px'; svg.style.height = H+'px';
+    let s='';
+    for(const e of WIRES){
+      const a=document.getElementById('tile-'+e.from), b=document.getElementById('tile-'+e.to);
+      if(!a||!b) continue;
+      const ra=a.getBoundingClientRect(), rb=b.getBoundingClientRect();
+      const ax=ra.left-cr.left+wrap.scrollLeft+ra.width/2, ay=ra.top-cr.top+wrap.scrollTop+ra.height/2;
+      const bx=rb.left-cr.left+wrap.scrollLeft+rb.width/2, by=rb.top-cr.top+wrap.scrollTop+rb.height/2;
+      const lift=Math.min(70, Math.hypot(bx-ax,by-ay)/3+8);
+      const mx=(ax+bx)/2, my=(ay+by)/2-lift;
+      s+=`<path class="wire wire-${e.kind}" data-a="${e.from}" data-b="${e.to}" d="M${ax.toFixed(1)},${ay.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${bx.toFixed(1)},${by.toFixed(1)}" />`;
+    }
+    svg.innerHTML=s;
+    applyFocus();
+  }
+  window.__drawWires=draw;
+  draw();
+  window.addEventListener('resize', draw);
+  wrap.addEventListener('scroll', draw);
+  // light up a facet's wires on hover; click to lock, esc to clear
+  wrap.addEventListener('mouseover', e=>{const t=e.target.closest('.ftile'); if(!t)return; focusId=t.getAttribute('data-term'); applyFocus();});
+  wrap.addEventListener('mouseout', e=>{const t=e.target.closest('.ftile'); if(!t)return; focusId=null; applyFocus();});
+  wrap.addEventListener('click', e=>{const t=e.target.closest('.ftile'); if(!t)return; const id=t.getAttribute('data-term'); pinId=(pinId===id)?null:id; applyFocus();});
+  document.addEventListener('keydown', e=>{if(e.key==='Escape'){pinId=null;focusId=null;applyFocus();}});
+  const tg=document.getElementById('wire-toggle');
+  if(tg) tg.addEventListener('click',()=>{wrap.classList.toggle('wires-off');tg.classList.toggle('active', !wrap.classList.contains('wires-off'));});
+})();
+</script>
+</body>
+</html>

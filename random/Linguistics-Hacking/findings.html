@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="classic-cream">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>The bandwidth of language, measured</title>
+<style>
+:root{
+  --paper:#fcfcfa;--ink:#151515;--muted:#64625c;--line:#d8d5ce;--soft:rgba(0,0,0,0.012);
+  --accent-deep:#1A2F3F;--accent-hot:#EC503A;--accent-warm:#F78F82;
+  --accent-warm-soft:rgba(247,143,130,0.10);--accent-hot-soft:rgba(236,80,58,0.08);
+  --accent-deep-soft:rgba(26,47,63,0.05);--code-bg:#1A2F3F;--code-fg:#cbd2da;
+  --ex-bg:#faf8f3;--pin-bg:rgba(236,80,58,0.14);
+  --done:#2e7d32;--proxy:#9e9d24;--hard:#ef6c00;--open:#9e9e9e;
+  --done-t:rgba(46,125,50,0.09);--proxy-t:rgba(158,157,36,0.12);--hard-t:rgba(239,108,0,0.09);--open-t:rgba(158,158,158,0.11);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);background:var(--paper);font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;line-height:1.45}
+.page{max-width:1480px;margin:0 auto;padding:22px 18px 60px}
+.eyebrow{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:var(--accent-hot);font-weight:600}
+h1,h2,h3{margin:0;font-weight:600;line-height:1.2}
+h1{font-size:clamp(1.6rem,2.3vw,2.05rem);letter-spacing:-0.02em;margin-bottom:6px;color:var(--accent-deep)}
+h2{font-size:0.92rem;margin-top:24px;margin-bottom:8px;padding-top:10px;border-top:1px solid var(--line);color:var(--accent-deep);text-transform:uppercase;letter-spacing:0.05em}
+p{margin:0 0 6px;font-size:0.86rem}
+.lede{font-size:0.92rem;color:#242424;margin:6px 0 14px;max-width:78ch}
+code{font-family:"SFMono-Regular","SF Mono",Menlo,Consolas,monospace;font-size:0.85em;background:rgba(217,215,209,0.30);padding:0.04rem 0.22rem;border-radius:1px}
+.mono{font-family:"SFMono-Regular","SF Mono",Menlo,Consolas,monospace}
+.spec-line{display:inline-block;padding:2px 8px;border:1px solid var(--accent-deep);background:var(--accent-deep-soft);font-family:"SFMono-Regular",monospace;font-size:0.74rem;color:var(--accent-deep);margin-right:6px;letter-spacing:0.03em}
+.term{cursor:pointer}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:6px;margin:12px 0 6px}
+.stat{padding:8px 10px;border:1px solid var(--line);background:var(--paper)}
+.stat .num{font-size:1.5rem;font-weight:600;color:var(--accent-deep);line-height:1.1}
+.stat .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:8px 0 4px;font-size:0.74rem;color:var(--muted)}
+.legend .sw{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+/* ---- stack matrix ---- */
+.matrix-wrap{overflow-x:auto;border:1px solid var(--line);margin:6px 0 4px}
+.matrix{display:grid;min-width:880px}
+.mh{position:sticky;top:0;z-index:2;background:var(--accent-deep);color:var(--paper);padding:7px 8px;font-size:0.72rem;font-weight:600;letter-spacing:0.03em;border-left:1px solid rgba(255,255,255,0.12)}
+.mh.corner{background:var(--accent-deep);border-left:none}
+.mh .gate{display:block;font-size:0.62rem;font-weight:400;color:rgba(255,255,255,0.65);font-family:"SFMono-Regular",monospace;text-transform:none;margin-top:1px}
+.mh .term{color:var(--paper);border-bottom:1px dotted rgba(255,255,255,0.5)}
+.mh .term:hover{color:var(--accent-warm)}
+.gut{background:var(--ex-bg);border-top:1px solid var(--line);border-right:1px solid var(--line);padding:7px 9px}
+.gut .ly{font-family:"SFMono-Regular",monospace;font-size:0.62rem;color:var(--accent-hot);letter-spacing:0.06em}
+.gut .nm{font-size:0.8rem;font-weight:600;color:var(--accent-deep);margin:1px 0}
+.gut .bl{font-size:0.66rem;color:var(--muted);line-height:1.35}
+.cell{border-top:1px solid var(--line);border-left:1px solid var(--line);padding:5px;display:flex;flex-direction:column;gap:4px;min-height:46px}
+.cell.empty{background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(0,0,0,0.018) 6px,rgba(0,0,0,0.018) 7px)}
+.cell.s-done{background:var(--done-t)}.cell.s-proxy{background:var(--proxy-t)}.cell.s-hard{background:var(--hard-t)}.cell.s-open{background:var(--open-t)}
+.ftile{display:block;border-left:4px solid var(--open);background:var(--paper);padding:3px 5px;font-size:0.68rem;line-height:1.25;color:#222;border-radius:1px;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);transition:.1s;position:relative}
+.ftile.f-done{border-left-color:var(--done)}.ftile.f-proxy{border-left-color:var(--proxy)}.ftile.f-hard{border-left-color:var(--hard)}.ftile.f-open{border-left-color:var(--open)}
+.ftile:hover,.ftile.is-active{background:var(--accent-warm-soft);border-color:var(--accent-hot)}
+.ftile.is-pinned{background:var(--pin-bg);border-color:var(--accent-hot)}
+.ftile .ti{font-family:"SFMono-Regular",monospace;font-size:0.56rem;color:var(--muted);position:absolute;top:2px;right:4px}
+.ftile .nm{display:block;padding-right:14px;font-weight:500;color:var(--accent-deep)}
+
+/* ---- duality + coverage + tables ---- */
+.compare{width:100%;border-collapse:collapse;font-size:0.8rem;margin:6px 0 8px}
+.compare th,.compare td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top}
+.compare th{background:var(--accent-deep-soft);color:var(--accent-deep);font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em}
+.refs{font-size:0.76rem;line-height:1.55;margin:6px 0}
+.refs .ref-row{display:grid;grid-template-columns:150px 1fr;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line)}
+.refs .ref-row:last-child{border-bottom:none}
+.refs .key{font-family:"SFMono-Regular",monospace;font-size:0.7rem;color:var(--accent-deep);font-weight:600}
+.refs .tag{font-size:0.64rem;color:var(--muted);font-style:italic}
+
+/* ---- linear style (kept copy) ---- */
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+.mxcol{min-width:0}
+.paper{min-width:0;border-top:2px solid var(--accent-deep);border-bottom:1px solid var(--line);padding:20px 0 24px}
+.bul{list-style:none;padding:0;margin:4px 0 10px}
+.bul li{padding:2px 0 2px 16px;font-size:0.86rem;position:relative;line-height:1.6;color:#222}
+.bul li::before{content:"\00b7";position:absolute;left:5px;color:var(--accent-hot);font-weight:700;font-size:1.1rem;line-height:1}
+.bul .term{border-bottom:1px dotted var(--accent-deep);color:var(--accent-deep);font-weight:500;padding:0 1px}
+.bul .term:hover,.bul .term.is-active{background:var(--accent-warm-soft);color:var(--accent-hot)}
+.bul .term.is-pinned{background:var(--pin-bg);color:var(--accent-hot);border-bottom-style:solid}
+.st{display:inline-block;margin-left:5px;padding:0 5px;border-radius:2px;font-size:0.6rem;font-family:"SFMono-Regular",monospace;text-transform:uppercase;color:#fff;vertical-align:1px}
+.st-done{background:var(--done)}.st-proxy{background:var(--proxy)}.st-hard{background:var(--hard)}.st-open{background:var(--open)}
+.mtag{font-size:0.6rem;font-family:"SFMono-Regular",monospace;color:var(--muted);margin-left:4px}
+
+/* ---- inspector (shared) ---- */
+.insp-card{border:1px solid var(--line);border-left:3px solid var(--accent-hot);background:var(--paper);padding:12px 12px 10px;transition:border-left-color .15s,background .15s}
+.insp-card.is-pinned{border-left-color:var(--accent-deep);background:var(--accent-deep-soft)}
+.insp h3{font-size:0.92rem;margin-bottom:5px;color:var(--accent-deep)}
+.insp p{margin-bottom:7px;font-size:0.8rem}
+.insp-code{display:inline-block;margin:2px 0 6px;color:var(--accent-hot);font-family:"SFMono-Regular",monospace;font-size:0.74rem}
+.insp-meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin:7px 0 8px;padding:7px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.insp-meta strong{display:block;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.insp-meta span{font-size:0.8rem}
+.insp-sec{margin-top:9px}
+.insp-sec .label{font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:3px}
+.insp-sec ul{margin:0;padding:0;list-style:none}
+.insp-sec li{padding:2px 0;border-top:1px solid rgba(216,213,206,0.7);font-size:0.76rem;color:#2a2a2a}
+.insp-sec li:first-child{border-top:none}
+.insp-sec .more{color:var(--muted);font-style:italic}
+.insp-bar{display:flex;align-items:center;justify-content:space-between;margin-top:9px;padding-top:7px;border-top:1px solid var(--line)}
+.insp-hint{font-size:0.72rem;color:var(--muted)}
+.insp-hint kbd{font-family:"SFMono-Regular",monospace;font-size:0.7rem;padding:0 4px;border:1px solid var(--line);border-radius:2px}
+.insp-unpin{font-family:inherit;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;padding:2px 7px;border:1px solid var(--accent-hot);background:transparent;color:var(--accent-hot);cursor:pointer;border-radius:2px;display:none}
+.insp-card.is-pinned .insp-status{color:var(--accent-hot);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;font-size:9px}
+.insp-eyebrow{display:block;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:2px}
+
+/* fixed floating inspector (matrix page) */
+.insp-fixed{position:fixed;bottom:16px;right:16px;width:330px;max-height:74vh;overflow:auto;z-index:30;box-shadow:0 6px 26px rgba(26,47,63,0.22)}
+.insp-fixed .insp-card{min-height:0}
+/* sticky column inspector (linear page) */
+.margin{position:sticky;top:18px;border-top:2px solid var(--accent-deep);padding-top:10px}
+.margin .insp-card{min-height:340px}
+
+.footer{margin-top:24px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font-size:0.76rem}
+.footer .signoff{color:var(--accent-deep);font-weight:600;letter-spacing:0.05em}
+@media (max-width:980px){
+  .sheet{grid-template-columns:1fr}.margin{position:static}
+  .insp-fixed{position:static;width:auto;max-height:none;box-shadow:none;margin-top:14px}
+  .stat-grid{grid-template-columns:1fr 1fr}
+}
+@media print{body{background:#fff}.insp-fixed{display:none}.term{cursor:default}.toolbar,.wires{display:none}}
+
+/* theme overrides (set via <html data-theme="...">) */
+:root[data-theme="blueprint"]{--paper:#1a2838;--ink:#e8f0f8;--muted:#7a98b8;--line:#2f4561;--soft:rgba(255,255,255,0.015);--accent-deep:#9fd4e8;--accent-hot:#f0d878;--accent-warm:#fae8a8;--accent-warm-soft:rgba(250,232,168,0.10);--accent-hot-soft:rgba(240,216,120,0.10);--accent-deep-soft:rgba(159,212,232,0.10);--code-bg:#0e1825;--code-fg:#c8d8e8;--ex-bg:#1f3045;--pin-bg:rgba(240,216,120,0.16)}
+:root[data-theme="parchment"]{--paper:#f7efe0;--ink:#2a1f15;--muted:#7a6b56;--line:#d4c5a8;--soft:rgba(74,52,28,0.025);--accent-deep:#5c2018;--accent-hot:#b8651a;--accent-warm:#d49856;--accent-warm-soft:rgba(212,152,86,0.14);--accent-hot-soft:rgba(184,101,26,0.10);--accent-deep-soft:rgba(92,32,24,0.07);--code-bg:#3a2818;--code-fg:#e8dcc4;--ex-bg:#f0e5cc;--pin-bg:rgba(184,101,26,0.16)}
+:root[data-theme="dark-vellum"]{--paper:#16181c;--ink:#e4e1d4;--muted:#7d7f87;--line:#2e323a;--soft:rgba(255,255,255,0.02);--accent-deep:#6db4d4;--accent-hot:#ff8a5c;--accent-warm:#ffb38a;--accent-warm-soft:rgba(255,179,138,0.10);--accent-hot-soft:rgba(255,138,92,0.10);--accent-deep-soft:rgba(109,180,212,0.10);--code-bg:#0c0e12;--code-fg:#a8b3c0;--ex-bg:#1c1f25;--pin-bg:rgba(255,138,92,0.18)}
+:root[data-theme="monochrome-iron"]{--paper:#f5f5f3;--ink:#1a1a1a;--muted:#6a6a68;--line:#cccccc;--soft:rgba(0,0,0,0.015);--accent-deep:#2a2a2a;--accent-hot:#c8201c;--accent-warm:#d85048;--accent-warm-soft:rgba(216,80,72,0.08);--accent-hot-soft:rgba(200,32,28,0.07);--accent-deep-soft:rgba(42,42,42,0.06);--code-bg:#1a1a1a;--code-fg:#d0d0cc;--ex-bg:#ededeb;--pin-bg:rgba(200,32,28,0.14)}
+
+/* toolbar: theme switch + wire toggle */
+.toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:10px 0 2px;padding:7px 10px;border:1px solid var(--line);background:var(--ex-bg);font-size:0.72rem}
+.toolbar .grp{display:flex;align-items:center;gap:5px}
+.toolbar .tl{font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-right:2px}
+.tbtn{font-family:"SFMono-Regular",monospace;font-size:0.7rem;padding:2px 8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;border-radius:2px}
+.tbtn:hover{border-color:var(--accent-hot);color:var(--accent-hot)}
+.tbtn.active{background:var(--accent-deep);color:var(--paper);border-color:var(--accent-deep)}
+
+/* relation wires (svg overlay over the matrix) */
+.matrix-wrap{position:relative}
+.wires{position:absolute;left:0;top:0;pointer-events:none;z-index:4;overflow:visible}
+.matrix-wrap.wires-off .wires{opacity:0;visibility:hidden}
+.wire{fill:none;stroke-width:1.4;opacity:0.10;transition:opacity .12s,stroke-width .12s}
+.wire.lit{opacity:0.95;stroke-width:2.4}
+.wire.dim{opacity:0.025}
+.wire-redundant-with{stroke:#b8651a;stroke-dasharray:2 3}
+.wire-trades-off-with{stroke:#EC503A;stroke-dasharray:5 3}
+.wire-contributes-to{stroke:#1A2F3F}
+.wire-measures-same{stroke:#9e9e9e;stroke-dasharray:1 3}
+.wire-promotes{stroke:#2e7d32}
+.wire-constrains{stroke:#6a6a68;stroke-dasharray:6 2 1 2}
+.wlegend{display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:0.7rem;color:var(--muted)}
+.wlegend .wl{display:inline-block;width:18px;height:0;border-top:2px solid;margin-right:5px;vertical-align:3px}
+.help-btn{margin-left:auto;width:24px;height:24px;border-radius:50%;border:1px solid var(--accent-deep);background:var(--paper);color:var(--accent-deep);font-weight:700;cursor:pointer;font-family:inherit;line-height:1}
+.help-btn:hover{background:var(--accent-deep);color:var(--paper)}
+
+/* help overlay */
+.overlay{position:fixed;inset:0;background:rgba(10,16,24,0.55);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:5vh 16px;overflow:auto}
+.overlay.open{display:flex}
+.modal{background:var(--paper);color:var(--ink);border:1px solid var(--line);border-top:3px solid var(--accent-hot);max-width:760px;width:100%;padding:20px 24px 26px;box-shadow:0 14px 50px rgba(10,16,24,0.4)}
+.modal h2{border:none;margin-top:16px;padding-top:0}
+.modal h2:first-of-type{margin-top:6px}
+.modal .x{float:right;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;font-size:0.8rem;padding:2px 9px;border-radius:2px;font-family:inherit}
+.modal .x:hover{border-color:var(--accent-hot);color:var(--accent-hot)}
+.modal p,.modal li{font-size:0.84rem;line-height:1.5}
+.modal .tworow{display:grid;grid-template-columns:160px 1fr;gap:4px 12px;font-size:0.82rem;margin:4px 0}
+.modal .tworow .k{font-family:"SFMono-Regular",monospace;color:var(--accent-deep);font-size:0.76rem}
+.modal .pill{display:inline-block;padding:0 6px;border-radius:2px;color:#fff;font-size:0.66rem;font-family:"SFMono-Regular",monospace;margin-right:4px}
+</style>
+</head>
+<body>
+<div class="page"><p class="eyebrow">Linguistics Bandwidth Lab / what we found</p><h1>The bandwidth of language, measured</h1><p class="lede">The project keeps the philosophy honest by grounding it in numbers. These are the measured findings and the history they rhyme with. Hover any underlined item to inspect the number, the method, and the source; click to pin.</p><div class="toolbar"><div class="grp"><span class="tl">theme</span><button class="tbtn" data-set-theme="classic-cream">cream</button><button class="tbtn" data-set-theme="blueprint">blueprint</button><button class="tbtn" data-set-theme="parchment">parchment</button><button class="tbtn" data-set-theme="dark-vellum">dark</button><button class="tbtn" data-set-theme="monochrome-iron">iron</button></div></div><div class="stat-grid"><div class="stat"><div class="num">5.5x</div><div class="lbl">Hindi tokenizer tax (cl100k)</div></div><div class="stat"><div class="num">~39</div><div class="lbl">bits/sec, spoken convergence</div></div><div class="stat"><div class="num">0.74 / 0.12</div><div class="lbl">meaning alignment: multilingual / decoder</div></div><div class="stat"><div class="num">9</div><div class="lbl">tokens for one ZWJ emoji</div></div></div><div class="sheet"><article class="paper"><h2>the human-to-machine channel (plumbing)</h2><ul class='bul'><li><span class="term" data-term="tokenizer-tax">The tokenizer tax (TIR)</span> - Same meaning (UDHR Article 1), different token cost. Under GPT-3.5/4&#x27;s cl100k, Hindi costs...</li><li><span class="term" data-term="o200k-fix">The tax is a fixable design choice</span> - GPT-4o&#x27;s newer o200k tokenizer roughly thirds Hindi&#x27;s tax (5.5x -&gt; 1.6x) and halves most n...</li><li><span class="term" data-term="fertility">Subword fertility</span> - Tokens per character - a register-comparable efficiency measure. Casual text raises it ~15...</li><li><span class="term" data-term="register-null">Register: the tax does NOT worsen on clean casual text</span> - We expected casual text to tax non-English worse. It does not: casual raises absolute cost...</li><li><span class="term" data-term="degenerate-text">...but it breaks on emoji + code-switch</span> - The frontier the register null left: emoji-dense English is ~3.8x clean fertility, non-Lat...</li></ul><h2>the language itself</h2><ul class='bul'><li><span class="term" data-term="39-bits">The ~39 bits/sec convergence</span> - Across 17 languages, speech converges on ~39 bits/sec: dense languages (Mandarin) are spok...</li><li><span class="term" data-term="morph-packing">Morphological packing</span> - Agglutinative languages pack more morphemes per word: Finnish and Turkish top morphemes/wo...</li></ul><h2>the machine's meaning (geometry)</h2><ul class='bul'><li><span class="term" data-term="machine-geometry">Does meaning survive the crossing into the machine?</span> - Embed one fixed meaning (UDHR Article 1) in 10 languages and measure how tightly it cluste...</li><li><span class="term" data-term="plumbing-geometry">Plumbing + geometry</span> - Non-English is disadvantaged in BOTH halves of the pipeline: the tokenizer fragments it (p...</li><li><span class="term" data-term="tax-geom-decoupled">...but the two halves are largely decoupled</span> - Across 44 languages the tokenizer tax and the geometry penalty correlate only weakly - and...</li><li><span class="term" data-term="cost-utility-coupled">Cost and utility move together</span> - The tax measures what you pay (tokens); the model&#x27;s bits-per-character measures how well i...</li><li><span class="term" data-term="syntax-legibility">How legible is syntax inside a small LLM?</span> - A Hewitt-Manning structural probe recovers dependency-tree structure from Qwen2.5-0.5B&#x27;s m...</li><li><span class="term" data-term="anti-efficient-ai">AI doesn&#x27;t reinvent Zipf&#x27;s law of abbreviation</span> - Two neural agents trained to invent a code in a referential game (no efficiency pressure) ...</li></ul><h2>history and philosophy it rhymes with</h2><ul class='bul'><li><span class="term" data-term="shannon">Shannon&#x27;s guessing game</span> - Shannon had people guess the next letter of English text; the guesses revealed it carries ...</li><li><span class="term" data-term="decipherment">Cracking a code with no key</span> - Champollion broke hieroglyphs (1822) with the Rosetta Stone&#x27;s trilingual crib. Ventris bro...</li><li><span class="term" data-term="color-terms">Where weak Whorf survives</span> - Languages name colors in a near-universal order (Berlin &amp; Kay 1969), denting strong relati...</li><li><span class="term" data-term="numberless">Languages without numbers</span> - The Piraha, with words only for ~one/two/many, struggle to match sets beyond ~3 (Gordon 20...</li><li><span class="term" data-term="untranslatable">&#x27;Untranslatable&#x27; = expensive, not impossible</span> - Saudade, hygge, mamihlapinatapai - nothing is truly untranslatable; it can always be parap...</li><li><span class="term" data-term="teamim">Three channels in one set of marks</span> - The Masoretes&#x27; Hebrew cantillation marks (te&#x27;amim, 9th-10th c.) carry THREE channels at on...</li><li><span class="term" data-term="packing-poles">Damin and Ithkuil: the poles of packing</span> - Damin (a Lardil ceremonial register) re-expressed the WHOLE language in ~150-200 abstract ...</li><li><span class="term" data-term="whistled-drummed">A tongue poured into a narrow channel</span> - Silbo Gomero whistles Spanish across ravines; West African talking drums beat tonal langua...</li><li><span class="term" data-term="no-shared-code">Decipherment in reverse</span> - The inverse of cracking a lost code: designing a message understandable with NO shared con...</li><li><span class="term" data-term="babies-point">Babies point to ask questions</span> - Before a child can say a word, it points (~9-12 months) - and pointing even serves an inte...</li><li><span class="term" data-term="visual-cliff">A parent&#x27;s face as one load-bearing bit</span> - At a glass-covered apparent drop (the visual cliff), 1-year-olds look to the mother&#x27;s face...</li><li><span class="term" data-term="chimpfacs">The face is older than our species</span> - ChimpFACS found chimpanzees share most of our facial action units, on nearly the same musc...</li><li><span class="term" data-term="nicaraguan-sl">Watching grammar appear</span> - When Nicaragua opened deaf schools c. 1980, children converged on a sign language in the p...</li><li><span class="term" data-term="fight-over-zero">The long fight over zero</span> - Positional notation needs a symbol for nothing. Babylon left a gap, the Maya carved a shel...</li><li><span class="term" data-term="reading-aloud">Reading used to be out loud</span> - Greek and Latin were written in scriptio continua - NOSPACESALLCAPS - so costly to parse t...</li><li><span class="term" data-term="sequoyah">Inventing writing from nothing</span> - Most scripts evolve over centuries; the Cherokee syllabary was invented by one non-literat...</li></ul><h2>what other species do (non-human communication)</h2><p class='note'>The atlas beyond humans. The honest throughline: these are statistical and combinatorial STRUCTURE, not demonstrated meaning - cite "structured," never "translated."</p><ul class='bul'><li><span class="term" data-term="birds-vs-human">Birdsong vs language on the same axes</span> - We ran our Shannon machinery on Bengalese finch song (12,637 syllables) vs UDHR. Birdsong:...</li><li><span class="term" data-term="whales-on-the-axes">Sperm whale codas on the same axes</span> - We ran our entropy/Zipf/MI pipeline on the real Sharma 2024 coda data (8,719 codas). Sperm...</li><li><span class="term" data-term="sperm-whale-alphabet">A sperm whale phonetic alphabet</span> - Across 8,719 sperm whale codas, Sharma et al. found four combinable features - rhythm, tem...</li><li><span class="term" data-term="dolphin-names">Dolphins have names</span> - Bottlenose dolphins develop individually distinctive signature whistles and COPY each othe...</li><li><span class="term" data-term="waggle-dance">The dance that points to nowhere visible</span> - Von Frisch decoded the honeybee waggle dance: the run encodes direction (relative to the s...</li><li><span class="term" data-term="vervet-alarm">The vervet alphabet of fear</span> - Vervet monkeys give distinct alarm calls for eagle, leopard, and snake, each triggering a ...</li><li><span class="term" data-term="decoding-validation">Decoding without a Rosetta stone</span> - ML now models whale codas (CETI, WhAM) and birdsong (FinchGPT), and human-speech-pretraine...</li></ul><h2>key references</h2><div class='refs'><div class="ref-row"><span class="key">Petrov 2023</span><span class="val">Language Model Tokenizers Introduce Unfairness Between Languages (NeurIPS)</span></div><div class="ref-row"><span class="key">Coupe 2019</span><span class="val">Different languages, similar encoding efficiency (Science Advances)</span></div><div class="ref-row"><span class="key">Cotterell 2018</span><span class="val">Complexity and Typology of Inflectional Morphology (TACL)</span></div><div class="ref-row"><span class="key">Shannon 1951</span><span class="val">Prediction and Entropy of Printed English (Bell System Tech. J.)</span></div><div class="ref-row"><span class="key">Winawer 2007</span><span class="val">Russian blues reveal effects of language on color discrimination (PNAS)</span></div><div class="ref-row"><span class="key">Gordon 2004</span><span class="val">Numerical cognition without words: evidence from Amazonia (Science)</span></div><div class="ref-row"><span class="key">Sharma 2024</span><span class="val">Contextual and combinatorial structure in sperm whale vocalisations (Nature Comms)</span></div><div class="ref-row"><span class="key">McCowan 1999</span><span class="val">Information theory applied to dolphin whistle repertoires (Animal Behaviour)</span></div><div class="ref-row"><span class="key">Hockett 1960</span><span class="val">The origin of speech: the design features of language (Scientific American)</span></div></div><div class="footer"><span class="signoff">lingbench</span> &middot; measured findings + curiosities &middot; companion to facet-map.html &middot; hover to inspect, click to pin</div></article>
+<aside class="insp margin">
+  <div class="insp-card" id="insp-card">
+    <span class="insp-eyebrow">Reference Inspector <span class="insp-status"></span></span>
+    <h3 id="i-title">Hover any facet</h3>
+    <code class="insp-code" id="i-code">&middot;</code>
+    <p id="i-body">Hover a facet tile for its definition, how it is measured, and its sources. Click to pin while you read elsewhere. Esc unpins.</p>
+    <div class="insp-meta" id="i-meta"></div>
+    <div class="insp-sec" id="i-rel"><div class="label">Related facets</div><ul><li class="more">&middot;</li></ul></div>
+    <div class="insp-sec" id="i-notes"><div class="label">Measure &amp; sources</div><ul><li class="more">&middot;</li></ul></div>
+    <div class="insp-bar">
+      <span class="insp-hint">hover &middot; click to pin &middot; <kbd>esc</kbd></span>
+      <button class="insp-unpin" id="insp-unpin" aria-label="Unpin">unpin</button>
+    </div>
+  </div>
+</aside></div></div>
+<script id="reference-data" type="application/json">
+{
+"tokenizer-tax": {
+"title": "The tokenizer tax (TIR)",
+"code": "finding · channel · done",
+"body": "Same meaning (UDHR Article 1), different token cost. Under GPT-3.5/4's cl100k, Hindi costs ~5.5x the tokens of English; Mandarin only ~1.6x despite a non-Latin script.",
+"meta": {
+"metric": "tokens vs English",
+"worst": "Hindi 5.5x",
+"best non-EN": "Mandarin 1.6x"
+},
+"notes": [
+"measure: tokenizer.count over aligned UDHR Article 1, ratio to English (lingbench.tir)",
+"source: Petrov et al. 2023; Ahia et al. 2023"
+]
+},
+"o200k-fix": {
+"title": "The tax is a fixable design choice",
+"code": "finding · channel",
+"body": "GPT-4o's newer o200k tokenizer roughly thirds Hindi's tax (5.5x -> 1.6x) and halves most non-English costs. The tax is plumbing, not destiny - newer merges allocate more vocabulary to other scripts.",
+"meta": {
+"cl100k Hindi": "5.5x",
+"o200k Hindi": "1.6x"
+},
+"notes": [
+"source: our notebooks 01-02; tiktoken cl100k_base vs o200k_base"
+]
+},
+"fertility": {
+"title": "Subword fertility",
+"code": "finding · channel · done",
+"body": "Tokens per character - a register-comparable efficiency measure. Casual text raises it ~15-25% for every language, English included.",
+"meta": {
+"clean EN": "0.21 tok/ch",
+"casual EN": "0.31"
+},
+"notes": [
+"measure: tokenizers.fertility",
+"source: Lundin et al. 2025 (fertility predicts accuracy)"
+]
+},
+"39-bits": {
+"title": "The ~39 bits/sec convergence",
+"code": "finding · density · hard",
+"body": "Across 17 languages, speech converges on ~39 bits/sec: dense languages (Mandarin) are spoken slowly, sparse ones (Japanese) fast, and the product is conserved. A homeostatic set-point for human communication.",
+"meta": {
+"rate": "~39 bits/sec",
+"languages": "17"
+},
+"notes": [
+"careful: this is Coupe et al. 2019; the 2011 Pellegrino precursor found the trade-off but explicitly rejected a constant rate",
+"source: Coupe, Oh, Dediu & Pellegrino 2019, Science Advances"
+]
+},
+"morph-packing": {
+"title": "Morphological packing",
+"code": "finding · morphology · proxy",
+"body": "Agglutinative languages pack more morphemes per word: Finnish and Turkish top morphemes/word, MATTR, and word length; English (analytic-leaning) sits lower; isolating Mandarin/Vietnamese lowest.",
+"meta": {
+"order": "agglutinative > fusional > isolating"
+},
+"notes": [
+"measure: Morfessor morphemes/word, MATTR (lingbench.morphology)",
+"source: Cotterell et al. 2018; Bentz et al. 2022 (equi-complexity)"
+]
+},
+"register-null": {
+"title": "Register: the tax does NOT worsen on clean casual text",
+"code": "finding · refuted hypothesis",
+"body": "We expected casual text to tax non-English worse. It does not: casual raises absolute cost ~15-25% for everyone (English too), so the relative non-English gap is flat-to-compressed. UDHR-based TIR is a fair proxy.",
+"meta": {
+"verdict": "hypothesis refuted",
+"all ratios": "<= 1.0"
+},
+"notes": [
+"method: fertility on UDHR (formal) vs Tatoeba (casual)",
+"kept as an honest negative result"
+]
+},
+"degenerate-text": {
+"title": "...but it breaks on emoji + code-switch",
+"code": "finding · channel",
+"body": "The frontier the register null left: emoji-dense English is ~3.8x clean fertility, non-Latin+emoji ~5x (the script tax and emoji tax compound). A ZWJ emoji like the rainbow flag costs 9 tokens under cl100k.",
+"meta": {
+"emoji-dense EN": "3.8x",
+"non-Latin+emoji": "~5x",
+"rainbow flag": "9 tokens"
+},
+"notes": [
+"synthetic samples (mechanism, not prevalence)",
+"this is where real social text reappears the penalty"
+]
+},
+"machine-geometry": {
+"title": "Does meaning survive the crossing into the machine?",
+"code": "finding · machine · semantic",
+"body": "Embed one fixed meaning (UDHR Article 1) in 10 languages and measure how tightly it clusters: a multilingual encoder 0.74, an English-centric encoder 0.25, a raw decoder LLM 0.12. Cross-lingual meaning alignment is ENGINEERED, not automatic.",
+"meta": {
+"multilingual": "0.74",
+"English encoder": "0.25",
+"decoder LLM": "0.12"
+},
+"notes": [
+"measure: mean pairwise cosine (lingbench.vertical.udhr_geometry)",
+"confirms the 'geometry' half of plumbing+geometry; decoder row robust to pooling but suggestive"
+]
+},
+"plumbing-geometry": {
+"title": "Plumbing + geometry",
+"code": "synthesis",
+"body": "Non-English is disadvantaged in BOTH halves of the pipeline: the tokenizer fragments it (plumbing) AND the embedding space scatters its meaning from the English equivalent (geometry) - unless a model is specifically built to align.",
+"meta": {
+"plumbing": "tokenizer tax",
+"geometry": "embedding mis-alignment"
+},
+"notes": [
+"the project's day-one framing, now measured on both sides"
+]
+},
+"tax-geom-decoupled": {
+"title": "...but the two halves are largely decoupled",
+"code": "finding · 44 languages",
+"body": "Across 44 languages the tokenizer tax and the geometry penalty correlate only weakly - and this holds across three model families (multilingual encoder 0.35, English-centric encoder ~0.00, decoder LLM 0.37). Switching to English-centric models makes the geometry penalty huge but does NOT make it track the tax. So 'fix the tokenizer' and 'fix the geometry' are separate problems.",
+"meta": {
+"Pearson r": "0.35 / 0.00 / 0.37",
+"models": "3",
+"languages": "44"
+},
+"notes": [
+"measure: o200k fertility vs 1 - cos-to-English, UDHR Article 1, three geometry models",
+"the geometry penalty (uncalibrated models) is driven mainly by SCRIPT (Latin vs non-Latin), not by the tax",
+"the decoder splits bimodally by script; the English encoder saturates (CJK lands closer to English than average)",
+"controlling for script: the decoder link drops to zero (partial -0.01), but a real coupling survives within one script - up to r=0.58 among Latin languages in the English encoder"
+]
+},
+"cost-utility-coupled": {
+"title": "Cost and utility move together",
+"code": "finding · 46 languages, two corpora",
+"body": "The tax measures what you pay (tokens); the model's bits-per-character measures how well it predicts a language (utility). Unlike the geometry penalty, these are COUPLED: more-taxed languages are also modeled worse. Confirmed on a held-out corpus (Tatoeba) where the link STRENGTHENS to Pearson 0.73 - the real two-axis picture is cost vs utility, both driven by how much the model has seen a language. Cheap-and-fluent: en/fr/de/es/ru/id. Expensive-and-surprising: zh/ko/ja.",
+"meta": {
+"Pearson r": "0.73 (held-out)",
+"Spearman": "0.76",
+"model": "Qwen2.5-0.5B"
+},
+"notes": [
+"measure: model NLL in bits/char (tokenization-fair) vs o200k fertility",
+"memorization controlled: English bpc went 0.14 (UDHR, memorized) -> 1.08 (Tatoeba); the coupling rose 0.58 -> 0.73, so it is real, not a contamination artifact",
+"tax and utility are correlated, not identical: Albanian tokenizes cheaply yet is modeled poorly (all utility penalty, no tax)"
+]
+},
+"syntax-legibility": {
+"title": "How legible is syntax inside a small LLM?",
+"code": "finding · 4 languages",
+"body": "A Hewitt-Manning structural probe recovers dependency-tree structure from Qwen2.5-0.5B's middle layer at UUAS 0.31-0.41 (English/Spanish/Finnish/Chinese) - a real but weak syntactic signal in the geometry (vs BERT-large's ~0.80; this is a tiny decoder, one layer, 240 sentences). Syntax legibility and the tokenizer tax look decoupled: Chinese's 3-4x fertility doesn't lower its score.",
+"meta": {
+"UUAS": "0.31-0.41",
+"vs BERT-large": "~0.80",
+"tax corr": "+0.23 (flat)"
+},
+"notes": [
+"method: linear structural probe (rank 64), Qwen2.5-0.5B layer 12, UD dev treebanks",
+"caveat: small decoder, single un-searched layer, 240 train sents, space-join word approx (esp. Chinese); 4-lang correlation illustrative",
+"facets: embedding-alignment; ties to orthography-tokenizer-bridge"
+]
+},
+"anti-efficient-ai": {
+"title": "AI doesn't reinvent Zipf's law of abbreviation",
+"code": "finding · emergent comms",
+"body": "Two neural agents trained to invent a code in a referential game (no efficiency pressure) succeed (~94% accuracy) but their messages SATURATE to the maximum length (mean 9.94/10) - frequent meanings are not shortened (freq-length corr -0.12, flat). Human languages abbreviate frequent words; a machine-invented code, left alone, is anti-efficient (Chaabouni 2019). Symbol usage does skew Zipf-ish, but length efficiency does not emerge.",
+"meta": {
+"task accuracy": "~94%",
+"mean length": "9.94 / 10",
+"abbreviation": "none"
+},
+"notes": [
+"a direct (toy) answer to 'what would AI invent to communicate': not human-like efficiency without added pressure (cf. LazImpa)",
+"method: 2-agent Gumbel-softmax referential game, 100 Zipf meanings, vocab 12, CPU; single seed",
+"facets: duality-of-patterning; the efficiency lens of zipf-in-animal-signals"
+]
+},
+"shannon": {
+"title": "Shannon's guessing game",
+"code": "curiosity · 1951",
+"body": "Shannon had people guess the next letter of English text; the guesses revealed it carries only ~0.6-1.3 bits/char - English is ~75% redundant. Our modern neural estimate (~1.12 bits/char) agrees 70 years on.",
+"meta": {
+"entropy": "~1 bit/char",
+"redundancy": "~75%"
+},
+"notes": [
+"source: Shannon 1951; Cover & King 1978; Takahashi & Tanaka-Ishii 2018"
+]
+},
+"decipherment": {
+"title": "Cracking a code with no key",
+"code": "curiosity · 1822 / 1952",
+"body": "Champollion broke hieroglyphs (1822) with the Rosetta Stone's trilingual crib. Ventris broke Linear B (1952) with NO bilingual at all - pure statistics, guessing Cretan-only sign-groups were place-names. Meaning leaves statistical fingerprints even when the key is lost.",
+"meta": {
+"with key": "Champollion 1822",
+"no key": "Ventris 1952"
+},
+"notes": [
+"redundancy is what makes decipherment possible; a max-compressed message is unbreakable noise",
+"source: Britannica; Chadwick, The Decipherment of Linear B"
+]
+},
+"color-terms": {
+"title": "Where weak Whorf survives",
+"code": "curiosity · color",
+"body": "Languages name colors in a near-universal order (Berlin & Kay 1969), denting strong relativism. But Russian, with two basic blues, discriminates across that boundary faster (Winawer 2007). Language greases certain perceptual grooves at the margins.",
+"meta": {
+"strong Whorf": "discredited",
+"weak Whorf": "survives"
+},
+"notes": [
+"source: Berlin & Kay 1969; Winawer et al. 2007 PNAS (Russian blues)"
+]
+},
+"numberless": {
+"title": "Languages without numbers",
+"code": "curiosity · cognition",
+"body": "The Piraha, with words only for ~one/two/many, struggle to match sets beyond ~3 (Gordon 2004). Yet the Munduruku have rich geometric intuition with no geometry words. Vocabulary is a bandwidth allocation - what a culture made cheap to say.",
+"meta": {
+"number": "needs the word",
+"geometry": "does not"
+},
+"notes": [
+"source: Gordon 2004, Science; Dehaene et al. 2006, Science (verified in our briefs)"
+]
+},
+"untranslatable": {
+"title": "'Untranslatable' = expensive, not impossible",
+"code": "curiosity · lexicon",
+"body": "Saudade, hygge, mamihlapinatapai - nothing is truly untranslatable; it can always be paraphrased. What differs is the cost (one word here, a clause there). Every language is a different compression dictionary; the gaps are tariffs, not walls.",
+"meta": {
+"claim": "untranslatable",
+"reality": "expensive to translate"
+},
+"notes": [
+"source: Lomas 2016, positive lexicography",
+"this is the project thesis in one word"
+]
+},
+"teamim": {
+"title": "Three channels in one set of marks",
+"code": "curiosity · te'amim",
+"body": "The Masoretes' Hebrew cantillation marks (te'amim, 9th-10th c.) carry THREE channels at once: a recursive parse tree (disjunctive/conjunctive accents), word stress, and a melodic motif. One glyph compresses three notations; the melody completes only through an oral tradition.",
+"meta": {
+"channels": "parse + prosody + melody",
+"marks": "~30"
+},
+"notes": [
+"solid on syntax (Wickes 1881, Price 1990, Khan 2020); melody-reconstruction (Haik-Vantoura) is contested",
+"facets: prosodic-syntactic-overlay, multichannel-overlay, underspecified-notation"
+]
+},
+"packing-poles": {
+"title": "Damin and Ithkuil: the poles of packing",
+"code": "curiosity · vocabulary",
+"body": "Damin (a Lardil ceremonial register) re-expressed the WHOLE language in ~150-200 abstract words; Ithkuil (a constructed language) packs a sentence into one inflected word. The floor and ceiling of how much meaning a unit can carry - the total is conserved, only the packing differs.",
+"meta": {
+"floor": "Damin ~200 words",
+"ceiling": "Ithkuil (1 word = 1 sentence)"
+},
+"notes": [
+"Damin documented by Kenneth Hale; counts approximate from a small record",
+"facets: lexical-minimalism, morphological-packing-ceiling"
+]
+},
+"whistled-drummed": {
+"title": "A tongue poured into a narrow channel",
+"code": "curiosity · channel",
+"body": "Silbo Gomero whistles Spanish across ravines; West African talking drums beat tonal languages and ADD stock phrases as redundancy to replace lost vowels; Piraha can be hummed or whistled. A message survives a brutal cut in channel capacity by spending redundancy.",
+"meta": {
+"examples": "Silbo, talking drums, Piraha",
+"trick": "redundancy vs channel noise"
+},
+"notes": [
+"source: Carrington 1949 (drums); Meyer 2015 (whistled); Everett 2005 (Piraha)",
+"facets: whistled-speech, drum-language, redundancy - Shannon made audible"
+]
+},
+"no-shared-code": {
+"title": "Decipherment in reverse",
+"code": "curiosity · Lincos / Arecibo",
+"body": "The inverse of cracking a lost code: designing a message understandable with NO shared convention. Freudenthal's Lincos (1960) bootstraps a language from math and logic; the Arecibo message (1974) and Pioneer plaque (1972) try to be self-decoding. A no-shared-code message must be its own Rosetta stone.",
+"meta": {
+"forward": "recover a lost key",
+"reverse": "carry the key inside"
+},
+"notes": [
+"the deepest open question about universal meaning; mirror of the decipherment card",
+"facet: no-shared-code-message; connects to the sound-symbolism universality floor"
+]
+},
+"babies-point": {
+"title": "Babies point to ask questions",
+"code": "curiosity · development",
+"body": "Before a child can say a word, it points (~9-12 months) - and pointing even serves an interrogative function: infants point to elicit information and attend more when they get a good answer. The question exists as a gesture before the word. Underneath sits joint attention, whose onset predicts later vocabulary.",
+"meta": {
+"pointing": "~9-12 months",
+"function": "even interrogative"
+},
+"notes": [
+"source: Tomasello et al. 2007; Begus & Southgate 2012; Carpenter et al. 1998",
+"facets: gesture-development-pointing, joint-attention"
+]
+},
+"visual-cliff": {
+"title": "A parent's face as one load-bearing bit",
+"code": "curiosity · development",
+"body": "At a glass-covered apparent drop (the visual cliff), 1-year-olds look to the mother's face: if she poses joy, most crawl across; if she poses fear, almost none do. Social referencing - a pre-verbal mind reads the facial channel as a single go/no-go bit and stakes its safety on it.",
+"meta": {
+"signal": "one go/no-go bit",
+"age": "~12 months"
+},
+"notes": [
+"source: Sorce, Emde, Campos & Klinnert 1985",
+"facet: social-referencing"
+]
+},
+"chimpfacs": {
+"title": "The face is older than our species",
+"code": "curiosity · comparative",
+"body": "ChimpFACS found chimpanzees share most of our facial action units, on nearly the same musculature, and their expressions are distinguishable by muscle action. We did not invent the facial channel; we inherited it. Whether the MEANINGS are as old as the muscles is the unresolved universality debate.",
+"meta": {
+"shared": "most facial action units",
+"channel": "predates Homo sapiens"
+},
+"notes": [
+"source: Vick et al. 2006 (ChimpFACS); Parr et al. 2007; Burrows et al. 2006",
+"facets: facial-affect-primate, facial-affect-universality"
+]
+},
+"fight-over-zero": {
+"title": "The long fight over zero",
+"code": "curiosity · numerals",
+"body": "Positional notation needs a symbol for nothing. Babylon left a gap, the Maya carved a shell-zero, but zero AS A NUMBER (with arithmetic rules) came from Brahmagupta (628 CE), reached Europe via Fibonacci (1202), and still took centuries to win - distrusted as forgeable. Place value + zero makes a number's length grow with the LOG of its size.",
+"meta": {
+"zero-as-number": "Brahmagupta 628",
+"to Europe": "Fibonacci 1202"
+},
+"notes": [
+"source: Chrisomalis 2010; Brahmagupta 628; Fibonacci 1202",
+"facets: positional-encoding, zero-as-number, numeral-system-type"
+]
+},
+"reading-aloud": {
+"title": "Reading used to be out loud",
+"code": "curiosity · spacing",
+"body": "Greek and Latin were written in scriptio continua - NOSPACESALLCAPS - so costly to parse that reading was done aloud. Word spaces (Irish/Anglo-Saxon scribes, 7th-8th c.) made silent reading widespread (Saenger; contested). The blank space carries no letters yet may be one of the highest-leverage bits ever added to writing.",
+"meta": {
+"before": "scriptio continua, read aloud",
+"after": "spaces, silent reading"
+},
+"notes": [
+"source: Saenger 1997 (contested by Knox 1968); Parkes 1992; Gunraj 2016 (the cold period)",
+"facets: word-segmentation-spacing, reading-mode-oral-silent"
+]
+},
+"sequoyah": {
+"title": "Inventing writing from nothing",
+"code": "curiosity · script",
+"body": "Most scripts evolve over centuries; the Cherokee syllabary was invented by one non-literate person, Sequoyah, in the 1820s (~85 symbols), and literacy spread like wildfire. Hangul (1443) is the other great deliberate design - its consonant shapes diagram the mouth. The script is a removable interface to a language, not the language itself.",
+"meta": {
+"Cherokee": "Sequoyah, ~85 syllables",
+"Hangul": "Sejong 1443, featural"
+},
+"notes": [
+"source: Cushman 2011 (Cherokee); Sampson 1985 (Hangul featural)",
+"facet: writing-system-type - and why the tokenizer (a machine's interface to text) is worth measuring"
+]
+},
+"nicaraguan-sl": {
+"title": "Watching grammar appear",
+"code": "curiosity · emergence",
+"body": "When Nicaragua opened deaf schools c. 1980, children converged on a sign language in the playground - and the grammar DEEPENED with each cohort: the younger arrivals, not the first signers, added spatial grammar and discrete reorderable units. Structure self-organizes, supplied by the learners.",
+"meta": {
+"engine": "successive child cohorts",
+"also": "Al-Sayyid Bedouin SL"
+},
+"notes": [
+"source: Senghas et al. 2004; Senghas & Coppola 2001; Sandler et al. 2005",
+"facet: emergence-of-grammar - where structure comes from"
+]
+},
+"whales-on-the-axes": {
+"title": "Sperm whale codas on the same axes",
+"code": "finding · real CETI data",
+"body": "We ran our entropy/Zipf/MI pipeline on the real Sharma 2024 coda data (8,719 codas). Sperm whale codas sit BETWEEN finch song and human characters in inventory/entropy. Like birdsong (and unlike language), their conditional entropy collapses fast (locally near-deterministic) and their long-range mutual information decays shallowly - persistent correlation from periodic REPETITION, not the steeper hierarchical decay of human text. Same 'power-law MI', two mechanisms.",
+"meta": {
+"codas": "8,719",
+"Zipf": "-1.61",
+"MI decay": "shallow (repetition)"
+},
+"notes": [
+"data: Sharma et al. 2024 (github pratyushasharma/sw-combinatoriality; Zenodo 10.5281/zenodo.10817697)",
+"all four (whale/finch/eng/fin) fit power-law MI, but exponents split: animals -0.4/-0.5 (repetition), humans -1.3/-1.4 (hierarchy)",
+"caveat: coda order is within-recording proxy; in-sample; structure not meaning (Sharma do no playback)",
+"facets: coda-combinatoriality, animal-signal-entropy, zipf-in-animal-signals"
+]
+},
+"sperm-whale-alphabet": {
+"title": "A sperm whale phonetic alphabet",
+"code": "non-human · 2024",
+"body": "Across 8,719 sperm whale codas, Sharma et al. found four combinable features - rhythm, tempo, rubato, ornamentation - yielding 143+ types from ~21. The strongest claim of combinatoriality (duality of patterning) outside humans. Crucially: this is STRUCTURE, not meaning - no playback experiments.",
+"meta": {
+"codas": "8,719",
+"types": "21 -> 143+",
+"claim": "structure, not semantics"
+},
+"notes": [
+"source: Sharma et al. 2024, Nature Communications; Project CETI",
+"facets: coda-combinatoriality, duality-of-patterning, animal-decoding-ml"
+]
+},
+"dolphin-names": {
+"title": "Dolphins have names",
+"code": "non-human · reference",
+"body": "Bottlenose dolphins develop individually distinctive signature whistles and COPY each other's to address a specific individual - learned, referential vocal labels, about as close to naming as anything outside humans. One of the rare non-human cases that touches meaning, not just structure.",
+"meta": {
+"signal": "signature whistle",
+"function": "addressing an individual"
+},
+"notes": [
+"source: King & Janik 2013, PNAS",
+"facet: referential-alarm-call (reference in non-human signals)"
+]
+},
+"waggle-dance": {
+"title": "The dance that points to nowhere visible",
+"code": "non-human · displacement",
+"body": "Von Frisch decoded the honeybee waggle dance: the run encodes direction (relative to the sun) and distance to food no follower can see - carrying ~2.9 bits of direction and ~4.5 bits of distance. Displacement (communicating about the absent) is a Hockett design feature thought near-unique to language, here in an insect.",
+"meta": {
+"direction": "~2.9 bits",
+"distance": "~4.5 bits",
+"feature": "displacement"
+},
+"notes": [
+"source: von Frisch 1967 (Nobel 1973); Dyer 2002; Wario et al. 2017",
+"facet: displaced-reference"
+]
+},
+"vervet-alarm": {
+"title": "The vervet alphabet of fear",
+"code": "non-human · reference",
+"body": "Vervet monkeys give distinct alarm calls for eagle, leopard, and snake, each triggering a different escape - look up, run to a tree, look down. Functionally referential meaning without combinatoriality: a signal that is 'about' a specific thing, the textbook non-human case.",
+"meta": {
+"calls": "eagle / leopard / snake",
+"property": "functionally referential"
+},
+"notes": [
+"source: Seyfarth, Cheney & Marler 1980",
+"facet: referential-alarm-call"
+]
+},
+"birds-vs-human": {
+"title": "Birdsong vs language on the same axes",
+"code": "finding · our entropy tools",
+"body": "We ran our Shannon machinery on Bengalese finch song (12,637 syllables) vs UDHR. Birdsong: tiny inventory (4-9 syllable types), low entropy, and conditional entropy COLLAPSES by order 2 - strong but shallow, finite-state-like rules. Human letters: bigger inventory (~50), higher entropy, GRADUAL multi-order decay - redundancy spread over deeper context. The famous Zipf -1 shows up for pooled birds (-1.05), Chinese chars (-1.02), and English words (-0.77) but NOT alphabetic letters (-2.3): the slope depends on what you call a unit and is weak evidence alone.",
+"meta": {
+"birds": "V=4-9, collapses by order 2",
+"human chars": "V~50, gradual decay",
+"Zipf -1": "unit-dependent"
+},
+"notes": [
+"data: Bengalese finch song, Koumura & Okanoya 2016 (figshare 3470165) vs UDHR",
+"reproduces the Suzuki 2004 / Kershenbaum 2020 caveat: Zipf slope is unstable on small/stereotyped repertoires",
+"mutual-info vs distance (Lin-Tegmark): human text shows clean power-law (long-range) MI decay; birdsong's long-range MI comes from PERIODIC REPETITION, not hierarchy (it is locally near-deterministic per the entropy collapse)",
+"caveat: UDHR small so high-order entropy + MI for words/Chinese chars is undersampled; only 2 birds; researcher-labeled syllables",
+"facets: animal-signal-entropy, zipf-in-animal-signals, phonological-syntax"
+]
+},
+"decoding-validation": {
+"title": "Decoding without a Rosetta stone",
+"code": "non-human · decipherment",
+"body": "ML now models whale codas (CETI, WhAM) and birdsong (FinchGPT), and human-speech-pretrained models even transfer to animal sound. But there is no ground-truth meaning to check against: a model that predicts the next coda, or synthesizes a convincing one, has shown acoustic fidelity, not comprehension. Structure is recoverable; meaning is not (yet).",
+"meta": {
+"recoverable": "structure",
+"unverifiable": "meaning"
+},
+"notes": [
+"source: Andreas et al. 2021 (CETI); Sharma 2024; Sarkar & Magimai-Doss 2025",
+"facets: decipherment-validation-gap, cross-species-representation-transfer"
+]
+}
+}
+</script>
+
+<script>
+(()=>{
+  const D = JSON.parse(document.getElementById('reference-data').textContent);
+  const card = document.getElementById('insp-card');
+  const els = {
+    t: document.getElementById('i-title'), c: document.getElementById('i-code'),
+    b: document.getElementById('i-body'), m: document.getElementById('i-meta'),
+    r: document.getElementById('i-rel'), n: document.getElementById('i-notes'),
+    s: card.querySelector('.insp-status')
+  };
+  const unpinBtn = document.getElementById('insp-unpin');
+  let pinned = null;
+  function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+  function paint(k){
+    const x=D[k]; if(!x) return;
+    els.t.textContent=x.title; els.c.textContent=x.code||'\u00b7'; els.b.textContent=x.body||'';
+    els.m.innerHTML=Object.entries(x.meta||{}).map(([k,v])=>`<div><strong>${esc(k)}</strong><span>${esc(v)}</span></div>`).join('');
+    els.r.querySelector('ul').innerHTML=(x.rel||[]).map(r=>{const o=D[r];return o?`<li>&rsaquo; ${esc(o.title)}</li>`:'';}).join('')||'<li class="more">\u00b7</li>';
+    els.n.querySelector('ul').innerHTML=(x.notes||[]).map(z=>`<li style="white-space:normal">\u00b7 ${esc(z)}</li>`).join('')||'<li class="more">\u00b7</li>';
+  }
+  function active(el){document.querySelectorAll('.is-active').forEach(x=>{if(x!==el)x.classList.remove('is-active');});if(el)el.classList.add('is-active');}
+  function pin(k,el){pinned=k;paint(k);card.classList.add('is-pinned');els.s.textContent='pinned';unpinBtn.style.display='inline-block';document.querySelectorAll('.is-pinned').forEach(x=>x.classList.remove('is-pinned'));card.classList.add('is-pinned');if(el)el.classList.add('is-pinned');}
+  function unpin(){pinned=null;card.classList.remove('is-pinned');els.s.textContent='';unpinBtn.style.display='none';document.querySelectorAll('.is-pinned').forEach(x=>x.classList.remove('is-pinned'));}
+  document.addEventListener('mouseover',e=>{if(pinned)return;const t=e.target.closest('.term');if(!t)return;paint(t.getAttribute('data-term'));active(t);});
+  document.querySelectorAll('.term').forEach(el=>{
+    el.setAttribute('tabindex','0');
+    el.addEventListener('click',e=>{e.preventDefault();const k=el.getAttribute('data-term');if(pinned===k){unpin();return;}pin(k,el);});
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();const k=el.getAttribute('data-term');if(pinned===k){unpin();return;}pin(k,el);}});
+    el.addEventListener('focus',()=>{if(!pinned)paint(el.getAttribute('data-term'));});
+  });
+  unpinBtn.addEventListener('click',unpin);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&pinned)unpin();});
+
+  // theme switch (persisted)
+  const root=document.documentElement;
+  const saved=localStorage.getItem('fmtheme'); if(saved) root.setAttribute('data-theme',saved);
+  function syncThemeBtns(){const cur=root.getAttribute('data-theme')||'classic-cream';document.querySelectorAll('[data-set-theme]').forEach(b=>b.classList.toggle('active',b.getAttribute('data-set-theme')===cur));}
+  document.querySelectorAll('[data-set-theme]').forEach(btn=>{
+    btn.addEventListener('click',()=>{const t=btn.getAttribute('data-set-theme');root.setAttribute('data-theme',t);localStorage.setItem('fmtheme',t);syncThemeBtns();if(window.__drawWires)window.__drawWires();});
+  });
+  syncThemeBtns();
+
+  // help overlay
+  const ov=document.getElementById('help-overlay');
+  if(ov){
+    const ob=document.getElementById('help-open'), cb=document.getElementById('help-close');
+    const show=()=>ov.classList.add('open'), hide=()=>ov.classList.remove('open');
+    if(ob) ob.addEventListener('click',show);
+    if(cb) cb.addEventListener('click',hide);
+    ov.addEventListener('click',e=>{if(e.target===ov)hide();});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});
+  }
+})();
+</script>
+
+</body>
+</html>
