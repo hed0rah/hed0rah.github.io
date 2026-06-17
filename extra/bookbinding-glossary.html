@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Glossary of Bookbinding, 686.3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+/* ── tokens ─────────────────────────────────────────── */
+:root {
+  --ground:     #F7F5F0;
+  --ground-alt: #F0EDE6;
+  --ink:        #141210;
+  --ink-mid:    #3A3530;
+  --ink-dim:    #7A7268;
+  --ink-faint:  #C0B8AE;
+  --rule:       #D8D0C4;
+  --accent:     #9A8878;
+  --sepia:      #C4A882;
+  --ff-display: 'Playfair Display', Georgia, serif;
+  --ff-body:    'Inter', system-ui, sans-serif;
+  --ff-mono:    'IBM Plex Mono', monospace;
+  --measure:    68ch;
+  --sidebar:    200px;
+  --gap:        40px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--ff-body);
+  font-weight: 400;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ── layout shell ────────────────────────────────────── */
+.site-wrap {
+  display: grid;
+  grid-template-columns: var(--sidebar) 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "header header"
+    "nav    main";
+  min-height: 100vh;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* ── site header ─────────────────────────────────────── */
+.site-header {
+  grid-area: header;
+  border-bottom: 1px solid var(--rule);
+  padding: 28px var(--gap) 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 24px;
+}
+
+.header-call {
+  font-family: var(--ff-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+.header-title {
+  font-family: var(--ff-display);
+  font-size: clamp(1.25rem, 2vw, 1.6rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  line-height: 1.15;
+}
+
+.header-subtitle {
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  text-align: right;
+  line-height: 1.5;
+}
+
+/* ── sidebar nav ─────────────────────────────────────── */
+.site-nav {
+  grid-area: nav;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--rule);
+  padding: 32px 20px 60px;
+  scrollbar-width: none;
+}
+
+.site-nav::-webkit-scrollbar { display: none; }
+
+.nav-section {
+  margin-bottom: 28px;
+}
+
+.nav-heading {
+  font-family: var(--ff-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  display: block;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.nav-section a {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+  text-decoration: none;
+  padding: 3px 0;
+  transition: color 0.12s;
+  line-height: 1.4;
+}
+
+.nav-section a:hover { color: var(--ink); }
+.nav-section a .call { font-family: var(--ff-mono); font-size: 0.6rem; color: var(--ink-faint); flex-shrink: 0; }
+.nav-section a:hover .call { color: var(--accent); }
+
+/* ── main content ────────────────────────────────────── */
+.site-main {
+  grid-area: main;
+  padding: 60px var(--gap) 120px;
+}
+
+/* ── lede ────────────────────────────────────────────── */
+.lede {
+  max-width: var(--measure);
+  margin-bottom: 64px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.lede-eyebrow {
+  font-family: var(--ff-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 18px;
+}
+
+.lede-text {
+  font-family: var(--ff-display);
+  font-size: clamp(1.15rem, 1.8vw, 1.4rem);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--ink-mid);
+  line-height: 1.65;
+  max-width: 56ch;
+}
+
+.lede-meta {
+  margin-top: 20px;
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.lede-meta span {
+  font-family: var(--ff-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+}
+
+.lede-meta strong {
+  color: var(--ink-dim);
+  font-weight: 500;
+}
+
+/* ── section blocks ──────────────────────────────────── */
+.gl-section {
+  max-width: var(--measure);
+  margin-bottom: 72px;
+  scroll-margin-top: 24px;
+}
+
+.section-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 20px;
+  align-items: baseline;
+  margin-bottom: 28px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.section-call {
+  font-family: var(--ff-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: var(--sepia);
+  white-space: nowrap;
+  padding-top: 2px;
+}
+
+.section-title {
+  font-family: var(--ff-display);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+/* ── entry ───────────────────────────────────────────── */
+.entry {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 0 28px;
+  align-items: start;
+}
+
+.entry:last-child { border-bottom: none; }
+
+.entry-term {
+  font-family: var(--ff-display);
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.35;
+  padding-top: 1px;
+  letter-spacing: -0.003em;
+}
+
+.entry-term em {
+  display: block;
+  font-family: var(--ff-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-style: normal;
+  color: var(--ink-faint);
+  margin-top: 4px;
+  font-weight: 400;
+}
+
+.entry-def {
+  font-size: 0.84rem;
+  color: var(--ink-mid);
+  line-height: 1.75;
+  font-weight: 300;
+}
+
+.entry-def strong {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.entry-def em {
+  font-style: italic;
+  color: var(--ink);
+}
+
+/* cross-reference */
+.xref {
+  display: inline-block;
+  margin-top: 6px;
+  font-family: var(--ff-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* ── note blocks (conservation / regional etc) ───────── */
+.note {
+  background: var(--ground-alt);
+  border-left: 2px solid var(--sepia);
+  padding: 12px 16px;
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+  line-height: 1.65;
+  font-style: italic;
+}
+
+.note strong {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--ink);
+  font-family: var(--ff-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+/* ── footer ──────────────────────────────────────────── */
+.site-footer {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--rule);
+  padding: 24px var(--gap);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-refs {
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+  line-height: 1.7;
+}
+
+.footer-refs a {
+  color: var(--ink-dim);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--rule);
+}
+
+.footer-refs a:hover { color: var(--ink); }
+
+.footer-call {
+  font-family: var(--ff-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  text-align: right;
+}
+
+/* ── responsive ──────────────────────────────────────── */
+@media (max-width: 900px) {
+  .site-wrap {
+    grid-template-columns: 1fr;
+    grid-template-areas: "header" "main";
+  }
+
+  .site-nav { display: none; }
+
+  .site-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .header-subtitle { text-align: left; }
+
+  .entry {
+    grid-template-columns: 1fr;
+    gap: 6px 0;
+  }
+
+  .entry-term em { display: inline; margin-left: 8px; }
+}
+
+@media (max-width: 560px) {
+  :root { --gap: 20px; }
+  .site-main { padding-top: 36px; }
+  .entry { padding: 12px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+/* ── epigraph (added) ───────────────────────────────── */
+.lede-epigraph { max-width: 54ch; }
+.lede-epigraph::before {
+  content: "\201C";
+  display: block;
+  font-family: var(--ff-display);
+  font-size: 3rem;
+  line-height: 0.4;
+  color: var(--sepia);
+  margin-bottom: 14px;
+}
+.lede-epigraph p {
+  font-family: var(--ff-display);
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--ink);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+.lede-cite {
+  display: block;
+  margin-top: 18px;
+  font-family: var(--ff-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+  font-style: normal;
+  text-transform: uppercase;
+}
+.lede-cite em { font-style: italic; text-transform: none; }
+
+/* ── reveal on scroll (added) ───────────────────────── */
+html.js .reveal { opacity: 0; transform: translateY(14px); transition: opacity .7s ease, transform .7s ease; }
+html.js .reveal.is-visible { opacity: 1; transform: none; }
+
+/* ── interaction polish (added) ─────────────────────── */
+.entry { transition: background-color .2s ease; }
+.entry:hover { background-color: rgba(154,136,120,0.07); }
+.entry-term { transition: color .2s ease; }
+.entry:hover .entry-term { color: var(--accent); }
+.nav-section a { transition: color .12s ease, transform .12s ease; }
+.nav-section a:hover { transform: translateX(2px); }
+.nav-section a.active { color: var(--ink); }
+.nav-section a.active .call { color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  html.js .reveal { opacity: 1; transform: none; transition: none; }
+  .nav-section a:hover { transform: none; }
+}
+</style>
+</head>
+<body>
+<div class="site-wrap">
+
+<!-- ── header ─────────────────────────────────────────── -->
+<header class="site-header">
+  <div>
+    <div class="header-call">686.3 / REF / BIND</div>
+    <h1 class="header-title">A Glossary of Bookbinding</h1>
+  </div>
+  <p class="header-subtitle">
+    Structures, materials, adhesives,<br>
+    decoration, and conservation
+  </p>
+</header>
+
+<!-- ── sidebar ───────────────────────────────────────── -->
+<nav class="site-nav" aria-label="Section index">
+
+  <div class="nav-section">
+    <span class="nav-heading">Classification</span>
+    <a href="#structures"><span>Structures &amp; Methods</span><span class="call">686.302</span></a>
+    <a href="#textblock"><span>Textblock Construction</span><span class="call">686.3022</span></a>
+    <a href="#covering"><span>Covering Materials</span><span class="call">686.3024</span></a>
+    <a href="#boards"><span>Board Work</span><span class="call">686.3026</span></a>
+    <a href="#adhesives"><span>Adhesives</span><span class="call">686.3028</span></a>
+    <a href="#finishing"><span>Finishing &amp; Decoration</span><span class="call">686.304</span></a>
+    <a href="#conservation"><span>Conservation</span><span class="call">686.309</span></a>
+    <a href="#anatomy"><span>Book Anatomy</span><span class="call">686.301</span></a>
+    <a href="#sewing"><span>Sewing Structures</span><span class="call">686.3023</span></a>
+    <a href="#paper"><span>Paper &amp; Materials</span><span class="call">676.1</span></a>
+  </div>
+
+  <div class="nav-section">
+    <span class="nav-heading">References</span>
+    <a href="#refs"><span>Bibliography</span><span class="call">016</span></a>
+  </div>
+
+</nav>
+
+<!-- ── main ──────────────────────────────────────────── -->
+<main class="site-main">
+
+  <div class="lede">
+    <span class="lede-eyebrow">686.3 / Bookbinding</span>
+    <blockquote class="lede-epigraph">
+      <p>A book is a sequence of spaces.</p>
+      <cite class="lede-cite">Ulises Carrión, <em>The New Art of Making Books</em>, 1975</cite>
+    </blockquote>
+    <div class="lede-meta">
+      <span><strong>Anchored in</strong> Roberts &amp; Etherington, 1982</span>
+      <span><strong>Supplemented by</strong> AIC, NEDCC, LBI 8th ed.</span>
+      <span><strong>British / American</strong> variants noted throughout</span>
+    </div>
+  </div>
+
+
+  <!-- ── 1. STRUCTURES ──────────────────────────────── -->
+  <section class="gl-section" id="structures">
+    <div class="section-head">
+      <span class="section-call">686.302</span>
+      <h2 class="section-title">Binding Structures &amp; Methods</h2>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Case Binding<em>casebound</em></div>
+      <div class="entry-def">A method in which the cover (case, two boards, a spine strip, and covering material) is constructed entirely apart from the textblock and later attached via the endpapers and spine lining. Introduced in Britain c. 1820s; it dominates edition and commercial work because the flat case can be blocked and decorated before being united with the book. <span class="xref">see also: Casing-in, Blocking</span></div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Casing-in</div>
+      <div class="entry-def">The operation of fitting the prepared textblock into its case: adhesive is applied to the outermost endpapers (and sometimes to the mull hinge extensions), and the textblock is pressed into the case and left under boards to dry flat. The join between endpaper and board is the primary mechanical connection.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Smyth Sewing<em>section sewing</em></div>
+      <div class="entry-def">Machine sewing through the fold of each folded signature in sequence, with thread also linking each signature to the previous one. Named for the Smyth sewing machine. Pages are held by thread rather than glue, so the book opens to nearly 180° and lies flat. The durability and archival gold standard for any book intended to last. <span class="xref">see also: Signatures, Sewing All Along</span></div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Perfect Binding<em>adhesive binding</em></div>
+      <div class="entry-def">An unsewn binding in which the spine folds are milled away and a hot-melt adhesive (EVA or PUR) is applied to the raw leaf edges before the cover is wrapped on. Economical and standard for mass-market paperbacks. Durability depends entirely on the adhesive bond. <strong>PUR</strong> (polyurethane reactive) offers far better flexibility and peel-strength than EVA hot-melt and is the preferred commercial choice where longevity matters.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Double Fan Adhesive Binding<em>DFAB</em></div>
+      <div class="entry-def">An adhesive-only method in which the textblock is fanned first one way, then the other, over the spine edge, allowing PVA to contact every individual leaf. More durable than perfect binding because adhesive is distributed across every page; preferred for digital (single-sheet) workflows on uncoated stock. Unsuitable for coated papers. <span class="xref">see also: PVA, Coated Paper</span></div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Coptic Binding<em>chain stitch / link stitch</em></div>
+      <div class="entry-def">One of the oldest surviving codex structures. Signatures are sewn together with exposed chain-link stitches across the spine; covers are sewn directly onto the first and last sections, requiring no adhesive and no separate case. The book opens completely flat and the spine is decorative. Surviving examples from Coptic Egypt date to the 8th–9th century; the structure itself is earlier.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Long Stitch</div>
+      <div class="entry-def">A limp-cover structure in which several signatures are sewn directly through a flexible cover (vellum, leather, parchment, or heavy paper) with stitches visible on the exterior spine. Used in medieval Europe for account and liturgical books; it requires no boards and allows the book to open completely flat.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Bradel Binding<em>cartonnage à la Bradel</em></div>
+      <div class="entry-def">A case-style structure with a hollow back in which the boards and spine stiffener are first joined with a paper strip, then the assembled case is fitted precisely around the textblock before covering. Named for binder Alexis Pierre Bradel (c. 1772–1809). The characteristic detail is even squares and a precise, fitted joint. Well-suited to cloth and paper covering; a common teaching structure. <span class="xref">see also: Hollow Back, Squares</span></div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Oversewing<em>library binding</em></div>
+      <div class="entry-def">Leaves or small groups of leaves are sewn in a whip stitch through the side, consuming approximately 5⁄16 inch of inner margin. Mechanized by the Reavis machine (1920); used almost exclusively by library binders for single-sheet or heavily damaged volumes. Extremely strong but it permanently tightens the gutter, prevents lay-flat, and conceals the inner margin, a significant trade-off. <span class="xref">see also: Gutter</span></div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Quarter, Half, Full<em>leather covering proportions</em></div>
+      <div class="entry-def"><strong>Full leather</strong>: the entire cover in a single material. <strong>Half binding</strong>: leather on the spine and outer corners, with paper or cloth filling the remaining side area. <strong>Quarter binding</strong>: leather on the spine only, with no leather corners. <strong>Three-quarter</strong>: a half binding with wider leather corners than standard. The proportions refer to approximately how much of the board surface is covered by the principal material.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Limp Binding</div>
+      <div class="entry-def">A binding with flexible sides (leather, vellum, cloth, or paper) and no rigid boards. Limp vellum was used for account books from the 14th century, peaking in the 16th–17th. Lightweight, suited to portable books, and historically common for legal and monastic use. <em>Yapp edges</em>, turned-in flaps projecting beyond the textblock, protect the leaves and are characteristic of devotional limp bindings.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Dos-à-Dos</div>
+      <div class="entry-def">Two books sharing a single central board, bound back-to-back so each opens in the opposite direction. Common in the 16th–17th centuries for paired devotional texts, New Testament and Psalms, for example.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Japanese Stab Binding<em>stab sewing</em></div>
+      <div class="entry-def">Holes are punched parallel to and near the spine edge; thread is sewn through them to secure all leaves as a single unit. Simple, decorative, and stable, but the book does not open flat. Common in East Asian book traditions (Chinese, Korean, Japanese). The pattern of the stitch (four-hole, tortoiseshell, hemp-leaf) is the primary decorative variable.</div>
+    </div>
+
+  </section>
+
+
+  <!-- ── 2. TEXTBLOCK ───────────────────────────────── -->
+  <section class="gl-section" id="textblock">
+    <div class="section-head">
+      <span class="section-call">686.3022</span>
+      <h2 class="section-title">Textblock Construction</h2>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Signature<em>section (UK) / gathering</em></div>
+      <div class="entry-def">A group of sheets folded together and sewn as a unit. <em>Section</em> is the British trade term; <em>signature</em> and <em>gathering</em> are the American equivalents. Strictly, a "signature" was originally the alphanumeric mark printed on the first leaf of each section to guide collation, the word was extended to denote the section itself in American usage. Most edition books are sewn in 16- or 32-page signatures.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Format<em>folio, quarto, octavo</em></div>
+      <div class="entry-def">Named by how many times the printed sheet is folded: <strong>folio</strong> (one fold; 2 leaves), <strong>quarto</strong> (two folds; 4 leaves, squarish proportion), <strong>octavo</strong> (three folds; 8 leaves, the standard modern book, popularized by Aldus Manutius c. 1501), <strong>duodecimo</strong> (12 leaves, pocket size). Chain-line direction and watermark position help establish format in hand-press books.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Collating</div>
+      <div class="entry-def">Assembling folded sections into correct sequence and verifying their order, usually by reading the signature marks printed at the foot of the first leaf of each section. An essential quality step before sewing.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Rounding &amp; Backing</div>
+      <div class="entry-def"><strong>Rounding</strong> molds the glued spine into a gentle convex arc using a hammer; <strong>backing</strong> fans the outer sections over to form a shoulder on each side. Together they accommodate the thickness of the boards, create the hinge along which they swing, and prevent the spine from collapsing concave over time. Deliberate rounding began c. 1500. <span class="xref">see also: Shoulder, Swelling</span></div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Swelling<em>swell</em></div>
+      <div class="entry-def">The extra bulk at the spine caused by sewing thread and the folded section edges. Excessive swell prevents proper rounding. Thread thickness is chosen relative to section count and paper caliper to produce manageable swell; machine sewing and adhesive methods largely eliminate it.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Gluing Up</div>
+      <div class="entry-def">Applying a flexible adhesive (hide glue, starch paste, or dilute PVA) to the sewn spine to consolidate it before rounding and backing. The adhesive should penetrate slightly between sections without oversaturating the paper.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Nipping &amp; Pressing</div>
+      <div class="entry-def"><strong>Nipping</strong>: brief compression in a nipping press to expel air and consolidate, a matter of seconds. <strong>Pressing</strong>: sustained compression under weight or between press boards to set, flatten, and consolidate. Both follow gluing; the sequence and duration depend on the adhesive and structure.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Spine Linings<em>mull / super / crash</em></div>
+      <div class="entry-def">After rounding and backing, the spine is lined to reinforce it and (in case binding) to provide the mechanical connection between textblock and case. The first lining is typically an open-weave fabric: <strong>mull</strong> (British) or <strong>crash / super</strong> (American), a coarse fabric resembling cheesecloth. A paper lining follows. The mull extensions that project beyond the spine edge are glued to the boards or pastedowns during casing-in.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Milling</div>
+      <div class="entry-def">Cutting away the spine edge of an assembled textblock on a milling machine, removing approximately 1⁄32 to 1⁄16 inch of material and eliminating old adhesive, thread, staples, and section folds. After milling, the book consists of loose single leaves, which are then adhesive-bound. Required preparation for DFAB and perfect binding of previously sewn books.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Notching</div>
+      <div class="entry-def">Cutting parallel grooves perpendicular to the spine edge to increase the surface area for adhesive in adhesive binding. Combined with milling or applied to the spine of a previously flat-cut textblock.</div>
+    </div>
+
+  </section>
+
+
+  <!-- ── 3. COVERING MATERIALS ──────────────────────── -->
+  <section class="gl-section" id="covering">
+    <div class="section-head">
+      <span class="section-call">686.3024</span>
+      <h2 class="section-title">Covering Materials</h2>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Buckram</div>
+      <div class="entry-def">A heavy-weave cotton (occasionally linen) cloth filled, impregnated, or coated to enhance durability, surface stability, and blockability. Originally starch-filled; modern library buckram is typically an acrylic-coated poly-cotton base, water- and mildew-resistant. Heavier and stiffer than standard book cloth; the LBI standard specifies a cotton base with warp yarns woven in pairs (group F). Almost all institutional and library bindings use buckram.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Book Cloth<em>covering cloth grades</em></div>
+      <div class="entry-def">Woven cotton, dyed and treated for use as a covering material. Three main categories: <strong>starch-filled</strong>, attractive but vulnerable to water spotting and surface soiling, not wipeable; <strong>pyroxylin-impregnated or coated</strong> (nitrocellulose), water-repellent, mildew- and insect-resistant, introduced c. 1910; <strong>acrylic-coated</strong>, the modern durable library standard. Cloth grades run A through C-1 (book cloths) and D through F (buckrams).</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Leather<em>calf, morocco, pigskin, vellum</em></div>
+      <div class="entry-def"><strong>Calf</strong>: smooth, minimal grain; takes tooling and dyeing well, marks easily. <strong>Morocco</strong> (goatskin): pronounced pebble grain, rich dye uptake, traditional for fine binding. <strong>Pigskin</strong>: hardy, characteristic triangular three-pore follicle pattern; often alum-tawed to a creamy white; common in 16th–17th-century German monastic work. <strong>Vellum</strong>: limed and stretched skin (not tanned), not leather in the strict sense, smooth, very strong, extremely hygroscopic, prone to warping with humidity change.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Japanese Tissue<em>washi</em></div>
+      <div class="entry-def">Thin, strong paper from bast fibers of <em>kozo</em> (paper mulberry, the strongest, longest fiber, most common), <em>mitsumata</em> (creamy, shorter fiber, absorbent), or <em>gampi</em> (lustrous, fine). Kozo's wet strength and long fibers make it the workhorse of conservation repair: hinging, guarding, tear mending, reinforcing folds. Should be at least 70% kozo fiber to function as a cover material. Available in weights from tissue-thin to heavy cartridge.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Paste Paper</div>
+      <div class="entry-def">A decorated paper made by applying colored starch paste to a sheet and manipulating it with combs, brushes, or hands while wet. One of the oldest decorated-paper traditions in Western bookbinding; used for endpapers, covers, and box linings.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Marbled Paper</div>
+      <div class="entry-def">Paper decorated by floating colors on a viscous bath, <em>ebru</em> (Western / Turkish), using gum tragacanth or carrageenan size, then laying the sheet on the surface to lift the pattern. <em>Suminagashi</em> (Japanese) floats ink on plain water for a more diffuse pattern. Marbled paper became the dominant decorative endpaper in European binding from the 17th century. Can also be applied to page edges and leather covers (marbled calf).</div>
+    </div>
+
+  </section>
+
+
+  <!-- ── 4. BOARDS ───────────────────────────────────── -->
+  <section class="gl-section" id="boards">
+    <div class="section-head">
+      <span class="section-call">686.3026</span>
+      <h2 class="section-title">Board Work</h2>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Binder's Board<em>book board</em></div>
+      <div class="entry-def">The generic American term for stiff boards used to form book covers, encompassing millboard, chipboard, greyboard, and rag board. <em>Davey board</em> is a premium American brand (single-ply wet-lap construction) used generically. Not a specific material, a category.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Millboard</div>
+      <div class="entry-def">A hard, dense, high-grade board historically made from tarred rope and sailcloth; the British default term and the conservation and fine-binding choice. Dense, dimensionally stable, cuts cleanly at the edge. Often laminated to reach the required thickness. Bernard Middleton treats "binder's board" as synonymous with millboard.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Greyboard<em>chipboard (US) / strawboard</em></div>
+      <div class="entry-def">A low-grade, 100% recycled grey board for general commercial hardcovers, boxes, and packaging. Inexpensive; feathers at cut edges and is inconsistent batch-to-batch. The American equivalent is <em>chipboard</em>. <em>Strawboard</em> is a related category made from cereal straw.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Bristol Board</div>
+      <div class="entry-def">A smooth, fine pasteboard made by laminating thin sheets. Used for light cover structures, spine stiffeners (as in the Bradel binding), and cases where dimensional stability at low thickness is needed. Index cards are made of Bristol.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Grain Direction</div>
+      <div class="entry-def">The direction in which the majority of fibers are aligned in a sheet of paper or board. <strong>The cardinal rule: grain must run parallel to the spine</strong> (head to tail) in all materials, paper, board, and covering cloth alike. Grain running across the spine causes warping, cracking, and poor opening. To test: the <em>bending test</em> (bends more easily along the grain), the <em>curl test</em> (a dampened sample curls with the axis along the grain), and the <em>tear test</em> (tears straighter along the grain).</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Squares</div>
+      <div class="entry-def">The small margins by which the cover boards project beyond the textblock at head, tail, and fore-edge. Squares protect the page edges. Even squares, equal projection on all three sides, are a mark of precise fitting and quality work.</div>
+    </div>
+
+  </section>
+
+
+  <!-- ── 5. ADHESIVES ───────────────────────────────── -->
+  <section class="gl-section" id="adhesives">
+    <div class="section-head">
+      <span class="section-call">686.3028</span>
+      <h2 class="section-title">Adhesives</h2>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">PVA<em>polyvinyl acetate</em></div>
+      <div class="entry-def">A synthetic emulsion adhesive: strong, flexible, dries clear, fast-tacking with a short open time (seconds to a minute). Standard in commercial and much modern hand binding. <strong>Not considered reversible</strong> once fully cured, re-wetting has limited effect. Long-term behavior is less certain than traditional adhesives. Often extended with methyl cellulose (60/40 PVA/MC) to increase open time and workability.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Wheat Starch Paste<em>conservation adhesive</em></div>
+      <div class="entry-def">Made by cooking refined wheat starch in water; the dominant conservation adhesive. Reversible, non-toxic, good penetration, good slip (repositioning time). Preferred wherever reversibility is required. Drawbacks: high moisture content slows drying, and it supports mold in humid conditions, it must be freshly prepared and kept cool.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Methyl Cellulose<em>MC / HPMC</em></div>
+      <div class="entry-def">A cellulose ether dissolved in water to form a gel. Reversible (re-soluble even after aging), non-toxic, slow-drying. Weaker bond than starch paste alone. Used to extend PVA open time, as a light-duty adhesive for hinging thin papers, and as a substitute for starch paste where mold is a concern.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Hide Glue<em>animal glue / bone glue</em></div>
+      <div class="entry-def">Collagen-based glue applied warm; the traditional spine adhesive, reversible with heat and moisture. Its tack, workability, and reversibility make it useful in fine and historical work. Bone glue (introduced in the 19th century) dries harder and more brittle than hide glue and is considered inferior for conservation.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Hot Melt / PUR<em>thermoplastic adhesives</em></div>
+      <div class="entry-def"><strong>Hot melt (EVA)</strong>: applied molten in perfect binding; fast-setting, economical, but can embrittle with age and temperature extremes. <strong>PUR (polyurethane reactive)</strong>: a chemically curing hot-applied adhesive with far better flexibility, peel-strength, and open-to-temperature resistance than EVA, the modern commercial premium choice for adhesive binding.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Reversibility</div>
+      <div class="entry-def">The principle that a conservation treatment can be undone without damage to the original object. The primary criterion for material selection in conservation work. Wheat starch paste and methyl cellulose are reversible; PVA is not. Sewn repairs are more reversible than adhesive ones. <em>Retreatability</em> is the related term: the treatment can be undone even if not perfectly so.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Adhesive Selection<em>matching to context</em></div>
+      <div class="entry-def">
+        <div class="note"><strong>Conservation principle:</strong> use wheat starch paste or methyl cellulose wherever reversibility is required, artifacts, rare books, anything of artifactual value. Use PVA or PVA/MC for production work and modern materials where reversibility is not a priority. Never apply PVA or hot-melt directly to original or historic material.</div>
+      </div>
+    </div>
+
+  </section>
+
+
+  <!-- ── 6. FINISHING ───────────────────────────────── -->
+  <section class="gl-section" id="finishing">
+    <div class="section-head">
+      <span class="section-call">686.304</span>
+      <h2 class="section-title">Finishing &amp; Decoration</h2>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Gold Tooling</div>
+      <div class="entry-def">Impressing lettering or a design through gold leaf (typically 22–23 karat) onto leather, cloth, or paper using heated hand tools over a size adhesive (<em>glaire</em>, made from egg white, or synthetic). The design is first "blinded in" (impressed without gold), then gold is laid and the tool applied again. Introduced to Europe via Italy c. 1470; reached England c. 1530. Gold tooling on leather requires the cover to be prepared with an egg-glaire or gelatin size.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Blind Tooling</div>
+      <div class="entry-def">Decorating by impressing heated tools into the covering material without any leaf metal, leaving a darkened, indented design. Predates gold tooling; survives in Coptic bindings of the 7th–8th centuries. Still used as a structural and decorative element on fine bindings.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Blocking / Stamping<em>UK / US terminology</em></div>
+      <div class="entry-def">Impressing lettering or a design onto a book cover using a heated metal die or plate in a press. <strong>Blocking</strong> (British) and <strong>stamping</strong> (American) denote exactly the same operation. The blocking press came into use in England c. 1830–32 for edition cloth books; the flat case is blocked before casing-in.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Headbands<em>sewn vs. stuck-on</em></div>
+      <div class="entry-def">Decorative and structural bands at the head and tail of the spine. <strong>Sewn headbands</strong> are integral to the structure, worked through the sections over a cord core, sometimes laced into the boards, and consolidate the textblock and bear some stress. <strong>Stuck-on (glued) headbands</strong> are pre-made braid glued to the spine, purely decorative; a German invention of the mid-15th century. Conservators favor sewn headbands as structural evidence; both carry historical information.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Edge Gilding<em>a.e.g. / t.e.g.</em></div>
+      <div class="entry-def">Applying gold leaf to trimmed page edges. <em>All edges gilt (a.e.g.)</em>: all three edges gilded. <em>Top edge gilt (t.e.g.)</em>: only the head edge. Gilt edges resist dust and are characteristic of devotional, ceremonial, and luxury bindings.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Gauffering<em>goffered edges</em></div>
+      <div class="entry-def">Tooling or stamping a decorative pattern into already-gilded edges with heated finishing tools, producing an ornate textured gilt edge. Especially common on Victorian and devotional bindings.</div>
+    </div>
+
+  </section>
+
+
+  <!-- ── 7. CONSERVATION ────────────────────────────── -->
+  <section class="gl-section" id="conservation">
+    <div class="section-head">
+      <span class="section-call">686.309</span>
+      <h2 class="section-title">Conservation</h2>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Artifactual Value</div>
+      <div class="entry-def">The value of an item as a physical object (its binding, covering materials, and evidence of provenance, use, and production), as distinct from its informational content. High artifactual value argues for enclosure and minimal intervention rather than rebinding, since rebinding destroys evidence. <span class="xref">see also: Phase Box, Clamshell Box</span></div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Deacidification</div>
+      <div class="entry-def">Neutralizing acids in paper and depositing an alkaline buffer (calcium or magnesium carbonate) to protect against future acid formation; done aqueously (leaf washing) or non-aqueously (spray treatments for volumes too fragile to wet). Beneficial for wood-pulp papers; of uncertain value for severely degraded groundwood stock.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Rebacking</div>
+      <div class="entry-def">Repairing or replacing the spine covering and reattaching detached boards while retaining the original cover. Preferred over recasing when the binding has high artifactual value, it disturbs less original material.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Recasing</div>
+      <div class="entry-def">Removing the textblock from its case, repairing or replacing the case, and casing-in as if new. Used for case bindings where retaining maximum original structure is less critical than structural stability.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Disbinding</div>
+      <div class="entry-def">Fully disassembling a book, separating textblock from covers, then sections from one another, to permit treatment: washing, deacidification, mending, guarding, resewing. The most interventive treatment; reserved for items where structure or content cannot be addressed otherwise.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Phase Box</div>
+      <div class="entry-def">A simple, inexpensive four-flap enclosure of archival boards, closed with tapes, developed at the Library of Congress by Don Etherington in the early 1970s for the institution's "phased preservation" program. Intended as interim protection pending treatment; frequently used as permanent housing for stable but fragile items.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Clamshell Box<em>drop-spine box / double-tray box</em></div>
+      <div class="entry-def">A custom cloth-covered box built from a small tray, a large tray, and a case, with a drop spine so it lies completely flat when open. The standard high-protection enclosure for rare or valuable volumes, blocks light and dust, buffers humidity and temperature. <em>Clamshell</em>, <em>drop-spine</em>, and <em>double-tray</em> all denote the same form.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Humidification</div>
+      <div class="entry-def">Controlled introduction of moisture to relax distortions, open folds, and flatten cockled or rolled materials. Paired with flattening under weight and blotters. Applied with care: excess moisture can reactivate water-soluble inks, dyes, and adhesives.</div>
+    </div>
+
+  </section>
+
+
+  <!-- ── 8. ANATOMY ─────────────────────────────────── -->
+  <section class="gl-section" id="anatomy">
+    <div class="section-head">
+      <span class="section-call">686.301</span>
+      <h2 class="section-title">Book Anatomy</h2>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Pastedown<em>board paper (UK)</em></div>
+      <div class="entry-def">The half of the endpaper that is pasted to the inside of the cover board, concealing the turned-in covering material and (in case binding) forming part of the mechanical connection between textblock and case.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Flyleaf<em>free endpaper</em></div>
+      <div class="entry-def">The free, unpasted leaf (or leaves) of the endpaper unit; it protects the first and last printed pages and absorbs the stress of cover opening. <span class="xref">see also: Endpaper</span></div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Endpaper<em>endsheet (US) / endleaves</em></div>
+      <div class="entry-def">The unit of leaves (usually a folded sheet) at the front and back of a textblock joining it to its cover. One half becomes the pastedown; the other is the flyleaf. <em>Endpapers / endleaves</em> is British usage; <em>endsheets</em> is the American trade term. <em>Doublure</em>: a decorative inside-cover lining of leather or silk in place of a plain pastedown.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Hinge / Joint<em>inner / outer</em></div>
+      <div class="entry-def">In careful conservation usage, <strong>hinge</strong> denotes the interior flexing juncture between pastedown and flyleaf (the inner joint); <strong>joint</strong> denotes the exterior juncture of spine and cover where the board hinges against the shoulder (the outer joint). In trade use the terms are interchangeable. A <strong>French groove</strong> (French joint) is a deliberate gap between board and spine that spreads flexing stress and reduces splitting.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Shoulder</div>
+      <div class="entry-def">The ridge formed on each side of the spine during backing, against which the cover board fits. The shoulder determines the width of the joint and is the structural consequence of proper rounding and backing. Also: ridge, flange, abutment.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Hollow Back<em>vs. tight back</em></div>
+      <div class="entry-def">In a <strong>hollow back</strong>, a paper tube is built between the textblock spine and the covering; when the book opens, the covering springs away from the spine, which itself remains stationary, the standard in cloth case and Bradel work. In a <strong>tight back</strong>, the covering is glued directly to the textblock spine and flexes with it each time the book is opened, traditional for leather binding, but risks cracking the spine decoration over time.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Spine / Head / Tail / Fore-edge / Gutter</div>
+      <div class="entry-def"><strong>Spine</strong> (backbone): the bound edge. <strong>Head</strong>: the top edge. <strong>Tail</strong> (foot): the bottom edge. <strong>Fore-edge</strong>: the outer vertical edge, opposite the spine. <strong>Gutter</strong>: the inner margin at the binding fold where facing pages meet; the narrowest usable space in a book's margin design.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Kettle Stitch</div>
+      <div class="entry-def">The locking stitch made at the head and tail of each section during hand sewing, linking the new section to the one below. It must be neither too tight (it breaks during backing) nor too loose (sections work free). The term is likely from the German <em>Kettelstich</em> (chain stitch), though this is disputed.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Leaf / Folio / Recto / Verso</div>
+      <div class="entry-def">A <strong>leaf</strong> is a single sheet. A <strong>folio</strong> is a leaf (in the sense of a numbered leaf in a manuscript; distinct from the format term). <strong>Recto</strong> is the right-hand page (odd-numbered); <strong>verso</strong> is the left-hand page (even-numbered). A leaf has two pages: its recto and its verso.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Fore Edge, Gutter, Turn-in, Super Hinge</div>
+      <div class="entry-def"><strong>Turn-in</strong>: the covering material folded over the board edges to the inside, later covered by the pastedown. <strong>Super hinge</strong>: the extension of the mull/super beyond the textblock spine edge, used to attach the textblock to its case during casing-in. <span class="xref">see also: Mull, Casing-in</span></div>
+    </div>
+
+  </section>
+
+
+  <!-- ── 9. SEWING STRUCTURES ───────────────────────── -->
+  <section class="gl-section" id="sewing">
+    <div class="section-head">
+      <span class="section-call">686.3023</span>
+      <h2 class="section-title">Sewing Structures &amp; Supports</h2>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Sewing Tapes</div>
+      <div class="entry-def">Flat woven cotton or linen tapes laid perpendicular to the spine, over which sections are sewn. Standard in modern case binding since the mid-19th century (replacing cords). Tapes produce a flat spine and flex easily; the textblock opens well, but the spine "throws up" at a sharp angle when the book is opened, which concentrates stress at the spine folds.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Raised Cords</div>
+      <div class="entry-def">Round hemp or linen cords laid on the spine surface, over which the sections are sewn, producing raised bands on the finished spine. The sewing physically wraps around each cord; cord slips are laced through the boards to form a direct mechanical connection. A stiffer, stronger structure than tapes. The raised bands visible on traditional leather bindings are often purely decorative false bands today, glued on after the fact.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Recessed / Sawn-in Cords</div>
+      <div class="entry-def">Cords sunk into channels sawn across the spine before sewing, so thread passes over (not around) the cord and the spine remains flat. Popular from the late 16th through 19th centuries for its flat spine and tight sewing. The saw cuts weaken the sections, and the cords are thinner and more prone to failure, less desirable for conservation than raised-cord structures.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Sewing All Along<em>vs. Two-on</em></div>
+      <div class="entry-def"><strong>All along</strong>: the thread traverses the full length of every section, passing around each sewing support, the strongest possible sewing. <strong>Two-on</strong> (two-sheets-on): two sections are sewn simultaneously, halving the number of passes, roughly half the strength; used to reduce sewing time and limit swell on books with many thin sections. The first and last two sections are always sewn all along for strength at the joints.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">French Link Stitch<em>unsupported link stitch</em></div>
+      <div class="entry-def">A Coptic-family sewing pattern in which the thread of each new section links under the exposed stitch of the section below, forming a decorative chain on an exposed spine. No cords or tapes are used. Likely of 16th-century French origin. Requires at least eight sections to display the characteristic pattern; kettle stitches anchor each end.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Bench Sewing</div>
+      <div class="entry-def">Any sewing through the fold performed by hand at a sewing frame or bench, as opposed to machine sewing. The term covers all-along, two-on, and link stitch methods. Hand sewing allows the binder to adjust tension section by section and to correct errors mid-run.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Overcasting<em>whip stitching</em></div>
+      <div class="entry-def">Whip-stitching the spine edge of a section or stack of leaves through holes punched near the binding margin, binding them as a unit before sewing onto supports. Used to reinforce weak or single-leaf material. It tightens the gutter, limits opening, and should be used only where the margin allowance permits.</div>
+    </div>
+
+  </section>
+
+
+  <!-- ── 10. PAPER ──────────────────────────────────── -->
+  <section class="gl-section" id="paper">
+    <div class="section-head">
+      <span class="section-call">676.1</span>
+      <h2 class="section-title">Paper &amp; Materials</h2>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Grain Direction<em>testing methods</em></div>
+      <div class="entry-def">The direction fibers are aligned in machine-made paper. Tests: <strong>bending</strong> (bends more easily along the grain), <strong>curl</strong> (a moistened sample curls with its axis parallel to the grain), <strong>tear</strong> (tears straighter along the grain), <strong>strip slump</strong> (a grain-long strip is stiffer and slumps less than a grain-short strip). <strong>Always orient grain parallel to the spine.</strong> <span class="xref">see also: Grain Direction under Board Work</span></div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Caliper &amp; Basis Weight</div>
+      <div class="entry-def"><strong>Caliper</strong>: sheet thickness in thousandths of an inch (points) or millimeters, measured with a micrometer; it predicts stiffness and folding endurance. <strong>Basis weight</strong> (US): weight in pounds of 500 sheets cut to the standard size for that paper grade. <strong>Grammage (gsm)</strong>: weight in grams per square meter, the metric equivalent, used everywhere outside the US.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Fold Endurance</div>
+      <div class="entry-def">The number of double folds a paper withstands before breaking under tension (MIT or Schopper tester, TAPPI T511 / T423). Results are reported as the base-10 logarithm of the double-fold count, measured separately along and across the grain. A key indicator of paper strength and of deterioration over time; heavily influenced by fiber type, caliper, and grain direction relative to the fold. Acid-degraded papers show dramatically reduced fold endurance.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Coated Paper<em>binding implications</em></div>
+      <div class="entry-def">Paper coated with clay or a similar mineral to produce a smooth, high-resolution printing surface. Coated stocks resist adhesive penetration and bond poorly in adhesive bindings, DFAB and perfect binding are unreliable on coated paper. Coated papers are also prone to surface damage when wet. <strong>Section sewing is recommended for any coated-stock publication intended to last.</strong></div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Acidity &amp; Permanence</div>
+      <div class="entry-def">Acid (from alum-rosin sizing, lignin, and aging) catalyzes hydrolysis of cellulose, progressively embrittling paper. Groundwood (mechanical pulp) papers, high in lignin, yellow and embrittle far faster than chemical-pulp papers. <em>Acid-free</em> means pH-neutral or slightly alkaline at manufacture. <em>Alkaline buffered</em> means an alkaline reserve (typically 2% calcium carbonate) is present to neutralize future acid. These are specified for archival materials alongside lignin-free content.</div>
+    </div>
+
+    <div class="entry">
+      <div class="entry-term">Kraft Paper</div>
+      <div class="entry-def">A strong brown machine-made paper from the sulphate (kraft) process; widely used in bookbinding for inside cover spine strips (the inlay of a case), lining sheets, and wrapping. Standard brown paper bags are kraft.</div>
+    </div>
+
+  </section>
+
+
+  <!-- ── references ─────────────────────────────────── -->
+  <section class="gl-section" id="refs" style="margin-top:80px; padding-top:40px; border-top:1px solid var(--rule); max-width:var(--measure)">
+    <div class="section-head">
+      <span class="section-call">016</span>
+      <h2 class="section-title">Bibliography</h2>
+    </div>
+
+    <div class="entry" style="grid-template-columns:1fr; gap:6px 0;">
+      <div class="entry-def" style="line-height:2;">
+        Roberts, Matt T. &amp; Don Etherington. <em>Bookbinding and the Conservation of Books: A Dictionary of Descriptive Terminology.</em> Washington: Library of Congress, 1982. Available online at cool.culturalheritage.org.<br>
+        Middleton, Bernard C. <em>A History of English Craft Bookbinding Technique.</em> 4th ed. New Castle, DE: Oak Knoll Press, 1996.<br>
+        Library Binding Institute. <em>LBI Standard for Library Binding,</em> 8th ed. Chicago: ALA, 1990.<br>
+        American Institute for Conservation. <em>AIC Wiki: Book and Paper Group.</em> culturalheritage.org.<br>
+        Northeast Document Conservation Center. <em>Preservation Leaflets.</em> nedcc.org.<br>
+        Greenfield, Jane. <em>The Care of Fine Books.</em> New York: Lyons &amp; Burford, 1988.<br>
+        Glaister, Geoffrey Ashall. <em>Encyclopedia of the Book.</em> 2nd ed. New Castle, DE: Oak Knoll Press, 1996.
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p class="footer-refs">
+    Anchored in Roberts &amp; Etherington, <em>Bookbinding and the Conservation of Books</em> (Library of Congress, 1982) and the LBI Standard, 8th ed. (ALA, 1990).<br>
+    Supplemented by the <a href="https://cool.culturalheritage.org" target="_blank" rel="noopener">AIC Conservation Wiki</a>, <a href="https://nedcc.org" target="_blank" rel="noopener">NEDCC</a>, and TAPPI standards.
+  </p>
+  <div class="footer-call">
+    686.3 / REF / BIND<br>
+    A Glossary of Bookbinding
+  </div>
+</footer>
+
+</div>
+
+<script>
+(function () {
+  var docEl = document.documentElement;
+  docEl.classList.add('js');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var blocks = document.querySelectorAll('.lede, .gl-section');
+  blocks.forEach(function (b) { b.classList.add('reveal'); });
+
+  if (reduce || !('IntersectionObserver' in window)) {
+    blocks.forEach(function (b) { b.classList.add('is-visible'); });
+  } else {
+    var revObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('is-visible'); revObs.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    blocks.forEach(function (b) { revObs.observe(b); });
+  }
+
+  var links = {};
+  document.querySelectorAll('.site-nav a[href^="#"]').forEach(function (a) {
+    links[a.getAttribute('href').slice(1)] = a;
+  });
+  var spy = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      var a = links[e.target.id];
+      if (a && e.isIntersecting) {
+        Object.keys(links).forEach(function (k) { links[k].classList.remove('active'); });
+        a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+  document.querySelectorAll('.gl-section[id]').forEach(function (sec) { spy.observe(sec); });
+})();
+</script>
+</body>
+</html>
