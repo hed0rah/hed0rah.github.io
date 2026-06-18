@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Levels & Loudness / Audio Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --bg:      #d9d9d7;
+  --panel:   #d0d0ce;
+  --ink:     #161619;
+  --ink-2:   #54545a;
+  --ink-3:   #8d8d90;
+  --line:    #bcbcb8;
+  --line-2:  #c9c9c6;
+  --red:     #e1241c;
+  --ff:      'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --mono:    'IBM Plex Mono', ui-monospace, monospace;
+  --pad:     clamp(20px, 4vw, 60px);
+  --max:     1480px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--ff);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+.val, .chip, .sec-num, .ladder, .table .lufs, .table .tp, .topmeta, .hero-nav a .n, .sig { font-variant-numeric: tabular-nums; }
+::selection { background: var(--red); color: #fff; }
+
+/* ── top bar ─────────────────────────────────────────── */
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 20px var(--pad); max-width: var(--max); margin: 0 auto; }
+.mark { font-weight: 800; font-size: 0.82rem; letter-spacing: 0.02em; }
+.mark .dot { color: var(--red); }
+.topmeta { font-family: var(--mono); font-size: 0.66rem; color: var(--ink-3); letter-spacing: 0.04em; }
+.toplinks { display: flex; align-items: center; gap: 0; }
+.toplinks a { color: var(--ink-2); text-decoration: none; transition: color .15s ease; }
+.toplinks a:hover { color: var(--red); }
+.toplinks .sep { color: var(--line); margin: 0 9px; }
+
+/* ── hero ────────────────────────────────────────────── */
+.hero {
+  position: relative; max-width: var(--max); margin: 0 auto; padding: 0 var(--pad);
+  min-height: 66vh;
+  display: grid; grid-template-columns: 180px 1fr 200px; gap: 0 40px; align-items: stretch;
+}
+.hero-nav { grid-column: 1; padding-top: 20px; position: sticky; top: 18px; align-self: start; }
+.hero-nav a { display: block; text-decoration: none; font-size: 0.86rem; font-weight: 500; color: var(--ink-3); padding: 5px 0; transition: color .15s ease, transform .15s ease; }
+.hero-nav a .n { font-family: var(--mono); font-size: 0.62rem; color: var(--line); margin-right: 8px; }
+.hero-nav a:hover { color: var(--ink); transform: translateX(2px); }
+.hero-nav a.active { color: var(--ink); font-weight: 700; }
+.hero-nav a.active .n { color: var(--red); }
+
+.stage { grid-column: 2; position: relative; display: flex; flex-direction: column; justify-content: center; padding: 40px 0; }
+.eyebrow { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--red); margin-bottom: 16px; }
+.title { font-weight: 900; letter-spacing: -0.045em; line-height: 0.9; font-size: clamp(3.2rem, 9vw, 8rem); position: relative; z-index: 3; }
+.title .br { display: block; }
+
+.glyph { position: absolute; z-index: 1; right: -2%; top: 50%; transform: translateY(-54%); width: 54%; max-width: 520px; pointer-events: none; }
+.glyph svg { width: 100%; height: auto; display: block; }
+.node-pulse { transform-origin: center; animation: pulse 3.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: .85; } 50% { opacity: .35; } }
+.wire { stroke-dasharray: 620; stroke-dashoffset: 620; animation: draw 1.6s ease-out .2s forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+.stats { grid-column: 3; align-self: center; padding: 40px 0; }
+.stat { border-top: 1px solid var(--line); padding: 11px 0 12px; text-align: right; }
+.stat .label { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); }
+.stat .val { font-family: var(--mono); font-size: 0.9rem; color: var(--ink-2); margin-top: 4px; }
+.stat .val b { color: var(--red); font-weight: 500; }
+
+/* ── sections ────────────────────────────────────────── */
+.section { max-width: var(--max); margin: 0 auto; padding: 44px var(--pad); border-top: 1px solid var(--line); }
+.sec-head { display: grid; grid-template-columns: 180px 1fr; gap: 40px; align-items: baseline; margin-bottom: 24px; }
+.sec-num { font-family: var(--mono); font-size: 0.72rem; color: var(--red); letter-spacing: 0.08em; padding-top: 5px; }
+.sec-title { font-size: clamp(1.5rem, 3.2vw, 2.4rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; }
+.sec-title small { display: block; font-size: 0.74rem; font-weight: 400; letter-spacing: 0; color: var(--ink-3); margin-top: 7px; font-family: var(--mono); }
+
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line-2); border: 1px solid var(--line-2); }
+.card { background: var(--bg); padding: 16px 17px 17px; display: flex; flex-direction: column; transition: background .18s ease; }
+.card:hover { background: var(--panel); }
+.card .term { font-size: 0.96rem; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: baseline; gap: 8px; }
+.card .sym { font-family: var(--mono); font-size: 0.68rem; color: var(--ink-3); }
+.card .desc { font-size: 0.8rem; color: var(--ink-2); margin-top: 6px; line-height: 1.5; }
+.card .desc b { color: var(--ink); font-weight: 600; }
+.chip { display: inline-block; font-family: var(--mono); font-size: 0.72rem; background: var(--panel); color: var(--ink); border: 1px solid var(--line); padding: 3px 8px; border-radius: 2px; margin-top: 10px; align-self: flex-start; }
+.chip.red { color: var(--red); border-color: var(--red); }
+.big { font-family: var(--mono); font-weight: 500; color: var(--red); font-size: 1.3rem; letter-spacing: -0.02em; margin-top: 8px; }
+
+/* targets table */
+.table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.table th { text-align: left; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); padding: 0 16px 9px 0; border-bottom: 1px solid var(--line); }
+.table td { padding: 9px 16px 9px 0; border-bottom: 1px solid var(--line-2); vertical-align: baseline; }
+.table tr:hover td { background: var(--panel); }
+.table .plat { font-weight: 700; }
+.table .lufs { font-family: var(--mono); color: var(--red); white-space: nowrap; }
+.table .tp { font-family: var(--mono); color: var(--ink-2); white-space: nowrap; }
+.table .note { color: var(--ink-3); font-size: 0.78rem; }
+.tablewrap { overflow-x: auto; }
+.callout { margin-top: 18px; border-left: 2px solid var(--red); padding: 10px 0 10px 16px; font-size: 0.84rem; color: var(--ink-2); max-width: 78ch; }
+.callout b { color: var(--ink); font-weight: 600; }
+
+/* SPL ladder */
+.ladder { font-family: var(--mono); font-size: 0.82rem; }
+.ladder .row { display: grid; grid-template-columns: 84px 1fr; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--line-2); }
+.ladder .db { color: var(--red); text-align: right; }
+.ladder .row:hover { background: var(--panel); }
+
+/* footer */
+.foot { max-width: var(--max); margin: 0 auto; padding: 34px var(--pad) 56px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.foot p { font-size: 0.74rem; color: var(--ink-3); max-width: 66ch; line-height: 1.7; }
+.foot .sig { font-family: var(--mono); font-size: 0.66rem; color: var(--ink-3); text-align: right; }
+
+/* ── ghost meter (big, transparent, scroll-driven) ───── */
+.progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 50; }
+.progress-bar { height: 100%; width: 0; background: var(--red); }
+.ghost { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 4; opacity: 0.026; mix-blend-mode: multiply; }
+.ghost svg { width: min(96vw, 1180px); height: auto; transform: translateY(5vh); }
+@media (max-width: 680px) { .ghost { opacity: 0.021; } .ghost svg { transform: translateY(2vh); } }
+
+/* reveal */
+html.js .rv { opacity: 0; transform: translateY(16px); transition: opacity .7s ease, transform .7s ease; }
+html.js .rv.in { opacity: 1; transform: none; }
+
+/* responsive */
+@media (max-width: 1080px) {
+  .hero { grid-template-columns: 1fr 180px; }
+  .hero-nav { grid-column: 1 / -1; position: static; display: flex; flex-wrap: wrap; gap: 2px 18px; padding-top: 4px; }
+  .stage { grid-column: 1; min-height: 48vh; }
+  .stats { grid-column: 2; }
+  .glyph { width: 80%; right: -12%; }
+  .grid { grid-template-columns: repeat(2, 1fr); }
+  .sec-head { grid-template-columns: 1fr; gap: 8px; }
+}
+@media (max-width: 680px) {
+  .hero { grid-template-columns: 1fr; }
+  .stats { grid-column: 1; }
+  .glyph { display: none; }
+  .title { font-size: clamp(2.8rem, 16vw, 4.4rem); }
+  .stat { text-align: left; }
+  .grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.js .rv { opacity: 1; transform: none; transition: none; }
+  .node-pulse, .wire { animation: none; }
+  .wire { stroke-dashoffset: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="mark">SIGNAL<span class="dot">.</span>REF</div>
+  <nav class="topmeta toplinks"><a href="https://hed0rah.github.io" target="_blank" rel="noopener">hed0rah.github.io</a><span class="sep">/</span><a href="https://x.com/r3l0z" target="_blank" rel="noopener">x.com/r3l0z</a></nav>
+</div>
+
+<!-- big ghost meter + scroll progress -->
+<div class="progress"><div class="progress-bar"></div></div>
+<div class="ghost" aria-hidden="true">
+  <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
+    <path d="M59,375 A560,560 0 0 1 941,375" fill="none" stroke="#161619" stroke-width="1.6" stroke-dasharray="2 24" stroke-linecap="round"/>
+    <path d="M691.5,193.8 A560,560 0 0 1 941,375" fill="none" stroke="#e1241c" stroke-width="2.6" stroke-dasharray="2 24" stroke-linecap="round"/>
+    <text x="500" y="150" text-anchor="middle" font-family="monospace" font-size="22" fill="#161619">0</text>
+    <g class="ghost-needle"><line x1="500" y1="720" x2="500" y2="168" stroke="#161619" stroke-width="3" stroke-linecap="round"/></g>
+    <circle cx="500" cy="720" r="11" fill="#161619"/>
+  </svg>
+</div>
+
+<!-- ── HERO ──────────────────────────────────────────── -->
+<header class="hero">
+  <nav class="hero-nav" aria-label="Sections">
+    <a href="#waveform"><span class="n">01</span>Waveform</a>
+    <a href="#decibel"><span class="n">02</span>The Decibel</a>
+    <a href="#scales"><span class="n">03</span>Reference Scales</a>
+    <a href="#lufs"><span class="n">04</span>LUFS &amp; Metering</a>
+    <a href="#targets"><span class="n">05</span>Targets</a>
+    <a href="#math"><span class="n">06</span>Conversions</a>
+  </nav>
+
+  <div class="stage">
+    <span class="eyebrow">Audio Reference / Metering</span>
+    <h1 class="title"><span class="br">Levels &amp;</span><span class="br">Loudness</span></h1>
+    <div class="glyph" aria-hidden="true">
+      <svg viewBox="0 0 560 420" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="150,40 330,40 250,260 70,260" fill="#e1241c"/>
+        <polygon points="250,160 430,160 350,380 170,380" fill="#e1241c" opacity="0.92"/>
+        <path d="M70,210 Q120,120 170,210 T270,210 T370,210 T470,210" fill="none" stroke="#161619" stroke-width="1.4" opacity="0.28"/>
+        <line class="wire" x1="250" y1="170" x2="620" y2="20" stroke="#161619" stroke-width="1.4"/>
+        <circle class="node-pulse" cx="250" cy="170" r="7" fill="none" stroke="#161619" stroke-width="1.6"/>
+        <circle cx="250" cy="170" r="2.4" fill="#161619"/>
+        <circle cx="452" cy="88" r="26" fill="#e1241c"/>
+        <text x="452" y="92" text-anchor="middle" font-family="Inter, sans-serif" font-weight="800" font-size="11" fill="#fff" letter-spacing="0.5">0dB</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="label">Digital Ceiling</div><div class="val"><b>0 dBFS</b></div></div>
+    <div class="stat"><div class="label">Streaming Target</div><div class="val"><b>-14 LUFS</b></div></div>
+    <div class="stat"><div class="label">True Peak Max</div><div class="val"><b>-1 dBTP</b></div></div>
+    <div class="stat"><div class="label">Hearing Range</div><div class="val">20 Hz &#8596; 20 kHz</div></div>
+  </div>
+</header>
+
+<!-- ── 01 WAVEFORM ──────────────────────────────────── -->
+<section class="section rv" id="waveform">
+  <div class="sec-head">
+    <div class="sec-num">01 / WAVE</div>
+    <h2 class="sec-title">The Waveform<small>raw sound, before any meter</small></h2>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="term">Amplitude</div><div class="desc">Size of the pressure swing. Heard as <b>loudness</b>. Quoted peak, peak-to-peak, or <b>RMS</b>.</div><span class="chip">sine RMS = peak / &#8730;2</span></div>
+    <div class="card"><div class="term">Frequency <span class="sym">f</span></div><div class="desc">Cycles per second. Heard as <b>pitch</b>. A4 = 440 Hz.</div><span class="chip">f = 1 / T</span></div>
+    <div class="card"><div class="term">Period <span class="sym">T</span></div><div class="desc">Time for one cycle. 1 kHz = 1 ms.</div><span class="chip">T = 1 / f</span></div>
+    <div class="card"><div class="term">Wavelength <span class="sym">&#955;</span></div><div class="desc">Length of one cycle in air. <b>c = 343 m/s</b> at 20&#176;C. 100 Hz &#8776; 3.4 m.</div><span class="chip">&#955; = c / f</span></div>
+    <div class="card"><div class="term">Phase <span class="sym">&#176;</span></div><div class="desc"><b>180&#176;</b> apart cancels; in phase sums +6 dB.</div><span class="chip">180&#176; = cancel</span></div>
+    <div class="card"><div class="term">Crest Factor</div><div class="desc">Gap between <b>peak</b> and <b>RMS</b>. Low = dense, high = dynamic.</div><span class="chip">peak &#8722; RMS (dB)</span></div>
+  </div>
+</section>
+
+<!-- ── 02 DECIBEL ───────────────────────────────────── -->
+<section class="section rv" id="decibel">
+  <div class="sec-head">
+    <div class="sec-num">02 / LOG</div>
+    <h2 class="sec-title">The Decibel<small>a ratio, until you name the reference</small></h2>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="term">Power &amp; Intensity</div><div class="desc">Power, energy, intensity use a factor of <b>ten</b>.</div><span class="chip red">dB = 10 &#183; log&#8321;&#8320;(P/P&#8320;)</span></div>
+    <div class="card"><div class="term">Amplitude &amp; Voltage</div><div class="desc">Amplitude, voltage, pressure use <b>twenty</b>. Power goes as amplitude&#178;.</div><span class="chip red">dB = 20 &#183; log&#8321;&#8320;(A/A&#8320;)</span></div>
+    <div class="card"><div class="term">+3 dB</div><div class="desc"><b>Double the power.</b></div><div class="big">&#215;2 power</div></div>
+    <div class="card"><div class="term">+6 dB</div><div class="desc"><b>Double the amplitude.</b> One extra bit.</div><div class="big">&#215;2 level</div></div>
+    <div class="card"><div class="term">+10 dB</div><div class="desc">About <b>twice as loud</b> to the ear.</div><div class="big">&#215;2 perceived</div></div>
+    <div class="card"><div class="term">&#8722;6 dB / +1 dB</div><div class="desc"><b>&#8722;6 dB</b> halves amplitude. <b>+1 dB</b> &#8776; smallest audible step.</div><span class="chip">6.02 dB / bit</span></div>
+  </div>
+</section>
+
+<!-- ── 03 SCALES ────────────────────────────────────── -->
+<section class="section rv" id="scales">
+  <div class="sec-head">
+    <div class="sec-num">03 / ZERO</div>
+    <h2 class="sec-title">Reference Scales<small>every dB scale hangs off a different zero</small></h2>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="term">dBFS <span class="sym">digital</span></div><div class="desc"><b>0 = the ceiling.</b> Everything below is negative. Cross it, you clip.</div><span class="chip">0 = full scale</span></div>
+    <div class="card"><div class="term">dBTP <span class="sym">true peak</span></div><div class="desc">dBFS oversampled to catch <b>inter-sample peaks</b>.</div><span class="chip red">ceiling -1 dBTP</span></div>
+    <div class="card"><div class="term">dBu <span class="sym">analog</span></div><div class="desc"><b>0 dBu = 0.775 Vrms.</b> Pro line level, +4 dBu nominal.</div><span class="chip">0 dBu = 0.775 V</span></div>
+    <div class="card"><div class="term">dBV <span class="sym">analog</span></div><div class="desc"><b>0 dBV = 1 Vrms.</b> Consumer gear, -10 dBV nominal.</div><span class="chip">0 dBV &#8776; +2.2 dBu</span></div>
+    <div class="card"><div class="term">dB SPL <span class="sym">acoustic</span></div><div class="desc"><b>0 = 20 &#181;Pa</b>, threshold of hearing. The scale ears feel.</div><span class="chip">0 = 20 &#181;Pa</span></div>
+    <div class="card"><div class="term">VU <span class="sym">alignment</span></div><div class="desc"><b>0 VU</b> aligns to <b>-18 dBFS</b> (EBU) or <b>-20</b> (SMPTE).</div><span class="chip">0 VU = -18 dBFS</span></div>
+  </div>
+</section>
+
+<!-- ── 04 LUFS ──────────────────────────────────────── -->
+<section class="section rv" id="lufs">
+  <div class="sec-head">
+    <div class="sec-num">04 / BS.1770</div>
+    <h2 class="sec-title">LUFS &amp; Metering<small>loudness the way the ear weighs it</small></h2>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="term">LUFS = LKFS</div><div class="desc">Loudness vs Full Scale. <b>ITU-R BS.1770</b>, K-weighted. The two names are identical.</div><span class="chip">1 LU = 1 dB</span></div>
+    <div class="card"><div class="term">Integrated <span class="sym">I</span></div><div class="desc"><b>Gated average</b> over the whole program. The number platforms read.</div><span class="chip red">the target</span></div>
+    <div class="card"><div class="term">Short-term <span class="sym">S</span></div><div class="desc">Sliding <b>3 second</b> window.</div><span class="chip">3 s</span></div>
+    <div class="card"><div class="term">Momentary <span class="sym">M</span></div><div class="desc">Sliding <b>400 ms</b> window.</div><span class="chip">400 ms</span></div>
+    <div class="card"><div class="term">LRA <span class="sym">range</span></div><div class="desc">Spread of quiet to loud, in <b>LU</b>. Low = dense, high = dynamic.</div><span class="chip">measured in LU</span></div>
+    <div class="card"><div class="term">Why not RMS</div><div class="desc"><b>K-weighting + gating</b> track perceived loudness; flat RMS does not.</div><span class="chip">K-weighted</span></div>
+  </div>
+</section>
+
+<!-- ── 05 TARGETS ───────────────────────────────────── -->
+<section class="section rv" id="targets">
+  <div class="sec-head">
+    <div class="sec-num">05 / DELIVERY</div>
+    <h2 class="sec-title">Loudness Targets<small>integrated LUFS platforms normalize toward</small></h2>
+  </div>
+  <div class="tablewrap">
+  <table class="table">
+    <thead><tr><th>Destination</th><th>Integrated</th><th>True Peak</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="plat">Spotify</td><td class="lufs">-14 LUFS</td><td class="tp">-1 dBTP</td><td class="note">user -19 / -11 modes; -2 dBTP if above -14</td></tr>
+      <tr><td class="plat">Apple Music</td><td class="lufs">-16 LUFS</td><td class="tp">-1 dBTP</td><td class="note">Sound Check</td></tr>
+      <tr><td class="plat">YouTube</td><td class="lufs">-14 LUFS</td><td class="tp">-1 dBTP</td><td class="note">turns down, never up</td></tr>
+      <tr><td class="plat">Tidal</td><td class="lufs">-14 LUFS</td><td class="tp">-1 dBTP</td><td class="note"></td></tr>
+      <tr><td class="plat">Amazon Music</td><td class="lufs">-14 LUFS</td><td class="tp">-1 dBTP</td><td class="note">sometimes cited -13</td></tr>
+      <tr><td class="plat">Deezer</td><td class="lufs">-15 LUFS</td><td class="tp">-1 dBTP</td><td class="note"></td></tr>
+      <tr><td class="plat">SoundCloud</td><td class="lufs">~ -14 LUFS</td><td class="tp">-1 dBTP</td><td class="note">varies by player</td></tr>
+      <tr><td class="plat">Apple Podcasts</td><td class="lufs">-16 LUFS</td><td class="tp">-1 dBTP</td><td class="note">-19 for mono</td></tr>
+      <tr><td class="plat">EBU R128</td><td class="lufs">-23 LUFS</td><td class="tp">-1 dBTP</td><td class="note">EU broadcast, &#177;0.5 LU</td></tr>
+      <tr><td class="plat">ATSC A/85</td><td class="lufs">-24 LKFS</td><td class="tp">-2 dBTP</td><td class="note">US broadcast, CALM Act</td></tr>
+      <tr><td class="plat">Club / loud</td><td class="lufs">-8 to -10</td><td class="tp">-1 dBTP</td><td class="note">streaming turns it down</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout"><b>Universal master:</b> near <b>-14 LUFS</b> with a <b>-1 dBTP</b> ceiling translates safely everywhere. A hotter number just gets turned down at playback, so mix for dynamics and let normalization do the rest.</div>
+</section>
+
+<!-- 06 MATH -->
+<section class="section rv" id="math">
+  <div class="sec-head">
+    <div class="sec-num">06 / MATH</div>
+    <h2 class="sec-title">Conversions<small>numbers worth memorizing</small></h2>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="term">Bit Depth &#8594; Range</div><div class="desc"><b>16-bit &#8776; 96 dB</b>, <b>24-bit &#8776; 144 dB</b>.</div><span class="chip red">6.02 N + 1.76 dB</span></div>
+    <div class="card"><div class="term">Rate &#8594; Bandwidth</div><div class="desc">Capture up to <b>half</b> the rate. 44.1k &#8594; 22.05k.</div><span class="chip">f max = SR / 2</span></div>
+    <div class="card"><div class="term">Ratio &#8594; dB</div><div class="desc">Amplitude: <b>&#215;2 = +6</b>, &#215;10 = +20, &#215;&#8730;2 = +3. Power halves those.</div><span class="chip">20&#183;log = amplitude</span></div>
+    <div class="card"><div class="term">Distance &#8594; SPL</div><div class="desc"><b>&#8722;6 dB per doubling</b> of distance (free field).</div><span class="chip">&#8722;6 dB / 2&#215; dist</span></div>
+    <div class="card"><div class="term">Peak vs RMS</div><div class="desc">A sine sits <b>3.01 dB</b> under peak. Real material peaks harder.</div><span class="chip">RMS = peak &#8722; 3.01</span></div>
+    <div class="card"><div class="term">dBFS &#8800; SPL</div><div class="desc">Maps to real loudness only after <b>monitor calibration</b>.</div><span class="chip">calibrate the room</span></div>
+  </div>
+
+  <div class="sec-head" style="margin-top:44px;">
+    <div class="sec-num">06b / SPL</div>
+    <h2 class="sec-title">SPL Landmarks<small>dB SPL in the wild</small></h2>
+  </div>
+  <div class="ladder">
+    <div class="row"><span class="db">0 dB</span><span>Threshold of hearing</span></div>
+    <div class="row"><span class="db">30 dB</span><span>Quiet room, close whisper</span></div>
+    <div class="row"><span class="db">60 dB</span><span>Conversation</span></div>
+    <div class="row"><span class="db">85 dB</span><span>Risk over 8 hours (OSHA / NIOSH)</span></div>
+    <div class="row"><span class="db">100 dB</span><span>Loud club, risk in ~15 min</span></div>
+    <div class="row"><span class="db">120 dB</span><span>Threshold of pain</span></div>
+    <div class="row"><span class="db">130+ dB</span><span>Jet up close, instant damage</span></div>
+  </div>
+</section>
+
+<footer class="foot">
+  <p>Measurement per <b>ITU-R BS.1770</b> (K-weighted, gated). Standards <b>EBU R128</b> / <b>ATSC A/85</b>. Streaming targets verified June 2026 and do drift, confirm before a critical delivery. Constants at 20&#176;C, dry air.</p>
+  <div class="sig">SIGNAL.REF / LEVELS &amp; LOUDNESS</div>
+</footer>
+
+<script>
+(function () {
+  var docEl = document.documentElement;
+  docEl.classList.add('js');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // reveal on scroll
+  var blocks = document.querySelectorAll('.rv');
+  if (reduce || !('IntersectionObserver' in window)) {
+    blocks.forEach(function (b) { b.classList.add('in'); });
+  } else {
+    var ro = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    blocks.forEach(function (b) { ro.observe(b); });
+  }
+
+  // sidebar scrollspy
+  var links = {};
+  document.querySelectorAll('.hero-nav a[href^="#"]').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var spy = new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      var a = links[e.target.id];
+      if (a && e.isIntersecting) {
+        Object.keys(links).forEach(function (k) { links[k].classList.remove('active'); });
+        a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-35% 0px -60% 0px', threshold: 0 });
+  document.querySelectorAll('.section[id]').forEach(function (sec) { spy.observe(sec); });
+
+  // ── big ghost meter: scroll = level, cursor = parallax ──
+  var needle = document.querySelector('.ghost-needle');
+  var bar = document.querySelector('.progress-bar');
+  var mx = 0;
+  if (!reduce) window.addEventListener('mousemove', function (e) { mx = (e.clientX / window.innerWidth) * 2 - 1; }, { passive: true });
+  function lvl() { var h = docEl.scrollHeight - window.innerHeight; return h > 0 ? Math.min(1, Math.max(0, window.scrollY / h)) : 0; }
+  function paint(level, deg) {
+    if (needle) needle.setAttribute('transform', 'rotate(' + deg.toFixed(2) + ' 500 720)');
+    if (bar) bar.style.width = (level * 100) + '%';
+  }
+  if (reduce) {
+    var L0 = lvl(); paint(L0, -50 + L0 * 100);
+    window.addEventListener('scroll', function () { var l = lvl(); paint(l, -50 + l * 100); }, { passive: true });
+  } else {
+    var cur = -50;
+    var gframe = function (t) {
+      if (!document.hidden) {
+        var L = lvl();
+        var idle = 0.8 * Math.sin(t / 1000 * 1.3);
+        var target = -50 + L * 100 + mx * 3.5 + idle;
+        cur += (target - cur) * 0.12;
+        paint(L, cur);
+      }
+      requestAnimationFrame(gframe);
+    };
+    requestAnimationFrame(gframe);
+  }
+})();
+</script>
+
+</body>
+</html>
