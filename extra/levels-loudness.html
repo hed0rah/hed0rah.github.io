@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>try{var t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
 <style>
 
 :root {
@@ -154,13 +155,30 @@ html.js .rv.in { opacity: 1; transform: none; }
   .node-pulse, .wire { animation: none; }
   .wire { stroke-dashoffset: 0; }
 }
+
+/* ── dark theme ─────────────────────────────────────── */
+html[data-theme="dark"]{
+  --bg:#141417; --panel:#1d1d22; --ink:#e7e7e3; --ink-2:#a6a6ab; --ink-3:#74747b;
+  --line:#2c2c33; --line-2:#222228; --red:#fb3b2c;
+}
+body{ transition:background .3s ease, color .3s ease; }
+/* hardcoded SVG ink retinted for dark (hero glyph + ghost meter) */
+html[data-theme="dark"] svg [stroke="#161619"]{ stroke:var(--ink); }
+html[data-theme="dark"] svg [fill="#161619"]{ fill:var(--ink); }
+html[data-theme="dark"] .ghost{ mix-blend-mode:screen; opacity:0.06; }
+@media (max-width:680px){ html[data-theme="dark"] .ghost{ opacity:0.05; } }
+/* theme toggle */
+.topright{ display:flex; align-items:center; gap:16px; }
+.theme-btn{ width:24px; height:24px; border:1px solid var(--line); border-radius:50%; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--ink-3); padding:0; transition:color .2s, border-color .2s, transform .25s; }
+.theme-btn:hover{ color:var(--red); border-color:var(--red); transform:rotate(18deg); }
+.theme-btn svg{ width:12px; height:12px; display:block; }
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <div class="mark">SIGNAL<span class="dot">.</span>REF</div>
-  <nav class="topmeta toplinks"><a href="https://hed0rah.github.io" target="_blank" rel="noopener">hed0rah.github.io</a><span class="sep">/</span><a href="https://x.com/r3l0z" target="_blank" rel="noopener">x.com/r3l0z</a></nav>
+  <div class="topright"><nav class="topmeta toplinks"><a href="https://hed0rah.github.io" target="_blank" rel="noopener">hed0rah.github.io</a><span class="sep">/</span><a href="https://x.com/r3l0z" target="_blank" rel="noopener">x.com/r3l0z</a></nav><button class="theme-btn" type="button" aria-label="Toggle dark / light" title="Theme"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3 a9 9 0 0 0 0 18 Z" fill="currentColor"/></svg></button></div>
 </div>
 
 <!-- big ghost meter + scroll progress -->
@@ -398,5 +416,6 @@ html.js .rv.in { opacity: 1; transform: none; }
 })();
 </script>
 
+<script>(function(){var h=document.documentElement;var b=document.querySelector('.theme-btn');if(b)b.addEventListener('click',function(){var n=(h.getAttribute('data-theme')==='dark')?'light':'dark';h.setAttribute('data-theme',n);try{localStorage.setItem('theme',n);}catch(e){}});})();</script>
 </body>
 </html>
