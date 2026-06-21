@@ -84,6 +84,16 @@ footer a{color:inherit;text-decoration:none}
 footer a:hover{color:var(--accent)}
 footer a.sigil{color:var(--rule);letter-spacing:2px;transition:color .6s ease,letter-spacing .6s ease,transform .6s ease}
 footer a.sigil:hover{color:var(--ink);letter-spacing:8px;transform:translateY(-2px) rotate(.5deg)}
+.tip{margin-top:22px;padding-top:14px;border-top:1px solid var(--fine)}
+.tip summary{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:baseline;list-style:none;cursor:pointer;color:var(--dim);padding:6px 0 6px 12px;border-left:2px solid var(--fine);transition:color .18s,border-color .18s}
+.tip summary::-webkit-details-marker{display:none}
+.tip summary::before{content:'+';font-size:9px}
+.tip[open] summary::before{content:'\2212'}
+.tip summary:hover{color:var(--ink);border-left-color:var(--amb)}
+.tip summary .r-t{font:700 11px var(--mono);letter-spacing:1.5px;line-height:1;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.tip summary .cr{font-size:15px;color:var(--amb);line-height:1}
+.tip-body{margin-top:10px;padding-left:12px;max-width:172px}
+.tip-body>div{width:100%}
 
 @media(max-width:820px){
   .shell{grid-template-columns:1fr;gap:22px}
@@ -188,6 +198,7 @@ html,body{overflow-x:hidden;}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" media="print" onload="this.media='all'">
+<script src="https://www.paypal.com/sdk/js?client-id=BAAvrRvA1i0iB1vxVLc8pD7hU3h-M_47hKL2yYTWWWuO2qMzBWJPgMCbXvp_wYGzwHKFgCVvgl9vMBEW6w&components=hosted-buttons&enable-funding=venmo&currency=USD"></script>
 </head>
 
 <body>
@@ -219,6 +230,10 @@ html,body{overflow-x:hidden;}
         <a href="https://hed0rah.github.io">hed0rah.github.io</a><br>
         <a href="https://x.com/r3l0z">x.com/r3l0z</a>
       </div>
+      <details class="tip">
+        <summary><span class="r-t"><span class="cr">&curren;</span>DONATE CREDS<span class="cr">&curren;</span></span></summary>
+        <div class="tip-body"><div id="paypal-container-KWTGG239KHLFG"></div></div>
+      </details>
     </aside>
 
     <main>
@@ -512,6 +527,11 @@ html,body{overflow-x:hidden;}
     var obs=new IntersectionObserver(function(es){es.forEach(function(e){var a=links[e.target.id];if(a&&e.isIntersecting){Object.keys(links).forEach(function(k){links[k].classList.remove('on');});a.classList.add('on');}});},{rootMargin:'-18% 0px -72% 0px',threshold:0});
     document.querySelectorAll('section[id]').forEach(function(sec){obs.observe(sec);});
   }
+  // render paypal button only on first open (avoids hidden-container zero-width bug)
+  var tip=document.querySelector('.tip'),tipped=false;
+  if(tip)tip.addEventListener('toggle',function(){
+    if(tip.open&&!tipped&&window.paypal){tipped=true;paypal.HostedButtons({hostedButtonId:"KWTGG239KHLFG"}).render("#paypal-container-KWTGG239KHLFG");}
+  });
 })();
 </script>
 </body>
