@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Real-Time Sensor Fusion and Inference Architectures — Technical Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ── THEME: ENGINEERING BRIEF ─────────────────────────────────────────
+   Warm field paper. IBM Plex family. Steel blue + amber. No decoration
+   that is not load-bearing. Feels like a well-funded internal document.
+   ─────────────────────────────────────────────────────────────────── */
+:root {
+  --paper:       #F4F2EE;
+  --paper-warm:  #EDE9E1;
+  --paper-code:  #1C1F24;
+  --ink:         #1A1A1A;
+  --ink-mid:     #3D3D3D;
+  --ink-dim:     #6B6760;
+  --ink-faint:   #C4BFB6;
+  --line:        #D0CBC0;
+  --line-strong: #9B9590;
+  --blue:        #1B4F8A;
+  --blue-mid:    #2E6DB4;
+  --blue-soft:   rgba(27,79,138,0.07);
+  --blue-pin:    rgba(27,79,138,0.12);
+  --amber:       #B85C00;
+  --amber-soft:  rgba(184,92,0,0.08);
+  --green:       #1A5C35;
+  --red:         #7A1515;
+  --code-fg:     #C9D1D9;
+  --code-key:    #79C0FF;
+  --code-str:    #A5D6A7;
+  --code-cmt:    #6E7681;
+  --code-num:    #FFD580;
+  --code-hdr:    #7EE8E8;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;font-weight:400;line-height:1.5}
+
+.page{max-width:1300px;margin:0 auto;padding:0 24px 80px}
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) 312px;gap:36px;align-items:start}
+
+/* ── HEADER ── */
+.doc-header{border-top:3px solid var(--blue);padding:22px 0 18px;margin-bottom:0;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start}
+.doc-number{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.06em;color:var(--ink-dim);margin-bottom:7px}
+h1{font-family:'IBM Plex Serif',Georgia,serif;font-size:clamp(1.4rem,2vw,1.7rem);font-weight:600;line-height:1.15;color:var(--ink);letter-spacing:-0.01em;margin-bottom:7px}
+.doc-subtitle{font-family:'IBM Plex Serif',Georgia,serif;font-size:0.84rem;font-weight:400;font-style:italic;color:var(--ink-mid);margin-bottom:12px}
+.tag-row{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.07em;text-transform:uppercase;padding:2px 7px;border:1px solid var(--line-strong);color:var(--ink-dim);background:transparent}
+.tag.blue{border-color:var(--blue);color:var(--blue);background:var(--blue-soft)}
+.tag.amber{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.header-right{text-align:right;padding-top:4px}
+.doc-meta{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;color:var(--ink-dim);line-height:1.9}
+
+/* ── STAT STRIP ── */
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-top:2px solid var(--line-strong);margin:18px 0 26px;background:var(--paper-warm)}
+.stat{padding:13px 15px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:none}
+.stat-num{font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:500;color:var(--blue);display:block;line-height:1;margin-bottom:4px;letter-spacing:-0.02em}
+.stat-num.amber{color:var(--amber)}
+.stat-label{font-size:0.66rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-dim);line-height:1.35}
+
+/* ── BODY ── */
+.paper{min-width:0}
+h2{font-family:'IBM Plex Sans',sans-serif;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.13em;color:var(--blue);border-bottom:1px solid var(--line);padding-bottom:6px;margin:34px 0 13px}
+h3{font-family:'IBM Plex Serif',Georgia,serif;font-size:0.9rem;font-weight:600;color:var(--ink);margin:16px 0 5px}
+p{font-size:0.875rem;color:var(--ink-mid);line-height:1.72;margin-bottom:10px}
+
+/* ── TERMS ── */
+.term{border-bottom:1px dotted var(--blue-mid);color:var(--blue);cursor:pointer;font-weight:500;transition:background .1s,color .1s;padding:0 1px}
+.term:hover,.term:focus-visible,.term.is-active{background:var(--blue-soft);color:var(--blue);outline:none}
+.term.is-pinned{background:var(--blue-pin);border-bottom:1px solid var(--blue);color:var(--blue)}
+
+/* ── LISTS ── */
+.bul{list-style:none;padding:0;margin:0 0 14px}
+.bul li{font-size:0.875rem;color:var(--ink-mid);padding:5px 0 5px 18px;border-bottom:1px solid var(--ink-faint);position:relative;line-height:1.65}
+.bul li:last-child{border-bottom:none}
+.bul li::before{content:"–";position:absolute;left:2px;color:var(--line-strong);font-family:'IBM Plex Mono',monospace}
+.bul li strong{color:var(--ink);font-weight:600}
+
+/* ── TABLES ── */
+.compare{width:100%;border-collapse:collapse;font-size:0.8rem;margin:8px 0 14px}
+.compare th{text-align:left;padding:7px 10px;background:var(--paper-warm);color:var(--ink);font-weight:600;font-size:0.67rem;text-transform:uppercase;letter-spacing:0.07em;border-top:2px solid var(--blue);border-bottom:1px solid var(--line-strong)}
+.compare td{padding:7px 10px;border-bottom:1px solid var(--line);color:var(--ink-mid);vertical-align:top;line-height:1.5}
+.compare tr:hover td{background:var(--blue-soft)}
+.compare td.key{color:var(--ink);font-weight:500}
+.compare td.good{color:var(--green);font-family:'IBM Plex Mono',monospace;font-size:0.76rem}
+.compare td.bad{color:var(--red);font-family:'IBM Plex Mono',monospace;font-size:0.76rem}
+.compare td.note{color:var(--amber);font-family:'IBM Plex Mono',monospace;font-size:0.76rem}
+
+/* ── CODE ── */
+.wireblock{font-family:'IBM Plex Mono',monospace;font-size:0.76rem;background:var(--paper-code);color:var(--code-fg);padding:14px 16px;margin:8px 0 16px;line-height:1.65;overflow-x:auto;white-space:pre;border-left:3px solid var(--blue-mid)}
+.wireblock .kw{color:var(--code-key)}
+.wireblock .str{color:var(--code-str)}
+.wireblock .cm{color:var(--code-cmt);font-style:italic}
+.wireblock .num{color:var(--code-num)}
+.wireblock .hdr{color:var(--code-hdr)}
+
+/* ── FIGURES ── */
+.figure{margin:14px 0 18px;border:1px solid var(--line);background:var(--paper-warm)}
+.figure svg{display:block;width:100%;height:auto}
+.figure .cap{font-size:0.72rem;color:var(--ink-dim);padding:7px 12px;border-top:1px solid var(--line);font-style:italic;font-family:'IBM Plex Serif',Georgia,serif}
+
+/* ── CALLOUT ── */
+.callout{border-left:3px solid var(--amber);background:var(--amber-soft);padding:10px 14px;margin:12px 0 18px;font-size:0.84rem;color:var(--ink-mid);line-height:1.65}
+.callout strong{color:var(--amber);font-weight:600}
+
+/* ── PHASE LIST ── */
+.phase-list{list-style:none;padding:0;margin:8px 0 16px;counter-reset:phase}
+.phase-list li{counter-increment:phase;display:grid;grid-template-columns:30px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);align-items:start}
+.phase-list li::before{content:counter(phase,decimal-leading-zero);font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--blue-mid);font-weight:500;padding-top:2px}
+.ph-title{grid-column:2;font-weight:600;color:var(--ink);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px}
+.ph-body{grid-column:2;color:var(--ink-mid);line-height:1.65;font-size:0.85rem}
+
+/* ── REFERENCES ── */
+.refs{margin-top:32px;padding-top:12px;border-top:2px solid var(--line)}
+.refs table{width:100%;border-collapse:collapse}
+.refs td{padding:5px 0;vertical-align:top;border-bottom:1px solid var(--ink-faint);font-size:0.77rem;color:var(--ink-dim)}
+.refs td:first-child{width:92px;font-family:'IBM Plex Mono',monospace;font-size:0.69rem;color:var(--blue);font-weight:500;padding-right:14px}
+.refs a{color:var(--ink-mid);text-decoration:none;border-bottom:1px dotted var(--line-strong)}
+.refs a:hover{color:var(--blue)}
+
+/* ── FOOTER ── */
+.doc-footer{margin-top:28px;padding-top:10px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:0.63rem;color:var(--ink-dim)}
+
+/* ── MARGIN INSPECTOR ── */
+.margin{position:sticky;top:20px;border-top:3px solid var(--blue);padding-top:14px}
+.margin-card{border:1px solid var(--line);border-left:3px solid var(--blue-mid);background:var(--paper-warm);padding:14px;min-height:360px;transition:border-left-color .15s,background .15s}
+.margin-card.is-pinned{border-left-color:var(--amber);background:var(--amber-soft)}
+.margin-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:0.61rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.margin-status{color:var(--amber);font-weight:500}
+#m-title{font-family:'IBM Plex Serif',Georgia,serif;font-size:0.93rem;font-weight:600;color:var(--ink);margin-bottom:2px;line-height:1.25}
+#m-code{font-family:'IBM Plex Mono',monospace;font-size:0.63rem;color:var(--blue-mid);letter-spacing:0.06em;text-transform:uppercase;display:block;margin-bottom:8px}
+#m-body{font-size:0.79rem;color:var(--ink-mid);line-height:1.68;margin-bottom:10px;font-family:'IBM Plex Serif',Georgia,serif;font-style:italic}
+.margin-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin:8px 0 10px;padding:8px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.margin-meta div{display:flex;flex-direction:column;gap:1px}
+.margin-meta strong{font-size:0.59rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--ink-dim);font-weight:600;font-family:'IBM Plex Sans',sans-serif}
+.margin-meta span{font-size:0.75rem;color:var(--ink);font-family:'IBM Plex Mono',monospace}
+.margin-section{margin-top:10px}
+.margin-section .label{font-size:0.59rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-dim);font-weight:600;margin-bottom:4px;font-family:'IBM Plex Sans',sans-serif}
+.margin-section ul{list-style:none;padding:0;margin:0}
+.margin-section li{font-size:0.76rem;color:var(--ink-mid);padding:3px 0;border-top:1px solid var(--ink-faint);line-height:1.45;font-family:'IBM Plex Serif',Georgia,serif}
+.margin-section li:first-child{border-top:none}
+.margin-section li.more{color:var(--ink-faint);font-style:italic}
+.margin-section a{color:var(--blue);text-decoration:none;border-bottom:1px dotted var(--blue-mid);font-family:'IBM Plex Mono',monospace;font-size:0.71rem;word-break:break-all}
+.margin-section a:hover{background:var(--blue-soft)}
+.margin-section .src{display:block;font-size:0.61rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.05em;font-family:'IBM Plex Mono',monospace;margin-top:1px}
+.margin-section li.link-item{white-space:normal;font-family:inherit;padding:4px 0}
+.margin-pin-bar{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
+.margin-hint{font-family:'IBM Plex Mono',monospace;font-size:0.61rem;color:var(--ink-faint)}
+.margin-hint kbd{font-family:'IBM Plex Mono',monospace;font-size:0.61rem;padding:1px 4px;border:1px solid var(--line);background:var(--paper);border-radius:2px}
+.margin-unpin{font-family:'IBM Plex Mono',monospace;font-size:0.61rem;text-transform:uppercase;letter-spacing:0.08em;padding:3px 8px;border:1px solid var(--amber);background:transparent;color:var(--amber);cursor:pointer;display:none}
+.margin-unpin:hover{background:var(--amber-soft)}
+.margin-index{margin-top:18px;border:1px solid var(--line);background:var(--paper-warm)}
+.margin-index-label{font-family:'IBM Plex Mono',monospace;font-size:0.61rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim);padding:8px 12px;border-bottom:1px solid var(--line)}
+.margin-index a{display:block;font-family:'IBM Plex Mono',monospace;font-size:0.71rem;color:var(--ink-mid);text-decoration:none;padding:5px 12px;border-bottom:1px solid var(--ink-faint);transition:color .1s,background .1s}
+.margin-index a:last-child{border-bottom:none}
+.margin-index a:hover{color:var(--blue);background:var(--blue-soft)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1020px){
+  .sheet{grid-template-columns:1fr}
+  .margin{position:static;order:2;border-top:1px solid var(--line)}
+  .stat-strip{grid-template-columns:1fr 1fr}
+  .doc-header{grid-template-columns:1fr}
+  .header-right{text-align:left}
+}
+@media print{
+  .margin{display:none}
+  .sheet{grid-template-columns:1fr}
+  body{background:#fff}
+  .term{border-bottom:none;color:var(--blue)!important;background:transparent!important}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="doc-header">
+  <div class="header-left">
+    <div class="doc-number">DOC-RTI-001 &nbsp;&nbsp;REV 1.1 &nbsp;&nbsp;2026-06</div>
+    <h1>Real-Time Sensor Fusion<br>and Inference Architectures</h1>
+    <p class="doc-subtitle">Interconnect fabrics, inference silicon, and AI pipeline design for sub-20ms decision loops — with consumer and hobbyist crossover</p>
+    <div class="tag-row">
+      <span class="tag blue">Inference Silicon</span>
+      <span class="tag blue">Sensor Fusion</span>
+      <span class="tag blue">FPGA</span>
+      <span class="tag">CAN / EtherCAT</span>
+      <span class="tag blue">F-35 Avionics</span>
+      <span class="tag amber">Consumer Crossover</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="doc-meta">
+      PREPARED BY<br>
+      SENSOR SYSTEMS / AI PIPELINE<br>
+      <br>
+      DISTRIBUTION<br>
+      ENGINEERING — UNRESTRICTED<br>
+      <br>
+      FORMAT<br>
+      TECHNICAL REFERENCE
+    </div>
+  </div>
+</header>
+
+<div class="stat-strip">
+  <div class="stat">
+    <span class="stat-num amber">&lt;10ms</span>
+    <span class="stat-label">Machine pipeline<br>detect-to-fire</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">400–600ms</span>
+    <span class="stat-label">Human complex<br>decision window</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">200+</span>
+    <span class="stat-label">INT8 TOPS<br>NVIDIA Orin SoC</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num amber">1 Mbps</span>
+    <span class="stat-label">MIL-STD-1553<br>legacy bus ceiling</span>
+  </div>
+</div>
+
+<div class="sheet">
+<article class="paper">
+
+<h2 id="latency">1 — The Latency Stack</h2>
+
+<p>Human reaction time is a compounding biological pipeline. The machine replaces each stage with a hardware equivalent one to three orders of magnitude faster. The gap is not marginal. The argument against machine autonomy in these contexts is doctrinal and legal — not capability-based.</p>
+
+<div class="figure">
+<svg viewBox="0 0 640 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="300" fill="#EDE9E1"/>
+  <!-- axis -->
+  <line x1="24" y1="185" x2="618" y2="185" stroke="#C4BFB6" stroke-width="1"/>
+  <!-- 1px = 0.84ms, so 500ms = 594px offset from 24 = 618px -->
+  <text x="24"  y="198" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="9" text-anchor="middle">0</text>
+  <text x="108" y="198" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="9" text-anchor="middle">100ms</text>
+  <text x="192" y="198" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="9" text-anchor="middle">200ms</text>
+  <text x="276" y="198" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="9" text-anchor="middle">300ms</text>
+  <text x="360" y="198" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="9" text-anchor="middle">400ms</text>
+  <text x="444" y="198" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="9" text-anchor="middle">500ms</text>
+  <!-- grid -->
+  <line x1="108" y1="14" x2="108" y2="185" stroke="#D0CBC0" stroke-width="1" stroke-dasharray="3,5"/>
+  <line x1="192" y1="14" x2="192" y2="185" stroke="#D0CBC0" stroke-width="1" stroke-dasharray="3,5"/>
+  <line x1="276" y1="14" x2="276" y2="185" stroke="#D0CBC0" stroke-width="1" stroke-dasharray="3,5"/>
+  <line x1="360" y1="14" x2="360" y2="185" stroke="#D0CBC0" stroke-width="1" stroke-dasharray="3,5"/>
+  <line x1="444" y1="14" x2="444" y2="185" stroke="#D0CBC0" stroke-width="1" stroke-dasharray="3,5"/>
+  <!-- HUMAN row label -->
+  <text x="24" y="32" fill="#3D3D3D" font-family="IBM Plex Sans,sans-serif" font-size="8.5" font-weight="600" letter-spacing="0.1em">HUMAN</text>
+  <!-- transduction 0-80ms: 24 to 91px -->
+  <rect x="24" y="38" width="67" height="20" fill="#B85C00" opacity="0.55"/>
+  <text x="57" y="52" fill="#fff" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">TRANSDUCTION</text>
+  <!-- cortical 80-320ms: 91 to 293px -->
+  <rect x="91" y="38" width="202" height="20" fill="#7A1515" opacity="0.55"/>
+  <text x="192" y="52" fill="#fff" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">CORTICAL DECISION  150–300ms</text>
+  <!-- motor 320-470ms: 293 to 419px -->
+  <rect x="293" y="38" width="126" height="20" fill="#B85C00" opacity="0.35"/>
+  <text x="356" y="52" fill="#3D3D3D" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">MOTOR  100–150ms</text>
+  <!-- human bracket -->
+  <line x1="24" y1="68" x2="419" y2="68" stroke="#B85C00" stroke-width="0.8"/>
+  <line x1="24"  y1="65" x2="24"  y2="71" stroke="#B85C00" stroke-width="0.8"/>
+  <line x1="419" y1="65" x2="419" y2="71" stroke="#B85C00" stroke-width="0.8"/>
+  <text x="221" y="80" fill="#B85C00" font-family="IBM Plex Mono,monospace" font-size="8" text-anchor="middle" font-weight="500">TOTAL: 400–500ms</text>
+  <!-- MACHINE row label -->
+  <text x="24" y="105" fill="#3D3D3D" font-family="IBM Plex Sans,sans-serif" font-size="8.5" font-weight="600" letter-spacing="0.1em">MACHINE</text>
+  <!-- ADC/FPGA ~0.1ms: 24 to 24.1 — show as 4px min -->
+  <rect x="24" y="111" width="4"  height="20" fill="#1B4F8A" opacity="1"/>
+  <!-- TSN ~0.5ms: 28 to 28.4 — 6px -->
+  <rect x="28" y="111" width="6"  height="20" fill="#2E6DB4" opacity="0.85"/>
+  <!-- sync/Kalman ~2ms: 34 to 35.7 — 18px -->
+  <rect x="34" y="111" width="18" height="20" fill="#2E6DB4" opacity="0.6"/>
+  <!-- inference ~5ms: 52 to 56.2 — 42px -->
+  <rect x="52" y="111" width="42" height="20" fill="#1B4F8A" opacity="0.9"/>
+  <text x="73" y="125" fill="#fff" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">INFER</text>
+  <!-- actuator ~3ms: 94 to 96.5 — 16px -->
+  <rect x="94" y="111" width="16" height="20" fill="#1A5C35" opacity="0.85"/>
+  <text x="102" y="125" fill="#fff" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">ACT</text>
+  <!-- machine bracket -->
+  <line x1="24" y1="140" x2="110" y2="140" stroke="#1B4F8A" stroke-width="0.8"/>
+  <line x1="24"  y1="137" x2="24"  y2="143" stroke="#1B4F8A" stroke-width="0.8"/>
+  <line x1="110" y1="137" x2="110" y2="143" stroke="#1B4F8A" stroke-width="0.8"/>
+  <text x="67" y="153" fill="#1B4F8A" font-family="IBM Plex Mono,monospace" font-size="8" text-anchor="middle" font-weight="500">TOTAL: &lt;20ms</text>
+  <!-- ── machine detail inset: same cycle re-expanded to 0–20ms ── -->
+  <text x="24"  y="226" fill="#3D3D3D" font-family="IBM Plex Sans,sans-serif" font-size="8.5" font-weight="600" letter-spacing="0.1em">MACHINE DETAIL</text>
+  <text x="122" y="226" fill="#9B9590" font-family="IBM Plex Mono,monospace" font-size="7.5">same cycle, re-expanded to a 0–20ms scale</text>
+  <!-- zoom leaders from the machine cluster down to the detail bar -->
+  <line x1="24"  y1="133" x2="24"  y2="248" stroke="#1B4F8A" stroke-width="0.6" stroke-dasharray="2,4" opacity="0.5"/>
+  <line x1="110" y1="133" x2="618" y2="248" stroke="#1B4F8A" stroke-width="0.6" stroke-dasharray="2,4" opacity="0.5"/>
+  <text x="62"  y="244" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">FPGA FRONT-END</text>
+  <!-- detail grid -->
+  <line x1="172" y1="250" x2="172" y2="272" stroke="#D0CBC0" stroke-width="1" stroke-dasharray="3,5"/>
+  <line x1="321" y1="250" x2="321" y2="272" stroke="#D0CBC0" stroke-width="1" stroke-dasharray="3,5"/>
+  <line x1="469" y1="250" x2="469" y2="272" stroke="#D0CBC0" stroke-width="1" stroke-dasharray="3,5"/>
+  <!-- stage bars (≈29.7px per ms) -->
+  <rect x="24"  y="250" width="4"   height="22" fill="#1B4F8A"/>
+  <rect x="28"  y="250" width="15"  height="22" fill="#2E6DB4" opacity="0.85"/>
+  <rect x="43"  y="250" width="58"  height="22" fill="#2E6DB4" opacity="0.6"/>
+  <rect x="101" y="250" width="149" height="22" fill="#1B4F8A" opacity="0.9"/>
+  <text x="175" y="265" fill="#fff" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">INFERENCE ~5ms</text>
+  <rect x="250" y="250" width="89"  height="22" fill="#1A5C35" opacity="0.85"/>
+  <text x="294" y="265" fill="#fff" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">ACTUATE</text>
+  <!-- headroom to budget -->
+  <line x1="339" y1="261" x2="612" y2="261" stroke="#B85C00" stroke-width="0.6" stroke-dasharray="3,4" opacity="0.7"/>
+  <text x="476" y="258" fill="#B85C00" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">headroom to 20ms budget</text>
+  <!-- detail axis -->
+  <line x1="24" y1="272" x2="618" y2="272" stroke="#C4BFB6" stroke-width="1"/>
+  <text x="24"  y="285" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="9" text-anchor="middle">0</text>
+  <text x="172" y="285" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="9" text-anchor="middle">5ms</text>
+  <text x="321" y="285" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="9" text-anchor="middle">10ms</text>
+  <text x="469" y="285" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="9" text-anchor="middle">15ms</text>
+  <text x="618" y="285" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="9" text-anchor="middle">20ms</text>
+</svg>
+<div class="cap">Fig. 1 — Human vs. machine pipeline at proportional scale (1px &#8776; 0.84ms). Human motor execution alone exceeds the full machine detect-to-fire cycle. The lower strip re-expands that cycle to its own 0&#8211;20ms scale.</div>
+</div>
+
+
+<h2 id="interconnect">2 — Interconnect Fabrics</h2>
+
+<p>The bus is frequently the actual bottleneck. Legacy serial buses consume the entire latency budget before inference begins. The progression from <span class="term" tabindex="0" data-term="mil1553">MIL-STD-1553</span> to <span class="term" tabindex="0" data-term="tsn">TSN</span> is five decades of architectural rethinking, not iteration.</p>
+
+<table class="compare">
+  <thead>
+    <tr><th>Bus / Fabric</th><th>Bandwidth</th><th>Worst-case latency</th><th>Domain</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="mil1553">MIL-STD-1553</span></td><td class="bad">1 Mbps</td><td class="bad">~1ms / frame</td><td>Avionics, legacy DoD</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="canbus">CAN / CANFD</span></td><td class="note">1–8 Mbps</td><td class="note">0.5–2ms</td><td>Automotive, industrial</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="afdx">AFDX / ARINC 664</span></td><td class="note">100 Mbps FD</td><td class="good">&lt;500&#181;s bounded</td><td>Avionics (F-35, A380, 787)</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="ethercat">EtherCAT</span></td><td class="note">100 Mbps</td><td class="good">&lt;100&#181;s cycle</td><td>Industrial motion, robotics</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="tsn">TSN (IEEE 802.1Qbv/bu)</span></td><td class="good">1–10 Gbps</td><td class="good">&lt;50&#181;s w/ preemption</td><td>Industrial, automotive, next-gen avionics</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="cxl">CXL 3.0</span></td><td class="good">~256 GB/s</td><td class="good">~100–200ns coherent</td><td>AI compute, sensor-to-inference</td></tr>
+    <tr><td class="key">PCIe 5.0 DMA</td><td class="good">128 GB/s (x16)</td><td class="good">&lt;1&#181;s DMA transfer</td><td>GPU / FPGA host attach</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <strong>Synchronization tax.</strong> Multi-modal pipelines gate on the slowest sensor. A 20Hz mmW radar imposes a 50ms alignment window regardless of downstream FPGA or ASIC speed. <span class="term" tabindex="0" data-term="hardwaretimestamp">Hardware timestamping</span> at acquisition via IEEE 1588 PTP is not optional for sub-20ms latency claims.
+</div>
+
+
+<h2 id="fpga">3 — FPGA in the Signal Path</h2>
+
+<p>FPGAs synthesize programmable gate logic at clock rates in the hundreds of MHz with deterministic, cycle-accurate timing. The correct frame: <em>the FPGA is the sensor interface</em>. Inference silicon is downstream of it.</p>
+
+<ul class="bul">
+  <li><strong>ADC conditioning</strong> — Raw samples from a MEMS IMU, radar IF stage, or FLIR digitizer are decimated, windowed, and FFT'd inside the fabric before the data reaches system memory. Zero CPU cycles consumed in the hot path.</li>
+  <li><strong>Protocol bridging</strong> — EtherCAT-to-CAN, AFDX framing, PCIe DMA descriptor generation all at line rate with no software overhead. Xilinx Versal or Intel Agilex handles multi-protocol translation in the same device that runs hardened AI engines.</li>
+  <li><strong><span class="term" tabindex="0" data-term="hardwaretimestamp">Hardware timestamping</span></strong> — Every inbound sample tagged at capture time using IEEE 1588 PTP. Sub-100ns synchronization across multiple sensors. The mechanism that enables coherent multi-modal fusion.</li>
+  <li><strong>Partial reconfiguration</strong> — Modern FPGAs reprogram sections of fabric at runtime while other sections run. Relevant for field-updateable sensor processing pipelines without system downtime.</li>
+</ul>
+
+
+<h2 id="fusion">4 — Sensor Fusion Architecture</h2>
+
+<div class="figure">
+<svg viewBox="0 0 640 185" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="185" fill="#EDE9E1"/>
+  <!-- sensors -->
+  <rect x="14" y="18"  width="86" height="22" fill="#F4F2EE" stroke="#9B9590" stroke-width="1"/>
+  <text x="57" y="33" fill="#1B4F8A" font-family="IBM Plex Mono,monospace" font-size="8.5" text-anchor="middle" font-weight="500">FLIR / IR</text>
+  <rect x="14" y="50"  width="86" height="22" fill="#F4F2EE" stroke="#9B9590" stroke-width="1"/>
+  <text x="57" y="65" fill="#1B4F8A" font-family="IBM Plex Mono,monospace" font-size="8.5" text-anchor="middle" font-weight="500">mmW RADAR</text>
+  <rect x="14" y="82"  width="86" height="22" fill="#F4F2EE" stroke="#9B9590" stroke-width="1"/>
+  <text x="57" y="97" fill="#1B4F8A" font-family="IBM Plex Mono,monospace" font-size="8.5" text-anchor="middle" font-weight="500">IMU / LiDAR</text>
+  <rect x="14" y="114" width="86" height="22" fill="#F4F2EE" stroke="#9B9590" stroke-width="1"/>
+  <text x="57" y="129" fill="#1B4F8A" font-family="IBM Plex Mono,monospace" font-size="8.5" text-anchor="middle" font-weight="500">EW / SDR</text>
+  <!-- connector lines -->
+  <line x1="100" y1="29"  x2="164" y2="82"  stroke="#C4BFB6" stroke-width="1"/>
+  <line x1="100" y1="61"  x2="164" y2="88"  stroke="#C4BFB6" stroke-width="1"/>
+  <line x1="100" y1="93"  x2="164" y2="93"  stroke="#C4BFB6" stroke-width="1"/>
+  <line x1="100" y1="125" x2="164" y2="100" stroke="#C4BFB6" stroke-width="1"/>
+  <!-- FPGA block -->
+  <rect x="164" y="62" width="104" height="62" fill="#F4F2EE" stroke="#1B4F8A" stroke-width="1.5"/>
+  <text x="216" y="79"  fill="#1B4F8A" font-family="IBM Plex Sans,sans-serif" font-size="8.5" text-anchor="middle" font-weight="600" letter-spacing="0.07em">FPGA</text>
+  <text x="216" y="92"  fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">hw timestamp</text>
+  <text x="216" y="104" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">ADC cond.</text>
+  <text x="216" y="116" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">TSN fabric</text>
+  <!-- FPGA to SYNC -->
+  <line x1="268" y1="93" x2="322" y2="93" stroke="#9B9590" stroke-width="1"/>
+  <polygon points="318,89 326,93 318,97" fill="#9B9590"/>
+  <!-- SYNC block -->
+  <rect x="326" y="68" width="96" height="50" fill="#F4F2EE" stroke="#B85C00" stroke-width="1.5"/>
+  <text x="374" y="85"  fill="#B85C00" font-family="IBM Plex Sans,sans-serif" font-size="8.5" text-anchor="middle" font-weight="600" letter-spacing="0.07em">SYNC</text>
+  <text x="374" y="98"  fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">temporal align</text>
+  <text x="374" y="110" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">Kalman / UKF</text>
+  <!-- SYNC to INFERENCE -->
+  <line x1="422" y1="93" x2="478" y2="93" stroke="#9B9590" stroke-width="1"/>
+  <polygon points="474,89 482,93 474,97" fill="#9B9590"/>
+  <!-- INFERENCE block -->
+  <rect x="482" y="62" width="108" height="62" fill="#F4F2EE" stroke="#1A5C35" stroke-width="1.5"/>
+  <text x="536" y="79"  fill="#1A5C35" font-family="IBM Plex Sans,sans-serif" font-size="8.5" text-anchor="middle" font-weight="600" letter-spacing="0.07em">INFERENCE</text>
+  <text x="536" y="92"  fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">YOLO / DINOv2</text>
+  <text x="536" y="104" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">tensor / SNN</text>
+  <text x="536" y="116" fill="#1A5C35" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">&lt;5ms</text>
+  <!-- output -->
+  <line x1="590" y1="93" x2="618" y2="93" stroke="#1A5C35" stroke-width="1.5"/>
+  <polygon points="614,89 622,93 614,97" fill="#1A5C35"/>
+  <text x="620" y="86" fill="#1A5C35" font-family="IBM Plex Mono,monospace" font-size="8">ACT</text>
+  <!-- latency annotations -->
+  <text x="164" y="168" fill="#9B9590" font-family="IBM Plex Mono,monospace" font-size="7.5">ns–&#181;s</text>
+  <text x="300" y="168" fill="#B85C00" font-family="IBM Plex Mono,monospace" font-size="7.5">bottleneck: slowest sensor period</text>
+  <text x="482" y="168" fill="#1A5C35" font-family="IBM Plex Mono,monospace" font-size="7.5">1–5ms</text>
+</svg>
+<div class="cap">Fig. 2 — Multi-modal fusion pipeline. The sync stage (amber) is frequently the dominant latency term, not inference.</div>
+</div>
+
+<p>The <span class="term" tabindex="0" data-term="kalman">Kalman filter</span> alignment stage projects all sensor readings to a common time reference. At 20Hz radar that is a 50ms gate regardless of FPGA or ASIC speed. Spatial calibration via extrinsic matrices must be pre-solved — errors here are systematic and will not be corrected downstream.</p>
+
+
+<h2 id="silicon">5 — Inference Silicon</h2>
+
+<table class="compare">
+  <thead>
+    <tr><th>Device</th><th>Peak INT8</th><th>TDP</th><th>Form factor</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="orin">NVIDIA Jetson AGX Orin</span></td><td class="good">200+ TOPS</td><td class="note">15–60W</td><td>Module / SOM</td><td>Dual DLA cores independent of GPU. L4 automotive standard.</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="hailo">Hailo-8</span></td><td class="good">26 TOPS</td><td class="good">2.5W</td><td>M.2 / PCIe</td><td>Pi 5 compatible. YOLO at 60fps. Sub-$100 BOM.</td></tr>
+    <tr><td class="key">Xilinx Versal AI Core</td><td class="good">~400 TOPS (AI eng.)</td><td class="note">varies</td><td>BGA / module</td><td>FPGA fabric + hardened AI engines. Replaces full signal chain.</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="loihi">Intel Loihi 2</span></td><td class="note">sparse / SNN</td><td class="good">&lt;1W typical</td><td>USB3 dev kit</td><td>Neuromorphic. Event-driven. Native match for DVS event cameras.</td></tr>
+    <tr><td class="key">Apple ANE (M4)</td><td class="note">38 TOPS</td><td class="good">~3W</td><td>SoC (on-package)</td><td>Not field-deployable but illustrates consumer silicon trajectory.</td></tr>
+  </tbody>
+</table>
+
+<div class="wireblock"><span class="cm">// hailo-8 inference — hailort python sdk</span>
+<span class="hdr">with</span> VDevice() <span class="kw">as</span> vdevice:
+    hef = HEF(<span class="str">"yolov8m.hef"</span>)           <span class="cm">// compiled .hef for hailo target</span>
+    net = vdevice.create_infer_model(hef)
+    net.input().set_format_type(FormatType.UINT8)
+
+    <span class="hdr">with</span> net.configure() <span class="kw">as</span> ctx:
+        job = ctx.run_async(bindings)   <span class="cm">// non-blocking dispatch to DLA</span>
+        job.wait(<span class="num">5000</span>)                 <span class="cm">// 5ms timeout — typical single-pass</span>
+        results = bindings.output().get_buffer()</div>
+
+
+<h2 id="ai">6 — AI Architectures</h2>
+
+<table class="compare">
+  <thead>
+    <tr><th>Architecture</th><th>Latency class</th><th>Generalization</th><th>Embedded</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="yolo">YOLOv8 / YOLO-NAS</span></td><td class="good">&lt;5ms</td><td>Trained classes only</td><td class="good">Yes — Hailo, Orin DLA</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="dino">DINOv2</span></td><td class="note">10–30ms</td><td>Strong zero-shot transfer</td><td class="note">Partial — ViT-S feasible</td></tr>
+    <tr><td class="key">BEVFusion</td><td class="note">20–50ms</td><td>Camera + LiDAR BEV fusion</td><td class="note">Edge GPU only</td></tr>
+    <tr><td class="key">Reservoir Computing / ESN</td><td class="good">&lt;1ms</td><td>Time-series (IMU, Doppler, audio)</td><td class="good">MCU-viable</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="snn">SNN (spiking networks)</span></td><td class="good">&lt;1ms on Loihi 2</td><td>Learned temporal patterns</td><td class="good">Loihi 2 only</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="sam">SAM 2</span></td><td class="bad">15–40ms</td><td>Pixel-level, any class</td><td class="bad">Edge GPU only</td></tr>
+  </tbody>
+</table>
+
+
+<h2 id="consumer">7 — Consumer and Hobbyist Crossover</h2>
+
+<p>The same architectural stack governing avionics pipelines is directly accessible with commodity hardware. The buses are identical. The inference silicon fits in M.2 slots. The latency constraints are comparable to active vehicle systems.</p>
+
+<ul class="bul">
+  <li><strong><span class="term" tabindex="0" data-term="canbus">CAN bus / CANFD</span></strong> — Every modern vehicle exposes wheel speed, yaw rate, throttle position, and collision radar over CAN. A PEAK PCAN-USB or Canable adapter gives socketcan on Linux at the same layer as the factory ECU. CANFD at 8Mbps with 64-byte payloads is sufficient for compressed sensor telemetry.</li>
+  <li><strong><span class="term" tabindex="0" data-term="ethercat">EtherCAT</span></strong> — Sub-100&#181;s deterministic motion control on commodity 100Mbps Ethernet. A Raspberry Pi with a Beckhoff EK1100 coupler closes a real-time loop suitable for active suspension or steering feedback. The slave reads its PDO as the frame passes through — the frame never stops and never stores.</li>
+  <li><strong>Hailo-8 M.2 on Pi 5</strong> — 26 TOPS at 2.5W for under $100 in silicon. YOLO object detection at 60fps. Practical for dash-mounted classifiers, obstacle detection, or any pipeline previously requiring a discrete GPU.</li>
+  <li><strong>RTL-SDR + IQ classifiers</strong> — The EW/SDR layer maps directly to a $25 RTL-SDR dongle running a trained RF fingerprinting CNN. Emitter classification at 10dB SNR. The same technique applied to CAN differential waveforms fingerprints ECU nodes and detects spoofed messages.</li>
+  <li><strong><span class="term" tabindex="0" data-term="hardwaretimestamp">IEEE 1588 PTP</span></strong> — Available on commodity NICs (Intel I210, I225). Sub-microsecond sync across sensor devices. Required for any multi-modal fusion pipeline making sub-10ms latency claims.</li>
+  <li><strong>Event cameras (DVS346, Prophesee Metavision)</strong> — Asynchronous pixel-change sensors. Microsecond temporal resolution, 120dB dynamic range, zero motion blur. Still premium hardware; price trajectory is steep. Native input for SNN inference on Loihi 2.</li>
+</ul>
+
+<div class="wireblock"><span class="cm">// can bus read and inference — python, cantools + hailort</span>
+<span class="kw">import</span> can, cantools, numpy <span class="kw">as</span> np
+
+db  = cantools.database.load_file(<span class="str">"vehicle_signals.dbc"</span>)
+bus = can.Bus(<span class="str">"can0"</span>, interface=<span class="str">"socketcan"</span>)
+
+<span class="hdr">for</span> msg <span class="kw">in</span> bus:
+    decoded = db.decode_message(msg.arbitration_id, msg.data)
+    vec = np.array([
+        decoded[<span class="str">"wheel_speed_fl"</span>],
+        decoded[<span class="str">"throttle_pos"</span>],
+        decoded[<span class="str">"yaw_rate"</span>],
+        decoded[<span class="str">"lateral_accel"</span>],
+    ])
+    result = hailo_infer(vec)   <span class="cm">// &lt;5ms dispatch to hailo-8</span></div>
+
+
+<h2 id="sync">8 — Synchronization Pipeline</h2>
+
+<ol class="phase-list">
+  <li>
+    <div class="ph-title">Acquisition Timestamping</div>
+    <div class="ph-body">Hardware-timestamp every sample at the sensor or FPGA input register. A software timestamp at the driver layer adds 1–50ms of OS scheduling jitter and invalidates sub-10ms latency claims. Use IEEE 1588 PTP on a hardware-timestamping NIC, or a 1PPS GPIO pulse from a GNSS receiver.</div>
+  </li>
+  <li>
+    <div class="ph-title">Temporal Alignment</div>
+    <div class="ph-body">Project all sensor readings to the most recent common timestamp via a <span class="term" tabindex="0" data-term="kalman">Kalman filter</span> or linear interpolation. The alignment window gates on the slowest modality. At 20Hz radar that is a 50ms window regardless of everything downstream.</div>
+  </li>
+  <li>
+    <div class="ph-title">Spatial Calibration</div>
+    <div class="ph-body">All sensors must share a coordinate frame via pre-solved extrinsic calibration matrices. Errors here are systematic and will not be corrected downstream. Calibrate with a checkerboard at multiple distances and validate residuals before trusting fusion output.</div>
+  </li>
+  <li>
+    <div class="ph-title">Fused State Vector Construction</div>
+    <div class="ph-body">Construct the input tensor from aligned, calibrated multi-modal data. Normalization and format must match training-time preprocessing exactly. Mismatched normalization produces silent degradation with no obvious error signal.</div>
+  </li>
+  <li>
+    <div class="ph-title">Inference Dispatch</div>
+    <div class="ph-body">DMA the input tensor from FPGA shared memory or pinned host memory directly to the inference accelerator. Avoid CPU copies. A PCIe 5.0 DMA transfer of a 640&#215;640&#215;3 fp16 frame completes in under 100&#181;s.</div>
+  </li>
+</ol>
+
+
+<h2 id="ew">9 — RF Intelligence and EW Crossover</h2>
+
+<ul class="bul">
+  <li><strong>RF fingerprinting</strong> — Oscillator and PA imperfections create unique per-transmitter spectral signatures. CNNs on raw IQ samples classify transmitter identity at 95%+ accuracy at 10dB SNR. The same technique on CAN differential waveforms fingerprints ECU nodes and detects spoofed messages.</li>
+  <li><strong>TDOA geolocation</strong> — Time difference of arrival across PTP-synchronized receivers on a 10m baseline geolocates a 433MHz source to meter-level accuracy. Used in avionics EW for radar emitter localization; directly applicable to unauthorized RF hunting.</li>
+  <li><strong>Micro-Doppler classification</strong> — FMCW radar IQ (same format as TI AWR1843 automotive radar) classifies object type from Doppler signature. Human gait, vehicle, bicycle, and drone each produce distinct profiles detectable by a lightweight CNN without frame-based imaging.</li>
+  <li><strong>SDR classifier pipeline</strong> — An RTL-SDR or HackRF feeding a trained signal classification model identifies emitter type, modulation scheme, and protocol in under 100ms. The same task on a scope with a reference library takes a human operator seconds to minutes.</li>
+</ul>
+
+
+<h2 id="f35">10 — F-35 Mission Systems: A Reference Integration</h2>
+
+<p>Everything above converges in one airframe. The F-35 pulls radar, electro-optical, infrared, and electronic-warfare returns from apertures spread across the skin, timestamps and fuses them on a central processor, and hands the pilot a single track picture instead of five separate sensor feeds. The fusion engine, not any individual sensor, is the weapon. It is the clearest production example of the sensor-to-decision pipeline in this document.</p>
+
+<table class="compare">
+  <thead>
+    <tr><th>System</th><th>Designation</th><th>Supplier</th><th>Role</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="apg81">AESA radar</span></td><td class="note">AN/APG-81</td><td>Northrop Grumman</td><td>X-band fire control, SAR ground mapping, electronic attack</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="das">DAS</span></td><td class="note">AN/AAQ-37</td><td>Northrop Grumman</td><td>Six IR apertures, 360&#176; missile warning, IRST, helmet imagery</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="eots">EOTS</span></td><td class="note">AN/AAQ-40</td><td>Lockheed / Raytheon</td><td>Nose FLIR + IRST + laser designation, air-to-ground targeting</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="barracuda">EW / EA suite</span></td><td class="note">AN/ASQ-239</td><td>BAE Systems</td><td>Radar warning, emitter geolocation, electronic attack, countermeasures</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="cni">CNI</span></td><td class="note">AN/ASQ-242</td><td>Northrop Grumman</td><td>Software-defined radio, 27+ RF functions incl. Link 16, MADL, IFF, GPS</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="icp">Core processor</span></td><td class="note">TR-3 ICP</td><td>L3Harris</td><td>Fuses all sensor data; ~25x the compute of TR-2</td></tr>
+  </tbody>
+</table>
+
+<div class="figure">
+<svg viewBox="0 0 640 244" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="244" fill="#EDE9E1"/>
+  <!-- sensor apertures (top row) -->
+  <rect x="12"  y="16" width="116" height="26" fill="#F4F2EE" stroke="#1B4F8A" stroke-width="1"/>
+  <text x="70"  y="30" fill="#1B4F8A" font-family="IBM Plex Mono,monospace" font-size="8" font-weight="600" text-anchor="middle">AN/APG-81</text>
+  <text x="70"  y="40" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">AESA RADAR</text>
+  <rect x="138" y="16" width="116" height="26" fill="#F4F2EE" stroke="#1B4F8A" stroke-width="1"/>
+  <text x="196" y="30" fill="#1B4F8A" font-family="IBM Plex Mono,monospace" font-size="8" font-weight="600" text-anchor="middle">AN/AAQ-37</text>
+  <text x="196" y="40" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">DAS &#183; 6&#215; IR</text>
+  <rect x="264" y="16" width="116" height="26" fill="#F4F2EE" stroke="#1B4F8A" stroke-width="1"/>
+  <text x="322" y="30" fill="#1B4F8A" font-family="IBM Plex Mono,monospace" font-size="8" font-weight="600" text-anchor="middle">AN/AAQ-40</text>
+  <text x="322" y="40" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">EOTS</text>
+  <rect x="390" y="16" width="116" height="26" fill="#F4F2EE" stroke="#1B4F8A" stroke-width="1"/>
+  <text x="448" y="30" fill="#1B4F8A" font-family="IBM Plex Mono,monospace" font-size="8" font-weight="600" text-anchor="middle">AN/ASQ-239</text>
+  <text x="448" y="40" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">EW &#183; BARRACUDA</text>
+  <rect x="516" y="16" width="116" height="26" fill="#F4F2EE" stroke="#1B4F8A" stroke-width="1"/>
+  <text x="574" y="30" fill="#1B4F8A" font-family="IBM Plex Mono,monospace" font-size="8" font-weight="600" text-anchor="middle">AN/ASQ-242</text>
+  <text x="574" y="40" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">CNI &#183; SDR</text>
+  <!-- drops into fibre channel band -->
+  <line x1="70"  y1="42" x2="70"  y2="56" stroke="#9B9590" stroke-width="1"/>
+  <line x1="196" y1="42" x2="196" y2="56" stroke="#9B9590" stroke-width="1"/>
+  <line x1="322" y1="42" x2="322" y2="56" stroke="#9B9590" stroke-width="1"/>
+  <line x1="448" y1="42" x2="448" y2="56" stroke="#9B9590" stroke-width="1"/>
+  <line x1="574" y1="42" x2="574" y2="56" stroke="#9B9590" stroke-width="1"/>
+  <!-- fibre channel fabric band -->
+  <rect x="12" y="56" width="620" height="16" fill="#1B4F8A" opacity="0.08"/>
+  <rect x="12" y="56" width="620" height="16" fill="none" stroke="#1B4F8A" stroke-width="1"/>
+  <text x="322" y="67" fill="#1B4F8A" font-family="IBM Plex Mono,monospace" font-size="7.5" font-weight="600" letter-spacing="0.06em" text-anchor="middle">FIBRE CHANNEL &#183; OPTICAL SENSOR / DISPLAY FABRIC</text>
+  <!-- fabric down to ICP -->
+  <line x1="278" y1="72" x2="278" y2="92" stroke="#1B4F8A" stroke-width="1.2"/>
+  <polygon points="274,86 282,86 278,92" fill="#1B4F8A"/>
+  <!-- ICP block -->
+  <rect x="176" y="92" width="204" height="76" fill="#F4F2EE" stroke="#1B4F8A" stroke-width="1.8"/>
+  <text x="278" y="110" fill="#1B4F8A" font-family="IBM Plex Sans,sans-serif" font-size="9.5" font-weight="600" letter-spacing="0.04em" text-anchor="middle">INTEGRATED CORE PROCESSOR</text>
+  <text x="278" y="123" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">TR-3 &#183; L3Harris &#183; open architecture</text>
+  <text x="278" y="135" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">sensor fusion engine &#183; 25&#215; TR-2</text>
+  <text x="278" y="147" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">INTEGRITY-178B partitions</text>
+  <!-- ICP to displays -->
+  <line x1="380" y1="118" x2="438" y2="111" stroke="#1A5C35" stroke-width="1"/>
+  <polygon points="432,108 440,110 433,114" fill="#1A5C35"/>
+  <line x1="380" y1="142" x2="438" y2="149" stroke="#1A5C35" stroke-width="1"/>
+  <polygon points="432,146 440,150 433,152" fill="#1A5C35"/>
+  <rect x="440" y="96" width="180" height="30" fill="#F4F2EE" stroke="#1A5C35" stroke-width="1.4"/>
+  <text x="530" y="114" fill="#1A5C35" font-family="IBM Plex Mono,monospace" font-size="7.5" font-weight="600" text-anchor="middle">PANORAMIC COCKPIT DISPLAY</text>
+  <rect x="440" y="134" width="180" height="30" fill="#F4F2EE" stroke="#1A5C35" stroke-width="1.4"/>
+  <text x="530" y="152" fill="#1A5C35" font-family="IBM Plex Mono,monospace" font-size="7.5" font-weight="600" text-anchor="middle">HELMET-MOUNTED DISPLAY</text>
+  <!-- ICP down to vehicle bus -->
+  <line x1="278" y1="168" x2="278" y2="186" stroke="#B85C00" stroke-width="1.2"/>
+  <polygon points="274,180 282,180 278,186" fill="#B85C00"/>
+  <!-- vehicle systems bus band -->
+  <rect x="12" y="186" width="620" height="16" fill="#B85C00" opacity="0.08"/>
+  <rect x="12" y="186" width="620" height="16" fill="none" stroke="#B85C00" stroke-width="1"/>
+  <text x="322" y="197" fill="#B85C00" font-family="IBM Plex Mono,monospace" font-size="7.5" font-weight="600" letter-spacing="0.06em" text-anchor="middle">IEEE 1394b VEHICLE SYSTEMS BUS &#183; SAE AS5643 &#183; 70+ NODES</text>
+  <!-- vehicle bus devices -->
+  <line x1="90"  y1="202" x2="90"  y2="212" stroke="#9B9590" stroke-width="1"/>
+  <line x1="242" y1="202" x2="242" y2="212" stroke="#9B9590" stroke-width="1"/>
+  <line x1="394" y1="202" x2="394" y2="212" stroke="#9B9590" stroke-width="1"/>
+  <line x1="546" y1="202" x2="546" y2="212" stroke="#9B9590" stroke-width="1"/>
+  <rect x="24"  y="212" width="132" height="24" fill="#F4F2EE" stroke="#9B9590" stroke-width="1"/>
+  <text x="90"  y="227" fill="#1A1A1A" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">FLIGHT CONTROLS</text>
+  <rect x="176" y="212" width="132" height="24" fill="#F4F2EE" stroke="#9B9590" stroke-width="1"/>
+  <text x="242" y="227" fill="#1A1A1A" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">ENGINE / FADEC</text>
+  <rect x="328" y="212" width="132" height="24" fill="#F4F2EE" stroke="#9B9590" stroke-width="1"/>
+  <text x="394" y="227" fill="#1A1A1A" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">WEAPONS BAY</text>
+  <rect x="480" y="212" width="132" height="24" fill="#F4F2EE" stroke="#9B9590" stroke-width="1"/>
+  <text x="546" y="227" fill="#1A1A1A" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">FUEL &#183; UTILITIES</text>
+</svg>
+<div class="cap">Fig. 3 — F-35 mission-systems architecture. Apertures feed the Integrated Core Processor over an optical Fibre Channel fabric; the fused track picture drives the panoramic and helmet displays. Vehicle systems ride a separate deterministic IEEE 1394b bus.</div>
+</div>
+
+<h3>Compute backbone</h3>
+<p>The <span class="term" tabindex="0" data-term="icp">Integrated Core Processor</span> is the brain. One open-architecture computer runs radar and EO/IR signal processing, electronic warfare, the fusion engine, and the cockpit and helmet displays. Technology Refresh 3 swapped in an L3Harris ICP rated at roughly 25 times the compute of the prior generation, paired with a 20x-larger Aircraft Memory System and a new display electronics unit. That headroom is the precondition for the Block 4 capability set.</p>
+
+<h3>Data backbone</h3>
+<ul class="bul">
+  <li><strong><span class="term" tabindex="0" data-term="fibrechannel">Fibre Channel</span></strong> — optical fabric that ties the ICP modules together like a backplane and carries sensor, CNI, and display traffic at multiple Gbps. The high-bandwidth path from aperture to fusion engine.</li>
+  <li><strong><span class="term" tabindex="0" data-term="ieee1394">IEEE 1394b / AS5643</span></strong> — the vehicle systems network: 70+ nodes for flight controls, engine, fuel, weapons, and utilities. A deterministic, militarized FireWire chosen over <span class="term" tabindex="0" data-term="mil1553">MIL-STD-1553</span> for bandwidth and cable length.</li>
+  <li><strong>Two networks, two jobs</strong> — high-bandwidth sensor and display data stays on the optical fabric; slower vehicle traffic is isolated on the 1394b bus. The split keeps fusion latency off the same wire as engine and flight-control housekeeping.</li>
+</ul>
+
+<h3>Software and partitioning</h3>
+<p>A safety-critical RTOS sits under all of it. The F-35 runs <span class="term" tabindex="0" data-term="integrity">Green Hills INTEGRITY-178B</span>, an ARINC 653 partitioned kernel that gives every application a guaranteed time slice and an isolated memory space, so flight-critical and mission code share one processor with provable determinism. The airborne load is roughly 8.6 million lines (Block 3F), about 24 million including the ALIS/ODIN ground suite, written predominantly in C and C++ under the JSF Air Vehicle C++ standard. That standard bans exceptions, recursion, and dynamic allocation after initialization to keep timing and memory bounded.</p>
+
+<div class="callout">
+  <strong>Why this is the payoff section.</strong> Every abstract term in this document maps to a real box here: <span class="term" tabindex="0" data-term="hardwaretimestamp">hardware timestamping</span> and <span class="term" tabindex="0" data-term="kalman">Kalman fusion</span> in the ICP, <span class="term" tabindex="0" data-term="afdx">AFDX</span>-class determinism on the Fibre Channel and 1394b buses, and the EW/SDR stack realized as the <span class="term" tabindex="0" data-term="barracuda">Barracuda</span> and <span class="term" tabindex="0" data-term="cni">CNI</span> suites.
+</div>
+
+
+<div class="refs">
+<h2 id="refs">References</h2>
+<table>
+  <tr><td>[MIL-1553]</td><td>MIL-STD-1553B Notice 4 — DoD Interface Standard for Digital Time Division Command/Response Multiplex Data Bus</td></tr>
+  <tr><td>[ARINC 664]</td><td>ARINC 664 Part 7 — Aircraft Data Network, Avionics Full-Duplex Switched Ethernet (AFDX)</td></tr>
+  <tr><td>[IEEE 802.1Q]</td><td>IEEE 802.1Q-2022, Clause 8.6.8 — Frame Preemption. <a href="https://standards.ieee.org/ieee/802.1Q/10323/" target="_blank">standards.ieee.org</a></td></tr>
+  <tr><td>[CXL 3.0]</td><td>Compute Express Link 3.0 Specification. <a href="https://www.computeexpresslink.org/specification" target="_blank">computeexpresslink.org</a></td></tr>
+  <tr><td>[Orin]</td><td>NVIDIA Jetson AGX Orin Technical Brief. <a href="https://developer.nvidia.com/embedded/jetson-agx-orin" target="_blank">developer.nvidia.com</a></td></tr>
+  <tr><td>[Hailo-8]</td><td>Hailo-8 Product Brief Rev 2.0. <a href="https://hailo.ai/products/hailo-8/" target="_blank">hailo.ai</a></td></tr>
+  <tr><td>[EtherCAT]</td><td>EtherCAT Technology Group — IEC 61158-6-12. <a href="https://www.ethercat.org/en/technology.html" target="_blank">ethercat.org</a></td></tr>
+  <tr><td>[BEVFusion]</td><td>BEVFusion: Multi-Task Multi-Sensor Fusion with Unified BEV Representation — arXiv:2205.13542</td></tr>
+  <tr><td>[Loihi 2]</td><td>Intel Loihi 2 Technical Brief. <a href="https://www.intel.com/content/www/us/en/research/neuromorphic-computing.html" target="_blank">intel.com</a></td></tr>
+  <tr><td>[SAM 2]</td><td>SAM 2: Segment Anything in Images and Video — arXiv:2408.00714</td></tr>
+  <tr><td>[IEEE 1588]</td><td>IEEE 1588-2019 — Precision Clock Synchronization Protocol for Networked Measurement and Control Systems</td></tr>
+  <tr><td>[F-35 TR-3]</td><td>L3Harris — TR-3 Integrated Core Processor, open-architecture backbone of the F-35. <a href="https://www.l3harris.com/all-capabilities/high-performance-integrated-core-processor-icp" target="_blank">l3harris.com</a></td></tr>
+  <tr><td>[INTEGRITY]</td><td>Green Hills Software — INTEGRITY-178B RTOS on the Lockheed Martin F-35. <a href="https://www.ghs.com/customers/lockheedf35.html" target="_blank">ghs.com</a></td></tr>
+  <tr><td>[AS5643]</td><td>SAE AS5643 — IEEE-1394b interface requirements for military and aerospace vehicle applications</td></tr>
+  <tr><td>[JSF C++]</td><td>Lockheed Martin — Joint Strike Fighter Air Vehicle C++ Coding Standards (no exceptions, recursion, or post-init dynamic allocation)</td></tr>
+  <tr><td>[F-35]</td><td>Lockheed Martin F-35 Lightning II — avionics and mission systems overview. <a href="https://en.wikipedia.org/wiki/Lockheed_Martin_F-35_Lightning_II" target="_blank">en.wikipedia.org</a></td></tr>
+</table>
+</div>
+
+<div class="doc-footer">
+  <span>DOC-RTI-001 / REV 1.1</span>
+  <span>SENSOR SYSTEMS &amp; AI PIPELINE</span>
+  <span>2026-06</span>
+</div>
+
+</article>
+
+<!-- ── MARGIN ── -->
+<aside class="margin">
+  <div class="margin-card" id="margin-card">
+    <div class="margin-eyebrow">
+      Reference Inspector
+      <span class="margin-status" id="margin-status"></span>
+    </div>
+    <h3 id="m-title">Hover any underlined term</h3>
+    <code id="m-code">&#183;</code>
+    <p id="m-body">Move the cursor over any dotted-underlined term to load its specification detail. Click to pin the card so it persists while you read.</p>
+    <div class="margin-meta" id="m-meta"></div>
+    <div class="margin-section" id="m-rel"><div class="label">Related</div><ul><li class="more">&#183;</li></ul></div>
+    <div class="margin-section" id="m-notes"><div class="label">Notes</div><ul><li class="more">&#183;</li></ul></div>
+    <div class="margin-section" id="m-links"><div class="label">Sources</div><ul><li class="more">&#183;</li></ul></div>
+  </div>
+  <div class="margin-pin-bar">
+    <span class="margin-hint">hover &middot; click to pin &middot; <kbd>esc</kbd> unpin</span>
+    <button class="margin-unpin" id="margin-unpin">unpin</button>
+  </div>
+  <div class="margin-index">
+    <div class="margin-index-label">Contents</div>
+    <a href="#latency">1 &mdash; Latency Stack</a>
+    <a href="#interconnect">2 &mdash; Interconnect Fabrics</a>
+    <a href="#fpga">3 &mdash; FPGA Signal Path</a>
+    <a href="#fusion">4 &mdash; Sensor Fusion</a>
+    <a href="#silicon">5 &mdash; Inference Silicon</a>
+    <a href="#ai">6 &mdash; AI Architectures</a>
+    <a href="#consumer">7 &mdash; Consumer Crossover</a>
+    <a href="#sync">8 &mdash; Synchronization</a>
+    <a href="#ew">9 &mdash; RF / EW Layer</a>
+    <a href="#f35">10 &mdash; F-35 Mission Systems</a>
+    <a href="#refs">References</a>
+  </div>
+</aside>
+
+</div><!-- .sheet -->
+</div><!-- .page -->
+
+<script id="reference-data" type="application/json">
+{
+  "mil1553": {
+    "title": "MIL-STD-1553",
+    "code": "MIL-STD-1553B / Notice 4 / 1973",
+    "body": "Serial command/response bus specified in 1973. Half-duplex at 1Mbps. Controller-centric: a Bus Controller polls up to 31 Remote Terminals. Manchester II bi-phase encoding. Still flying on F-16, F/A-18, C-130, and Apache airframes.",
+    "meta": { "bandwidth": "1 Mbps", "latency/frame": "~1ms", "topology": "dual-redundant bus", "RT count": "31 max", "encoding": "Manchester II", "year": "1973" },
+    "notes": ["still on active airframes with no near-term replacement mandate", "1ms minor frame means sensor data is already stale at delivery", "dual-bus provides fault tolerance, not throughput", "SpaceWire replaces it in space systems; AFDX on modern civil/military"],
+    "rel": ["afdx", "tsn"],
+    "links": [{"label": "MIL-STD-1553B (EverySpec)", "url": "https://everyspec.com/MIL-STD/MIL-STD-1500-1599/MIL-STD-1553B_NOTICE-4_7977/"}]
+  },
+  "canbus": {
+    "title": "CAN Bus / CANFD",
+    "code": "ISO 11898-1:2015",
+    "body": "Controller Area Network. Multi-master serial bus with non-destructive bitwise arbitration — lower ID wins without destroying the losing frame. CANFD extends payload to 64 bytes and raises bit rate to 8Mbps during the data phase. Dominant embedded vehicle bus since the early 1990s.",
+    "meta": { "classic speed": "1 Mbps max", "CANFD data phase": "up to 8 Mbps", "payload (FD)": "64 bytes", "arbitration": "CSMA/CD-AMP", "Linux interface": "socketcan", "DBC tooling": "cantools (python)" },
+    "notes": ["every node is a peer — no master required", "11-bit or 29-bit message identifiers determine priority", "socketcan gives user-space access on Linux via can0/can1", "CANFD backward-compatible with classic CAN at base speed", "RF fingerprinting on differential waveform can detect spoofed nodes"],
+    "rel": ["ethercat", "tsn"],
+    "links": [{"label": "SocketCAN — Linux kernel docs", "url": "https://www.kernel.org/doc/html/latest/networking/can.html"}]
+  },
+  "ethercat": {
+    "title": "EtherCAT",
+    "code": "IEC 61158-6-12 / ETG.1000",
+    "body": "Ethernet fieldbus where the master broadcasts a frame and each slave reads its data and inserts return data as the frame passes through — the frame never stops. Sub-100us cycle times on standard 100Mbps hardware with no special switches required.",
+    "meta": { "cycle time": "<100us typical", "sync accuracy": "<1us (DC mode)", "topology": "line, ring, tree", "bandwidth": "100 Mbps", "slave interface": "ESC ASIC (ET1100 etc)", "open master": "IgH EtherCAT Master" },
+    "notes": ["distributed clocks (DC) sync all slaves to master reference oscillator", "PDO: process data objects mapped directly from slave DPRAM", "ESI XML files describe slave I/O and timing capabilities", "IgH EtherCAT Master is the reference open-source Linux implementation", "frame never store-and-forwards — no switch latency accumulation"],
+    "rel": ["canbus", "tsn"],
+    "links": [{"label": "EtherCAT Technology Group", "url": "https://www.ethercat.org/en/technology.html"}]
+  },
+  "afdx": {
+    "title": "AFDX / ARINC 664 Part 7",
+    "code": "ARINC 664P7",
+    "body": "Avionics Full-Duplex Switched Ethernet. Full-duplex 100Mbps with deterministic virtual links. Each VL has a bandwidth allocation gap (BAG) guaranteeing bounded worst-case end-to-end latency. Dual A/B network redundancy. On A380, A350, F-35, Boeing 787.",
+    "meta": { "bandwidth": "100 Mbps full-duplex", "worst-case latency": "<500us bounded", "redundancy": "dual A/B networks", "BAG range": "1–128ms configurable", "frame size": "up to 1518 bytes", "end system": "hardware VL traffic shaping" },
+    "notes": ["VL ID embedded in MAC destination address — no runtime negotiation", "end systems apply traffic policing at source — congestion structurally impossible", "sequence numbers and CRC per VL for integrity checking", "replaces MIL-STD-1553 on all modern military and civil platforms"],
+    "rel": ["mil1553", "tsn"]
+  },
+  "tsn": {
+    "title": "Time-Sensitive Networking",
+    "code": "IEEE 802.1Q-2022 / 802.1AS",
+    "body": "Suite of IEEE 802.1 amendments adding deterministic latency to standard Ethernet. Key mechanisms: 802.1Qbv (time-aware shaper with guard bands), 802.1Qbu (frame preemption — high-priority frame interrupts low-priority mid-transmission), 802.1AS (gPTP sub-microsecond clock sync).",
+    "meta": { "latency w/ preemption": "<50us", "clock sync (802.1AS)": "<1us", "bandwidth": "100Mbps–10Gbps", "shaping std": "802.1Qbv TAS + CBS", "redundancy": "802.1CB FRER", "automotive profile": "AUTOSAR / Ethernet AVB" },
+    "notes": ["frame preemption (Qbu) interrupts a low-priority frame mid-byte to serve high-priority", "credit-based shaper (CBS) prevents starvation of best-effort flows", "802.1CB: seamless redundancy via frame replication and elimination", "direct architectural replacement for AFDX on next-gen programs", "AUTOSAR 4.x supports TSN for in-vehicle domain controller interconnects"],
+    "rel": ["afdx", "ethercat", "cxl"],
+    "links": [{"label": "IEEE 802.1Q-2022", "url": "https://standards.ieee.org/ieee/802.1Q/10323/"}]
+  },
+  "cxl": {
+    "title": "Compute Express Link 3.0",
+    "code": "CXL 3.0 / PCIe 6.0 PHY",
+    "body": "Cache-coherent interconnect over the PCIe 6.0 physical layer. CXL 3.0 adds fabric-based shared memory pools with full cache coherency across CPU, GPU, FPGA, and DLA agents. Eliminates data copies between accelerators: FPGA sensor processing writes directly to memory the inference ASIC reads.",
+    "meta": { "bandwidth": "~256 GB/s (x16)", "latency": "~100–200ns", "coherency": "full cache-coherent", "PHY": "PCIe 6.0 PAM4", "p2p support": "yes (CXL 3.0)", "protocol layers": "CXL.io / .cache / .mem" },
+    "notes": ["CXL.cache: accelerator caches host memory coherently without explicit DMA", "CXL.mem: host accesses accelerator-attached memory as system RAM", "CXL 3.0 peer-to-peer: GPU reads FPGA memory without CPU involvement", "first consumer hardware: Intel Meteor Lake, AMD EPYC Genoa"],
+    "rel": ["tsn"],
+    "links": [{"label": "CXL Consortium Specification", "url": "https://www.computeexpresslink.org/specification"}]
+  },
+  "hardwaretimestamp": {
+    "title": "Hardware Timestamping / IEEE 1588 PTP",
+    "code": "IEEE 1588-2019 / gPTP 802.1AS",
+    "body": "Precision Time Protocol synchronizes clocks by measuring and compensating for path delay. Hardware timestamping captures the moment a PTP frame's SFD crosses the MAC layer in silicon, eliminating OS scheduling jitter entirely. Sub-100ns synchronization achievable on commodity hardware.",
+    "meta": { "accuracy (HW TS)": "<100ns", "accuracy (SW TS)": "1–50us jitter", "protocol": "IEEE 1588v2 / gPTP", "NIC examples": "Intel I210, I225, X550", "GNSS sync": "1PPS GPIO pulse", "Linux impl": "linuxptp (ptp4l + phc2sys)" },
+    "notes": ["grandmaster distributes time; boundary clocks relay and re-master per segment", "802.1AS (gPTP) is the simplified automotive/TSN profile of 1588", "without hardware timestamps OS jitter dominates at the microsecond level", "critical for TDOA emitter geolocation in multi-antenna SDR setups", "linuxptp is the reference open-source Linux implementation"],
+    "rel": ["tsn", "kalman"],
+    "links": [{"label": "linuxptp project", "url": "https://linuxptp.nwtime.org"}]
+  },
+  "kalman": {
+    "title": "Kalman Filter / UKF",
+    "code": "R.E. Kalman 1960 / Julier & Uhlmann 1995",
+    "body": "Recursive Bayesian estimator fusing noisy multi-sensor measurements with a dynamic system model to maintain a minimum-variance state estimate. The Unscented KF handles nonlinear dynamics via sigma-point propagation without linearization error. Standard in navigation and fusion since Apollo.",
+    "meta": { "predict step": "propagate state + covariance via F", "update step": "weight residual by Kalman gain K", "UKF sigma pts": "2n+1 for n-dim state", "complexity": "O(n^2) per step", "tuning params": "Q (process noise), R (measurement noise)", "nonlinear": "UKF > EKF for strong nonlinearities" },
+    "notes": ["Q and R are tuning parameters — wrong values degrade fusion silently", "EKF linearizes via Jacobian — UKF more accurate on strongly nonlinear dynamics", "particle filter handles non-Gaussian but O(N) per particle — expensive above ~15 states", "alignment window gates on slowest sensor period — often the dominant latency", "in automotive: GPS + IMU + wheel odometry for dead-reckoning localization"],
+    "rel": ["hardwaretimestamp"]
+  },
+  "orin": {
+    "title": "NVIDIA Jetson AGX Orin",
+    "code": "NVIDIA Ampere + Orin CPU / 2022",
+    "body": "SOM combining 12-core Arm Cortex-A78AE CPU, Ampere GPU, and dual Deep Learning Accelerator (DLA) cores. The DLA runs inference independently of the GPU, preserving GPU bandwidth for vision pre-processing. Rated ISO 26262 ASIL-B partial. Standard compute for L4 autonomous vehicles.",
+    "meta": { "DLA peak": "200+ INT8 TOPS total", "GPU": "2048-core Ampere", "CPU": "12x Cortex-A78AE", "memory": "32–64 GB LPDDR5", "power envelope": "15–60W configurable", "safety rating": "ISO 26262 ASIL-B (partial)" },
+    "notes": ["DLA is deterministic — fixed-latency inference, unlike GPU scheduling", "DeepStream SDK manages camera ingest, preprocessing, and pipeline orchestration", "TensorRT compiles and quantizes models to DLA-compatible .engine format", "Orin NX and Nano are smaller variants for cost-constrained applications"],
+    "rel": ["hailo", "yolo"],
+    "links": [{"label": "Jetson AGX Orin", "url": "https://developer.nvidia.com/embedded/jetson-agx-orin"}]
+  },
+  "hailo": {
+    "title": "Hailo-8 Inference Accelerator",
+    "code": "Hailo-8 / M.2 B+M key",
+    "body": "26 INT8 TOPS in 2.5W. M.2 B+M key form factor compatible with Raspberry Pi 5 AI HAT+. Runs compiled .hef (Hailo Executable Format) models from the Hailo Model Zoo. Used in dashcams, industrial cameras, and robotics for on-device YOLO inference at sub-$100 BOM.",
+    "meta": { "peak INT8": "26 TOPS", "TDP": "2.5W", "interface": "M.2 / PCIe Gen 3 x1", "Pi 5 kit": "AI HAT+ (~$70)", "SDK": "HailoRT + Python API", "YOLO perf": "60fps YOLOv8m @ 640px" },
+    "notes": ["HEF models compiled offline via Dataflow Compiler — not runtime-flexible", "Hailo Model Zoo has pre-compiled YOLOv8, ResNet, EfficientDet variants", "Dataflow Compiler handles quantization and architectural mapping", "PCIe Gen 3 x1 not a bottleneck at typical model sizes"],
+    "rel": ["orin", "yolo"],
+    "links": [{"label": "Hailo-8 product page", "url": "https://hailo.ai/products/hailo-8/"}]
+  },
+  "loihi": {
+    "title": "Intel Loihi 2",
+    "code": "Intel Labs / 2021 / Intel 4 (7nm)",
+    "body": "Second-generation neuromorphic research chip. 1 million programmable neurons and 120 million synapses on 31mm2 in Intel 4. Spiking Neural Network computation: neurons fire asynchronous events rather than synchronous matrix operations. Consumes near-zero power when no spikes are firing.",
+    "meta": { "neurons": "1M per chip", "synapses": "120M", "process": "Intel 4 (7nm class)", "energy mode": "event-driven sparse", "interface": "USB3 dev kit (Kapoho Point)", "framework": "Lava (open-source, Apache 2.0)" },
+    "notes": ["native input for DVS event cameras — asynchronous events map directly to spikes", "STDP (spike-timing-dependent plasticity) enables on-chip learning", "requires SNN model architecture — not a drop-in for standard DNN models", "access via Intel Neuromorphic Research Community (INRC) program"],
+    "rel": ["orin", "snn"],
+    "links": [{"label": "Intel Neuromorphic Research", "url": "https://www.intel.com/content/www/us/en/research/neuromorphic-computing.html"}]
+  },
+  "yolo": {
+    "title": "YOLOv8 / YOLO-NAS",
+    "code": "Ultralytics 2023 / Deci.ai YOLO-NAS",
+    "body": "Single-pass convolutional detection: the input frame is processed once and the network simultaneously predicts bounding boxes, confidence scores, and class labels for all spatial locations. No separate region proposal step. YOLOv8 uses anchor-free detection heads. YOLO-NAS uses neural architecture search for a better accuracy-per-TOPS tradeoff.",
+    "meta": { "inference (Hailo-8)": "<5ms typical", "mAP50 (YOLOv8m)": "50.2 COCO val", "default input": "640x640px", "backbone": "CSPDarknet / C2f", "neck": "PANet feature pyramid", "license": "AGPL-3.0" },
+    "notes": ["compile via Hailo Model Zoo for DLA / Hailo HEF deployment", "YOLO-NAS outperforms YOLOv8 at equivalent TOPS on most benchmarks", "anchor-free heads simplify post-processing — no anchor matching in NMS", "task-unified: same architecture for detect, segment, and pose with different heads"],
+    "rel": ["dino", "orin", "hailo"],
+    "links": [{"label": "Ultralytics YOLOv8", "url": "https://docs.ultralytics.com"}]
+  },
+  "dino": {
+    "title": "DINOv2",
+    "code": "Meta AI / arXiv:2304.07193",
+    "body": "Self-supervised Vision Transformer trained with a self-distillation objective on a curated 142M-image dataset. Produces semantically rich patch-level embeddings without labeled data. Strong zero-shot transfer: recognizes object categories absent from training. Foundation for dense prediction and retrieval tasks.",
+    "meta": { "backbone": "ViT-S / B / L / g", "patch size": "14x14 pixels", "embedding dim": "384–1536", "pretraining": "self-supervised (no labels)", "ViT-S latency": "~12ms on A100", "license": "Apache 2.0" },
+    "notes": ["patch embeddings are spatially coherent — unsupervised segmentation by cluster assignment", "outperforms supervised ViT on multiple transfer benchmarks", "ViT-L impractical for real-time embedded; ViT-S feasible on Orin GPU with INT8 quant", "pair with a lightweight detection head (e.g. DETReg) for zero-shot embedded detection"],
+    "rel": ["yolo", "sam"]
+  },
+  "sam": {
+    "title": "SAM 2 — Segment Anything",
+    "code": "Meta AI / arXiv:2408.00714",
+    "body": "Foundation model for promptable segmentation in images and video. Given a point, box, or mask prompt, produces a pixel-level mask in a single forward pass. A streaming memory module maintains object identity across video frames without re-prompting.",
+    "meta": { "encoder": "Hiera (hierarchical ViT)", "memory": "cross-attention over past frames", "inference (Hiera-S)": "~15ms on A100", "output": "binary mask + IoU confidence", "prompt types": "point / box / mask", "license": "Apache 2.0" },
+    "notes": ["image encoder output is cacheable — amortize cost across multiple prompts per frame", "Hiera-S is smallest variant: feasible on high-end edge GPU but not DLA", "pair with YOLO for detect-then-segment: YOLO box as SAM box prompt", "video memory adds ~4ms/frame for temporal consistency tracking"],
+    "rel": ["yolo", "dino"],
+    "links": [{"label": "SAM 2 paper", "url": "https://arxiv.org/abs/2408.00714"}]
+  },
+  "snn": {
+    "title": "Spiking Neural Networks",
+    "code": "SNN / Neuromorphic compute",
+    "body": "Third-generation neural network paradigm where neurons communicate via discrete spike events rather than continuous activations. Computation is sparse and asynchronous: zero power consumed when a neuron is silent. Temporal dynamics are native, making SNNs well-suited for time-series and event-camera data.",
+    "meta": { "latency on Loihi 2": "<1ms", "energy vs GPU": "10–100x lower", "native input": "DVS event cameras", "learning rule": "STDP (local Hebbian)", "frameworks": "Lava, Norse, BindsNET", "maturity": "research / early production" },
+    "notes": ["conversion from standard ANN to SNN is possible but lossy — native SNN training preferred", "temporal coding: information in spike timing, not just rate", "poor fit for dense static classification; strong fit for temporal sensor signals", "Loihi 2 supports on-chip learning with local STDP rules without host involvement"],
+    "rel": ["loihi", "dino"],
+    "links": [{"label": "Lava framework (Intel Labs)", "url": "https://lava-nc.org"}]
+  },
+  "icp": {
+    "title": "Integrated Core Processor (TR-3)",
+    "code": "F-35 ICP / L3Harris / Technology Refresh 3",
+    "body": "The F-35's central mission computer. A single open-architecture processor that runs radar and EO/IR signal processing, electronic warfare, sensor fusion, and the cockpit and helmet displays. TR-3 replaced the original ICP with an L3Harris design rated at about 25 times the compute of TR-2.",
+    "meta": { "compute vs TR-2": "~25x", "growth headroom": "~37x for Block 4", "architecture": "Open System Architecture", "TR-3 bundle": "ICP + AMS + PCD-EU", "TR-3 mission OS": "Lynx MOSA.ic", "enables": "Block 4 capability set" },
+    "notes": ["TR-3 = ICP + Aircraft Memory System (20x storage) + Panoramic Cockpit Display Electronic Unit", "TR-3 is the hardware precondition for Block 4 (75+ new capabilities)", "the original ICP traces to commercial PowerPC; TR-3 is a clean-sheet multicore design", "fuses radar, DAS, EOTS, EW, and CNI data in one box rather than per-sensor displays"],
+    "rel": ["integrity", "fibrechannel", "apg81"],
+    "links": [{"label": "L3Harris TR-3 / ICP", "url": "https://www.l3harris.com/all-capabilities/high-performance-integrated-core-processor-icp"}]
+  },
+  "apg81": {
+    "title": "AN/APG-81 AESA Radar",
+    "code": "Northrop Grumman / X-band AESA",
+    "body": "The F-35's active electronically scanned array fire-control radar. Hundreds of transmit/receive modules steer the beam electronically with no moving parts, interleaving air-to-air search and track, high-resolution SAR ground mapping, and electronic-attack functions on the same aperture.",
+    "meta": { "type": "X-band AESA", "supplier": "Northrop Grumman", "modes": "A/A track, SAR, GMTI, EA", "beam steering": "electronic (no gimbal)", "lineage": "from APG-77 (F-22)", "growth": "APG-85 for later lots" },
+    "notes": ["the same array does radar and electronic attack", "SAR maps and moving-target indication feed the fusion engine, not a separate scope", "low-probability-of-intercept waveforms reduce detectability"],
+    "rel": ["das", "barracuda", "kalman"]
+  },
+  "das": {
+    "title": "AN/AAQ-37 Distributed Aperture System",
+    "code": "Northrop Grumman (Raytheon next-gen DAS)",
+    "body": "Six infrared cameras flush-mounted around the airframe giving continuous 360-degree spherical coverage. DAS provides missile launch and approach warning, infrared search and track, day/night navigation imagery, and feeds the helmet so the pilot can effectively look through the aircraft.",
+    "meta": { "apertures": "6 IR cameras", "coverage": "360 spherical", "functions": "MWS, IRST, nav FLIR", "output": "fused to HMDS helmet", "steering": "fixed staring arrays", "upgrade": "Raytheon next-gen DAS" },
+    "notes": ["looking down through the cockpit floor is DAS imagery projected in the helmet", "tracks multiple ballistic and aircraft threats at once", "no gimbals — all aiming is computational"],
+    "rel": ["eots", "cni", "apg81"]
+  },
+  "eots": {
+    "title": "AN/AAQ-40 Electro-Optical Targeting System",
+    "code": "Lockheed Martin / Raytheon",
+    "body": "A faceted, low-observable sensor under the nose combining forward-looking infrared, infrared search and track, and laser designation and rangefinding. EOTS is the air-to-ground targeting and long-range passive air-to-air IR sensor, built into the skin rather than carried as a pod.",
+    "meta": { "type": "FLIR + IRST + laser", "location": "under-nose faceted window", "functions": "A/G targeting, designate, passive A/A", "signature": "internal, low-observable", "successor": "Advanced EOTS (Block 4)" },
+    "notes": ["passive IR detection avoids emitting like a radar", "shares the fused track picture with radar and DAS", "Advanced EOTS adds higher resolution and longer range"],
+    "rel": ["das", "apg81"]
+  },
+  "barracuda": {
+    "title": "AN/ASQ-239 Barracuda EW Suite",
+    "code": "BAE Systems / electronic warfare",
+    "body": "The F-35's integrated electronic warfare and countermeasures system. Distributed apertures provide radar warning, emitter identification and geolocation, electronic attack and jamming, and automated countermeasure dispensing, all fused with the radar and EO/IR picture.",
+    "meta": { "supplier": "BAE Systems", "functions": "RWR, ESM, EA, countermeasures", "apertures": "distributed around airframe", "geolocation": "multi-aperture AoA / TDOA", "fusion": "shared track picture" },
+    "notes": ["passively detects and locates emitters before they detect the aircraft", "ties into the CNI suite and fusion engine, not a standalone box", "the production analog of the SDR/EW crossover layer in section 9"],
+    "rel": ["cni", "apg81"]
+  },
+  "cni": {
+    "title": "AN/ASQ-242 CNI Suite",
+    "code": "Northrop Grumman / software-defined radio",
+    "body": "Communications, Navigation, and Identification. A software-defined radio backbone that runs more than two dozen RF functions on shared apertures, including the stealthy Multifunction Advanced Data Link (MADL) between F-35s, plus Link 16, IFF, and GPS, scheduled in software instead of as separate radios.",
+    "meta": { "supplier": "Northrop Grumman", "functions": "27+ RF functions", "key links": "MADL, Link 16, IFF, GPS", "implementation": "software-defined radio", "MADL": "low-probability-of-intercept F-35 to F-35" },
+    "notes": ["one set of apertures time-shares many waveforms via SDR scheduling", "MADL keeps a flight of F-35s networked without giving away position", "the production embodiment of the SDR concepts in section 9"],
+    "rel": ["barracuda", "hardwaretimestamp"]
+  },
+  "integrity": {
+    "title": "Green Hills INTEGRITY-178B",
+    "code": "ARINC 653 / DO-178B RTOS",
+    "body": "The safety-critical real-time operating system under F-35 mission software. INTEGRITY-178B enforces ARINC 653 time and space partitioning: each application gets a guaranteed CPU window and an isolated memory region, so flight-critical and mission code share one processor with no interference and certifiable determinism.",
+    "meta": { "vendor": "Green Hills Software", "model": "ARINC 653 partitioned", "assurance": "DO-178B", "guarantees": "bounded time + space isolation", "also flies on": "F-22, B-2, F-16", "TR-3 addition": "Lynx MOSA.ic" },
+    "notes": ["a fault in one partition cannot corrupt another's memory or timing", "deterministic scheduling is what makes worst-case latency provable", "built with the AdaMULTI / MULTI toolchain", "partitioning is the software side of the sync pipeline in section 8"],
+    "rel": ["icp", "fibrechannel"],
+    "links": [{"label": "Green Hills F-35 case", "url": "https://www.ghs.com/customers/lockheedf35.html"}]
+  },
+  "fibrechannel": {
+    "title": "Fibre Channel (FC-AE)",
+    "code": "ANSI Fibre Channel / Avionics Environment",
+    "body": "The optical high-bandwidth fabric of the F-35. Fibre Channel ties the ICP processing modules together like a backplane and carries sensor, CNI, and display traffic into and out of the core processor. Avionics profiles (FC-AE-1553, FC-AE-ASM) layer deterministic messaging over multi-gigabit links.",
+    "meta": { "medium": "optical fiber", "role": "sensor/display + inter-module fabric", "profiles": "FC-AE-1553, FC-AE-ASM", "bandwidth": "multi-Gbps", "vs 1394b": "high-bandwidth sensor path", "topology": "switched / arbitrated loop" },
+    "notes": ["acts as the backplane between ICP modules and the apertures", "optical media is light, immune to EMI, and high-bandwidth", "compare to AFDX / TSN in section 2 — same determinism goal, different fabric"],
+    "rel": ["ieee1394", "afdx", "icp"]
+  },
+  "ieee1394": {
+    "title": "IEEE 1394b (SAE AS5643)",
+    "code": "FireWire for aerospace / vehicle bus",
+    "body": "The F-35 vehicle systems network. A militarized, deterministic variant of IEEE 1394b (FireWire) standardized as SAE AS5643, carrying more than 70 nodes: flight controls, engine and FADEC, fuel, weapons, and utilities. Chosen over legacy MIL-STD-1553 for far higher bandwidth and longer cable runs.",
+    "meta": { "standard": "IEEE 1394b / SAE AS5643", "role": "vehicle systems network", "nodes": "70+ devices", "vs MIL-1553": "~100x+ bandwidth", "determinism": "time-slotted AS5643", "carries": "flight, engine, weapons, utilities" },
+    "notes": ["AS5643 adds deterministic time-slotting on top of consumer FireWire", "separates slower vehicle traffic from the Fibre Channel sensor fabric", "drew cybersecurity scrutiny as a COTS-derived bus on a fighter"],
+    "rel": ["fibrechannel", "mil1553", "afdx"]
+  }
+}
+</script>
+
+<script>
+(()=>{
+  const D=JSON.parse(document.getElementById('reference-data').textContent);
+  const card=document.getElementById('margin-card');
+  const els={
+    t:document.getElementById('m-title'),
+    c:document.getElementById('m-code'),
+    b:document.getElementById('m-body'),
+    m:document.getElementById('m-meta'),
+    r:document.getElementById('m-rel'),
+    n:document.getElementById('m-notes'),
+    l:document.getElementById('m-links'),
+    s:document.getElementById('margin-status')
+  };
+  const unpinBtn=document.getElementById('margin-unpin');
+  let pinnedKey=null;
+
+  function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+  function host(u){try{return new URL(u).hostname.replace(/^www\./,'');}catch(e){return '';}}
+
+  function paint(k){
+    const x=D[k];if(!x)return;
+    els.t.textContent=x.title;
+    els.c.textContent=x.code||'\u00b7';
+    els.b.textContent=x.body||'';
+    els.m.innerHTML=Object.entries(x.meta||{}).map(([k,v])=>`<div><strong>${esc(k)}</strong><span>${esc(v)}</span></div>`).join('');
+    els.r.querySelector('ul').innerHTML=(x.rel||[]).map(r=>{const o=D[r];return o?`<li>\u203a ${esc(o.title)}</li>`:''}).join('')||'<li class="more">\u00b7</li>';
+    els.n.querySelector('ul').innerHTML=(x.notes||[]).map(n=>`<li style="white-space:normal;font-family:inherit;font-size:0.76rem">\u00b7 ${esc(n)}</li>`).join('')||'<li class="more">\u00b7</li>';
+    els.l.querySelector('ul').innerHTML=(x.links||[]).map(L=>`<li class="link-item"><a href="${esc(L.url)}" target="_blank" rel="noopener noreferrer">${esc(L.label)}</a><span class="src">${esc(host(L.url))}</span></li>`).join('')||'<li class="more">\u00b7</li>';
+  }
+
+  function pin(key,el){
+    pinnedKey=key;paint(key);
+    card.classList.add('is-pinned');
+    els.s.textContent='pinned';
+    unpinBtn.style.display='inline-block';
+    document.querySelectorAll('.term.is-pinned').forEach(x=>x.classList.remove('is-pinned'));
+    if(el)el.classList.add('is-pinned');
+  }
+
+  function unpin(){
+    pinnedKey=null;
+    card.classList.remove('is-pinned');
+    els.s.textContent='';
+    unpinBtn.style.display='none';
+    document.querySelectorAll('.term.is-pinned').forEach(x=>x.classList.remove('is-pinned'));
+  }
+
+  document.addEventListener('mouseover',e=>{
+    if(pinnedKey)return;
+    const t=e.target.closest('.term');if(!t)return;
+    paint(t.getAttribute('data-term'));
+    document.querySelectorAll('.term.is-active').forEach(x=>x.classList.remove('is-active'));
+    t.classList.add('is-active');
+  });
+
+  document.querySelectorAll('.term').forEach(el=>{
+    el.setAttribute('tabindex','0');
+    el.addEventListener('click',e=>{
+      e.preventDefault();
+      const key=el.getAttribute('data-term');
+      if(pinnedKey===key){unpin();return;}
+      pin(key,el);
+    });
+    el.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){
+        e.preventDefault();
+        const key=el.getAttribute('data-term');
+        if(pinnedKey===key){unpin();return;}
+        pin(key,el);
+      }
+    });
+    el.addEventListener('focus',()=>{if(!pinnedKey)paint(el.getAttribute('data-term'));});
+  });
+
+  unpinBtn.addEventListener('click',unpin);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&pinnedKey)unpin();});
+})();
+</script>
+</body>
+</html>
