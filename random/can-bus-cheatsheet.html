@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Controller Area Network and the Vehicle Bus Stack — Technical Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ── THEME: ENGINEERING BRIEF ─────────────────────────────────────────
+   Warm field paper. IBM Plex family. Steel blue + amber. No decoration
+   that is not load-bearing. Same visual language as DOC-RTI-001.
+   ─────────────────────────────────────────────────────────────────── */
+:root {
+  --paper:       #F4F2EE;
+  --paper-warm:  #EDE9E1;
+  --paper-code:  #1C1F24;
+  --ink:         #1A1A1A;
+  --ink-mid:     #3D3D3D;
+  --ink-dim:     #6B6760;
+  --ink-faint:   #C4BFB6;
+  --line:        #D0CBC0;
+  --line-strong: #9B9590;
+  --blue:        #11605C;
+  --blue-mid:    #1C8079;
+  --blue-soft:   rgba(17,96,92,0.07);
+  --blue-pin:    rgba(17,96,92,0.12);
+  --amber:       #B85C00;
+  --amber-soft:  rgba(184,92,0,0.08);
+  --green:       #1A5C35;
+  --red:         #7A1515;
+  --code-fg:     #C9D1D9;
+  --code-key:    #79C0FF;
+  --code-str:    #A5D6A7;
+  --code-cmt:    #6E7681;
+  --code-num:    #FFD580;
+  --code-hdr:    #7EE8E8;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;font-weight:400;line-height:1.5}
+
+.page{max-width:1300px;margin:0 auto;padding:0 24px 80px}
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) 312px;gap:36px;align-items:start}
+
+/* ── HEADER ── */
+.doc-header{border-top:3px solid var(--blue);padding:22px 0 18px;margin-bottom:0;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start}
+.doc-number{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.06em;color:var(--ink-dim);margin-bottom:7px}
+h1{font-family:'IBM Plex Serif',Georgia,serif;font-size:clamp(1.4rem,2vw,1.7rem);font-weight:600;line-height:1.15;color:var(--ink);letter-spacing:-0.01em;margin-bottom:7px}
+.doc-subtitle{font-family:'IBM Plex Serif',Georgia,serif;font-size:0.84rem;font-weight:400;font-style:italic;color:var(--ink-mid);margin-bottom:12px}
+.tag-row{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.07em;text-transform:uppercase;padding:2px 7px;border:1px solid var(--line-strong);color:var(--ink-dim);background:transparent}
+.tag.blue{border-color:var(--blue);color:var(--blue);background:var(--blue-soft)}
+.tag.amber{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.header-right{text-align:right;padding-top:4px}
+.doc-meta{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;color:var(--ink-dim);line-height:1.9}
+
+/* ── STAT STRIP ── */
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-top:2px solid var(--line-strong);margin:18px 0 26px;background:var(--paper-warm)}
+.stat{padding:13px 15px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:none}
+.stat-num{font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:500;color:var(--blue);display:block;line-height:1;margin-bottom:4px;letter-spacing:-0.02em}
+.stat-num.amber{color:var(--amber)}
+.stat-label{font-size:0.66rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-dim);line-height:1.35}
+
+/* ── BODY ── */
+.paper{min-width:0}
+h2{font-family:'IBM Plex Sans',sans-serif;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.13em;color:var(--blue);border-bottom:1px solid var(--line);padding-bottom:6px;margin:34px 0 13px}
+h3{font-family:'IBM Plex Serif',Georgia,serif;font-size:0.9rem;font-weight:600;color:var(--ink);margin:16px 0 5px}
+p{font-size:0.875rem;color:var(--ink-mid);line-height:1.72;margin-bottom:10px}
+
+/* ── TERMS ── */
+.term{border-bottom:1px dotted var(--blue-mid);color:var(--blue);cursor:pointer;font-weight:500;transition:background .1s,color .1s;padding:0 1px}
+.term:hover,.term:focus-visible,.term.is-active{background:var(--blue-soft);color:var(--blue);outline:none}
+.term.is-pinned{background:var(--blue-pin);border-bottom:1px solid var(--blue);color:var(--blue)}
+
+/* ── LISTS ── */
+.bul{list-style:none;padding:0;margin:0 0 14px}
+.bul li{font-size:0.875rem;color:var(--ink-mid);padding:5px 0 5px 18px;border-bottom:1px solid var(--ink-faint);position:relative;line-height:1.65}
+.bul li:last-child{border-bottom:none}
+.bul li::before{content:"–";position:absolute;left:2px;color:var(--line-strong);font-family:'IBM Plex Mono',monospace}
+.bul li strong{color:var(--ink);font-weight:600}
+
+/* ── TABLES ── */
+.compare{width:100%;border-collapse:collapse;font-size:0.8rem;margin:8px 0 14px}
+.compare th{text-align:left;padding:7px 10px;background:var(--paper-warm);color:var(--ink);font-weight:600;font-size:0.67rem;text-transform:uppercase;letter-spacing:0.07em;border-top:2px solid var(--blue);border-bottom:1px solid var(--line-strong)}
+.compare td{padding:7px 10px;border-bottom:1px solid var(--line);color:var(--ink-mid);vertical-align:top;line-height:1.5}
+.compare tr:hover td{background:var(--blue-soft)}
+.compare td.key{color:var(--ink);font-weight:500}
+.compare td.good{color:var(--green);font-family:'IBM Plex Mono',monospace;font-size:0.76rem}
+.compare td.bad{color:var(--red);font-family:'IBM Plex Mono',monospace;font-size:0.76rem}
+.compare td.note{color:var(--amber);font-family:'IBM Plex Mono',monospace;font-size:0.76rem}
+
+/* ── CODE ── */
+.wireblock{font-family:'IBM Plex Mono',monospace;font-size:0.76rem;background:var(--paper-code);color:var(--code-fg);padding:14px 16px;margin:8px 0 16px;line-height:1.65;overflow-x:auto;white-space:pre;border-left:3px solid var(--blue-mid)}
+.wireblock .kw{color:var(--code-key)}
+.wireblock .str{color:var(--code-str)}
+.wireblock .cm{color:var(--code-cmt);font-style:italic}
+.wireblock .num{color:var(--code-num)}
+.wireblock .hdr{color:var(--code-hdr)}
+
+/* ── FIGURES ── */
+.figure{margin:14px 0 18px;border:1px solid var(--line);background:var(--paper-warm)}
+.figure svg{display:block;width:100%;height:auto}
+.figure .cap{font-size:0.72rem;color:var(--ink-dim);padding:7px 12px;border-top:1px solid var(--line);font-style:italic;font-family:'IBM Plex Serif',Georgia,serif}
+
+/* ── CALLOUT ── */
+.callout{border-left:3px solid var(--amber);background:var(--amber-soft);padding:10px 14px;margin:12px 0 18px;font-size:0.84rem;color:var(--ink-mid);line-height:1.65}
+.callout strong{color:var(--amber);font-weight:600}
+
+/* ── PHASE LIST ── */
+.phase-list{list-style:none;padding:0;margin:8px 0 16px;counter-reset:phase}
+.phase-list li{counter-increment:phase;display:grid;grid-template-columns:30px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);align-items:start}
+.phase-list li::before{content:counter(phase,decimal-leading-zero);font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--blue-mid);font-weight:500;padding-top:2px}
+.ph-title{grid-column:2;font-weight:600;color:var(--ink);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px}
+.ph-body{grid-column:2;color:var(--ink-mid);line-height:1.65;font-size:0.85rem}
+
+/* ── REFERENCES ── */
+.refs{margin-top:32px;padding-top:12px;border-top:2px solid var(--line)}
+.refs table{width:100%;border-collapse:collapse}
+.refs td{padding:5px 0;vertical-align:top;border-bottom:1px solid var(--ink-faint);font-size:0.77rem;color:var(--ink-dim)}
+.refs td:first-child{width:92px;font-family:'IBM Plex Mono',monospace;font-size:0.69rem;color:var(--blue);font-weight:500;padding-right:14px}
+.refs a{color:var(--ink-mid);text-decoration:none;border-bottom:1px dotted var(--line-strong)}
+.refs a:hover{color:var(--blue)}
+
+/* ── FOOTER ── */
+.doc-footer{margin-top:28px;padding-top:10px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:0.63rem;color:var(--ink-dim)}
+
+/* ── MARGIN INSPECTOR ── */
+.margin{position:sticky;top:20px;border-top:3px solid var(--blue);padding-top:14px}
+.margin-card{border:1px solid var(--line);border-left:3px solid var(--blue-mid);background:var(--paper-warm);padding:14px;min-height:360px;transition:border-left-color .15s,background .15s}
+.margin-card.is-pinned{border-left-color:var(--amber);background:var(--amber-soft)}
+.margin-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:0.61rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.margin-status{color:var(--amber);font-weight:500}
+#m-title{font-family:'IBM Plex Serif',Georgia,serif;font-size:0.93rem;font-weight:600;color:var(--ink);margin-bottom:2px;line-height:1.25}
+#m-code{font-family:'IBM Plex Mono',monospace;font-size:0.63rem;color:var(--blue-mid);letter-spacing:0.06em;text-transform:uppercase;display:block;margin-bottom:8px}
+#m-body{font-size:0.79rem;color:var(--ink-mid);line-height:1.68;margin-bottom:10px;font-family:'IBM Plex Serif',Georgia,serif;font-style:italic}
+.margin-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin:8px 0 10px;padding:8px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.margin-meta div{display:flex;flex-direction:column;gap:1px}
+.margin-meta strong{font-size:0.59rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--ink-dim);font-weight:600;font-family:'IBM Plex Sans',sans-serif}
+.margin-meta span{font-size:0.75rem;color:var(--ink);font-family:'IBM Plex Mono',monospace}
+.margin-section{margin-top:10px}
+.margin-section .label{font-size:0.59rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-dim);font-weight:600;margin-bottom:4px;font-family:'IBM Plex Sans',sans-serif}
+.margin-section ul{list-style:none;padding:0;margin:0}
+.margin-section li{font-size:0.76rem;color:var(--ink-mid);padding:3px 0;border-top:1px solid var(--ink-faint);line-height:1.45;font-family:'IBM Plex Serif',Georgia,serif}
+.margin-section li:first-child{border-top:none}
+.margin-section li.more{color:var(--ink-faint);font-style:italic}
+.margin-section a{color:var(--blue);text-decoration:none;border-bottom:1px dotted var(--blue-mid);font-family:'IBM Plex Mono',monospace;font-size:0.71rem;word-break:break-all}
+.margin-section a:hover{background:var(--blue-soft)}
+.margin-section .src{display:block;font-size:0.61rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.05em;font-family:'IBM Plex Mono',monospace;margin-top:1px}
+.margin-section li.link-item{white-space:normal;font-family:inherit;padding:4px 0}
+.margin-pin-bar{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
+.margin-hint{font-family:'IBM Plex Mono',monospace;font-size:0.61rem;color:var(--ink-faint)}
+.margin-hint kbd{font-family:'IBM Plex Mono',monospace;font-size:0.61rem;padding:1px 4px;border:1px solid var(--line);background:var(--paper);border-radius:2px}
+.margin-unpin{font-family:'IBM Plex Mono',monospace;font-size:0.61rem;text-transform:uppercase;letter-spacing:0.08em;padding:3px 8px;border:1px solid var(--amber);background:transparent;color:var(--amber);cursor:pointer;display:none}
+.margin-unpin:hover{background:var(--amber-soft)}
+.margin-index{margin-top:18px;border:1px solid var(--line);background:var(--paper-warm)}
+.margin-index-label{font-family:'IBM Plex Mono',monospace;font-size:0.61rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim);padding:8px 12px;border-bottom:1px solid var(--line)}
+.margin-index a{display:block;font-family:'IBM Plex Mono',monospace;font-size:0.71rem;color:var(--ink-mid);text-decoration:none;padding:5px 12px;border-bottom:1px solid var(--ink-faint);transition:color .1s,background .1s}
+.margin-index a:last-child{border-bottom:none}
+.margin-index a:hover{color:var(--blue);background:var(--blue-soft)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1020px){
+  .sheet{grid-template-columns:1fr}
+  .margin{position:static;order:2;border-top:1px solid var(--line)}
+  .stat-strip{grid-template-columns:1fr 1fr}
+  .doc-header{grid-template-columns:1fr}
+  .header-right{text-align:left}
+}
+@media print{
+  .margin{display:none}
+  .sheet{grid-template-columns:1fr}
+  body{background:#fff}
+  .term{border-bottom:none;color:var(--blue)!important;background:transparent!important}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="doc-header">
+  <div class="header-left">
+    <div class="doc-number">DOC-CAN-002 &nbsp;&nbsp;REV 1.0 &nbsp;&nbsp;2026-06</div>
+    <h1>Controller Area Network<br>and the Vehicle Bus Stack</h1>
+    <p class="doc-subtitle">From differential signaling and bitwise arbitration to ISO-TP, UDS diagnostics, and socketcan — with reverse-engineering and intrusion-detection crossover</p>
+    <div class="tag-row">
+      <span class="tag blue">CAN / CAN FD</span>
+      <span class="tag blue">CAN XL</span>
+      <span class="tag blue">Arbitration</span>
+      <span class="tag">ISO-TP / UDS</span>
+      <span class="tag">J1939 / OBD-II</span>
+      <span class="tag amber">Hands-On Crossover</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="doc-meta">
+      PREPARED BY<br>
+      VEHICLE NETWORKS / EMBEDDED<br>
+      <br>
+      DISTRIBUTION<br>
+      ENGINEERING — UNRESTRICTED<br>
+      <br>
+      FORMAT<br>
+      TECHNICAL REFERENCE
+    </div>
+  </div>
+</header>
+
+<div class="stat-strip">
+  <div class="stat">
+    <span class="stat-num amber">1 Mbps</span>
+    <span class="stat-label">Classic CAN<br>arbitration ceiling</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">8 Mbps</span>
+    <span class="stat-label">CAN FD<br>data-phase burst</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">2048 B</span>
+    <span class="stat-label">CAN XL<br>single-frame payload</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num amber">~$25</span>
+    <span class="stat-label">CANable adapter<br>to socketcan</span>
+  </div>
+</div>
+
+<div class="sheet">
+<article class="paper">
+
+<h2 id="bus">1 — The Bus and Why It Won</h2>
+
+<p>CAN is a multi-master, message-oriented serial bus designed by Bosch in 1986 and standardized as ISO 11898. There are no node addresses. A frame carries an <span class="term" tabindex="0" data-term="arbitration">identifier</span> that names the message, not a destination, and every node hears every frame and decides in hardware whether to keep it. That single design choice — broadcast plus content filtering — is why one pair of wires can wire up an entire vehicle.</p>
+
+<p>It won because it is cheap, differential, and deterministic. Two wires survive an electrically violent engine bay. Priority is built into the identifier, so the most urgent message always wins the bus without a scheduler. Nearly forty years later it is still the nervous system of almost every car and a vast amount of industrial, agricultural, and marine equipment.</p>
+
+<div class="callout">
+  <strong>Message-oriented, not address-oriented.</strong> A CAN node does not send "to ECU 7." It broadcasts message 0x180 and whoever cares accepts it. Adding a listener requires changing nothing on the sender. This is also why the bus has no built-in notion of who is allowed to say what — the root of its security story in section 8.
+</div>
+
+<h2 id="phy">2 — Physical Layer</h2>
+
+<ul class="bul">
+  <li><strong>Differential pair</strong> — CAN_H and CAN_L. A <span class="term" tabindex="0" data-term="transceiver">transceiver</span> drives the <em>dominant</em> state (logical 0) by pulling the two lines roughly 2V apart, and the <em>recessive</em> state (logical 1) by letting them relax to the same ~2.5V. Reading the difference rejects common-mode noise picked up equally on both wires.</li>
+  <li><strong>Termination</strong> — 120&#937; at each physical end of the bus, matching the twisted pair's characteristic impedance. Missing or extra terminators cause reflections and bit errors. A bench bus needs exactly two 120&#937; resistors, no more.</li>
+  <li><strong>Topology and rate</strong> — a linear bus with short stubs. High-speed CAN (ISO 11898-2) runs to 1 Mbps; low-speed fault-tolerant CAN (ISO 11898-3) trades speed for surviving a shorted or broken wire, used for slow body electronics.</li>
+  <li><strong><span class="term" tabindex="0" data-term="bittiming">Bit timing</span></strong> — each bit is divided into time quanta grouped into sync, propagation, and two phase segments. The sample point (typically 75–87.5% into the bit) is where every node reads the level, and nodes resynchronize their clocks on each recessive-to-dominant edge. Get this wrong and the bus works at short range but fails as you add cable.</li>
+</ul>
+
+<div class="figure">
+<svg viewBox="0 0 640 250" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="250" fill="#EDE9E1"/>
+  <!-- voltage axis -->
+  <text x="52" y="61"  fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="8" text-anchor="end">3.5V</text>
+  <text x="52" y="91"  fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="8" text-anchor="end">2.5V</text>
+  <text x="52" y="121" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="8" text-anchor="end">1.5V</text>
+  <line x1="60" y1="58" x2="600" y2="58" stroke="#D0CBC0" stroke-width="1" stroke-dasharray="3,5"/>
+  <line x1="60" y1="88" x2="600" y2="88" stroke="#C4BFB6" stroke-width="1"/>
+  <line x1="60" y1="118" x2="600" y2="118" stroke="#D0CBC0" stroke-width="1" stroke-dasharray="3,5"/>
+  <!-- bit slot dividers at 60,180,300,420,540 -->
+  <line x1="180" y1="46" x2="180" y2="128" stroke="#C4BFB6" stroke-width="0.7"/>
+  <line x1="300" y1="46" x2="300" y2="128" stroke="#C4BFB6" stroke-width="0.7"/>
+  <line x1="420" y1="46" x2="420" y2="128" stroke="#C4BFB6" stroke-width="0.7"/>
+  <line x1="540" y1="46" x2="540" y2="128" stroke="#C4BFB6" stroke-width="0.7"/>
+  <!-- CAN_H trace: recessive(2.5) dominant(3.5) dominant(3.5) recessive(2.5) -->
+  <polyline points="60,88 180,88 180,58 420,58 420,88 540,88" fill="none" stroke="#11605C" stroke-width="1.8"/>
+  <!-- CAN_L trace: recessive(2.5) dominant(1.5) dominant(1.5) recessive(2.5) -->
+  <polyline points="60,88 180,88 180,118 420,118 420,88 540,88" fill="none" stroke="#B85C00" stroke-width="1.8"/>
+  <text x="64" y="82"  fill="#11605C" font-family="IBM Plex Mono,monospace" font-size="8" font-weight="500">CAN_H</text>
+  <text x="64" y="132" fill="#B85C00" font-family="IBM Plex Mono,monospace" font-size="8" font-weight="500">CAN_L</text>
+  <!-- differential bracket during dominant -->
+  <line x1="300" y1="58" x2="300" y2="118" stroke="#1A5C35" stroke-width="0.8"/>
+  <polygon points="297,62 303,62 300,58" fill="#1A5C35"/>
+  <polygon points="297,114 303,114 300,118" fill="#1A5C35"/>
+  <text x="308" y="91" fill="#1A5C35" font-family="IBM Plex Mono,monospace" font-size="8">~2V differential</text>
+  <!-- bit labels -->
+  <text x="120" y="140" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">RECESSIVE 1</text>
+  <text x="240" y="140" fill="#1A1A1A" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">DOMINANT 0</text>
+  <text x="360" y="140" fill="#1A1A1A" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">DOMINANT 0</text>
+  <text x="480" y="140" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">RECESSIVE 1</text>
+  <!-- bus topology -->
+  <text x="60" y="175" fill="#3D3D3D" font-family="IBM Plex Sans,sans-serif" font-size="8.5" font-weight="600" letter-spacing="0.1em">BUS TOPOLOGY</text>
+  <line x1="92" y1="210" x2="548" y2="210" stroke="#9B9590" stroke-width="2"/>
+  <!-- terminators -->
+  <rect x="56" y="200" width="36" height="20" fill="#F4F2EE" stroke="#1A5C35" stroke-width="1.2"/>
+  <text x="74" y="214" fill="#1A5C35" font-family="IBM Plex Mono,monospace" font-size="8" text-anchor="middle">120&#937;</text>
+  <rect x="548" y="200" width="36" height="20" fill="#F4F2EE" stroke="#1A5C35" stroke-width="1.2"/>
+  <text x="566" y="214" fill="#1A5C35" font-family="IBM Plex Mono,monospace" font-size="8" text-anchor="middle">120&#937;</text>
+  <!-- nodes -->
+  <line x1="180" y1="210" x2="180" y2="190" stroke="#9B9590" stroke-width="1"/>
+  <rect x="150" y="168" width="60" height="22" fill="#F4F2EE" stroke="#11605C" stroke-width="1"/>
+  <text x="180" y="182" fill="#11605C" font-family="IBM Plex Mono,monospace" font-size="8" text-anchor="middle">ECU</text>
+  <line x1="320" y1="210" x2="320" y2="190" stroke="#9B9590" stroke-width="1"/>
+  <rect x="290" y="168" width="60" height="22" fill="#F4F2EE" stroke="#11605C" stroke-width="1"/>
+  <text x="320" y="182" fill="#11605C" font-family="IBM Plex Mono,monospace" font-size="8" text-anchor="middle">ECU</text>
+  <line x1="460" y1="210" x2="460" y2="190" stroke="#9B9590" stroke-width="1"/>
+  <rect x="430" y="168" width="60" height="22" fill="#F4F2EE" stroke="#11605C" stroke-width="1"/>
+  <text x="460" y="182" fill="#11605C" font-family="IBM Plex Mono,monospace" font-size="8" text-anchor="middle">ECU</text>
+  <text x="320" y="238" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="7.5" text-anchor="middle">linear bus &#183; short stubs &#183; 120&#937; at each physical end</text>
+</svg>
+<div class="cap">Fig. 1 — Differential signaling and bus topology. Dominant bits pull CAN_H and CAN_L ~2V apart; recessive lets them rest together. Every node sees the wired-AND of all transmitters, which is the basis of arbitration.</div>
+</div>
+
+<h2 id="frame">3 — Frame Format and Arbitration</h2>
+
+<p>A classic data frame is a fixed sequence of fields. The arbitration field carries the identifier and decides priority. Everything after it is payload and integrity.</p>
+
+<div class="figure">
+<svg viewBox="0 0 640 150" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="150" fill="#EDE9E1"/>
+  <!-- field boxes -->
+  <rect x="24"  y="48" width="28"  height="34" fill="#F4F2EE" stroke="#9B9590" stroke-width="1"/>
+  <text x="38"  y="68" fill="#1A1A1A" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">SOF</text>
+  <text x="38"  y="94" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="6.5" text-anchor="middle">1</text>
+  <rect x="52"  y="48" width="120" height="34" fill="#11605C" stroke="#11605C" stroke-width="1" opacity="0.16"/>
+  <rect x="52"  y="48" width="120" height="34" fill="none" stroke="#11605C" stroke-width="1.4"/>
+  <text x="112" y="68" fill="#11605C" font-family="IBM Plex Mono,monospace" font-size="7.5" font-weight="600" text-anchor="middle">IDENTIFIER</text>
+  <text x="112" y="94" fill="#11605C" font-family="IBM Plex Mono,monospace" font-size="6.5" text-anchor="middle">11 or 29 bit</text>
+  <rect x="172" y="48" width="26"  height="34" fill="#F4F2EE" stroke="#9B9590" stroke-width="1"/>
+  <text x="185" y="68" fill="#1A1A1A" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">RTR</text>
+  <text x="185" y="94" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="6.5" text-anchor="middle">1</text>
+  <rect x="198" y="48" width="70"  height="34" fill="#F4F2EE" stroke="#9B9590" stroke-width="1"/>
+  <text x="233" y="65" fill="#1A1A1A" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">CONTROL</text>
+  <text x="233" y="76" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="6.5" text-anchor="middle">IDE r0 DLC</text>
+  <text x="233" y="94" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="6.5" text-anchor="middle">6</text>
+  <rect x="268" y="48" width="150" height="34" fill="#B85C00" stroke="#B85C00" stroke-width="1" opacity="0.14"/>
+  <rect x="268" y="48" width="150" height="34" fill="none" stroke="#B85C00" stroke-width="1.4"/>
+  <text x="343" y="68" fill="#B85C00" font-family="IBM Plex Mono,monospace" font-size="7.5" font-weight="600" text-anchor="middle">DATA</text>
+  <text x="343" y="94" fill="#B85C00" font-family="IBM Plex Mono,monospace" font-size="6.5" text-anchor="middle">0–8 B (64 B in FD)</text>
+  <rect x="418" y="48" width="90"  height="34" fill="#F4F2EE" stroke="#9B9590" stroke-width="1"/>
+  <text x="463" y="68" fill="#1A1A1A" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">CRC</text>
+  <text x="463" y="94" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="6.5" text-anchor="middle">15 + del</text>
+  <rect x="508" y="48" width="40"  height="34" fill="#F4F2EE" stroke="#9B9590" stroke-width="1"/>
+  <text x="528" y="68" fill="#1A1A1A" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">ACK</text>
+  <text x="528" y="94" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="6.5" text-anchor="middle">2</text>
+  <rect x="548" y="48" width="60"  height="34" fill="#F4F2EE" stroke="#9B9590" stroke-width="1"/>
+  <text x="578" y="68" fill="#1A1A1A" font-family="IBM Plex Mono,monospace" font-size="7" text-anchor="middle">EOF</text>
+  <text x="578" y="94" fill="#6B6760" font-family="IBM Plex Mono,monospace" font-size="6.5" text-anchor="middle">7</text>
+  <!-- arbitration bracket -->
+  <line x1="52" y1="40" x2="198" y2="40" stroke="#11605C" stroke-width="0.8"/>
+  <line x1="52" y1="37" x2="52" y2="43" stroke="#11605C" stroke-width="0.8"/>
+  <line x1="198" y1="37" x2="198" y2="43" stroke="#11605C" stroke-width="0.8"/>
+  <text x="125" y="32" fill="#11605C" font-family="IBM Plex Mono,monospace" font-size="8" text-anchor="middle" font-weight="500">ARBITRATION FIELD &#183; decides priority</text>
+  <text x="316" y="120" fill="#6B6760" font-family="IBM Plex Serif,Georgia,serif" font-size="8.5" font-style="italic" text-anchor="middle">lower identifier value wins the bus; bit-stuffing inserted after 5 equal bits</text>
+</svg>
+<div class="cap">Fig. 2 — Classic CAN data frame. Field widths are indicative, not to scale. The identifier doubles as the priority key, so assigning IDs is assigning a bus schedule.</div>
+</div>
+
+<p>Arbitration is the elegant part. Because the bus is a wired-AND (dominant always overrides recessive), nodes can transmit at the same time and sort out priority bit by bit without anyone colliding destructively.</p>
+
+<ol class="phase-list">
+  <li>
+    <div class="ph-title">Simultaneous start</div>
+    <div class="ph-body">Several nodes see the bus idle and begin transmitting on the same Start-of-Frame bit. No coordination, no token.</div>
+  </li>
+  <li>
+    <div class="ph-title">Identifier, MSB first</div>
+    <div class="ph-body">Each node drives its <span class="term" tabindex="0" data-term="arbitration">identifier</span> one bit at a time and simultaneously samples what is actually on the bus.</div>
+  </li>
+  <li>
+    <div class="ph-title">Dominant wins</div>
+    <div class="ph-body">A node that drives recessive but reads dominant has just been overruled by a higher-priority frame. It stops transmitting instantly and switches to listening. Its frame is not corrupted; it simply lost.</div>
+  </li>
+  <li>
+    <div class="ph-title">Winner never notices</div>
+    <div class="ph-body">The highest-priority node finishes its frame unaware there was contention. The loser re-arbitrates at the next idle. No retransmission penalty, no backoff timer, fully deterministic.</div>
+  </li>
+</ol>
+
+<p>Two more mechanisms keep the bus honest. <span class="term" tabindex="0" data-term="bitstuffing">Bit stuffing</span> inserts an opposite-polarity bit after five identical bits so receivers can keep their clocks locked. <span class="term" tabindex="0" data-term="faultconfinement">Fault confinement</span> counts transmit and receive errors at each node, demoting a misbehaving node from error-active to error-passive and finally to bus-off, where it removes itself from the bus entirely.</p>
+
+<h2 id="fd">4 — CAN FD and CAN XL</h2>
+
+<p>Classic CAN's 8-byte payload and 1 Mbps ceiling became the bottleneck as ECUs multiplied. The two successors keep the arbitration model and extend the data phase.</p>
+
+<table class="compare">
+  <thead>
+    <tr><th>Variant</th><th>Max payload</th><th>Max data rate</th><th>Standard</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="key">Classic CAN</td><td class="note">8 bytes</td><td class="bad">1 Mbps</td><td>ISO 11898-1</td><td>The 1986 original. Universal, slow, tiny frames.</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="canfd">CAN FD</span></td><td class="note">64 bytes</td><td class="good">~8 Mbps (data)</td><td>ISO 11898-1:2015</td><td>Arbitrate slow for compatibility, then switch rate (<span class="term" tabindex="0" data-term="brs">BRS</span>) for the payload.</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="canxl">CAN XL</span></td><td class="good">2048 bytes</td><td class="good">~10–20 Mbps</td><td>CiA 610 / ISO 11898-1</td><td>SDU type field tunnels Ethernet and higher protocols. Needs SIC XL transceivers.</td></tr>
+  </tbody>
+</table>
+
+<p><span class="term" tabindex="0" data-term="canfd">CAN FD</span> is the workhorse upgrade: the slow arbitration phase stays bit-compatible with classic CAN so mixed buses work, then the <span class="term" tabindex="0" data-term="brs">bit-rate switch</span> accelerates only the data and CRC fields. Bigger payloads also cut per-byte overhead, which matters when flashing firmware. <span class="term" tabindex="0" data-term="canxl">CAN XL</span> goes further, carrying up to 2048 bytes and an SDU type that lets a CAN frame transport an Ethernet frame, positioning CAN as the edge bus under a zonal Ethernet backbone (section 9).</p>
+
+<h2 id="protocols">5 — Higher-Layer Protocols</h2>
+
+<p>CAN itself is only layers 1 and 2: wires and frames. Anything meaningful — diagnostics, firmware, sensor meaning — is a higher-layer protocol riding on top of the same frames.</p>
+
+<table class="compare">
+  <thead>
+    <tr><th>Protocol</th><th>Layer / role</th><th>Domain</th><th>Key idea</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="isotp">ISO-TP</span></td><td>Transport (ISO 15765-2)</td><td>Diagnostics transport</td><td>Segments up to 4095 bytes across many frames with flow control.</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="uds">UDS</span></td><td>Diagnostics (ISO 14229)</td><td>Every modern ECU</td><td>Read data, run routines, flash firmware, seed/key security.</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="obd2">OBD-II</span></td><td>Emissions (ISO 15031 / J1979)</td><td>Legally mandated port</td><td>Standardized PIDs any scan tool can read.</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="j1939">J1939</span></td><td>Application (SAE)</td><td>Trucks, buses, ag, marine</td><td>29-bit PGN/SPN at 250–500 kbps; self-describing parameters.</td></tr>
+    <tr><td class="key"><span class="term" tabindex="0" data-term="canopen">CANopen</span></td><td>Application (CiA 301)</td><td>Industrial / robotics</td><td>Object dictionary with PDO (real-time) and SDO (config) messaging.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="diag">6 — ISO-TP and UDS</h2>
+
+<p>A single CAN frame holds at most 8 bytes (64 in FD). To move a 17-byte VIN or a megabyte of firmware, <span class="term" tabindex="0" data-term="isotp">ISO-TP</span> segments the message and the receiver paces it with flow control. The first byte of each frame is a Protocol Control Information byte whose high nibble names the frame type.</p>
+
+<ul class="bul">
+  <li><strong>Single Frame (0)</strong> — the whole message fits in one frame; the low nibble is the length.</li>
+  <li><strong>First Frame (1)</strong> — opens a multi-frame transfer and declares the total length (up to 4095).</li>
+  <li><strong>Consecutive Frame (2)</strong> — carries 7 payload bytes each, tagged with a rolling 4-bit sequence number.</li>
+  <li><strong>Flow Control (3)</strong> — sent by the receiver: clear-to-send / wait / overflow, plus block size and STmin (the minimum gap it can tolerate between frames).</li>
+</ul>
+
+<div class="wireblock"><span class="cm">// iso-tp read of a 20-byte response. tester sends on 0x7E0, ecu replies on 0x7E8</span>
+TX 7E0  [<span class="num">8</span>]  <span class="num">03 22 F1 90</span> 00 00 00 00   <span class="cm">// single frame, len 3: uds 0x22 readDataByIdentifier, did 0xF190</span>
+RX 7E8  [<span class="num">8</span>]  <span class="num">10 14</span> <span class="hdr">62</span> F1 90 31 47 31   <span class="cm">// first frame: total len 0x014=20, 0x62 = 0x22+0x40 positive resp</span>
+TX 7E0  [<span class="num">8</span>]  <span class="num">30 00 00</span> 00 00 00 00 00   <span class="cm">// flow control: clear-to-send, block size 0, stmin 0</span>
+RX 7E8  [<span class="num">8</span>]  <span class="num">21</span> 4A 54 33 38 32 4D 38   <span class="cm">// consecutive frame, sequence 1</span>
+RX 7E8  [<span class="num">8</span>]  <span class="num">22</span> 35 30 30 30 30 30 30   <span class="cm">// consecutive frame, sequence 2</span></div>
+
+<p>On top of ISO-TP sits <span class="term" tabindex="0" data-term="uds">UDS</span>. A request is a one-byte service ID plus parameters; a success reply echoes the service ID plus 0x40. A failure returns 0x7F, the service, and a negative response code. The same handful of services covers reading sensors, clearing trouble codes, unlocking protected functions, and reflashing the ECU.</p>
+
+<div class="wireblock"><span class="cm">// uds security access: seed/key unlock before protected services (service 0x27)</span>
+TX 7E0  <span class="num">02 27 01</span>               <span class="cm">// requestSeed, security level 0x01</span>
+RX 7E8  <span class="num">06 67 01</span> <span class="str">A1 B2 C3 D4</span>      <span class="cm">// positive 0x67, seed = A1B2C3D4</span>
+TX 7E0  <span class="num">06 27 02</span> <span class="str">5E 9F 11 8C</span>      <span class="cm">// sendKey (level+1), key derived from seed by secret algorithm</span>
+RX 7E8  <span class="num">02 67 02</span>               <span class="cm">// positive: access granted, protected services now unlocked</span>
+RX 7E8  <span class="num">03 7F 27 35</span>            <span class="cm">// or negative: 0x7F, service 0x27, nrc 0x35 invalidKey</span></div>
+
+<p>Key services worth memorizing: <strong>0x10</strong> DiagnosticSessionControl, <strong>0x22</strong> ReadDataByIdentifier, <strong>0x2E</strong> WriteDataByIdentifier, <strong>0x27</strong> <span class="term" tabindex="0" data-term="securityaccess">SecurityAccess</span>, <strong>0x31</strong> RoutineControl, <strong>0x34/0x36/0x37</strong> the RequestDownload / TransferData / TransferExit firmware-flashing trio, <strong>0x19</strong> ReadDTCInformation, and <strong>0x3E</strong> TesterPresent (the keep-alive that stops a session timing out).</p>
+
+<h2 id="socketcan">7 — socketcan and Hands-On</h2>
+
+<p>On Linux, CAN is just another network interface. <span class="term" tabindex="0" data-term="socketcan">socketcan</span> presents <code>can0</code> like a NIC, so the same mental model as Ethernet applies: bring the link up, then capture and inject. A virtual <code>vcan0</code> interface lets you build and test an entire pipeline with no hardware at all.</p>
+
+<div class="wireblock"><span class="cm">// bring up a real interface at 500 kbit/s, then watch and inject</span>
+$ sudo ip link set can0 up type can bitrate <span class="num">500000</span>
+$ candump can0                       <span class="cm">// dump every frame on the bus, live</span>
+$ cansend can0 <span class="num">123</span>#<span class="str">DEADBEEF</span>          <span class="cm">// inject one frame, id 0x123</span>
+$ cansniffer can0                    <span class="cm">// group by id, highlight changing bytes</span>
+
+<span class="cm">// no hardware? loop back on a virtual bus</span>
+$ sudo modprobe vcan && sudo ip link add dev vcan0 type vcan && sudo ip link set vcan0 up</div>
+
+<p>The raw bus is hex. A <span class="term" tabindex="0" data-term="dbc">DBC</span> database maps arbitration IDs and bit ranges to named signals with scale and offset, turning <code>0x0C8 1A F0</code> into <code>EngineRPM = 832.5</code>. <code>python-can</code> reads the bus and <code>cantools</code> applies the DBC.</p>
+
+<div class="wireblock"><span class="cm">// decode live can traffic to engineering units with a dbc</span>
+<span class="kw">import</span> can, cantools
+db  = cantools.database.load_file(<span class="str">"vehicle.dbc"</span>)
+bus = can.Bus(<span class="str">"can0"</span>, interface=<span class="str">"socketcan"</span>)
+
+<span class="hdr">for</span> msg <span class="kw">in</span> bus:
+    <span class="hdr">try</span>:
+        signals = db.decode_message(msg.arbitration_id, msg.data)
+    <span class="hdr">except</span> KeyError:
+        <span class="kw">continue</span>                     <span class="cm">// id not described in this dbc</span>
+    print(signals)                   <span class="cm">// {'EngineRPM': 832.5, 'VehicleSpeed': 0.0}</span></div>
+
+<ul class="bul">
+  <li><strong>USB adapters</strong> — a <span class="term" tabindex="0" data-term="socketcan">CANable</span> or other slcan dongle is roughly $25 and shows up as <code>can0</code>. PEAK PCAN-USB is the pricier professional option with rock-solid drivers.</li>
+  <li><strong><span class="term" tabindex="0" data-term="mcp2515">Raspberry Pi + MCP2515</span></strong> — an SPI CAN controller HAT turns a Pi into a logger or gateway for under $15 in parts. The mainline kernel driver exposes it as socketcan directly.</li>
+  <li><strong>Where to tap</strong> — the OBD-II port exposes at least one CAN bus on pins 6 and 14. Beyond that, vehicles split into many isolated buses behind a gateway, so a single port rarely sees everything.</li>
+</ul>
+
+<h2 id="security">8 — Reverse Engineering and Security</h2>
+
+<p>The uncomfortable truth: classic CAN has no authentication and no encryption. Any node can transmit any identifier, and every node believes it. Physical access to a bus, often through the OBD-II port, is close to full control. Security was simply not a 1986 design goal.</p>
+
+<ul class="bul">
+  <li><strong>Sniff and identify</strong> — run <code>cansniffer</code>, actuate one control (a turn signal, a window), and watch which ID and bytes change. Repeat to hand-build a DBC. This is most of practical CAN reverse engineering.</li>
+  <li><strong>Replay and spoof</strong> — capture a frame and re-send it; the receiving ECU cannot tell the difference. Nearly every CAN attack reduces to this, because nothing on the bus proves who sent a frame.</li>
+  <li><strong><span class="term" tabindex="0" data-term="busoff">Bus-off attack</span></strong> — an adversary node deliberately induces bit errors during a victim's transmission, driving the victim's error counter to bus-off so it silently drops off the network. A denial-of-service that needs no spoofing, only timing.</li>
+  <li><strong><span class="term" tabindex="0" data-term="voltageids">Voltage fingerprinting IDS</span></strong> — defenders profile each ECU's analog voltage signature, which depends on transceiver hardware and is hard to mimic, then flag frames whose claimed ID does not match the measured transmitter. Effective, but it needs extra taps on CAN_H/CAN_L and is itself attackable by voltage corruption.</li>
+  <li><strong><span class="term" tabindex="0" data-term="secoc">SecOC</span></strong> — AUTOSAR Secure Onboard Communication appends a truncated MAC and a freshness value (a counter or timestamp) to critical frames, giving authentication and replay protection where bus bandwidth allows. The cryptographic answer to a bus that never had one.</li>
+</ul>
+
+<div class="callout">
+  <strong>No authentication, by design.</strong> Gateways, message filtering, intrusion detection, and SecOC are all retrofits onto a protocol whose whole appeal was that any node could broadcast freely. Treat every classic-CAN segment as a trust domain: anything on it can impersonate anything else on it.
+</div>
+
+<h2 id="crossover">9 — Where CAN Connects</h2>
+
+<p>CAN is not being replaced so much as demoted to the edge. Modern vehicles are moving to a zonal architecture: a few location-based controllers gather their local CAN, CAN FD, and LIN buses and aggregate them onto an automotive Ethernet backbone.</p>
+
+<ul class="bul">
+  <li><strong><span class="term" tabindex="0" data-term="autoether">Automotive Ethernet</span></strong> — single-pair 100BASE-T1 and 1000BASE-T1 for the backbone, 10BASE-T1S multidrop for cheaper segments, with TSN adding the bounded latency that classic Ethernet lacks. This is the same determinism story as the avionics fabrics in the real-time inference reference.</li>
+  <li><strong><span class="term" tabindex="0" data-term="zonal">Zonal gateways</span></strong> — instead of one bus per function snaking across the car, zone controllers translate between local CAN and the Ethernet core, cutting wiring mass and giving a natural place to enforce security policy.</li>
+  <li><strong>The crossover</strong> — a car's CAN edge is the consumer-accessible analog of the F-35's IEEE 1394b vehicle bus feeding the Integrated Core Processor: a deterministic, low-bandwidth bus carrying actuators and slow sensors under a high-bandwidth fused backbone. Same shape, very different budget. See the companion document, <em>Real-Time Sensor Fusion and Inference Architectures</em>.</li>
+</ul>
+
+<div class="refs">
+<h2 id="refs">References</h2>
+<table>
+  <tr><td>[ISO 11898-1]</td><td>ISO 11898-1:2015 — Road vehicles, Controller Area Network, Part 1: Data link layer and physical signalling (Classic and FD)</td></tr>
+  <tr><td>[ISO 11898-2]</td><td>ISO 11898-2:2016 — High-speed medium access unit (physical layer)</td></tr>
+  <tr><td>[CiA 610]</td><td>CAN in Automation — CiA 610 series, CAN XL specification and test plans. <a href="https://can-cia.org/can-knowledge/cia-610-series-can-xl-specification-and-test-plans" target="_blank">can-cia.org</a></td></tr>
+  <tr><td>[ISO 15765-2]</td><td>ISO 15765-2 — Diagnostic communication over CAN (ISO-TP): segmentation, flow control, reassembly</td></tr>
+  <tr><td>[ISO 14229]</td><td>ISO 14229-1 — Unified Diagnostic Services (UDS) specification and requirements</td></tr>
+  <tr><td>[SAE J1939]</td><td>SAE J1939 — Serial control and communications heavy-duty vehicle network</td></tr>
+  <tr><td>[SocketCAN]</td><td>Linux kernel SocketCAN documentation. <a href="https://www.kernel.org/doc/html/latest/networking/can.html" target="_blank">kernel.org</a></td></tr>
+  <tr><td>[python-can]</td><td>python-can and cantools. <a href="https://python-can.readthedocs.io" target="_blank">python-can.readthedocs.io</a></td></tr>
+  <tr><td>[Bus-off]</td><td>Silently Disabling ECUs and Enabling Blind Attacks on the CAN Bus — arXiv:2201.06362</td></tr>
+  <tr><td>[SecOC]</td><td>AUTOSAR — Specification of Secure Onboard Communication (SecOC)</td></tr>
+</table>
+</div>
+
+<div class="doc-footer">
+  <span>DOC-CAN-002 / REV 1.0</span>
+  <span>VEHICLE NETWORKS &amp; EMBEDDED</span>
+  <span>2026-06</span>
+</div>
+
+</article>
+
+<!-- ── MARGIN ── -->
+<aside class="margin">
+  <div class="margin-card" id="margin-card">
+    <div class="margin-eyebrow">
+      Reference Inspector
+      <span class="margin-status" id="margin-status"></span>
+    </div>
+    <h3 id="m-title">Hover any underlined term</h3>
+    <code id="m-code">&#183;</code>
+    <p id="m-body">Move the cursor over any dotted-underlined term to load its specification detail. Click to pin the card so it persists while you read.</p>
+    <div class="margin-meta" id="m-meta"></div>
+    <div class="margin-section" id="m-rel"><div class="label">Related</div><ul><li class="more">&#183;</li></ul></div>
+    <div class="margin-section" id="m-notes"><div class="label">Notes</div><ul><li class="more">&#183;</li></ul></div>
+    <div class="margin-section" id="m-links"><div class="label">Sources</div><ul><li class="more">&#183;</li></ul></div>
+  </div>
+  <div class="margin-pin-bar">
+    <span class="margin-hint">hover &middot; click to pin &middot; <kbd>esc</kbd> unpin</span>
+    <button class="margin-unpin" id="margin-unpin">unpin</button>
+  </div>
+  <div class="margin-index">
+    <div class="margin-index-label">Contents</div>
+    <a href="#bus">1 &mdash; The Bus and Why It Won</a>
+    <a href="#phy">2 &mdash; Physical Layer</a>
+    <a href="#frame">3 &mdash; Frame and Arbitration</a>
+    <a href="#fd">4 &mdash; CAN FD and CAN XL</a>
+    <a href="#protocols">5 &mdash; Higher-Layer Protocols</a>
+    <a href="#diag">6 &mdash; ISO-TP and UDS</a>
+    <a href="#socketcan">7 &mdash; socketcan / Hands-On</a>
+    <a href="#security">8 &mdash; Reverse Eng. and Security</a>
+    <a href="#crossover">9 &mdash; Where CAN Connects</a>
+    <a href="#refs">References</a>
+  </div>
+</aside>
+
+</div><!-- .sheet -->
+</div><!-- .page -->
+
+<script id="reference-data" type="application/json">
+{
+  "arbitration": {
+    "title": "Bitwise Arbitration",
+    "code": "CSMA/CD + AMR",
+    "body": "Carrier-sense multiple access with non-destructive bitwise arbitration. Nodes start transmitting together; a node sending recessive that reads dominant has lost to a higher-priority frame and backs off without corrupting the winner. The numerically lowest identifier wins.",
+    "meta": { "scheme": "CSMA/CD + AMR", "priority": "lowest ID value", "collision": "non-destructive", "winner penalty": "none", "loser action": "retry at next idle", "decided in": "arbitration field" },
+    "notes": ["the identifier is the priority, so ID allocation is bus scheduling", "the winner never knows contention happened", "requires a wired-AND bus where dominant overrides recessive", "fully deterministic worst-case latency for the highest-priority frame"],
+    "rel": ["bitstuffing", "faultconfinement", "canfd"]
+  },
+  "transceiver": {
+    "title": "CAN Transceiver",
+    "code": "ISO 11898-2 high-speed",
+    "body": "The analog front end between a controller's digital TX/RX pins and the differential bus. It drives the dominant state by pulling CAN_H and CAN_L apart and lets them relax for recessive. Modern SIC (signal improvement capability) transceivers actively damp ringing to allow higher CAN FD and XL rates.",
+    "meta": { "drives": "CAN_H / CAN_L", "dominant": "lines ~2V apart", "recessive": "lines together ~2.5V", "examples": "TJA1050, TJA1145, MCP2562", "SIC": "ring damping for FD/XL", "fault-tolerant": "ISO 11898-3 low-speed" },
+    "notes": ["common-mode noise hits both wires equally and cancels in the difference", "SIC XL transceivers are required for CAN XL above ~10 Mbps", "the transceiver hardware is what voltage-fingerprint IDS profiles"],
+    "rel": ["bittiming", "voltageids", "canxl"]
+  },
+  "bittiming": {
+    "title": "Bit Timing",
+    "code": "time quanta / sample point",
+    "body": "Each bit is split into time quanta grouped into synchronization, propagation, and two phase segments. Every node samples at a configured sample point and resynchronizes on recessive-to-dominant edges, so all nodes agree on bit boundaries without a shared clock line.",
+    "meta": { "sample point": "75–87.5% typical", "segments": "sync, prop, phase1, phase2", "resync": "on falling (recessive-to-dominant) edge", "unit": "time quantum (Tq)", "limited by": "propagation across bus length", "tuned via": "prescaler + segment counts" },
+    "notes": ["wrong timing works at short range but fails as cable grows", "longer buses need a later sample point to cover propagation delay", "all nodes must agree on bit rate and sample point"],
+    "rel": ["transceiver", "arbitration"]
+  },
+  "bitstuffing": {
+    "title": "Bit Stuffing",
+    "code": "5-bit stuff rule",
+    "body": "After five consecutive bits of the same polarity, the transmitter inserts one opposite-polarity stuff bit, which the receiver removes. This guarantees enough edges for clock resynchronization across a long frame of identical bits.",
+    "meta": { "trigger": "5 equal bits", "action": "insert 1 opposite bit", "applies to": "SOF through CRC", "receiver": "de-stuffs transparently", "side effect": "variable frame length", "error": "stuff violation = error frame" },
+    "notes": ["keeps the receiver clock locked during long runs of 0s or 1s", "a deliberately wrong stuff bit is one way to inject a bit error", "frame length on the wire is data-dependent because of stuffing"],
+    "rel": ["arbitration", "faultconfinement"]
+  },
+  "faultconfinement": {
+    "title": "Fault Confinement",
+    "code": "TEC / REC counters",
+    "body": "Every node maintains transmit and receive error counters. As errors accumulate a node moves from error-active to error-passive, and at a transmit count above 255 it goes bus-off and stops transmitting entirely. A faulty node thus removes itself instead of jamming the bus.",
+    "meta": { "counters": "TEC, REC", "error-active": "TEC and REC <= 127", "error-passive": "either > 127", "bus-off": "TEC > 255", "recovery": "128 idle bit sequences", "purpose": "isolate a babbling node" },
+    "notes": ["self-isolation is what keeps one broken ECU from killing the bus", "the bus-off attack weaponizes this by forcing a victim's TEC up", "error-passive nodes can still receive but signal errors only passively"],
+    "rel": ["busoff", "bitstuffing"]
+  },
+  "canfd": {
+    "title": "CAN FD",
+    "code": "ISO 11898-1:2015 / Flexible Data-rate",
+    "body": "Backward-compatible extension that keeps classic arbitration but allows a faster data phase and a 64-byte payload. Arbitration stays at the classic rate so mixed buses interoperate, then a bit-rate switch accelerates the data and CRC fields.",
+    "meta": { "payload": "up to 64 bytes", "data rate": "up to ~8 Mbps", "arbitration rate": "classic (<= 1 Mbps)", "switch": "BRS bit", "marker": "FDF recessive", "CRC": "17 or 21 bit" },
+    "notes": ["bigger frames cut per-byte overhead, big win for firmware flashing", "classic and FD nodes can share a bus during arbitration", "a classic-only controller cannot receive FD frames and will error"],
+    "rel": ["brs", "canxl", "arbitration"]
+  },
+  "brs": {
+    "title": "Bit Rate Switch (BRS)",
+    "code": "CAN FD data-phase acceleration",
+    "body": "A bit inside a CAN FD frame that switches the bus to the faster data bit rate for the payload and CRC, then back to the arbitration rate. It is why FD can arbitrate slowly for compatibility yet move data several times faster.",
+    "meta": { "scope": "data + CRC fields", "before BRS": "arbitration rate", "after BRS": "data rate", "typical data rate": "2–8 Mbps", "requires": "FD-capable transceiver", "reverts": "at CRC delimiter" },
+    "notes": ["arbitration timing is unchanged so priority semantics are preserved", "max data rate is bounded by transceiver ringing, hence SIC parts", "the rate change mid-frame is what classic controllers cannot follow"],
+    "rel": ["canfd", "transceiver"]
+  },
+  "canxl": {
+    "title": "CAN XL",
+    "code": "CiA 610 / ISO 11898-1",
+    "body": "Third-generation CAN carrying 1 to 2048 bytes per frame at up to about 20 Mbps with SIC XL transceivers. An SDU type field lets a CAN XL frame transport Ethernet frames and other higher-layer protocols, positioning CAN as the edge bus under a zonal Ethernet backbone.",
+    "meta": { "payload": "1–2048 bytes", "data rate": "~10–20 Mbps", "spec": "CiA 610-1 / 610-3", "transceiver": "CAN SIC XL", "SDU type": "tunnels Ethernet etc.", "into": "ISO 11898-1 / -2" },
+    "notes": ["bridges CAN and automotive Ethernet in zonal architectures", "keeps the priority and robustness model of CAN", "needs SIC XL transceivers to reach the higher data rates"],
+    "rel": ["canfd", "autoether"]
+  },
+  "isotp": {
+    "title": "ISO-TP",
+    "code": "ISO 15765-2 transport",
+    "body": "The transport layer that lets diagnostics move messages larger than one frame. It segments a payload of up to 4095 bytes into single, first, and consecutive frames, with the receiver pacing delivery through flow-control frames.",
+    "meta": { "max payload": "4095 bytes", "frame types": "SF, FF, CF, FC", "PCI": "first byte, high nibble = type", "flow control": "CTS / wait / overflow", "pacing": "block size + STmin", "carries": "UDS, OBD-II" },
+    "notes": ["the receiver dictates pace via STmin and block size", "consecutive frames carry a 4-bit rolling sequence number", "UDS and OBD-II are payloads on top of ISO-TP"],
+    "rel": ["uds", "obd2"]
+  },
+  "uds": {
+    "title": "Unified Diagnostic Services",
+    "code": "ISO 14229",
+    "body": "The diagnostic application protocol every modern ECU speaks. A request is a one-byte service ID plus parameters; a positive response echoes the service ID plus 0x40, and a failure returns 0x7F with a negative response code. UDS reads data, runs routines, controls sessions, and flashes firmware.",
+    "meta": { "request": "SID + params", "positive resp": "SID + 0x40", "negative resp": "0x7F + NRC", "transport": "ISO-TP", "keep-alive": "0x3E TesterPresent", "flashing": "0x34 / 0x36 / 0x37" },
+    "notes": ["0x22 ReadDataByIdentifier is the workhorse read service", "0x27 SecurityAccess gates protected services behind seed/key", "0x10 selects a diagnostic session, often required before sensitive services"],
+    "rel": ["isotp", "securityaccess", "obd2"]
+  },
+  "obd2": {
+    "title": "OBD-II",
+    "code": "ISO 15031 / SAE J1979",
+    "body": "The legally mandated emissions diagnostic interface. It defines standardized parameter identifiers (PIDs) that any scan tool can read on any compliant vehicle, such as mode 0x01 PID 0x0C for engine RPM, layered on the same ISO-TP transport as UDS.",
+    "meta": { "mandate": "emissions regulation", "port": "OBD-II connector, CAN on pins 6/14", "modes": "0x01–0x0A", "example PID": "01 0C = engine RPM", "transport": "ISO-TP", "manufacturer": "UDS beyond the standard PIDs" },
+    "notes": ["standardized PIDs are a small public subset; UDS reaches the rest", "every car since the mid-2000s exposes CAN-based OBD-II", "a $25 ELM327 dongle speaks OBD-II out of the box"],
+    "rel": ["uds", "isotp"]
+  },
+  "j1939": {
+    "title": "SAE J1939",
+    "code": "heavy-duty vehicle network",
+    "body": "The application protocol for trucks, buses, agricultural, and marine equipment. It uses 29-bit extended identifiers structured into Parameter Group Numbers (PGN) and Suspect Parameter Numbers (SPN), so parameters are self-describing rather than needing a private DBC.",
+    "meta": { "ID": "29-bit extended", "structure": "PGN / SPN", "bit rate": "250 or 500 kbps", "transport": "J1939-21 (TP)", "addressing": "source/destination in ID", "domain": "commercial / off-highway" },
+    "notes": ["self-describing parameters make cross-vendor tooling possible", "NMEA 2000 (marine) is built on J1939", "uses the 29-bit identifier where most cars use 11-bit"],
+    "rel": ["canopen", "obd2"]
+  },
+  "canopen": {
+    "title": "CANopen",
+    "code": "CiA 301",
+    "body": "The dominant CAN application layer in industrial automation and robotics. Each device exposes an object dictionary; Process Data Objects (PDO) carry real-time I/O while Service Data Objects (SDO) handle configuration. Standard device profiles make motor drives and I/O modules interchangeable.",
+    "meta": { "spec": "CiA 301", "model": "object dictionary", "real-time": "PDO", "config": "SDO", "sync": "SYNC + heartbeat", "profiles": "CiA 4xx device profiles" },
+    "notes": ["PDO/SDO split separates fast cyclic data from slow configuration", "common on motion controllers, drives, and industrial I/O", "the industrial cousin of automotive UDS/J1939 tooling"],
+    "rel": ["j1939", "uds"]
+  },
+  "securityaccess": {
+    "title": "UDS SecurityAccess (0x27)",
+    "code": "seed / key challenge",
+    "body": "The UDS service that gates protected functions such as reflashing. The ECU returns a random seed; the tester computes a key with a secret algorithm and sends it back. A correct key unlocks the security level; a wrong key returns NRC 0x35 and, after retries, a lockout.",
+    "meta": { "request seed": "27 + odd level", "send key": "27 + even level", "seed resp": "67 + seed", "wrong key": "NRC 0x35 invalidKey", "lockout": "delay after N attempts", "secret": "OEM key algorithm" },
+    "notes": ["security rests entirely on the secrecy of the key algorithm", "extracted key algorithms are the core of ECU tuning tools", "modern ECUs replace fixed algorithms with crypto challenge-response"],
+    "rel": ["uds", "secoc"]
+  },
+  "socketcan": {
+    "title": "SocketCAN",
+    "code": "Linux CAN subsystem",
+    "body": "The Linux kernel's network-stack treatment of CAN. A CAN controller appears as an interface like can0, so standard tooling (candump, cansend, cangen, cansniffer) and the BSD socket API work directly. A virtual vcan0 interface enables full development with no hardware.",
+    "meta": { "interface": "can0 / vcan0", "API": "BSD sockets (PF_CAN)", "tools": "can-utils", "bring-up": "ip link set can0 type can", "virtual": "vcan for testing", "bindings": "python-can, others" },
+    "notes": ["treat CAN exactly like a NIC: up the link, then capture or inject", "vcan0 lets you build and test a whole pipeline offline", "can-utils (candump/cansend/cangen) is the standard toolkit"],
+    "rel": ["dbc", "mcp2515"]
+  },
+  "dbc": {
+    "title": "DBC Database",
+    "code": "CAN signal description",
+    "body": "A text database mapping arbitration IDs and bit positions to named signals with scale, offset, and units. It is what converts raw frame bytes into engineering values. Tools like cantools load a DBC to decode and encode traffic; reverse engineering a vehicle largely means rebuilding its DBC by hand.",
+    "meta": { "maps": "ID + bits to signals", "fields": "scale, offset, min/max, unit", "origin": "Vector format", "tooling": "cantools, Vector CANdb", "use": "decode and encode", "reverse eng.": "rebuild by observation" },
+    "notes": ["OEM DBCs are proprietary; enthusiasts reconstruct them by sniffing", "a signal is (raw * scale) + offset within its bit range", "the same DBC drives decoding, simulation, and test injection"],
+    "rel": ["socketcan", "arbitration"]
+  },
+  "mcp2515": {
+    "title": "MCP2515 CAN Controller",
+    "code": "SPI standalone controller",
+    "body": "A standalone CAN 2.0 controller driven over SPI, usually paired with an MCP2562 transceiver. On a Raspberry Pi or Arduino it adds a real CAN interface for a few dollars, and the mainline Linux driver exposes it directly as socketcan.",
+    "meta": { "interface": "SPI", "protocol": "Classic CAN 2.0B", "transceiver": "MCP2562 / TJA1050", "platform": "Pi, Arduino, MCU", "Linux": "mcp251x socketcan driver", "cost": "a few dollars" },
+    "notes": ["classic CAN only; for FD use an MCP2518FD instead", "needs a crystal and a 120-ohm termination on a bench bus", "the cheapest route to a hardware CAN node on a Pi"],
+    "rel": ["socketcan", "transceiver"]
+  },
+  "busoff": {
+    "title": "Bus-Off Attack",
+    "code": "arXiv:2201.06362",
+    "body": "An attack that exploits fault confinement. By injecting bit errors precisely during a victim ECU's transmission, the attacker drives the victim's transmit error counter past 255, forcing it into the bus-off state where it stops transmitting. A denial-of-service that requires only timing, not message forgery.",
+    "meta": { "exploits": "TEC / fault confinement", "trigger": "synchronized bit errors", "effect": "victim goes bus-off", "forgery": "none required", "class": "denial of service", "enables": "blind spoofing of the silenced ECU" },
+    "notes": ["once the real ECU is silent, the attacker can impersonate it cleanly", "defends poorly against because it abuses a core protocol feature", "detection relies on timing or voltage-based IDS, not message content"],
+    "rel": ["faultconfinement", "voltageids", "secoc"]
+  },
+  "voltageids": {
+    "title": "Voltage Fingerprinting IDS",
+    "code": "physical-layer intrusion detection",
+    "body": "An intrusion detection approach that profiles each ECU's analog voltage signature on CAN_H and CAN_L. Because the signature depends on transceiver hardware, it is hard to mimic, so a frame whose claimed identifier does not match the measured transmitter can be flagged as spoofed.",
+    "meta": { "measures": "CAN_H / CAN_L voltage", "basis": "transceiver hardware variance", "detects": "ID/transmitter mismatch", "needs": "extra analog taps", "weakness": "voltage corruption attacks", "research": "Viden, Scission, CAN-LOC" },
+    "notes": ["maps a frame to a transmitter even though CAN has no source address", "the extra CANH/CANL taps are themselves a new attack surface", "training data can be poisoned by a second compromised ECU"],
+    "rel": ["busoff", "secoc", "transceiver"]
+  },
+  "secoc": {
+    "title": "SecOC",
+    "code": "AUTOSAR Secure Onboard Communication",
+    "body": "An AUTOSAR layer that authenticates critical CAN messages by appending a truncated message authentication code and a freshness value (a counter or timestamp). It gives integrity and replay protection on a bus that natively has neither, at the cost of payload space and key management.",
+    "meta": { "adds": "truncated MAC + freshness", "protects": "integrity + replay", "freshness": "counter or timestamp", "cost": "payload bytes, key mgmt", "scope": "selected critical frames", "layer": "AUTOSAR PDU" },
+    "notes": ["truncated MAC is a bandwidth compromise, not full-length authentication", "freshness value is what blocks straightforward replay", "applied to safety-critical frames, not all bus traffic"],
+    "rel": ["securityaccess", "voltageids", "busoff"]
+  },
+  "autoether": {
+    "title": "Automotive Ethernet",
+    "code": "100/1000BASE-T1 / 10BASE-T1S",
+    "body": "Single-pair Ethernet for vehicles. 100BASE-T1 and 1000BASE-T1 carry the high-bandwidth backbone, 10BASE-T1S provides a cheaper multidrop segment, and TSN adds the bounded latency that standard Ethernet lacks. CAN and CAN FD remain the edge buses beneath this backbone.",
+    "meta": { "backbone": "100/1000BASE-T1", "multidrop": "10BASE-T1S", "medium": "single twisted pair", "determinism": "TSN (802.1Q)", "role": "zonal backbone", "edge": "CAN / CAN FD / LIN" },
+    "notes": ["same determinism goal as avionics AFDX/TSN, consumer scale", "zonal gateways translate between CAN and the Ethernet core", "CAN XL is designed to tunnel into this backbone"],
+    "rel": ["canxl", "zonal"]
+  },
+  "zonal": {
+    "title": "Zonal Architecture",
+    "code": "domain to zone E/E shift",
+    "body": "An electrical/electronic architecture that replaces many function-specific ECUs and their dedicated buses with a few location-based zone controllers. Each zone aggregates its local CAN, LIN, and sensor wiring and connects to the others over an Ethernet backbone, cutting harness mass and centralizing compute.",
+    "meta": { "unit": "zone controller", "edge buses": "CAN, CAN FD, LIN", "core": "automotive Ethernet", "benefit": "less wiring mass", "compute": "centralized / HPC", "security": "policy at the gateway" },
+    "notes": ["fewer, smarter controllers instead of one ECU per function", "natural enforcement point for filtering and intrusion detection", "mirrors the centralized fusion model of modern avionics"],
+    "rel": ["autoether", "canxl"]
+  }
+}
+</script>
+
+<script>
+(()=>{
+  const D=JSON.parse(document.getElementById('reference-data').textContent);
+  const card=document.getElementById('margin-card');
+  const els={
+    t:document.getElementById('m-title'),
+    c:document.getElementById('m-code'),
+    b:document.getElementById('m-body'),
+    m:document.getElementById('m-meta'),
+    r:document.getElementById('m-rel'),
+    n:document.getElementById('m-notes'),
+    l:document.getElementById('m-links'),
+    s:document.getElementById('margin-status')
+  };
+  const unpinBtn=document.getElementById('margin-unpin');
+  let pinnedKey=null;
+
+  function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+  function host(u){try{return new URL(u).hostname.replace(/^www\./,'');}catch(e){return '';}}
+
+  function paint(k){
+    const x=D[k];if(!x)return;
+    els.t.textContent=x.title;
+    els.c.textContent=x.code||'·';
+    els.b.textContent=x.body||'';
+    els.m.innerHTML=Object.entries(x.meta||{}).map(([k,v])=>`<div><strong>${esc(k)}</strong><span>${esc(v)}</span></div>`).join('');
+    els.r.querySelector('ul').innerHTML=(x.rel||[]).map(r=>{const o=D[r];return o?`<li>› ${esc(o.title)}</li>`:''}).join('')||'<li class="more">·</li>';
+    els.n.querySelector('ul').innerHTML=(x.notes||[]).map(n=>`<li style="white-space:normal;font-family:inherit;font-size:0.76rem">· ${esc(n)}</li>`).join('')||'<li class="more">·</li>';
+    els.l.querySelector('ul').innerHTML=(x.links||[]).map(L=>`<li class="link-item"><a href="${esc(L.url)}" target="_blank" rel="noopener noreferrer">${esc(L.label)}</a><span class="src">${esc(host(L.url))}</span></li>`).join('')||'<li class="more">·</li>';
+  }
+
+  function pin(key,el){
+    pinnedKey=key;paint(key);
+    card.classList.add('is-pinned');
+    els.s.textContent='pinned';
+    unpinBtn.style.display='inline-block';
+    document.querySelectorAll('.term.is-pinned').forEach(x=>x.classList.remove('is-pinned'));
+    if(el)el.classList.add('is-pinned');
+  }
+
+  function unpin(){
+    pinnedKey=null;
+    card.classList.remove('is-pinned');
+    els.s.textContent='';
+    unpinBtn.style.display='none';
+    document.querySelectorAll('.term.is-pinned').forEach(x=>x.classList.remove('is-pinned'));
+  }
+
+  document.addEventListener('mouseover',e=>{
+    if(pinnedKey)return;
+    const t=e.target.closest('.term');if(!t)return;
+    paint(t.getAttribute('data-term'));
+    document.querySelectorAll('.term.is-active').forEach(x=>x.classList.remove('is-active'));
+    t.classList.add('is-active');
+  });
+
+  document.querySelectorAll('.term').forEach(el=>{
+    el.setAttribute('tabindex','0');
+    el.addEventListener('click',e=>{
+      e.preventDefault();
+      const key=el.getAttribute('data-term');
+      if(pinnedKey===key){unpin();return;}
+      pin(key,el);
+    });
+    el.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){
+        e.preventDefault();
+        const key=el.getAttribute('data-term');
+        if(pinnedKey===key){unpin();return;}
+        pin(key,el);
+      }
+    });
+    el.addEventListener('focus',()=>{if(!pinnedKey)paint(el.getAttribute('data-term'));});
+  });
+
+  unpinBtn.addEventListener('click',unpin);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&pinnedKey)unpin();});
+})();
+</script>
+</body>
+</html>

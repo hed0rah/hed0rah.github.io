@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Disk / Block / FS — Field Reference</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:          #B8BCC4;
+    --panel:       #E8E9EC;
+    --panel-dark:  #D4D6DA;
+    --panel-shade: #C8CAD0;
+    --border-hi:   #F2F3F5;
+    --border-lo:   #9EA2AA;
+    --border-mid:  #BEC1C8;
+    --ink:         #1E2025;
+    --ink-mid:     #484C56;
+    --ink-muted:   #84888F;
+    --ink-faint:   #A8ACB4;
+    --linux:       #3A5A8C;
+    --linux-dim:   #6A8AB8;
+    --win:         #5A3A8C;
+    --win-dim:     #8A6AB8;
+    --rule:        #C4C7CE;
+    --overlap-w:   270px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: linear-gradient(180deg, #C8CBD2 0%, #AAADB4 100%);
+    background-attachment: fixed;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 16px 48px;
+  }
+
+  .toolbar {
+    width: 100%;
+    max-width: 1100px;
+    background: linear-gradient(180deg, #D8DBDF 0%, #C4C7CC 100%);
+    border: 1px solid var(--border-lo);
+    border-bottom: 1px solid #9096A0;
+    border-radius: 4px 4px 0 0;
+    padding: 7px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: inset 0 1px 0 var(--border-hi);
+  }
+  .toolbar-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-mid);
+    letter-spacing: 0.01em;
+  }
+  .toolbar-sep {
+    width: 1px;
+    height: 14px;
+    background: var(--border-lo);
+  }
+  .toolbar-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+  }
+  .toolbar-spacer { flex: 1; }
+  .toolbar-hint {
+    font-size: 10px;
+    color: var(--ink-muted);
+  }
+  .toolbar-hint kbd {
+    display: inline-block;
+    background: var(--panel-shade);
+    border: 1px solid var(--border-lo);
+    border-bottom-color: #8A8E96;
+    border-radius: 3px;
+    padding: 0px 5px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--ink-mid);
+    box-shadow: inset 0 1px 0 var(--border-hi);
+  }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  .panel {
+    position: absolute;
+    top: 0;
+    width: calc(100% - var(--overlap-w) + 90px);
+    background: linear-gradient(180deg, #ECEDEE 0%, #E2E4E7 100%);
+    border: 1px solid var(--border-lo);
+    border-top: none;
+    padding: 20px 22px 36px;
+    transition:
+      left 0.32s cubic-bezier(0.4,0,0.2,1),
+      box-shadow 0.32s ease;
+    overflow: hidden;
+  }
+
+  .panel.fore {
+    left: 0;
+    z-index: 10;
+    box-shadow:
+      4px 0 16px rgba(0,0,0,0.18),
+      1px 0 3px rgba(0,0,0,0.10),
+      inset 0 1px 0 var(--border-hi);
+    cursor: default;
+  }
+
+  .panel.back {
+    left: calc(100% - var(--overlap-w));
+    z-index: 1;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 var(--border-hi);
+  }
+  .panel.back::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to right,
+      rgba(180,183,190,0.0)  0%,
+      rgba(180,183,190,0.45) 25%,
+      rgba(180,183,190,0.72) 60%,
+      rgba(180,183,190,0.88) 100%
+    );
+    z-index: 2;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .panel.back .panel-body { opacity: 0.48; transition: opacity 0.25s; }
+  .panel.back:hover::before { opacity: 0.75; }
+  .panel.back:hover .panel-body { opacity: 0.58; }
+
+  .flip-tab {
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    z-index: 3;
+    writing-mode: vertical-rl;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .panel.back:hover .flip-tab { opacity: 1; }
+
+  .stage-sizer {
+    position: relative;
+    visibility: hidden;
+    pointer-events: none;
+    width: calc(100% - var(--overlap-w) + 90px);
+    padding: 20px 22px 36px;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .panel-os {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .linux-panel .panel-os { color: var(--linux); }
+  .win-panel   .panel-os { color: var(--win); }
+
+  .panel-os-accent {
+    width: 3px;
+    height: 16px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .linux-panel .panel-os-accent { background: var(--linux); }
+  .win-panel   .panel-os-accent { background: var(--win); }
+
+  .panel-tools {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* section grouping label */
+  .section-heading {
+    grid-column: span 3;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: 10px 0 4px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 2px;
+  }
+  .section-heading:first-child {
+    padding-top: 0;
+  }
+  .win-grid .section-heading { grid-column: span 2; }
+
+  .grid {
+    display: grid;
+    gap: 10px;
+  }
+  .linux-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .win-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .card {
+    background: linear-gradient(180deg, #F4F5F6 0%, #ECEDEF 100%);
+    border: 1px solid var(--border-mid);
+    border-top-color: #D0D3D8;
+    border-bottom-color: #B8BBC2;
+    border-radius: 3px;
+    padding: 10px 12px 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+  }
+  .card.span2 { grid-column: span 2; }
+  .card.span3 { grid-column: span 3; }
+
+  .card-title {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    margin-bottom: 9px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .linux-panel .card-title { color: var(--linux); }
+  .win-panel   .card-title { color: var(--win); }
+
+  .entry { margin-bottom: 7px; }
+  .entry:last-child { margin-bottom: 0; }
+
+  .cmd {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.45;
+    word-break: break-all;
+  }
+  .cmd .flag { font-weight: 400; font-style: italic; }
+  .linux-panel .cmd .flag { color: var(--linux-dim); }
+  .win-panel   .cmd .flag  { color: var(--win-dim); }
+  .cmd .path { color: var(--ink-muted); font-weight: 400; }
+  .cmd .arg  { color: var(--ink-mid);   font-weight: 400; }
+
+  .desc {
+    display: block;
+    font-size: 10.5px;
+    color: var(--ink-mid);
+    margin-top: 1px;
+    line-height: 1.4;
+  }
+
+  .note {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--ink-muted);
+    border-left: 2px solid var(--rule);
+    padding-left: 7px;
+    margin-top: 7px;
+    line-height: 1.55;
+  }
+
+  .file-ref {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    color: var(--ink-mid);
+    margin-top: 3px;
+    padding: 2px 6px;
+    background: rgba(0,0,0,0.03);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+  }
+
+  /* ── BONUS SECTION ── */
+  .bonus-divider {
+    grid-column: span 3;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+    margin-bottom: 2px;
+  }
+  .bonus-divider-line { flex: 1; height: 1px; background: var(--rule); }
+  .bonus-divider-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    white-space: nowrap;
+    padding: 0 2px;
+  }
+  .bonus-note {
+    grid-column: span 3;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--ink-faint);
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+  .card.bonus {
+    background: linear-gradient(180deg, #F0F1F3 0%, #E8EAED 100%);
+    border-color: var(--rule);
+    border-top-color: var(--rule);
+    border-bottom-color: #C4C7CE;
+  }
+  .linux-panel .card.bonus .card-title { color: var(--linux-dim); }
+
+  .kb-hint {
+    width: 100%;
+    max-width: 1100px;
+    text-align: right;
+    font-size: 10px;
+    color: #888C94;
+    margin-top: 7px;
+    padding-right: 2px;
+  }
+  .kb-hint kbd {
+    display: inline-block;
+    background: #C8CBD2;
+    border: 1px solid #9EA2AA;
+    border-bottom-color: #808490;
+    border-radius: 3px;
+    padding: 0 5px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--ink-mid);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="toolbar-title">Disk / Block / Filesystem Reference</span>
+  <div class="toolbar-sep"></div>
+  <span class="toolbar-sub">MBR · GPT · partitions · LVM · dm-crypt · imaging · fsck · SMART</span>
+  <div class="toolbar-spacer"></div>
+  <span class="toolbar-hint">Click the panel behind to flip &nbsp;<kbd>Tab</kbd></span>
+</div>
+
+<div class="stage" id="stage">
+
+  <!-- ═══════════════════════════════════════════════════ LINUX PANEL -->
+  <div class="panel linux-panel fore" id="panel-linux" onclick="handleClick('linux')">
+    <div class="flip-tab">flip</div>
+    <div class="panel-body">
+      <div class="panel-header">
+        <div class="panel-os-accent"></div>
+        <span class="panel-os">Linux</span>
+        <span class="panel-tools">util-linux · e2fsprogs · btrfs-progs · xfsprogs · lvm2 · cryptsetup · smartmontools · ddrescue</span>
+      </div>
+
+      <div class="grid linux-grid">
+
+        <!-- ── KEY PATHS ── -->
+        <div class="section-heading">Key Files &amp; Paths</div>
+
+        <div class="card span3">
+          <div class="card-title">Pseudo-fs, Config &amp; Boot</div>
+          <div class="grid" style="grid-template-columns: repeat(3,1fr); gap: 8px; margin-top:4px;">
+            <div>
+              <div class="entry"><span class="cmd"><span class="path">/proc/partitions</span></span><span class="desc">kernel partition table</span></div>
+              <div class="entry"><span class="cmd"><span class="path">/proc/filesystems</span></span><span class="desc">registered FS types (nodev = virtual)</span></div>
+              <div class="entry"><span class="cmd"><span class="path">/proc/mounts</span></span><span class="desc">active mounts, kernel-authoritative</span></div>
+              <div class="entry"><span class="cmd"><span class="path">/proc/mdstat</span></span><span class="desc">mdraid array status + rebuild progress</span></div>
+              <div class="entry"><span class="cmd"><span class="path">/proc/swaps</span></span><span class="desc">active swap areas</span></div>
+            </div>
+            <div>
+              <div class="entry"><span class="cmd"><span class="path">/sys/block/sdX/queue/</span></span><span class="desc">scheduler, read-ahead, physical/logical sector size</span></div>
+              <div class="entry"><span class="cmd"><span class="path">/sys/block/sdX/sdX1/start</span></span><span class="desc">partition start in 512B sectors</span></div>
+              <div class="entry"><span class="cmd"><span class="path">/dev/disk/by-uuid/</span></span><span class="desc">symlinks by filesystem UUID</span></div>
+              <div class="entry"><span class="cmd"><span class="path">/dev/disk/by-partuuid/</span></span><span class="desc">symlinks by GPT partition UUID</span></div>
+              <div class="entry"><span class="cmd"><span class="path">/dev/mapper/</span></span><span class="desc">device mapper nodes (LVM LVs, dm-crypt)</span></div>
+            </div>
+            <div>
+              <div class="entry"><span class="cmd"><span class="path">/etc/fstab</span></span><span class="desc">static mount config</span></div>
+              <div class="entry"><span class="cmd"><span class="path">/etc/crypttab</span></span><span class="desc">LUKS/dm-crypt unlock config</span></div>
+              <div class="entry"><span class="cmd"><span class="path">/etc/lvm/backup/</span></span><span class="desc">automatic VG config backups</span></div>
+              <div class="entry"><span class="cmd"><span class="path">/etc/mdadm/mdadm.conf</span></span><span class="desc">mdraid array definitions</span></div>
+              <div class="entry"><span class="cmd"><span class="path">/boot/grub/grub.cfg</span></span><span class="desc">generated bootloader config (edit /etc/default/grub)</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── BLOCK DEVICE INSPECTION ── -->
+        <div class="section-heading">Block Device Inspection</div>
+
+        <div class="card">
+          <div class="card-title">lsblk / blkid</div>
+          <div class="entry">
+            <span class="cmd">lsblk <span class="flag">-f</span></span>
+            <span class="desc">tree view: name, fstype, label, UUID, mountpoint</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">lsblk <span class="flag">-o</span> NAME,SIZE,TYPE,FSTYPE,UUID,MOUNTPOINT,TRAN</span>
+            <span class="desc">custom columns; TRAN shows usb/sata/nvme</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">lsblk <span class="flag">-t</span></span>
+            <span class="desc">topology: queue depth, alignment, sector sizes</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">blkid</span>
+            <span class="desc">probe all block devices — UUID, fstype, label, PARTUUID</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">blkid <span class="flag">-p -u</span> filesystem /dev/sdX</span>
+            <span class="desc">low-level probe, bypass udev cache</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">file <span class="flag">-s</span> /dev/sdX</span>
+            <span class="desc">read filesystem magic bytes directly from device</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">findmnt</span>
+            <span class="desc">tree of all mounts with source, target, fstype, options</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">findmnt <span class="flag">-D</span></span>
+            <span class="desc">df-style: size, used, avail per mount</span>
+          </div>
+          <div class="file-ref">/proc/partitions — kernel partition table</div>
+          <div class="file-ref">/proc/mounts — active mounts, kernel-authoritative</div>
+          <div class="file-ref">/dev/disk/by-uuid/ · by-label/ · by-id/ · by-path/</div>
+          <div class="file-ref">/sys/block/sdX/queue/ — scheduler, read-ahead, rotational</div>
+          <div class="file-ref">/sys/block/sdX/sdX1/start · size — partition offsets in 512B sectors</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Partition Tables</div>
+          <div class="entry">
+            <span class="cmd">fdisk <span class="flag">-l</span> /dev/sdX</span>
+            <span class="desc">list partition table (MBR + GPT aware)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">gdisk <span class="flag">-l</span> /dev/sdX</span>
+            <span class="desc">GPT-specific; GUIDs, partition type GUIDs, attributes</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">parted /dev/sdX print</span>
+            <span class="desc">human-readable with alignment, flags, fs type</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">sfdisk <span class="flag">-d</span> /dev/sdX > ptable.dump</span>
+            <span class="desc">dump partition table to scriptable format</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">sfdisk /dev/sdX &lt; ptable.dump</span>
+            <span class="desc">restore partition table from dump</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">sgdisk <span class="flag">--backup</span>=ptable.bin /dev/sdX</span>
+            <span class="desc">backup full GPT header + partition entries to file</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">sgdisk <span class="flag">--load-backup</span>=ptable.bin /dev/sdX</span>
+            <span class="desc">restore GPT from backup file</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">wipefs <span class="flag">-a</span> /dev/sdX1</span>
+            <span class="desc">erase filesystem/RAID signatures, leave partition table</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">wipefs <span class="flag">-n</span> /dev/sdX</span>
+            <span class="desc">dry-run: show what wipefs would remove</span>
+          </div>
+          <div class="note">MBR @ LBA0: 446B bootstrap + 64B partition table + 0xAA55. GPT: protective MBR @ LBA0, primary header @ LBA1, entries @ LBA2–33, backup header @ last LBA.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Mount / Umount</div>
+          <div class="entry">
+            <span class="cmd">mount <span class="flag">-o</span> ro,noatime /dev/sdX1 /mnt/r</span>
+            <span class="desc">read-only, suppress access time writes</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">mount <span class="flag">-o</span> degraded,ro /dev/sdX /mnt/r</span>
+            <span class="desc">btrfs: attempt degraded mount when devices missing</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">mount <span class="flag">-o</span> loop disk.img /mnt/r</span>
+            <span class="desc">mount image file via loopback</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">mount <span class="flag">-o</span> offset=<span class="arg">N</span>,sizelimit=<span class="arg">M</span> disk.img /mnt/r</span>
+            <span class="desc">mount partition inside raw image by byte offset</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">losetup <span class="flag">-P</span> /dev/loop0 disk.img</span>
+            <span class="desc">expose all image partitions as /dev/loop0p1 etc</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">losetup <span class="flag">-l</span></span>
+            <span class="desc">list active loop devices</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">mount <span class="flag">--bind</span> /src /dst</span>
+            <span class="desc">bind-mount a directory subtree to another path</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">umount <span class="flag">-l</span> /mnt/r</span>
+            <span class="desc">lazy umount — detach when last fd closes</span>
+          </div>
+          <div class="file-ref">/etc/fstab — persistent mounts (prefer UUID over /dev/sdX)</div>
+          <div class="file-ref">/etc/crypttab — LUKS/dm-crypt device mapping</div>
+        </div>
+
+        <!-- ── IMAGING & RECOVERY ── -->
+        <div class="section-heading">Imaging &amp; Recovery</div>
+
+        <div class="card">
+          <div class="card-title">Imaging &amp; Cloning</div>
+          <div class="entry">
+            <span class="cmd">dd <span class="flag">if</span>=/dev/sdX <span class="flag">of</span>=disk.img <span class="flag">bs</span>=4M <span class="flag">status</span>=progress <span class="flag">conv</span>=noerror,sync</span>
+            <span class="desc">raw image; noerror continues past errors, sync zero-pads bad blocks</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">ddrescue <span class="flag">-d -r3</span> /dev/sdX disk.img disk.map</span>
+            <span class="desc">recovery imaging; reuse same mapfile to resume automatically</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">ddrescue <span class="flag">-d -r3 --try-again</span> /dev/sdX disk.img disk.map</span>
+            <span class="desc">retry previously skipped bad sectors</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">partclone.ext4 <span class="flag">-c -s</span> /dev/sdX1 <span class="flag">-o</span> part.img</span>
+            <span class="desc">fs-aware clone, skips unused blocks — smaller image</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">e2image <span class="flag">-ra</span> /dev/sdX1 fs-meta.img</span>
+            <span class="desc">ext metadata-only image; tiny, sufficient before e2fsck</span>
+          </div>
+          <div class="note">Mapfile preserves recovery state — losing it wastes all prior work. Always ddrescue before fsck/scrub on suspect drives.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">fsck / Repair</div>
+          <div class="entry">
+            <span class="cmd">fsck <span class="flag">-n</span> /dev/sdX1</span>
+            <span class="desc">dry-run check, no writes</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">e2fsck <span class="flag">-n</span> /dev/sdX1</span>
+            <span class="desc">ext2/3/4 dry-run; shows what would be fixed</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">e2fsck <span class="flag">-y -f</span> /dev/sdX1</span>
+            <span class="desc">force check + auto-yes all prompts — unmounted only</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">e2fsck <span class="flag">-b</span> 32768 /dev/sdX1</span>
+            <span class="desc">use backup superblock (32768, 98304, 163840…)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">btrfs check <span class="flag">--readonly</span> /dev/sdX</span>
+            <span class="desc">btrfs consistency check, no writes</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">btrfs scrub start <span class="flag">-Bd</span> /mnt/r</span>
+            <span class="desc">online scrub; checksums every block, surfaces unrecoverable extents</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">btrfs restore <span class="flag">-i -S</span> /dev/sdX /mnt/out</span>
+            <span class="desc">low-level file extraction, bypasses normal mount path</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">xfs_repair <span class="flag">-n</span> /dev/sdX1</span>
+            <span class="desc">XFS dry-run check, no modifications</span>
+          </div>
+          <div class="note">Avoid repair ops on mounted filesystems unless explicitly supported (btrfs scrub and online xfs_repair differ from ext fsck). Never run btrfs check --repair without a ddrescue image first.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">debugfs (ext2/3/4)</div>
+          <div class="entry">
+            <span class="cmd">debugfs /dev/sdX1</span>
+            <span class="desc">open ext filesystem read-only (interactive shell)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">debugfs <span class="flag">-w</span> /dev/sdX1</span>
+            <span class="desc">open read-write — use only when necessary</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">stat &lt;<span class="arg">inode</span>&gt;</span>
+            <span class="desc">inode fields: mode, uid, size, block map, timestamps</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">ls <span class="flag">-d</span> &lt;<span class="arg">2</span>&gt;</span>
+            <span class="desc">list directory by inode number (root = inode 2)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dump &lt;<span class="arg">inode</span>&gt; /tmp/recovered</span>
+            <span class="desc">extract file by inode to local path</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">undel &lt;<span class="arg">inode</span>&gt; /tmp/recovered</span>
+            <span class="desc">undelete by inode — works if blocks not yet reused</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">lsdel</span>
+            <span class="desc">list recently deleted inodes with timestamps</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">imap &lt;<span class="arg">inode</span>&gt;</span>
+            <span class="desc">show which block group and bitmap bit owns inode</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">block_dump &lt;<span class="arg">block#</span>&gt;</span>
+            <span class="desc">hex dump raw block contents</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">show_super_stats</span>
+            <span class="desc">full superblock dump</span>
+          </div>
+        </div>
+
+        <!-- ── EXT METADATA ── -->
+        <div class="section-heading">ext Metadata &amp; Superblock</div>
+
+        <div class="card">
+          <div class="card-title">tune2fs</div>
+          <div class="entry">
+            <span class="cmd">tune2fs <span class="flag">-l</span> /dev/sdX1</span>
+            <span class="desc">read superblock — UUID, label, mount count, last check, features</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">tune2fs <span class="flag">-L</span> NEWLABEL /dev/sdX1</span>
+            <span class="desc">relabel without reformatting</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">tune2fs <span class="flag">-U</span> random /dev/sdX1</span>
+            <span class="desc">assign new random UUID in-place</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">tune2fs <span class="flag">-C</span> 1 /dev/sdX1</span>
+            <span class="desc">set mount count to 1 — forces fsck on next mount</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">tune2fs <span class="flag">-m</span> 1 /dev/sdX1</span>
+            <span class="desc">set reserved block percentage (default 5%)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">tune2fs <span class="flag">-e</span> remount-ro /dev/sdX1</span>
+            <span class="desc">on error: remount read-only rather than panic or continue</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">tune2fs <span class="flag">-O</span> has_journal /dev/sdX1</span>
+            <span class="desc">enable journaling on ext2 → ext3</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">dumpe2fs</div>
+          <div class="entry">
+            <span class="cmd">dumpe2fs /dev/sdX1</span>
+            <span class="desc">full superblock + all block group descriptors</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dumpe2fs <span class="flag">-h</span> /dev/sdX1</span>
+            <span class="desc">superblock only (no block group detail)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dumpe2fs /dev/sdX1 | grep <span class="arg">"Backup superblock"</span></span>
+            <span class="desc">list backup superblock locations for e2fsck -b</span>
+          </div>
+          <div class="note">Backup superblocks on ext4 with sparse_super2 are only at block groups 1, 3, 5, and powers of 3 and 5. Check with dumpe2fs first before guessing.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Filesystem Creation</div>
+          <div class="entry">
+            <span class="cmd">mkfs.ext4 <span class="flag">-L</span> LABEL <span class="flag">-U</span> $(uuidgen) /dev/sdX1</span>
+            <span class="desc">ext4 with explicit label + UUID</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">mkfs.btrfs <span class="flag">-L</span> LABEL <span class="flag">-d</span> raid1 <span class="flag">-m</span> raid1 /dev/sdX /dev/sdY</span>
+            <span class="desc">btrfs RAID-1 across two devices</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">mkfs.xfs <span class="flag">-L</span> LABEL /dev/sdX1</span>
+            <span class="desc">XFS — scales well for large filesystems, parallel I/O</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">mkfs.exfat <span class="flag">-L</span> LABEL /dev/sdX1</span>
+            <span class="desc">exFAT — userspace tools from exfatprogs; kernel support built-in on modern Linux</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">mkfs.vfat <span class="flag">-F</span> 32 <span class="flag">-n</span> LABEL /dev/sdX1</span>
+            <span class="desc">FAT32</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">mkswap <span class="flag">-L</span> SWAP /dev/sdX2</span>
+            <span class="desc">swap partition with label</span>
+          </div>
+        </div>
+
+        <!-- ── LVM ── -->
+        <div class="section-heading">LVM</div>
+
+        <div class="card">
+          <div class="card-title">Physical &amp; Volume Groups</div>
+          <div class="entry">
+            <span class="cmd">pvs / vgs / lvs</span>
+            <span class="desc">summary tables: physical volumes, volume groups, logical volumes</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">pvdisplay <span class="flag">-m</span> /dev/sdX</span>
+            <span class="desc">PV detail with PE-to-LV segment mapping</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">vgdisplay <span class="flag">-v</span></span>
+            <span class="desc">VG detail with all LV and PV members</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">pvscan <span class="flag">--cache</span></span>
+            <span class="desc">rescan devices and update device mapper cache</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">vgchange <span class="flag">-ay</span></span>
+            <span class="desc">activate all volume groups (make LVs accessible)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">vgextend <span class="arg">vgname</span> /dev/sdY</span>
+            <span class="desc">add new PV to existing VG</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">pvmove /dev/sdX</span>
+            <span class="desc">migrate all extents off a PV (before removal/replacement)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">vgreduce <span class="arg">vgname</span> /dev/sdX</span>
+            <span class="desc">remove PV from VG after pvmove</span>
+          </div>
+          <div class="file-ref">/etc/lvm/backup/ — automatic per-change VG config backups</div>
+          <div class="file-ref">/etc/lvm/archive/ — older snapshots of VG config</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Logical Volumes</div>
+          <div class="entry">
+            <span class="cmd">lvcreate <span class="flag">-L</span> 50G <span class="flag">-n</span> lvname <span class="arg">vgname</span></span>
+            <span class="desc">create LV of fixed size</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">lvcreate <span class="flag">-l</span> 100%FREE <span class="flag">-n</span> lvname <span class="arg">vgname</span></span>
+            <span class="desc">create LV using all free VG space</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">lvextend <span class="flag">-L</span> +20G <span class="flag">-r</span> /dev/<span class="arg">vg</span>/<span class="arg">lv</span></span>
+            <span class="desc">grow LV by 20G and resize filesystem in one step (-r)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">lvreduce <span class="flag">-L</span> -10G /dev/<span class="arg">vg</span>/<span class="arg">lv</span></span>
+            <span class="desc">shrink LV — resize filesystem first or data loss guaranteed</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">lvcreate <span class="flag">-s</span> <span class="flag">-L</span> 5G <span class="flag">-n</span> snap /dev/<span class="arg">vg</span>/<span class="arg">lv</span></span>
+            <span class="desc">create snapshot LV with 5G CoW space</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">lvdisplay <span class="flag">-m</span></span>
+            <span class="desc">show LV segment-to-physical extent mapping</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">LVM Recovery</div>
+          <div class="entry">
+            <span class="cmd">vgcfgrestore <span class="flag">-f</span> /etc/lvm/backup/<span class="arg">vgname</span> <span class="arg">vgname</span></span>
+            <span class="desc">restore VG metadata from automatic backup</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">vgcfgrestore <span class="flag">-l</span> <span class="arg">vgname</span></span>
+            <span class="desc">list available backup/archive configs for a VG</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">pvcreate <span class="flag">--restorefile</span> /etc/lvm/backup/<span class="arg">vg</span> <span class="flag">--uuid</span> <span class="arg">UUID</span> /dev/sdX</span>
+            <span class="desc">recreate PV header with original UUID on replacement disk</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">vgimportclone <span class="flag">-n</span> newvg /dev/sdX /dev/sdY</span>
+            <span class="desc">import cloned VG with new name + UUIDs to avoid collision</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dmsetup ls</span>
+            <span class="desc">list all device mapper targets (LVs, dm-crypt, etc)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dmsetup info /dev/dm-0</span>
+            <span class="desc">state, open count, event number for a dm device</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dmsetup table /dev/dm-0</span>
+            <span class="desc">mapping table: extents, target type, backing devices</span>
+          </div>
+          <div class="note">If a VG won't activate after disk replacement: pvcreate --restorefile to recreate PV header, then vgcfgrestore, then vgchange -ay.</div>
+        </div>
+
+        <!-- ── DEVICE MAPPER / CRYPT ── -->
+        <div class="section-heading">Device Mapper &amp; Encryption</div>
+
+        <div class="card">
+          <div class="card-title">cryptsetup / LUKS</div>
+          <div class="entry">
+            <span class="cmd">cryptsetup luksOpen /dev/sdX1 <span class="arg">name</span></span>
+            <span class="desc">unlock LUKS volume, maps to /dev/mapper/name</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">cryptsetup luksClose <span class="arg">name</span></span>
+            <span class="desc">remove dm-crypt mapping</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">cryptsetup luksDump /dev/sdX1</span>
+            <span class="desc">LUKS header: cipher, UUID, key slots, payload offset</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">cryptsetup luksHeaderBackup /dev/sdX1 <span class="flag">--header-backup-file</span> hdr.img</span>
+            <span class="desc">backup LUKS header — essential; wiped header = permanent data loss</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">cryptsetup luksHeaderRestore /dev/sdX1 <span class="flag">--header-backup-file</span> hdr.img</span>
+            <span class="desc">restore LUKS header from backup</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">cryptsetup luksAddKey /dev/sdX1</span>
+            <span class="desc">add new passphrase/keyfile to a free key slot</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">cryptsetup isLuks <span class="flag">-v</span> /dev/sdX1</span>
+            <span class="desc">test if device is a LUKS volume</span>
+          </div>
+          <div class="note">LUKS2 default since cryptsetup 2.1. Backup the header immediately after luksFormat — the header contains the master key wrapped by your passphrase; losing it is unrecoverable.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">dmsetup</div>
+          <div class="entry">
+            <span class="cmd">dmsetup ls <span class="flag">--tree</span></span>
+            <span class="desc">dependency tree of all dm devices</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dmsetup info <span class="arg">name</span></span>
+            <span class="desc">state, suspend status, open count, event number</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dmsetup table <span class="arg">name</span></span>
+            <span class="desc">target type and mapping (linear/striped/crypt/snapshot)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dmsetup status <span class="arg">name</span></span>
+            <span class="desc">runtime status of each target segment</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dmsetup deps <span class="arg">name</span></span>
+            <span class="desc">underlying block devices this dm device depends on</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dmsetup remove <span class="arg">name</span></span>
+            <span class="desc">tear down a dm mapping (must not be in use)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dmsetup suspend / resume <span class="arg">name</span></span>
+            <span class="desc">pause/unpause I/O — used during live table swaps</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">mdraid</div>
+          <div class="entry">
+            <span class="cmd">mdadm <span class="flag">--detail</span> /dev/md0</span>
+            <span class="desc">array state, members, rebuild progress, UUID</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">mdadm <span class="flag">--examine</span> /dev/sdX</span>
+            <span class="desc">read superblock from member disk — UUID, level, role</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">mdadm <span class="flag">--assemble --scan</span></span>
+            <span class="desc">auto-assemble arrays from member superblocks</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">mdadm <span class="flag">--assemble</span> /dev/md0 /dev/sdX /dev/sdY</span>
+            <span class="desc">manually assemble named array from specific members</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">mdadm <span class="flag">--assemble --force</span> /dev/md0 /dev/sdX</span>
+            <span class="desc">force assemble degraded array on single surviving member</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">mdadm <span class="flag">--manage</span> /dev/md0 <span class="flag">--add</span> /dev/sdY</span>
+            <span class="desc">hot-add replacement disk, triggers rebuild</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">cat /proc/mdstat</span>
+            <span class="desc">all arrays: state, members, rebuild progress + speed</span>
+          </div>
+          <div class="file-ref">/etc/mdadm/mdadm.conf — array definitions for boot-time assembly</div>
+        </div>
+
+        <!-- ── SMART & HEALTH ── -->
+        <div class="section-heading">SMART &amp; Drive Health</div>
+
+        <div class="card">
+          <div class="card-title">smartctl</div>
+          <div class="entry">
+            <span class="cmd">smartctl <span class="flag">-i</span> /dev/sdX</span>
+            <span class="desc">device identity, interface, SMART capability</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">smartctl <span class="flag">-H</span> /dev/sdX</span>
+            <span class="desc">overall PASSED/FAILED health assessment</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">smartctl <span class="flag">-a</span> /dev/sdX</span>
+            <span class="desc">all attributes — watch 5, 187, 188, 197, 198</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">smartctl <span class="flag">-t</span> short /dev/sdX</span>
+            <span class="desc">initiate short self-test (~2 min, runs on device)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">smartctl <span class="flag">-t</span> long /dev/sdX</span>
+            <span class="desc">extended self-test — reads every sector</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">smartctl <span class="flag">-l</span> selftest /dev/sdX</span>
+            <span class="desc">self-test log — history of past test results</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">smartctl <span class="flag">-l</span> error /dev/sdX</span>
+            <span class="desc">error log — last 5 ATA errors with LBA</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">smartctl <span class="flag">-d</span> sat <span class="flag">-a</span> /dev/sdX</span>
+            <span class="desc">force SAT protocol (USB enclosures that hide SMART)</span>
+          </div>
+          <div class="note">Key attributes: 5=Reallocated sectors, 187=Uncorrectable errors, 197=Current pending sectors, 198=Offline uncorrectable. Nonzero 197/198 means sectors failing to read.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">NVMe &amp; Surface</div>
+          <div class="entry">
+            <span class="cmd">nvme list</span>
+            <span class="desc">all NVMe namespaces — model, firmware, size</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">nvme smart-log /dev/nvme0</span>
+            <span class="desc">media errors, wear level %, power cycles, temp</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">nvme error-log /dev/nvme0</span>
+            <span class="desc">per-command error log entries</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">nvme id-ctrl /dev/nvme0</span>
+            <span class="desc">controller identity — OACS, LBA formats, features</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">badblocks <span class="flag">-v -n</span> /dev/sdX</span>
+            <span class="desc">non-destructive read-write test (writes temp patterns; avoid on suspect failing drives)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">fstrim <span class="flag">-v</span> /mnt/r</span>
+            <span class="desc">send TRIM/discard for all free blocks on mounted SSD</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">fstrim <span class="flag">-Av</span></span>
+            <span class="desc">trim all mounted filesystems that support it</span>
+          </div>
+        </div>
+
+        <!-- ── BTRFS ── -->
+        <div class="section-heading">Btrfs</div>
+
+        <div class="card span3">
+          <div class="card-title">Btrfs</div>
+          <div class="grid" style="grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 4px;">
+            <div>
+              <div class="entry">
+                <span class="cmd">btrfs filesystem show</span>
+                <span class="desc">all btrfs filesystems and member devices</span>
+              </div>
+              <div class="entry">
+                <span class="cmd">btrfs filesystem usage /mnt/r</span>
+                <span class="desc">per-device allocation and free space breakdown</span>
+              </div>
+              <div class="entry">
+                <span class="cmd">btrfs device stats /mnt/r</span>
+                <span class="desc">per-device error counters (read/write/corrupt/flush/generation)</span>
+              </div>
+              <div class="entry">
+                <span class="cmd">btrfs device add /dev/sdY /mnt/r</span>
+                <span class="desc">add device to existing filesystem</span>
+              </div>
+              <div class="entry">
+                <span class="cmd">btrfs device remove /dev/sdX /mnt/r</span>
+                <span class="desc">remove device (data redistributed first)</span>
+              </div>
+            </div>
+            <div>
+              <div class="entry">
+                <span class="cmd">btrfs subvolume list /mnt/r</span>
+                <span class="desc">list subvolumes and snapshots with IDs and paths</span>
+              </div>
+              <div class="entry">
+                <span class="cmd">btrfs subvolume snapshot <span class="flag">-r</span> /mnt/r/@ /mnt/r/snap</span>
+                <span class="desc">create read-only snapshot</span>
+              </div>
+              <div class="entry">
+                <span class="cmd">btrfs subvolume delete /mnt/r/snap</span>
+                <span class="desc">delete snapshot or subvolume</span>
+              </div>
+              <div class="entry">
+                <span class="cmd">btrfs send /mnt/r/snap | btrfs receive /mnt/dst</span>
+                <span class="desc">stream snapshot to another filesystem (incremental backup)</span>
+              </div>
+              <div class="entry">
+                <span class="cmd">btrfs property set /mnt/r/snap ro false</span>
+                <span class="desc">make read-only snapshot writable</span>
+              </div>
+            </div>
+            <div>
+              <div class="entry">
+                <span class="cmd">btrfs balance start <span class="flag">-mconvert=single</span> /mnt/r</span>
+                <span class="desc">rebalance metadata after device removal</span>
+              </div>
+              <div class="entry">
+                <span class="cmd">btrfs balance start <span class="flag">-dusage=50</span> /mnt/r</span>
+                <span class="desc">balance only chunks &lt;50% full (reduces fragmentation)</span>
+              </div>
+              <div class="entry">
+                <span class="cmd">btrfs scrub start <span class="flag">-Bd</span> /mnt/r</span>
+                <span class="desc">verify checksums on every block; surface unrecoverable extents</span>
+              </div>
+              <div class="entry">
+                <span class="cmd">btrfs check <span class="flag">--readonly</span> /dev/sdX</span>
+                <span class="desc">offline consistency check — unmounted only</span>
+              </div>
+              <div class="entry">
+                <span class="cmd">btrfs restore <span class="flag">-i -S</span> /dev/sdX /mnt/out</span>
+                <span class="desc">extract files bypassing normal mount — last resort recovery</span>
+              </div>
+            </div>
+          </div>
+          <div class="note" style="margin-top:8px;">RAID-1 degraded recovery: mount -o degraded,ro, copy data off, add replacement device, run balance to rebuild. Never run btrfs check --repair without a full image first — it has a history of making corruption worse.</div>
+        </div>
+
+        <!-- ── BONUS ── -->
+        <div class="bonus-divider">
+          <div class="bonus-divider-line"></div>
+          <span class="bonus-divider-label">extended reference</span>
+          <div class="bonus-divider-line"></div>
+        </div>
+        <div class="bonus-note">Commands beyond the core rescue workflow — useful for deeper inspection, performance tuning, and forensic work.</div>
+
+        <div class="card bonus">
+          <div class="card-title">Raw Block I/O &amp; Hex</div>
+          <div class="entry">
+            <span class="cmd">hexdump <span class="flag">-C</span> <span class="flag">-n</span> 512 /dev/sdX</span>
+            <span class="desc">hex + ASCII dump of first sector (MBR)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">xxd /dev/sdX | head <span class="flag">-32</span></span>
+            <span class="desc">alternative hex view, pipe-friendly</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dd <span class="flag">if</span>=/dev/sdX <span class="flag">bs</span>=512 <span class="flag">count</span>=1 | xxd</span>
+            <span class="desc">pipe single sector into xxd</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">od <span class="flag">-A</span> x <span class="flag">-t</span> x1z /dev/sdX | head</span>
+            <span class="desc">octal dump in hex with printable chars</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">cmp <span class="flag">-l</span> /dev/sdX /dev/sdY | head</span>
+            <span class="desc">byte-by-byte comparison of two block devices</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dc3dd <span class="flag">if</span>=/dev/sdX <span class="flag">of</span>=disk.img <span class="flag">hash</span>=sha256 <span class="flag">log</span>=hash.log</span>
+            <span class="desc">forensic imaging with hash log (dc3dd / dcfldd)</span>
+          </div>
+        </div>
+
+        <div class="card bonus">
+          <div class="card-title">testdisk / photorec</div>
+          <div class="entry">
+            <span class="cmd">testdisk /dev/sdX</span>
+            <span class="desc">interactive partition table analysis and recovery</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">testdisk disk.img</span>
+            <span class="desc">run against image file — safer than live device</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">photorec /dev/sdX</span>
+            <span class="desc">file carving by signature — ignores filesystem structure</span>
+          </div>
+          <div class="note">testdisk: Analyse → Quick Search → Deep Search if Quick misses. Write partition table only after confirming structure looks correct. photorec recovers by type not filename — output is sequentially numbered files in recovered dirs.</div>
+        </div>
+
+        <div class="card bonus">
+          <div class="card-title">Performance &amp; I/O Stats</div>
+          <div class="entry">
+            <span class="cmd">iostat <span class="flag">-xz</span> 1</span>
+            <span class="desc">extended per-device I/O stats: util%, await, r/w throughput</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">iotop <span class="flag">-o</span></span>
+            <span class="desc">per-process I/O — only show active processes</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">hdparm <span class="flag">-tT</span> /dev/sdX</span>
+            <span class="desc">buffered and cached read throughput benchmark</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">hdparm <span class="flag">-I</span> /dev/sdX</span>
+            <span class="desc">ATA identity: model, firmware, features, AAM, APM</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">blockdev <span class="flag">--getbsz</span> /dev/sdX</span>
+            <span class="desc">get block size</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">blockdev <span class="flag">--getsize64</span> /dev/sdX</span>
+            <span class="desc">get device size in bytes</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">cat /sys/block/sdX/queue/rotational</span>
+            <span class="desc">0 = SSD/NVMe, 1 = spinning rust</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">cat /sys/block/sdX/queue/physical_block_size</span>
+            <span class="desc">physical sector size (4096 for AF drives)</span>
+          </div>
+        </div>
+
+        <div class="card bonus">
+          <div class="card-title">inotify &amp; Filesystem Events</div>
+          <div class="entry">
+            <span class="cmd">inotifywait <span class="flag">-rm</span> /path</span>
+            <span class="desc">recursive monitor: report all fs events on path</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">inotifywait <span class="flag">-e</span> modify,create,delete <span class="flag">-m</span> /path</span>
+            <span class="desc">filter to specific event types</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">fatrace</span>
+            <span class="desc">system-wide file access trace via fanotify (needs root)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">lsof +D /mnt/r</span>
+            <span class="desc">all open file descriptors under a mount point</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">fuser <span class="flag">-m</span> /mnt/r</span>
+            <span class="desc">PIDs with files open on the filesystem — useful before umount</span>
+          </div>
+        </div>
+
+        <div class="card bonus">
+          <div class="card-title">Encryption &amp; Secure Erase</div>
+          <div class="entry">
+            <span class="cmd">shred <span class="flag">-vz -n</span> 3 /dev/sdX</span>
+            <span class="desc">3-pass overwrite + final zero pass (slow; use on HDDs)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">nvme format <span class="flag">--ses=1</span> /dev/nvme0</span>
+            <span class="desc">NVMe cryptographic erase (instant, controller-side)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">hdparm <span class="flag">--security-erase</span> NULL /dev/sdX</span>
+            <span class="desc">ATA Secure Erase — drive-level, resets all user data</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">cryptsetup luksFormat <span class="flag">--type</span> luks2 /dev/sdX1</span>
+            <span class="desc">initialise LUKS2 container on partition</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">cryptsetup resize <span class="arg">name</span></span>
+            <span class="desc">resize dm-crypt device to fill underlying block device</span>
+          </div>
+          <div class="note">For SSDs, shred is ineffective due to wear-levelling. Use nvme format --ses or hdparm ATA Secure Erase instead. Back up the LUKS header before any erase operation on an encrypted volume.</div>
+        </div>
+
+        <div class="card bonus">
+          <div class="card-title">Misc Low-Level</div>
+          <div class="entry">
+            <span class="cmd">udevadm info <span class="flag">-a</span> /dev/sdX</span>
+            <span class="desc">full udev attribute chain for device and parents</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">udevadm monitor <span class="flag">--udev</span></span>
+            <span class="desc">live udev event stream — watch device plug/unplug</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">udevadm trigger</span>
+            <span class="desc">re-run udev rules on all devices (rescan)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">partprobe /dev/sdX</span>
+            <span class="desc">inform kernel of partition table change without reboot</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">blockdev <span class="flag">--rereadpt</span> /dev/sdX</span>
+            <span class="desc">kernel re-read partition table (alternative to partprobe)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">resize2fs /dev/sdX1</span>
+            <span class="desc">grow ext2/3/4 to fill partition (after lvextend or resize)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">xfs_growfs /mnt/r</span>
+            <span class="desc">grow XFS online — operates on mountpoint, not device</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dmesg | grep <span class="flag">-E</span> <span class="arg">"sd[a-z]|nvme|ata|EXT4|BTRFS|XFS"</span></span>
+            <span class="desc">kernel ring buffer filtered to storage subsystem messages</span>
+          </div>
+        </div>
+
+      </div><!-- /linux-grid -->
+    </div><!-- /panel-body -->
+  </div><!-- /linux panel -->
+
+
+  <!-- ═══════════════════════════════════════════════════ WINDOWS PANEL -->
+  <div class="panel win-panel back" id="panel-win" onclick="handleClick('windows')">
+    <div class="flip-tab">flip</div>
+    <div class="panel-body">
+      <div class="panel-header">
+        <div class="panel-os-accent"></div>
+        <span class="panel-os">Windows</span>
+        <span class="panel-tools">diskpart · PowerShell Storage · fsutil · chkdsk · bootrec · DISM</span>
+      </div>
+
+      <div class="grid win-grid">
+
+        <div class="section-heading" style="grid-column:span 2;">Key Paths &amp; Registry</div>
+
+        <div class="card span2">
+          <div class="card-title">NTFS Internals, BCD &amp; Registry</div>
+          <div class="grid" style="grid-template-columns: repeat(2,1fr); gap:6px; margin-top:2px;">
+            <div>
+              <div class="entry"><span class="cmd"><span class="path">C:\$MFT</span></span><span class="desc">NTFS master file table</span></div>
+              <div class="entry"><span class="cmd"><span class="path">C:\$MFTMirr</span></span><span class="desc">first 4 MFT entries mirrored (recovery fallback)</span></div>
+              <div class="entry"><span class="cmd"><span class="path">C:\$LogFile</span></span><span class="desc">NTFS transaction journal</span></div>
+              <div class="entry"><span class="cmd"><span class="path">C:\$Extend\$UsnJrnl</span></span><span class="desc">USN change journal</span></div>
+              <div class="entry"><span class="cmd"><span class="path">C:\$Boot</span></span><span class="desc">VBR + IPL code (first sectors of volume)</span></div>
+              <div class="entry"><span class="cmd"><span class="path">C:\Boot\BCD</span></span><span class="desc">BCD store (MBR/legacy systems)</span></div>
+              <div class="entry"><span class="cmd"><span class="path">S:\EFI\Microsoft\Boot\BCD</span></span><span class="desc">BCD store (UEFI — S: = EFI system partition)</span></div>
+            </div>
+            <div>
+              <div class="entry"><span class="cmd"><span class="path">HKLM\SYSTEM\MountedDevices</span></span><span class="desc">drive letter to device binary mapping</span></div>
+              <div class="entry"><span class="cmd"><span class="path">HKLM\SYSTEM\CurrentControlSet\Enum\SCSI\</span></span><span class="desc">storage device enumeration</span></div>
+              <div class="entry"><span class="cmd"><span class="path">HKLM\SYSTEM\CurrentControlSet\Services\disk</span></span><span class="desc">disk driver parameters</span></div>
+              <div class="entry"><span class="cmd"><span class="path">C:\Windows\System32\winevt\Logs\System.evtx</span></span><span class="desc">disk/fs events (sources: disk, ntfs, volmgr)</span></div>
+              <div class="entry"><span class="cmd"><span class="path">C:\Windows\System32\drivers\</span></span><span class="desc">storage stack drivers: disk.sys, ntfs.sys, storport.sys</span></div>
+              <div class="entry"><span class="cmd"><span class="path">\\.\PhysicalDriveN</span></span><span class="desc">raw disk device node (elevation required)</span></div>
+              <div class="entry"><span class="cmd"><span class="path">\\.\HarddiskN\PartitionM</span></span><span class="desc">raw partition access</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-heading" style="grid-column:span 2;">Disk &amp; Partition Inspection</div>
+
+        <div class="card">
+          <div class="card-title">Disk Inspection</div>
+          <div class="entry">
+            <span class="cmd">Get-Disk</span>
+            <span class="desc">all disks — number, size, partition style, health</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">Get-Disk | Where-Object <span class="flag">BusType -eq</span> USB</span>
+            <span class="desc">filter to USB drives only</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">Get-PhysicalDisk</span>
+            <span class="desc">physical disks with MediaType, Size, HealthStatus</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">Get-StorageReliabilityCounter <span class="flag">-PhysicalDisk</span> (...)</span>
+            <span class="desc">storage reliability metrics; SMART-derived where supported</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">wmic diskdrive get Model,Size,SerialNumber,Status</span>
+            <span class="desc">legacy WMI query — still useful in WinPE</span>
+          </div>
+          <div class="file-ref">\\.\PhysicalDrive0 — raw device path</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">diskpart</div>
+          <div class="entry">
+            <span class="cmd">list disk</span>
+            <span class="desc">all disks with size, free, GPT flag</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">select disk N</span>
+            <span class="desc">set focus to disk N</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">list partition &nbsp;/&nbsp; list volume</span>
+            <span class="desc">partitions on selected disk / all system volumes</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">detail disk &nbsp;/&nbsp; detail partition</span>
+            <span class="desc">full attributes on selected object</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">clean</span>
+            <span class="desc">wipe MBR/GPT + partition table on selected disk</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">clean all</span>
+            <span class="desc">overwrite every sector with zeros</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">convert gpt &nbsp;/&nbsp; convert mbr</span>
+            <span class="desc">convert partition style (disk must be empty; pair with clean)</span>
+          </div>
+          <div class="note">diskpart operates on selected objects — always list before destructive ops. No undo.</div>
+        </div>
+
+        <div class="section-heading" style="grid-column:span 2;">Partition &amp; Volume Management</div>
+
+        <div class="card">
+          <div class="card-title">PowerShell Storage</div>
+          <div class="entry">
+            <span class="cmd">Get-Partition <span class="flag">-DiskNumber</span> N</span>
+            <span class="desc">partition table for disk N</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">Get-Volume</span>
+            <span class="desc">all volumes — DriveLetter, FileSystem, SizeRemaining</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">New-Partition <span class="flag">-DiskNumber</span> N <span class="flag">-UseMaximumSize -AssignDriveLetter</span></span>
+            <span class="desc">create partition using all free space</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">Format-Volume <span class="flag">-DriveLetter</span> E <span class="flag">-FileSystem</span> exFAT <span class="flag">-NewFileSystemLabel</span> RESCUE</span>
+            <span class="desc">format with filesystem and label</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">Resize-Partition <span class="flag">-DiskNumber</span> N <span class="flag">-PartitionNumber</span> M <span class="flag">-Size</span> (80GB)</span>
+            <span class="desc">resize partition</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">Remove-Partition <span class="flag">-DiskNumber</span> N <span class="flag">-PartitionNumber</span> M</span>
+            <span class="desc">delete partition</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">Get-Disk 1 | Get-Partition | Get-Volume</span>
+            <span class="desc">pipeline: disk to partitions to volumes</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Filesystem Tools</div>
+          <div class="entry">
+            <span class="cmd">chkdsk E: <span class="flag">/f /r</span></span>
+            <span class="desc">/f fix errors · /r locate bad sectors + recover data</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">chkdsk E: <span class="flag">/scan</span></span>
+            <span class="desc">online scan (NTFS only), no dismount needed</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">fsutil fsinfo ntfsinfo E:</span>
+            <span class="desc">cluster size, MFT location, MFT zone, NTFS version</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">fsutil fsinfo drives</span>
+            <span class="desc">list all drive letters recognised by the system</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">fsutil dirty query E:</span>
+            <span class="desc">check if volume dirty bit is set</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">fsutil usn queryjournal E:</span>
+            <span class="desc">USN change journal — ID, max size, allocation delta</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">format E: <span class="flag">/FS:exFAT /Q /V:LABEL</span></span>
+            <span class="desc">quick format from cmd (NTFS / exFAT / FAT32)</span>
+          </div>
+        </div>
+
+        <div class="section-heading" style="grid-column:span 2;">Boot &amp; Recovery</div>
+
+        <div class="card">
+          <div class="card-title">MBR / Boot Repair</div>
+          <div class="entry">
+            <span class="cmd">bootrec <span class="flag">/fixmbr</span></span>
+            <span class="desc">write new MBR bootstrap code, preserve partition table</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">bootrec <span class="flag">/fixboot</span></span>
+            <span class="desc">write boot sector/VBR (legacy BIOS; limited use on modern UEFI)</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">bootrec <span class="flag">/scanos</span></span>
+            <span class="desc">scan all partitions for Windows installations</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">bootrec <span class="flag">/rebuildbcd</span></span>
+            <span class="desc">add found installs to BCD store</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">bcdedit <span class="flag">/enum</span> all</span>
+            <span class="desc">dump all BCD boot entries</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">bcdboot C:\Windows <span class="flag">/s</span> S: <span class="flag">/f</span> UEFI</span>
+            <span class="desc">recreate EFI boot files from an existing Windows install</span>
+          </div>
+          <div class="note">Typically run from WinRE or installation media.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">WinRE / DISM / SFC</div>
+          <div class="entry">
+            <span class="cmd">reagentc <span class="flag">/info</span></span>
+            <span class="desc">WinRE status, location, and BCD identifier</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">sfc <span class="flag">/scannow</span></span>
+            <span class="desc">System File Checker — verify + restore protected system files</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">DISM <span class="flag">/Online /Cleanup-Image /CheckHealth</span></span>
+            <span class="desc">check Windows image for known corruption flags</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">DISM <span class="flag">/Online /Cleanup-Image /ScanHealth</span></span>
+            <span class="desc">full scan — slower, more thorough than CheckHealth</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">DISM <span class="flag">/Online /Cleanup-Image /RestoreHealth</span></span>
+            <span class="desc">repair image using Windows Update as source</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">shutdown <span class="flag">/r /o /t</span> 0</span>
+            <span class="desc">reboot directly into Advanced Startup / WinRE</span>
+          </div>
+        </div>
+
+        <div class="section-heading" style="grid-column:span 2;">SMART &amp; Imaging</div>
+
+        <div class="card">
+          <div class="card-title">SMART / Drive Health</div>
+          <div class="entry">
+            <span class="cmd">Get-PhysicalDisk | Select FriendlyName,HealthStatus,OperationalStatus</span>
+            <span class="desc">quick health overview all drives</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">Get-StorageReliabilityCounter <span class="flag">-PhysicalDisk</span> (Get-PhysicalDisk <span class="flag">-FriendlyName</span> "WD*")</span>
+            <span class="desc">wear level, temp, read/write errors — SMART-derived where available</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">wmic /namespace:\\root\wmi path MSStorageDriver_FailurePredictStatus get InstanceName,PredictFailure</span>
+            <span class="desc">WMI SMART failure prediction flag</span>
+          </div>
+          <div class="note">Windows SMART access is abstracted through WMI/Storage API. For raw attribute tables use CrystalDiskInfo or smartmontools Windows port.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Imaging / Raw Access</div>
+          <div class="entry">
+            <span class="cmd">robocopy C:\ E:\backup <span class="flag">/MIR /COPYALL /XD</span> "$RECYCLE.BIN" "System Volume Information"</span>
+            <span class="desc">mirror filesystem with all attributes and ACLs</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">New-VHD <span class="flag">-Path</span> disk.vhdx <span class="flag">-SizeBytes</span> 100GB <span class="flag">-Dynamic</span></span>
+            <span class="desc">create dynamic VHDX container</span>
+          </div>
+          <div class="entry">
+            <span class="cmd">dd <span class="flag">if</span>=\\.\PhysicalDrive0 <span class="flag">of</span>=disk.img <span class="flag">bs</span>=4M</span>
+            <span class="desc">raw image with dd for Windows (third-party binary)</span>
+          </div>
+          <div class="file-ref">\\.\PhysicalDriveN — raw disk device (requires elevation)</div>
+          <div class="file-ref">\\.\HarddiskN\PartitionM — specific partition raw access</div>
+        </div>
+
+      </div><!-- /win-grid -->
+
+      <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--rule); font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--ink-faint); letter-spacing: 0.08em;">
+        ↑ flip to Linux panel for extended reference — raw I/O, testdisk, iostat, inotify, secure erase, udev, fs resize
+      </div>
+
+    </div><!-- /panel-body -->
+  </div><!-- /windows panel -->
+
+  <!-- height sizer — no longer used, kept for fallback -->
+  <div class="stage-sizer" id="sizer" aria-hidden="true" style="display:none;">
+    <div class="panel-header" style="margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid transparent;">
+      <span style="font-size:15px;font-weight:700;opacity:0;">X</span>
+    </div>
+    <div class="grid linux-grid">
+      <div class="section-heading">.</div>
+      <div class="card"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="file-ref">.</div><div class="file-ref">.</div><div class="file-ref">.</div><div class="file-ref">.</div><div class="file-ref">.</div>
+      </div>
+      <div class="card"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="note">.</div>
+      </div>
+      <div class="card"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="file-ref">.</div><div class="file-ref">.</div>
+      </div>
+      <div class="section-heading">.</div>
+      <div class="card"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="note">.</div>
+      </div>
+      <div class="card"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="note">.</div>
+      </div>
+      <div class="card"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+      </div>
+      <div class="section-heading">.</div>
+      <div class="card"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="file-ref">.</div><div class="file-ref">.</div>
+      </div>
+      <div class="card"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+      </div>
+      <div class="card"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="note">.</div>
+      </div>
+      <div class="section-heading">.</div>
+      <div class="card"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="note">.</div>
+      </div>
+      <div class="card"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div>
+      </div>
+      <div class="card"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="note">.</div>
+      </div>
+      <div class="section-heading">.</div>
+      <div class="card"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="note">.</div>
+      </div>
+      <div class="card"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div>
+      </div>
+      <div class="section-heading">.</div>
+      <div class="card span3"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="note">.</div>
+      </div>
+      <div class="section-heading">.</div>
+      <div class="card span3"><div class="card-title">.</div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+        <div class="entry"><span class="cmd">.</span></div><div class="entry"><span class="cmd">.</span></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /stage -->
+
+<div class="kb-hint"><kbd>Tab</kbd> &nbsp; flip panels</div>
+
+<script>
+  let active = 'linux';
+
+  function syncHeight() {
+    const lp = document.getElementById('panel-linux');
+    const wp = document.getElementById('panel-win');
+    const stage = document.getElementById('stage');
+    stage.style.height = Math.max(lp.scrollHeight, wp.scrollHeight) + 'px';
+  }
+
+  function handleClick(target) {
+    if (target === active) return;
+    flip(target);
+  }
+
+  function flip(target) {
+    if (target === active) return;
+    active = target;
+    const lp = document.getElementById('panel-linux');
+    const wp = document.getElementById('panel-win');
+    if (target === 'linux') {
+      lp.classList.replace('back', 'fore');
+      wp.classList.replace('fore', 'back');
+    } else {
+      wp.classList.replace('back', 'fore');
+      lp.classList.replace('fore', 'back');
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Tab') { e.preventDefault(); flip(active === 'linux' ? 'windows' : 'linux'); }
+  });
+
+  window.addEventListener('load', syncHeight);
+  window.addEventListener('resize', syncHeight);
+</script>
+</body>
+</html>
