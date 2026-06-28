@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audio File Anatomy / acidcat</title>
+<meta name="description" content="Interactive byte-level anatomy of audio file formats: WAV, MP3, FLAC, AIFF, MIDI. Hover a field to light its bytes, click to branch. Built from acidcat's parsers.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E8E5DD; --panel:#EDEAE3; --ink:#22201B; --soft:#6C685E;
+  --faint:#9C9889; --line:#CFCABE; --hair:#DAD6CB; --accent:#4E6157;
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--accent);color:var(--paper)}
+.sheet{max-width:880px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+a{color:inherit;text-decoration:none}
+
+.crumb{font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--faint);margin-bottom:1.2rem}
+.crumb a{border-bottom:1px solid var(--line)} .crumb a:hover{color:var(--accent);border-color:var(--accent)}
+
+.head{border:1px solid var(--ink);margin-bottom:1.6rem}
+.head .row{display:grid;grid-template-columns:1fr auto;align-items:stretch}
+.head .title{padding:0.9rem 1.1rem}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.7rem,5vw,2.4rem);letter-spacing:0.02em;line-height:1.05;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--accent);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+
+.lede{color:var(--soft);max-width:72ch;margin-bottom:1.6rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500}
+.legend{display:flex;flex-wrap:wrap;gap:1.2rem;font-size:0.72rem;color:var(--soft);border:1px solid var(--line);background:var(--panel);padding:0.7rem 1rem;margin-bottom:2.2rem}
+.legend .sw{display:inline-block;width:0.6rem;height:0.6rem;border:1px solid;vertical-align:middle;margin-right:0.4rem}
+.sw.val{background:#D7DFD8;border-color:#4E6157} .sw.flag{background:#E7DCCB;border-color:#9A6E3F} .sw.dim{background:var(--hair);border-color:var(--faint)}
+
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:0 0 0.4rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+
+.list{border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:0.55rem 1fr auto;gap:0.9rem;align-items:baseline;padding:0.9rem 0 0.9rem 0.6rem;border-bottom:1px solid var(--hair);transition:background .12s}
+.row:hover{background:var(--panel)}
+.row .tab{align-self:stretch;width:0.3rem;margin-left:-0.6rem}
+.row .name{font-size:1rem;font-weight:500;letter-spacing:0.01em}
+.row:hover .name{text-decoration:underline;text-decoration-color:var(--line)}
+.row .d{font-size:0.78rem;color:var(--soft);margin-top:0.2rem;max-width:62ch}
+.row .t{font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+
+/* per-format signature accents (match each anatomy page) */
+.mp3  .tab{background:#4E6157} .mp3  .name{color:#3f5147}
+.wav  .tab{background:#3D5E6E} .wav  .name{color:#33505d}
+.flac .tab{background:#565A86} .flac .name{color:#4a4d73}
+.aiff .tab{background:#3C6E6A} .aiff .name{color:#335f5b}
+.midi .tab{background:#6E5276} .midi .name{color:#5e4565}
+
+footer{margin-top:3rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent);border-color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="crumb"><a href="/">&larr; hed0rah.github.io</a></div>
+
+  <div class="head">
+    <div class="row">
+      <div class="title">
+        <div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div>
+        <h1>Audio File Anatomy</h1>
+      </div>
+      <div class="stamp"><b>5 formats</b>interactive<br>rev 2026.06</div>
+    </div>
+    <div class="strip">
+      <div>view <b>byte / bit maps</b></div>
+      <div>verb <b>hover . click</b></div>
+      <div>source <b>acidcat parsers</b></div>
+    </div>
+  </div>
+
+  <p class="lede">Byte-level references for the formats <a href="https://github.com/hed0rah/acidcat" style="border-bottom:1px solid var(--line)">acidcat</a> parses. Each page lays a real file out field by field. <b>Hover</b> any field to light its exact bytes or bits and read the decode; <b>click</b> a field marked <b style="color:var(--accent)">+</b> to open its lookup table. Every example byte is verified against acidcat's own walker.</p>
+
+  <div class="legend">
+    <span><span class="sw val"></span>value (read from a table)</span>
+    <span><span class="sw flag"></span>flag bit</span>
+    <span><span class="sw dim"></span>offset / reserved</span>
+    <span>colour marks kind, like syntax highlighting</span>
+  </div>
+
+  <h2 class="sec">Formats</h2>
+  <div class="list">
+    <a class="row mp3" href="mp3-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">MP3 / MPEG audio</div>
+        <div class="d">Not a container: an ID3v2 tag, self-describing MPEG frames, an ID3v1 trailer. The 4-byte frame header as a bit-register, plus the Xing/LAME VBR header.</div></div>
+      <span class="t">bit + byte</span>
+    </a>
+    <a class="row wav" href="wav-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">WAV / RIFF</div>
+        <div class="d">A chunked container. The fmt and the namesake ACID loop chunk drawn byte by byte; smpl, cue, LIST, and the extensible fmt for surround and high bit depths.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row flac" href="flac-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">FLAC</div>
+        <div class="d">Metadata blocks then audio frames. The block header as bits, the bit-packed STREAMINFO, and the one little-endian trap in an otherwise big-endian format.</div></div>
+      <span class="t">bit + byte</span>
+    </a>
+    <a class="row aiff" href="aiff-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">AIFF / AIFC</div>
+        <div class="d">Apple's big-endian IFF. The COMM chunk, with its sample rate stored as an 80-bit IEEE-754 extended float that struct cannot unpack, reassembled by hand.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row midi" href="midi-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">MIDI</div>
+        <div class="d">An MThd header and MTrk tracks. The division field expanded bit by bit, where the top bit flips ticks-per-quarter into SMPTE frame timing.</div></div>
+      <span class="t">bit + byte</span>
+    </a>
+  </div>
+
+  <footer>
+    <span>acidcat / audio file anatomy</span>
+    <span><a href="https://github.com/hed0rah/acidcat">repo</a> &middot; <a href="https://pypi.org/project/acidcat/">pypi</a></span>
+  </footer>
+
+</div>
+</body>
+</html>
