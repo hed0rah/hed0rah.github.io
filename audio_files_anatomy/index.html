@@ -10,8 +10,8 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root{
-  --paper:#E8E5DD; --panel:#EDEAE3; --ink:#22201B; --soft:#6C685E;
-  --faint:#9C9889; --line:#CFCABE; --hair:#DAD6CB; --accent:#4E6157;
+  --paper:#E7E5E1; --panel:#ECEAE6; --ink:#1F1E1C; --soft:#69675F;
+  --faint:#9A9789; --line:#CCCABF; --hair:#D8D6CC; --accent:#4E6157;
   --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -36,6 +36,11 @@ a{color:inherit;text-decoration:none}
 .head .strip b{color:var(--ink);font-weight:500}
 
 .lede{color:var(--soft);max-width:72ch;margin-bottom:1.6rem;font-size:0.85rem;line-height:1.75}
+.intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.6rem}
+.intro .lede{margin-bottom:0}
+.sig{flex:1;align-self:stretch;display:flex;flex-direction:column;justify-content:space-evenly}
+.sig::before,.sig::after{content:"";height:1px;background:var(--hair)}
+@media(max-width:720px){.intro{display:block}.sig{display:none}}
 .lede b{color:var(--ink);font-weight:500}
 .legend{display:flex;flex-wrap:wrap;gap:1.2rem;font-size:0.72rem;color:var(--soft);border:1px solid var(--line);background:var(--panel);padding:0.7rem 1rem;margin-bottom:2.2rem}
 .legend .sw{display:inline-block;width:0.6rem;height:0.6rem;border:1px solid;vertical-align:middle;margin-right:0.4rem}
@@ -86,7 +91,10 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
     </div>
   </div>
 
+  <div class="intro">
   <p class="lede">Byte-level references for the formats <a href="https://github.com/hed0rah/acidcat" style="border-bottom:1px solid var(--line)">acidcat</a> parses. Each page lays a real file out field by field. <b>Hover</b> any field to light its exact bytes or bits and read the decode; <b>click</b> a field marked <b style="color:var(--accent)">+</b> to open its lookup table. Every example byte is verified against acidcat's own walker.</p>
+  <aside class="sig" aria-hidden="true"></aside>
+  </div>
 
   <div class="legend">
     <span><span class="sw val"></span>value (read from a table)</span>
