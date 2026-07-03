@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Audio File Anatomy / acidcat</title>
+<script>(function(){try{var m=localStorage.getItem("acidcat-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
 <meta name="description" content="Interactive byte-level anatomy of audio file formats: WAV, MP3, FLAC, AIFF, MIDI. Hover a field to light its bytes, click to branch. Built from acidcat's parsers.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,6 +15,10 @@
   --faint:#979889; --line:#CACCC0; --hair:#D7D8CD; --accent:#4E6157;
   --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
 }
+:root[data-theme="dark"]{--paper:#191a17;--panel:#212320;--ink:#e6e6e1;--soft:#abaca1;--faint:#7c7d72;--line:#383a32;--hair:#2b2d26;--accent:#9da69e}
+:root[data-theme="dark"] .mp3 .name{color:#9da69e}:root[data-theme="dark"] .wav .name{color:#94a5aa}:root[data-theme="dark"] .flac .name{color:#a1a3b6}:root[data-theme="dark"] .aiff .name{color:#94ada8}:root[data-theme="dark"] .midi .name{color:#ad9fae}:root[data-theme="dark"] .mp4 .name{color:#bba391}:root[data-theme="dark"] .ogg .name{color:#a5ad91}:root[data-theme="dark"] .bitwig .name{color:#bba38a}:root[data-theme="dark"] .ncw .name{color:#bb988a}:root[data-theme="dark"] .ni .name{color:#b39388}:root[data-theme="dark"] .vital .name{color:#a59bb2}
+:root[data-theme="dark"] .sw.val{background:#2e3a33;border-color:#9da69e}:root[data-theme="dark"] .sw.flag{background:#3a3226;border-color:#c3b392}
+.theme-toggle{position:fixed;bottom:0.9rem;right:0.9rem;z-index:50;font-family:var(--ff);font-size:0.56rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--soft);background:var(--panel);border:1px solid var(--line);padding:0.45rem 0.7rem;cursor:pointer;font-weight:400;transition:color .15s,border-color .15s}.theme-toggle:hover{color:var(--accent);border-color:var(--accent)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--accent);color:var(--paper)}
@@ -66,6 +71,10 @@ a{color:inherit;text-decoration:none}
 .midi .tab{background:#6E5276} .midi .name{color:#5e4565}
 .mp4  .tab{background:#8A5A3C} .mp4  .name{color:#73492f}
 .ogg  .tab{background:#5E6E3C} .ogg  .name{color:#4e5c30}
+.bitwig .tab{background:#8A5A2E} .bitwig .name{color:#73491f}
+.ncw  .tab{background:#8A452E} .ncw  .name{color:#733a26}
+.ni   .tab{background:#7A3A2A} .ni   .name{color:#663022}
+.vital .tab{background:#5E4A7D} .vital .name{color:#4f3e69}
 
 footer{margin-top:3rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent);border-color:var(--accent)}
@@ -82,7 +91,7 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
         <div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div>
         <h1>Audio File Anatomy</h1>
       </div>
-      <div class="stamp"><b>7 formats</b>interactive<br>rev 2026.06</div>
+      <div class="stamp"><b>11 formats</b>interactive<br>rev 2026.06</div>
     </div>
     <div class="strip">
       <div>view <b>byte / bit maps</b></div>
@@ -147,6 +156,30 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
         <div class="d">Xiph's page-and-segment container, little-endian. The 27-byte page header, the header-type flag bits, and the lacing model that frames packets.</div></div>
       <span class="t">bit + byte</span>
     </a>
+    <a class="row bitwig" href="bitwig-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">Bitwig .bwpreset / .bwclip</div>
+        <div class="d">A length-prefixed tagged tree with an embedded zip of assets. The BtWg meta block, device parameters as big-endian f64, and the note-clip pitch lanes.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row ni" href="ni-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">Native Instruments</div>
+        <div class="d">The NISound hsin container (Massive, Absynth, Kontakt), plus .ksd (zlib+XML) and .nksf (RIFF+MessagePack). Recursive frames with cascading size fields.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row vital" href="vital-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">Vital</div>
+        <div class="d">A bare JSON preset. The synth version, the wavetable and LFO inventory, the effects chain, and the modulation matrix of source to destination routings.</div></div>
+      <span class="t">json</span>
+    </a>
+    <a class="row ncw" href="ncw-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">NCW / NI Compressed Wave</div>
+        <div class="d">Native Instruments' compressed audio: the header, the per-block deltas, and the bit-packing that stores Kontakt sample content.</div></div>
+      <span class="t">byte map</span>
+    </a>
   </div>
 
   <footer>
@@ -155,5 +188,7 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
   </footer>
 
 </div>
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle light and dark theme"></button>
+<script>(function(){var t=document.getElementById("themeToggle");function cur(){return document.documentElement.getAttribute("data-theme")||"light";}function ap(m){document.documentElement.setAttribute("data-theme",m);try{localStorage.setItem("acidcat-theme",m);}catch(e){}t.textContent=(m==="dark"?"light":"dark");}t.addEventListener("click",function(){ap(cur()==="dark"?"light":"dark");});ap(cur());})();</script>
 </body>
 </html>

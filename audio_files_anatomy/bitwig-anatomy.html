@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>acidcat / midi anatomy</title>
+<title>acidcat / bitwig anatomy</title>
 <script>(function(){try{var m=localStorage.getItem("acidcat-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,17 +12,18 @@
 :root{
   --paper:#E6E6E1; --panel:#EBEBE6; --ink:#1E201D; --soft:#67685F;
   --faint:#979889; --line:#CACCC0; --hair:#D7D8CD;
-  /* midi palette: plum value, clay flag, green anchor */
-  --enum:#6E5276;  --enum-soft:#E0D7E2;
-  --flag:#9A6E3F;  --flag-soft:#E7DCCB;
-  --rsv:#9A9789;   --rsv-soft:rgba(32,30,31,0.03);
-  --sync:#4E6157;  --sync-soft:#D7DFD8;
+  /* bitwig palette: amber value, moss flag, graphite anchor */
+  --enum:#8A5A2E;  --enum-soft:#E5DACB;
+  --flag:#556B4F;  --flag-soft:#D8DFD3;
+  --rsv:#9C9889;   --rsv-soft:rgba(34,32,27,0.03);
+  --sync:#4A4E58;  --sync-soft:#D8D9DE;
   --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
 }
-:root[data-theme="dark"]{--paper:#191a17;--panel:#212320;--ink:#e6e6e1;--soft:#abaca1;--faint:#7c7d72;--line:#383a32;--hair:#2b2d26;--enum:#ad9fae;--enum-soft:#262225;--flag:#c3ad92;--flag-soft:#2c271d;--rsv:#bbb9ae;--rsv-soft:rgba(230,230,225,0.04);--sync:#a0a9a1;--sync-soft:#212521;}.theme-toggle{position:fixed;bottom:0.9rem;right:0.9rem;z-index:50;font-family:var(--ff);font-size:0.56rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--soft);background:var(--panel);border:1px solid var(--line);padding:0.45rem 0.7rem;cursor:pointer;font-weight:400;transition:color .15s,border-color .15s}.theme-toggle:hover{color:var(--enum);border-color:var(--enum)}*{box-sizing:border-box;margin:0;padding:0}
+:root[data-theme="dark"]{--paper:#191a17;--panel:#212320;--ink:#e6e6e1;--soft:#abaca1;--faint:#7c7d72;--line:#383a32;--hair:#2b2d26;--enum:#bba38a;--enum-soft:#2a241a;--flag:#a0ac9a;--flag-soft:#22261f;--rsv:#bcbaae;--rsv-soft:rgba(230,230,225,0.04);--sync:#9ea0a2;--sync-soft:#202221;}.theme-toggle{position:fixed;bottom:0.9rem;right:0.9rem;z-index:50;font-family:var(--ff);font-size:0.56rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--soft);background:var(--panel);border:1px solid var(--line);padding:0.45rem 0.7rem;cursor:pointer;font-weight:400;transition:color .15s,border-color .15s}.theme-toggle:hover{color:var(--enum);border-color:var(--enum)}*{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
 .head .row{display:grid;grid-template-columns:1fr auto;align-items:stretch}
 .head .title{padding:0.9rem 1.1rem}
@@ -34,6 +35,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
 .head .strip div:last-child{border-right:none}
 .head .strip b{color:var(--ink);font-weight:500}
+
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:2.2rem}
@@ -45,24 +47,28 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
 @media(max-width:720px){.intro{display:block}.sig{display:none}}
 .k-en{color:var(--enum)} .k-fl{color:var(--flag)}
+
 .sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:2.6rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
 .sec::after{content:"";flex:1;height:1px;background:var(--line)}
 .note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:72ch}
+
 .region{border:1px solid var(--line);border-bottom:none;background:var(--panel)}
 .region:last-child{border-bottom:1px solid var(--line)}
-.region>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:1.2rem 1fr auto;gap:0.8rem;align-items:center;padding:0.7rem 1rem;font-size:0.82rem}
+.region>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:1.2rem 1fr auto;gap:0.8rem;align-items:center;padding:0.75rem 1rem;font-size:0.82rem}
 .region>summary::-webkit-details-marker{display:none}
 .region>summary:hover{background:var(--enum-soft)}
 .region .chev{color:var(--enum);transition:transform .18s;font-size:0.7rem}
 .region[open] .chev{transform:rotate(90deg)}
-.region .rname{font-weight:500} .region .rspan{font-size:0.64rem;color:var(--faint);letter-spacing:0.08em;text-transform:uppercase}
-.region.opt .rname::after{content:"opt";margin-left:0.6rem;font-size:0.54rem;letter-spacing:0.14em;color:var(--faint);border:1px solid var(--line);padding:1px 4px}
-.region.req .rname::after{content:"req";margin-left:0.6rem;font-size:0.54rem;letter-spacing:0.14em;color:var(--enum);border:1px solid var(--enum);padding:1px 4px}
-.region .rbody{padding:0.6rem 1rem 1.1rem 3rem;border-top:1px solid var(--hair)}
+.region .rname{font-weight:500;letter-spacing:0.02em}
+.region .rspan{font-size:0.64rem;color:var(--faint);letter-spacing:0.08em;text-transform:uppercase}
+.region.opt .rname::after{content:"opt";margin-left:0.6rem;font-size:0.54rem;letter-spacing:0.14em;color:var(--faint);border:1px solid var(--line);padding:1px 4px;vertical-align:middle}
+.region .rbody{padding:0.6rem 1rem 1.2rem 3rem;border-top:1px solid var(--hair)}
+
 .kv{font-size:0.74rem}
-.kv div{display:grid;grid-template-columns:12rem 1fr;gap:1rem;padding:0.3rem 0;border-bottom:1px solid var(--hair)}
+.kv div{display:grid;grid-template-columns:12rem 1fr;gap:1rem;padding:0.32rem 0;border-bottom:1px solid var(--hair)}
 .kv div:last-child{border-bottom:none}
 .kv .k{color:var(--soft)} .kv .v{color:var(--ink)}
+
 .diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
 .bytegrp{border:1px solid var(--line);background:var(--panel)}
 .bytegrp .ticks{display:flex;border-bottom:1px solid var(--hair)}
@@ -104,9 +110,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:820px){.detail{position:static;height:15rem}}
 .detail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
 .detail .dl .kind{color:var(--soft)}
-.detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
+.detail h3{font-weight:500;font-size:0.98rem;letter-spacing:0.01em}
+.detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
 .detail p{font-size:0.77rem;color:var(--soft);line-height:1.65}
 .detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem}
+
 footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 </style>
 </head>
@@ -115,69 +123,110 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
 
   <div class="head">
     <div class="row">
-      <div class="title"><div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div><h1>MIDI Anatomy</h1></div>
-      <div class="stamp"><b>Standard MIDI File</b>SMF 1.0<br>rev 2026.06</div>
+      <div class="title">
+        <div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div>
+        <h1>Bitwig Anatomy</h1>
+      </div>
+      <div class="stamp"><b>BtWg container</b>.bwpreset . .bwclip<br>rev 2026.07</div>
     </div>
     <div class="strip">
-      <div>magic <b>"MThd"</b></div><div>endian <b>big</b></div>
-      <div>container <b>MThd + MTrk</b></div><div>format <b>0 / 1 / 2</b></div>
+      <div>magic <b>"BtWg"</b></div>
+      <div>endian <b>big (meta)</b></div>
+      <div>container <b>tagged + tree</b></div>
+      <div>sample <b>42 74 57 67</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede">A Standard MIDI File is one <b>MThd</b> header chunk followed by one or more <b>MTrk</b> track chunks. MThd is 14 bytes; each MTrk is a stream of events, every event prefixed by a variable-length delta time. The clever field is <b>division</b>: its top bit flips the meaning of the other fifteen. <b>Hover</b> to light bytes or bits, <b>click</b> a <span class="k-en">+</span> for its table. Colour marks kind: <span class="k-en">plum</span> a decoded value, <span class="k-fl">clay</span> a flag, faint reserved.</p>
+  <p class="lede">A Bitwig preset is not audio. It is an ASCII <b>BtWg</b> header, a big-endian self-describing metadata block, an opaque device tree, and, when "embed files" was on, a ZIP archive of the referenced assets. The same container backs <b>.bwpreset</b>, <b>.bwclip</b>, and <b>.bwmodulator</b>; everything below is field-verified against real Bitwig Studio 6.x files. <b>Hover</b> any field to light its exact bytes and read the decode; <b>click</b> a field with a <span class="k-en">+</span> to open its table. Colour marks kind, the way syntax highlighting does: <span class="k-en">amber</span> is a decoded value, <span class="k-fl">moss</span> is a flag, graphite is a structural anchor, faint is reserved.</p>
   <aside class="sig" aria-hidden="true"></aside>
   </div>
 
   <div class="sec">file regions</div>
-  <p class="note">One header, then the tracks. Events use compact encodings (VLQ deltas, running status) that a parser must track byte by byte.</p>
+  <p class="note">Top to bottom, what a reader walks. The metadata a producer wants sits right behind the header; acidcat inspect (and inspect --pretty) decodes it and flags the embedded-asset zip.</p>
   <div>
-    <details class="region req"><summary><span class="chev">&#9656;</span><span class="rname">MThd</span><span class="rspan">0x00 . 14 bytes . drawn below</span></summary>
-      <div class="rbody"><p class="note">Format, track count, and timing division. The length is always 6 (extra header bytes are legal and skipped). See the byte map below.</p></div></details>
-    <details class="region req"><summary><span class="chev">&#9656;</span><span class="rname">MTrk</span><span class="rspan">one per track</span></summary>
-      <div class="rbody"><div class="kv">
-        <div><span class="k">header</span><span class="v">"MTrk" + u32 big-endian byte length</span></div>
-        <div><span class="k">events</span><span class="v">delta-time (VLQ) + event, repeated to end-of-track</span></div>
-      </div></div></details>
-    <details class="region"><summary><span class="chev">&#9656;</span><span class="rname">VLQ delta time</span><span class="rspan">the variable encoding</span></summary>
-      <div class="rbody"><p class="note">Seven payload bits per byte; the high bit set means another byte follows. A parser that loses sync here misreads everything after it. acidcat's running-status bookkeeping is exactly where a one-byte desync once corrupted note counts.</p></div></details>
-    <details class="region"><summary><span class="chev">&#9656;</span><span class="rname">running status</span><span class="rspan">the omitted byte</span></summary>
-      <div class="rbody"><p class="note">Consecutive channel events with the same status may drop the repeated status byte; the parser must remember the last one. Every mainstream DAW exports this way.</p></div></details>
-    <details class="region"><summary><span class="chev">&#9656;</span><span class="rname">channel voice messages</span><span class="rspan">status 0x80-0xEF . SSSS CCCC</span></summary>
-      <div class="rbody"><p class="note">High nibble is the message type, low nibble the channel (0-15). Types 8n-Bn and En carry two data bytes, Cn and Dn one. Note On with velocity 0 means Note Off.</p><div class="kv">
-        <div><span class="k">8n</span><span class="v">note off: key, velocity</span></div>
-        <div><span class="k">9n</span><span class="v">note on: key, velocity (velocity 0 = note off)</span></div>
-        <div><span class="k">An</span><span class="v">polyphonic aftertouch: key, pressure</span></div>
-        <div><span class="k">Bn</span><span class="v">control change: controller, value</span></div>
-        <div><span class="k">Cn</span><span class="v">program change: program (one data byte)</span></div>
-        <div><span class="k">Dn</span><span class="v">channel aftertouch: pressure (one data byte)</span></div>
-        <div><span class="k">En</span><span class="v">pitch bend: 14-bit LSB+MSB, (msb&lt;&lt;7)|lsb - 8192 = signed offset, 0 = center</span></div>
-      </div></div></details>
-    <details class="region opt"><summary><span class="chev">&#9656;</span><span class="rname">meta events</span><span class="rspan">FF type len data</span></summary>
-      <div class="rbody"><div class="kv">
-        <div><span class="k">FF 51</span><span class="v">tempo: microseconds per quarter (bpm = 60e6 / us)</span></div>
-        <div><span class="k">FF 54</span><span class="v">SMPTE offset: hr mn se fr ff; hr packs 0rrhhhhh, bits 6-5 = frame rate (00=24, 01=25, 10=29.97, 11=30 fps), low 5 bits = hour</span></div>
-        <div><span class="k">FF 58</span><span class="v">time signature</span></div>
-        <div><span class="k">FF 59</span><span class="v">key signature: sharps/flats count + minor flag</span></div>
-        <div><span class="k">FF 01-07</span><span class="v">text family: text, copyright, track name, instrument, lyric, marker, cue point</span></div>
-        <div><span class="k">FF 2F</span><span class="v">end of track (required)</span></div>
-      </div></div></details>
-    <details class="region opt"><summary><span class="chev">&#9656;</span><span class="rname">sysex</span><span class="rspan">F0 / F7 + VLQ length</span></summary>
-      <div class="rbody"><p class="note">In a file, F0 and F7 are followed by a VLQ byte length, then the payload; F7 carries escapes and continuations. Both cancel running status, same as meta events.</p><div class="kv">
-        <div><span class="k">F0</span><span class="v">&lt;length VLQ&gt; &lt;data&gt; -- standard sysex</span></div>
-        <div><span class="k">F7</span><span class="v">&lt;length VLQ&gt; &lt;data&gt; -- escape / continuation</span></div>
-      </div></div></details>
+    <details class="region" open>
+      <summary><span class="chev">&#9656;</span><span class="rname">BtWg header</span><span class="rspan">0x00 . drawn below</span></summary>
+      <div class="rbody">
+        <p class="note">All ASCII: the 4-byte magic, ten format/version digits, then a run of hex digits. Careful with the family: .bwimpulse is not this container at all, it is a plain FLAC file.</p>
+        <div id="block-header"></div>
+        <div class="kv">
+          <div><span class="k">magic</span><span class="v">"BtWg"</span></div>
+          <div><span class="k">format/version</span><span class="v">10 ASCII digits; "0003000200" on Studio 6.x files</span></div>
+          <div><span class="k">hex field</span><span class="v">ASCII hex digits after the version chars; varies per file, left uninterpreted</span></div>
+          <div><span class="k">extensions</span><span class="v">.bwpreset . .bwclip . .bwmodulator share this header; .bwimpulse is FLAC</span></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="region" open>
+      <summary><span class="chev">&#9656;</span><span class="rname">tagged meta block</span><span class="rspan">big-endian . self-describing</span></summary>
+      <div class="rbody">
+        <p class="note">A list of key/value entries, each one self-describing: a u32-BE length and that many ASCII key bytes, then a type byte (0x08 = string), a u32-BE value length, and the value bytes. One worked entry is drawn below: device_name = "Drum Machine". The keys, in order:</p>
+        <div id="block-meta"></div>
+        <div class="kv">
+          <div><span class="k">application_version_name</span><span class="v">writing Bitwig version, e.g. "4.4"; branch alongside it</span></div>
+          <div><span class="k">comment</span><span class="v">the preset DESCRIPTION field as typed in the browser</span></div>
+          <div><span class="k">creator</span><span class="v">preset author</span></div>
+          <div><span class="k">device_category</span><span class="v">e.g. Container . Reverb . Synth</span></div>
+          <div><span class="k">device_creator</span><span class="v">device vendor, e.g. Bitwig</span></div>
+          <div><span class="k">device_id</span><span class="v">uuid of the device the preset targets</span></div>
+          <div><span class="k">device_name</span><span class="v">e.g. Drum Machine . Polysynth . Convolution</span></div>
+          <div><span class="k">device_type</span><span class="v">note_to_audio for instruments, audio_to_audio for FX</span></div>
+          <div><span class="k">preset_category</span><span class="v">browser category for the preset itself</span></div>
+          <div><span class="k">referenced_*_ids</span><span class="v">device / modulator / module / packaged_file id lists: the dependency graph</span></div>
+          <div><span class="k">revision_id / revision_no</span><span class="v">a sha plus a revision counter</span></div>
+          <div><span class="k">tags</span><span class="v">space-separated, e.g. "digital harmonic slow soft"</span></div>
+          <div><span class="k">type</span><span class="v">"application/bitwig-preset"</span></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="region">
+      <summary><span class="chev">&#9656;</span><span class="rname">module / device tree</span><span class="rspan">after the meta block . opaque</span></summary>
+      <div class="rbody">
+        <p class="note">The Grid and device graph: a nested CONTENTS/MODULES/N/CONTENTS/... structure holding every module in the patch. acidcat v1 leaves it opaque; the meta block already carries what the browser needs.</p>
+        <div class="kv">
+          <div><span class="k">nesting</span><span class="v">CONTENTS &gt; MODULES &gt; N &gt; CONTENTS, recursively</span></div>
+          <div><span class="k">module names</span><span class="v">e.g. Pitch Shifter . Stereo Split/Merge . All-pass Delay . Peak Limiter</span></div>
+          <div><span class="k">per module</span><span class="v">an optional description string alongside the parameters</span></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="region opt">
+      <summary><span class="chev">&#9656;</span><span class="rname">embedded asset zip</span><span class="rspan">"embed files" on . PK 03 04</span></summary>
+      <div class="rbody">
+        <p class="note">With "embed files" enabled, every referenced asset is packed into a DEFLATE ZIP embedded in the preset. Unzip it and the referenced files come back whole. acidcat inspect flags the archive when it is present.</p>
+        <div class="kv">
+          <div><span class="k">magic</span><span class="v">PK 03 04, standard local-file header</span></div>
+          <div><span class="k">compression</span><span class="v">DEFLATE</span></div>
+          <div><span class="k">contents</span><span class="v">samples, impulses; .bwimpulse entries are FLAC and decode anywhere</span></div>
+          <div><span class="k">microtuning</span><span class="v">Micro-pitch scales are stored native as per-note tags NOTE1..NOTE11 plus EDO_DIVISIONS / EDO_OCTAVES, not the original .scl file</span></div>
+        </div>
+      </div>
+    </details>
   </div>
 
-  <div class="sec">MThd header</div>
-  <p class="note">14 bytes. Example: format 1, 3 tracks, 480 ticks per quarter note.</p>
-  <div id="block-mthd"></div>
+  <div class="sec">related: wav bounces</div>
+  <p class="note">Not this container, but from the same writer: audio bounced out of Bitwig carries its own tempo trail in the WAV.</p>
+  <div>
+    <details class="region opt">
+      <summary><span class="chev">&#9656;</span><span class="rname">BWBM + IBPM</span><span class="rspan">inside bounced .wav files</span></summary>
+      <div class="rbody">
+        <div class="kv">
+          <div><span class="k">LIST/INFO IBPM</span><span class="v">tempo as an INFO tag</span></div>
+          <div><span class="k">BWBM chunk</span><span class="v">u32 version, then two f64: beats at 0x18, duration seconds at 0x20</span></div>
+        </div>
+      </div>
+    </details>
+  </div>
 
-  <div class="sec">division field</div>
-  <p class="note">The 16-bit timing field, expanded. Top bit chooses the scheme; here it is 0, so the rest is ticks per quarter note.</p>
-  <div id="block-div"></div>
+  <footer>
+    <span>acidcat / bitwig anatomy</span>
+    <span>btwg . 0003000200 . device_name "Drum Machine"</span>
+  <span><a href="https://hed0rah.github.io">hed0rah</a> &middot; <a href="https://x.com/r3l0z">r3l0z</a></span></footer>
 
-  <footer><span>acidcat / midi anatomy</span><span>smf format 1 . 3 tracks . 480 ticks/quarter</span><span><a href="https://hed0rah.github.io">hed0rah</a> &middot; <a href="https://x.com/r3l0z">r3l0z</a></span></footer>
 </div>
 
 <script>
@@ -274,32 +323,41 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
     dcol.style.minHeight=(maxH+6)+"px";
   }
 
-  // MThd: format 1, 3 tracks, 480 ticks/quarter
-  build("block-mthd","byte",
-    [0x4D,0x54,0x68,0x64, 0x00,0x00,0x00,0x06, 0x00,0x01, 0x00,0x03, 0x01,0xE0],
+  // BtWg header: magic + the ten format/version digits, all ASCII
+  build("block-header", 'byte',
+    [0x42,0x74,0x57,0x67, 0x30,0x30,0x30,0x33,0x30,0x30,0x30,0x32,0x30,0x30],
     [
-      {label:"magic",k:"sync",r:[0,3],val:"\"MThd\"",body:"The header chunk id. The whole file must open with these four bytes."},
-      {label:"length",k:"enum",r:[4,7],val:"6",body:"Header byte count, u32 big-endian. Always 6; any extra bytes are legal and skipped."},
-      {label:"format",k:"enum",r:[8,9],val:"1 = multi-track",sel:1,branch:[
-        ["0","single track"],["1","multi-track, one timeline"],["2","independent patterns"]],
-        body:"How the tracks relate. Format 1 is the common DAW export: track 0 holds tempo/meta, the rest hold parts on one shared timeline."},
-      {label:"ntrks",k:"enum",r:[10,11],val:"3",body:"Number of MTrk chunks that follow, u16 big-endian."},
-      {label:"division",k:"enum",r:[12,13],val:"480 ticks/quarter",sel:0,branch:[
-        ["bit 15 = 0","ticks per quarter note (lower 15 bits)"],
-        ["bit 15 = 1","SMPTE: high byte -fps, low byte ticks/frame"]],
-        body:"Timing resolution. The top bit selects the scheme; 0x01E0 has it clear, so the value is 480 ticks per quarter note.",
-        note:"expanded bit by bit below. with no tempo event a player assumes 120 bpm."}
+      {label:"magic",k:"sync",r:[0,3],val:"\"BtWg\"",
+       body:"Four ASCII bytes open the container. Shared by .bwpreset, .bwclip, and .bwmodulator; a file that does not start here is not this format.",
+       note:".bwimpulse looks like family but starts fLaC: it is a plain FLAC file, decode it as one."},
+      {label:"format/version",k:"enum",r:[4,13],val:"0003000200",
+       body:"Ten ASCII digits carrying the container format and writer version. Every Studio 6.x file examined reads 0003000200.",
+       note:"a run of ASCII hex digits follows these chars; the content varies per file and acidcat leaves it uninterpreted."}
     ]);
 
-  // division 0x01E0 expanded
-  build("block-div","bit",[0x01,0xE0],[
-    {label:"scheme flag",k:"flag",r:[0,0],val:"0 = ticks/quarter",sel:0,branch:[
-      ["0","ticks per quarter note"],["1","SMPTE frame timing"]],
-      body:"The high bit of the 16-bit field. Clear here, so the remaining 15 bits are a tick count per quarter note."},
-    {label:"ticks per quarter",k:"enum",r:[1,15],val:"480",
-      body:"Pulses per quarter note (PPQN): how many delta-time ticks make one beat. 480 is a common DAW resolution.",
-      note:"seconds per tick = (60 / bpm) / division, using the first tempo event."}
-  ]);
+  // one tagged meta entry: device_name = "Drum Machine"
+  build("block-meta", 'byte',
+    [0x00,0x00,0x00,0x0B,
+     0x64,0x65,0x76,0x69,0x63,0x65,0x5F,0x6E,0x61,0x6D,0x65,
+     0x08,
+     0x00,0x00,0x00,0x0C,
+     0x44,0x72,0x75,0x6D,0x20,0x4D,0x61,0x63,0x68,0x69,0x6E,0x65],
+    [
+      {label:"key_len",k:"sync",r:[0,3],val:"11",
+       body:"u32 big-endian: the byte count of the key that follows. The whole block is walked entry by entry with nothing but these lengths.",
+       note:"every integer in the meta block is big-endian."},
+      {label:"key",k:"enum",r:[4,14],val:"device_name",
+       body:"That many ASCII bytes name the entry. Here: device_name, the device this preset targets, e.g. Drum Machine, Polysynth, Convolution."},
+      {label:"value_type",k:"enum",r:[15,15],val:"0x08 string",sel:0,branch:[
+        ["0x08","string: u32-BE length + bytes"],
+        ["other","non-string types appear past the meta block; not decoded"]],
+       body:"One type byte announces the value encoding. Every key in the meta block carries 0x08, a length-prefixed string.",
+       note:"acidcat inspect decodes device, creator, category, tags, description, and version from these entries."},
+      {label:"value_len",k:"sync",r:[16,19],val:"12",
+       body:"u32 big-endian: the byte count of the value. \"Drum Machine\" is 12 bytes."},
+      {label:"value",k:"enum",r:[20,31],val:"\"Drum Machine\"",
+       body:"The value bytes themselves. Together with the key this reads device_name = \"Drum Machine\": the entry a browser sorts on."}
+    ]);
 })();
 </script>
 <button class="theme-toggle" id="themeToggle" aria-label="Toggle light and dark theme"></button>
