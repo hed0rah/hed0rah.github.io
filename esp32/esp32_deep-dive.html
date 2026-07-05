@@ -105,6 +105,63 @@ body {
 .nav-current .num { color: var(--orange); }
 .nav-hint { color: var(--dim2); margin-left: 6px; }
 
+/* sidebar */
+.side {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 200px;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  z-index: 150;
+  padding: 26px 0 20px;
+  overflow-y: auto;
+}
+.side-brand {
+  padding: 0 20px 16px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--bright);
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 12px;
+}
+.side-brand span { color: var(--orange); }
+.side a {
+  display: block;
+  padding: 6px 20px 6px 17px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.side a span { color: var(--dim2); margin-right: 7px; }
+.side a:hover { color: var(--orange); }
+.side a.active { color: var(--orange); border-left-color: var(--orange); background: var(--surface); }
+.side a.active span { color: var(--orange); }
+.side-dial {
+  display: block;
+  margin: 16px 20px 0 17px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--border2);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.side-dial:hover { color: var(--orange); border-color: var(--orange); }
+@media (min-width: 1100px) {
+  .side { display: block; }
+  body { padding-left: 200px; }
+  .nav { display: none; }
+}
+
 /* radial dial */
 .radial {
   position: fixed;
@@ -413,6 +470,27 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   </div>
   <div class="companion">esptool / espefuse / espsecure / OpenOCD // Boot ROM to Brick Recovery // classic · S2 · S3 · C2 · C3 · C5 · C6 · C61 · H2 · P4</div>
 </div>
+
+<!-- sidebar -->
+<nav class="side">
+  <div class="side-brand">ESP32 <span>//</span> Deep Dive</div>
+  <a href="#intro"><span>01</span>Intro</a>
+  <a href="#variants"><span>02</span>Variants</a>
+  <a href="#cores"><span>03</span>Cores</a>
+  <a href="#boot"><span>04</span>Boot Modes</a>
+  <a href="#wire"><span>05</span>SLIP Wire</a>
+  <a href="#stub"><span>06</span>Stub Loader</a>
+  <a href="#flash"><span>07</span>Flash Geometry</a>
+  <a href="#rw"><span>08</span>Read &amp; Write</a>
+  <a href="#image"><span>09</span>Image Format</a>
+  <a href="#efuse"><span>10</span>eFuse &amp; Security</a>
+  <a href="#idf"><span>11</span>ESP-IDF</a>
+  <a href="#serial"><span>12</span>Serial &amp; Discovery</a>
+  <a href="#jtag"><span>13</span>JTAG &amp; OpenOCD</a>
+  <a href="#brick"><span>14</span>Brick Recovery</a>
+  <a href="#further"><span>15</span>Further</a>
+  <button class="side-dial" id="sideDial" title="radial section dial">◎ dial</button>
+</nav>
 
 <!-- nav -->
 <div class="nav">
@@ -1963,6 +2041,7 @@ const LABELS = {
   serial: 'Serial & Discovery', jtag: 'JTAG & OpenOCD', brick: 'Brick Recovery', further: 'Further'
 };
 const sections = [...document.querySelectorAll('.container > section[id]')];
+const sideLinks = [...document.querySelectorAll('.side a')];
 const radial = document.getElementById('radial');
 const ring = document.getElementById('radialRing');
 const center = document.getElementById('radialCenter');
@@ -2009,6 +2088,7 @@ function activate(id) {
     it.a.classList.toggle('active', it.sec === sec);
     it.dot.classList.toggle('active', it.sec === sec);
   });
+  sideLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + sec.id));
   navNum.textContent = sec.dataset.num + ' //';
   navLabel.textContent = LABELS[sec.id] || sec.id;
   center.textContent = sec.dataset.num;
@@ -2019,6 +2099,7 @@ function activate(id) {
 function go(id) { history.replaceState(null, '', '#' + id); activate(id); }
 
 document.getElementById('navCurrent').addEventListener('click', openDial);
+document.getElementById('sideDial').addEventListener('click', openDial);
 center.addEventListener('click', closeDial);
 radial.addEventListener('click', e => { if (e.target === radial) closeDial(); });
 document.addEventListener('click', e => {
