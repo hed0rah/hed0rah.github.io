@@ -105,12 +105,11 @@ body {
   margin: 0 auto;
   padding: 0 32px;
   border-inline: 1px solid var(--border);
-  counter-reset: section;
 }
-section { padding: 52px 0; border-bottom: 1px solid var(--border2); counter-increment: section; }
-section:last-of-type { border-bottom: none; }
+section { padding: 52px 0; display: none; }
+section.active { display: block; }
 section::before {
-  content: counter(section, decimal-leading-zero) ' //';
+  content: attr(data-num) ' //';
   display: block;
   font-family: 'Space Mono', monospace;
   font-size: 9px;
@@ -342,13 +341,14 @@ td.yl   { color: var(--yellow); }
   <div class="subtitle">
     <span>SLIP Wire · Stub Loader · Flash Geometry · eFuse · JTAG</span>
   </div>
-  <div class="companion">esptool / espefuse / espsecure / OpenOCD // Boot ROM to Brick Recovery // classic · S2 · S3 · C3 · C5 · C6 · H2 · P4</div>
+  <div class="companion">esptool / espefuse / espsecure / OpenOCD // Boot ROM to Brick Recovery // classic · S2 · S3 · C2 · C3 · C5 · C6 · C61 · H2 · P4</div>
 </div>
 
 <!-- nav -->
 <div class="nav">
   <div class="nav-inner">
     <a href="#intro">Intro</a>
+    <a href="#variants">Variants</a>
     <a href="#boot">Boot Modes</a>
     <a href="#wire">SLIP Wire</a>
     <a href="#stub">Stub Loader</a>
@@ -367,7 +367,7 @@ td.yl   { color: var(--yellow); }
 <div class="container">
 
 <!-- intro -->
-<section id="intro">
+<section id="intro" data-num="01">
   <h2>Beyond the <em class="or">Datasheet</em></h2>
   <div class="section-bar"></div>
   <p>Most people interact with ESP32 chips through one command: <code>esptool.py write_flash</code>. It works, the LED blinks, you move on. This document is for when it doesn't work, or when you need to do something more interesting than blink the LED, or when you want to understand why an ESP32-C3 has its bootloader at <code>0x0</code> while ESP32-classic has it at <code>0x1000</code>.</p>
@@ -379,8 +379,126 @@ td.yl   { color: var(--yellow); }
   </div>
 </section>
 
+<!-- variants -->
+<section id="variants" data-num="02">
+  <h2>Variant <em class="cy">Comparison</em></h2>
+  <div class="section-bar cy"></div>
+  <p>Eleven shipping SoC families on two CPU architectures: Xtensa (LX6 in the original ESP32, LX7 in S2/S3) and RISC-V (everything since the C3, Espressif's first RISC-V chip, announced November 2020). All of them run ESP-IDF. The single most important selection axis is the radio: only C6 (2.4 GHz) and C5 (dual-band 2.4/5 GHz) combine Wi-Fi 6 + BLE 5 + 802.15.4. H2 has 802.15.4 + BLE but no Wi-Fi. S2 has Wi-Fi but no Bluetooth. The original ESP32 is the only one with Bluetooth Classic (BR/EDR). P4 has no radio at all.</p>
+
+  <h3 class="cy">Quick reference matrix</h3>
+
+  <table>
+    <tr>
+      <th>Chip</th>
+      <th>Arch / Cores</th>
+      <th>Max MHz</th>
+      <th>Wi-Fi</th>
+      <th>Bluetooth</th>
+      <th>802.15.4</th>
+      <th>SRAM</th>
+      <th>GPIO</th>
+      <th>USB</th>
+      <th>Notable</th>
+    </tr>
+    <tr><td class="meth">ESP32</td><td>Xtensa LX6 / 2</td><td>240</td><td>b/g/n</td><td>4.2 BR/EDR+LE</td><td>—</td><td>520 KB</td><td>34</td><td>—</td><td>Only BT Classic; Ethernet MAC; 2&times;DAC</td></tr>
+    <tr><td class="meth">ESP32-S2</td><td>Xtensa LX7 / 1</td><td>240</td><td>b/g/n</td><td>—</td><td>—</td><td>320 KB</td><td>43</td><td>FS OTG</td><td>Wi-Fi + USB, no BT; 2&times;DAC; touch</td></tr>
+    <tr><td class="meth">ESP32-S3</td><td>Xtensa LX7 / 2</td><td>240</td><td>b/g/n</td><td class="cy">5 (LE)</td><td>—</td><td>512 KB</td><td>45</td><td>FS OTG</td><td>AI SIMD/vector; camera/LCD; octal PSRAM</td></tr>
+    <tr><td class="meth">ESP32-C2</td><td>RISC-V / 1</td><td>120</td><td>b/g/n</td><td class="cy">5.3 LE</td><td>—</td><td>272 KB</td><td>14</td><td>—</td><td>Cheapest/smallest (sold as ESP8684 SiP)</td></tr>
+    <tr><td class="meth">ESP32-C3</td><td>RISC-V / 1</td><td>160</td><td>b/g/n</td><td class="cy">5 (LE)</td><td>—</td><td>400 KB</td><td>22</td><td>Serial/JTAG</td><td>Mainstream low-cost RISC-V</td></tr>
+    <tr><td class="meth">ESP32-C6</td><td>RISC-V HP+LP</td><td>160</td><td class="cy">Wi-Fi 6 (2.4G)</td><td class="cy">5 (LE)</td><td class="cy">yes</td><td>512+16 KB</td><td>30/22</td><td>Serial/JTAG</td><td>Matter Wi-Fi / Thread hub</td></tr>
+    <tr><td class="meth">ESP32-C5</td><td>RISC-V HP+LP</td><td>240</td><td class="cy">Wi-Fi 6 dual-band</td><td class="cy">5 (LE)</td><td class="cy">yes</td><td>384 KB</td><td>29</td><td>Serial/JTAG</td><td>Only 5 GHz part; PSRAM support</td></tr>
+    <tr><td class="meth">ESP32-C61</td><td>RISC-V / 1</td><td>160</td><td class="cy">Wi-Fi 6 (2.4G)</td><td class="cy">5 (LE) + Mesh 1.1</td><td>—</td><td>320 KB</td><td>few</td><td>Serial/JTAG</td><td>Affordable Wi-Fi 6; quad PSRAM</td></tr>
+    <tr><td class="meth">ESP32-H2</td><td>RISC-V / 1</td><td>96</td><td>—</td><td class="cy">5.3 LE</td><td class="cy">yes</td><td>320 KB</td><td>19</td><td>Serial/JTAG</td><td>Radio-only Thread/Zigbee endpoint</td></tr>
+    <tr><td class="meth">ESP32-P4</td><td>RISC-V HP&times;2 + LP</td><td>400</td><td>—</td><td>—</td><td>—</td><td>768 KB</td><td>55</td><td class="cy">HS+FS OTG</td><td>Vision/HMI host; MIPI, H.264, no radio</td></tr>
+  </table>
+
+  <h3 class="cy">CPU &amp; memory</h3>
+
+  <table>
+    <tr>
+      <th>Chip</th>
+      <th>CPU</th>
+      <th>SRAM / ROM</th>
+      <th>Flash &amp; PSRAM</th>
+      <th>Package</th>
+    </tr>
+    <tr><td class="meth">ESP32</td><td>Dual LX6 @240 MHz (single-core in some variants). CoreMark 1080 dual.</td><td>520 KB / 448 KB + 16 KB RTC</td><td>External flash to 16 MB, external RAM to 8 MB; in-package options (U4WDH 4 MB flash)</td><td>QFN48</td></tr>
+    <tr><td class="meth">ESP32-S2</td><td>Single LX7 @240 MHz, 7-stage pipeline, no FPU. ULP: PicoRV32 + FSM.</td><td>320 KB / 128 KB + 16 KB RTC</td><td>QSPI/OSPI flash + PSRAM, up to 1 GB addressable; S2FH4 / S2FN4R2 in-package parts</td><td>QFN56</td></tr>
+    <tr><td class="meth">ESP32-S3</td><td>Dual LX7 @240 MHz with FPU + 128-bit SIMD "PIE" vector ops. CoreMark 1182.</td><td>512 KB / 384 KB + 16 KB RTC</td><td>Octal flash/PSRAM; in-package up to 8 MB flash and 8 MB PSRAM (R8/R8V)</td><td>QFN56</td></tr>
+    <tr><td class="meth">ESP32-C2</td><td>Single RISC-V RV32IMAC @120 MHz, no FPU.</td><td>272 KB / 576 KB</td><td>SiP flash 1/2/4 MB (ESP8684H1/H2/H4)</td><td>QFN28</td></tr>
+    <tr><td class="meth">ESP32-C3</td><td>Single RISC-V RV32IMC @160 MHz, no FPU.</td><td>400 KB / 384 KB + 8 KB RTC</td><td>External to 16 MB; C3FH4/C3FN4 in-package 4 MB. Rev v1.1 has 10-35 KB more usable SRAM than v0.4</td><td>QFN32</td></tr>
+    <tr><td class="meth">ESP32-C6</td><td>RISC-V HP core @160 MHz + LP core @20 MHz, no FPU.</td><td>512 KB HP + 16 KB LP / 320 KB</td><td>External to 16 MB; some QFN32 parts with in-package flash</td><td>QFN40 / QFN32</td></tr>
+    <tr><td class="meth">ESP32-C5</td><td>RISC-V HP core @240 MHz + LP core @40 MHz.</td><td>384 KB / 320-384 KB</td><td>External PSRAM support; modules to 8 MB PSRAM + 16/32 MB flash</td><td>QFN48 / QFN40</td></tr>
+    <tr><td class="meth">ESP32-C61</td><td>Single RISC-V @160 MHz, no FPU.</td><td>320 KB / 256 KB</td><td>Quad SPI PSRAM to 120 MHz; in-package variants (2 MB PSRAM + 8 MB flash modules)</td><td>QFN</td></tr>
+    <tr><td class="meth">ESP32-H2</td><td>Single RISC-V @96 MHz. CoreMark 303.</td><td>320 KB / 128 KB + 4 KB LP</td><td>SiP flash 2 or 4 MB</td><td>QFN28/32/40</td></tr>
+    <tr><td class="meth">ESP32-P4</td><td>Dual RISC-V RV32IMAFC @400 MHz with FPU + 128-bit AI/DSP vector extensions, plus LP core @40 MHz.</td><td>768 KB HP L2MEM / 128 KB + 16 KB LP</td><td>16 or 32 MB in-package PSRAM (P4NRW16X/32X); external flash + PSRAM via SPI/OPI</td><td>QFN104</td></tr>
+  </table>
+
+  <h3 class="cy">Peripheral standouts</h3>
+  <p>Everything has SPI/I2C/UART/timers/ADC. What differs is the stuff at the edges.</p>
+
+  <table>
+    <tr>
+      <th>Chip</th>
+      <th>Has that others don't</th>
+      <th>Missing</th>
+    </tr>
+    <tr><td class="meth">ESP32</td><td>Ethernet MAC, SD/SDIO/MMC host, 2&times;8-bit DAC, Hall sensor, 10 touch channels, 16 LED PWM</td><td>Native USB of any kind</td></tr>
+    <tr><td class="meth">ESP32-S2</td><td>USB OTG (FS), DVP camera interface, LCD interface, 14 touch channels, 2&times;DAC</td><td>Bluetooth, MCPWM, Ethernet, SD host</td></tr>
+    <tr><td class="meth">ESP32-S3</td><td>USB OTG (FS), camera + LCD interfaces, SD/MMC host, 14 touch, MCPWM</td><td>DAC</td></tr>
+    <tr><td class="meth">ESP32-C2</td><td>20 dBm high-power BLE mode</td><td>Touch, USB, most of the peripheral set</td></tr>
+    <tr><td class="meth">ESP32-C3</td><td>Debug Assist, RMT, TWAI</td><td>DAC, touch</td></tr>
+    <tr><td class="meth">ESP32-C6</td><td>SDIO, MCPWM, three radios on one antenna</td><td>DAC, touch</td></tr>
+    <tr><td class="meth">ESP32-C5</td><td>SDIO 2.0 slave, dedicated Key Manager, TEE (APM + PMP)</td><td>DAC, touch</td></tr>
+    <tr><td class="meth">ESP32-C61</td><td>Zero-crossing comparator, Event Task Matrix</td><td>802.15.4, DAC, touch</td></tr>
+    <tr><td class="meth">ESP32-H2</td><td>Certified Zigbee-Compliant Platform + Thread 1.3 Component</td><td>Wi-Fi entirely (deliberate)</td></tr>
+    <tr><td class="meth">ESP32-P4</td><td>USB 2.0 HS OTG, MIPI-CSI + MIPI-DSI, H.264 encoder (1080p30), JPEG codec, ISP, pixel-processing accelerator, 10/100 Ethernet MAC, I3C, SDIO 3.0 host, 5&times;UART, touch, voice activity detection, Key Management Unit</td><td>Any radio</td></tr>
+  </table>
+
+  <h3 class="cy">Power (datasheet, bare chip)</h3>
+
+  <table>
+    <tr>
+      <th>Chip</th>
+      <th>Deep sleep</th>
+      <th>Light sleep</th>
+      <th>Active RF notes</th>
+    </tr>
+    <tr><td class="meth">ESP32</td><td>~10 µA</td><td>—</td><td>ULP sensor-monitored pattern ~100 µA at 1% ADC duty</td></tr>
+    <tr><td class="meth">ESP32-S2</td><td>~20 µA (revised from advertised 2-4 µA; boards ~30 µA)</td><td>—</td><td>ULP touch-monitored ~22 µA at 1% duty</td></tr>
+    <tr><td class="meth">ESP32-S3</td><td>~7 µA (RTC on) / ~1 µA (RTC off)</td><td>~240 µA</td><td>Wi-Fi TX peak ~310 mA; modem-sleep ~15 mA</td></tr>
+    <tr><td class="meth">ESP32-C3</td><td>5 µA</td><td>130 µA</td><td>TX 802.11b @21 dBm 335 mA; RX 84-87 mA; modem-sleep 13-28 mA</td></tr>
+    <tr><td class="meth">ESP32-C6</td><td>7 µA headline (35 µA in Table 5-11)</td><td>180 µA</td><td>ax TX @16.5 dBm ~252 mA; 802.15.4 TX @20 dBm ~305 mA</td></tr>
+    <tr><td class="meth">ESP32-C5</td><td>very low per datasheet</td><td>—</td><td>~80 mA active at high throughput, ~4 mA modem-sleep (third-party)</td></tr>
+    <tr><td class="meth">ESP32-H2</td><td>~8 µA (module, measured)</td><td>—</td><td>~24 mA active average</td></tr>
+    <tr><td class="meth">ESP32-P4</td><td colspan="3">Preliminary datasheet; specific µA/mA values not publicly extractable — consult ESP32-P4 datasheet Section 5.6 directly</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>Datasheet vs dev board reality</strong>
+    Every sleep figure above is chip-level, measured on Espressif test fixtures. On a dev board, the LDO (an AMS1117-3.3 idles at ~5 mA), the USB-UART bridge (a CP2102N draws 2-5 mA even idle) and the power LED push measured deep sleep into milliamps — often 1000&times; the datasheet number. A DevKitC V4 measures ~3.8 mA in deep sleep against the ~10 µA datasheet figure. You need a bare module on a custom PCB to approach datasheet numbers.
+  </div>
+
+  <h3 class="cy">Which one do I pick</h3>
+
+  <ol class="step-list cy">
+    <li><strong>Bluetooth Classic (A2DP audio, SPP) or Ethernet MAC + Wi-Fi in one chip</strong> Original ESP32 — the only member with BR/EDR. If you only need BLE, move to C3 (cheaper) or S3 (more capable).</li>
+    <li><strong>On-device AI / vision / voice, camera + LCD, USB HID</strong> ESP32-S3. Dual LX7 + SIMD + octal PSRAM is unmatched among the connectivity chips. If you exceed ~1080p or need H.264/MIPI, step up to P4.</li>
+    <li><strong>Matter smart home / Thread / Zigbee</strong> ESP32-C6 (mains or moderate duty) or ESP32-H2 (battery mesh endpoint, no Wi-Fi). H2 as an RCP plus an S3/ESP32 host makes a Thread border router or Zigbee-to-Matter bridge.</li>
+    <li><strong>5 GHz Wi-Fi (congested 2.4 GHz, streaming, IP cameras)</strong> ESP32-C5, the only dual-band part. Reconsider for tiny battery sensors — its 5 GHz active power is higher; a C6 or C3 may fit better.</li>
+    <li><strong>High-volume, cost-critical Wi-Fi + BLE (plugs, bulbs)</strong> ESP32-C2 for the floor, ESP32-C3 for mainstream, ESP32-C61 when you want Wi-Fi 6 TWT battery savings + PSRAM but not 802.15.4.</li>
+    <li><strong>Camera/display-heavy HMI, edge vision, kiosks</strong> ESP32-P4 plus a companion radio chip (commonly C6, via ESP-Hosted over SDIO/SPI). Only if you genuinely need the media engine; otherwise S3 is cheaper and self-contained.</li>
+    <li><strong>Wi-Fi + USB but no Bluetooth, low cost</strong> ESP32-S2. USB OTG + touch + 43 GPIO.</li>
+  </ol>
+
+  <div class="info-box cy">
+    <strong>Naming and revision traps</strong>
+    ESP32-C2 and ESP8684 are the same silicon (ESP8684 is the SiP name; ESP8685 is likewise a C3 SiP). C3 revision v1.1 vs v0.4 differ in usable SRAM and required IDF versions. Several part numbers are EOL and superseded (ESP32-D0WDR2-V3, ESP32-P4NRW32). BLE minor versions in marketing copy drift between 5.0/5.2/5.3 for the same chip — trust the certification in the datasheet, not the product page. Always pull the exact sub-variant datasheet before committing a design.
+  </div>
+</section>
+
 <!-- boot modes -->
-<section id="boot">
+<section id="boot" data-num="03">
   <h2><em class="or">Boot</em> Modes &amp; Strap Pins</h2>
   <div class="section-bar"></div>
   <p>Every ESP32 chip samples a handful of GPIO pins in the first few microseconds after reset comes high. Those samples decide whether the chip boots from flash, enters the UART download bootloader, or does something weird. If you have flashing problems and the wiring looks right, it's almost always strap pins.</p>
@@ -453,11 +571,11 @@ td.yl   { color: var(--yellow); }
   <pre class="diagram cy"><span class="dim">    USB-serial            transistor pair             ESP32</span>
 <span class="dim">    ──────────            ───────────────             ─────</span>
 
-      <span class="acc2">DTR</span>  ────┬─────┐                                <span class="acc">EN</span>
+      <span class="acc2">DTR</span>  ─────┬─────┐                                <span class="acc">EN</span>
                 │     │ Q1                              ▲
                 │     ├──── BASE                        │
                 │     │                                 │
-      <span class="acc2">RTS</span>  ──┐ │  ┌──┴── BASE  Q2                    <span class="acc">GPIO0</span>
+      <span class="acc2">RTS</span>  ───┐ │  ┌──┴── BASE  Q2                    <span class="acc">GPIO0</span>
               │ │  │                                    ▲
               └─┼──┘                                    │
                 │                                       │
@@ -535,7 +653,7 @@ td.yl   { color: var(--yellow); }
 </section>
 
 <!-- wire -->
-<section id="wire">
+<section id="wire" data-num="04">
   <h2>SLIP <em class="cy">Wire</em> Protocol</h2>
   <div class="section-bar cy"></div>
   <p>esptool talks to the ROM bootloader using a binary command protocol over UART, framed with SLIP (Serial Line Internet Protocol, RFC 1055). Reading a SLIP-framed esptool exchange from a logic analyzer is one of the fastest ways to understand what's happening when uploads fail.</p>
@@ -549,9 +667,9 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 
 <span class="cm">// after slip escaping (with END framing)</span>
 <span class="key">C0</span> A1 B2 <span class="kw">DB DC</span> D4 <span class="kw">DB DD</span> F6 <span class="key">C0</span>
-<span class="cm">^^      ^^^^^      ^^^^^      ^^</span>
-<span class="cm">|       escape     escape    end</span>
-<span class="cm">start   for C0     for DB    delimiter</span></pre>
+<span class="cm">^^       ^^^^^    ^^^^^    ^^</span>
+<span class="cm">|        escape   escape   end</span>
+<span class="cm">start    for C0   for DB   delimiter</span></pre>
 
   <p>Decode is the reverse: read until you see an unescaped <code>C0</code>, then walk the buffer replacing escape pairs back to their original bytes. Because escape bytes can never appear unescaped inside a packet, framing is unambiguous even if you join mid-stream and miss the start.</p>
 
@@ -560,9 +678,9 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
   <pre class="cy"><span class="label">esptool command packet (pre-slip-encoding)</span>
  0       1       2       3       4       5       6       7
 +-------+-------+-------+-------+-------+-------+-------+-------+
-| <span class="kw">DIR</span>   | <span class="kw">CMD</span>   | <span class="kw">SIZE (LE)</span>     | <span class="kw">CHECKSUM (LE32)</span>             |
+| <span class="kw">DIR</span>   | <span class="kw">CMD</span>   | <span class="kw">SIZE (LE)</span>     | <span class="kw">CHECKSUM (LE32)</span>               |
 +-------+-------+-------+-------+-------+-------+-------+-------+
-| <span class="key">DATA ...                                                       </span>|
+| <span class="key">DATA ...                                                      </span>|
 +---------------------------------------------------------------+
 
   <span class="hi">DIR</span>      0x00 = request, 0x01 = response
@@ -629,24 +747,24 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
   <pre class="cy"><span class="label">logic analyzer view, host → chip in green</span>
 <span class="cm">// host sends SYNC</span>
 <span class="key">C0</span> <span class="kw">00 08</span> <span class="val">24 00</span> <span class="num">00 00 00 00</span> <span class="val">07 07 12 20 55 55 55 55 ... 55</span> <span class="key">C0</span>
-                                    <span class="dim">^ data: 36 bytes</span>
+                           <span class="dim">^ data: 36 bytes</span>
 
 <span class="cm">// chip responds (echoes 8 trailing 0x55, status 0/0)</span>
 <span class="key">C0</span> <span class="kw">01 08</span> <span class="val">04 00</span> <span class="num">00 00 00 00</span> <span class="val">00 00 00 00</span> <span class="key">C0</span>
 
 <span class="cm">// host sends READ_REG against EFUSE_BLK0_RDATA3 (0x3FF5A00C on classic)</span>
 <span class="key">C0</span> <span class="kw">00 0A</span> <span class="val">04 00</span> <span class="num">00 00 00 00</span> <span class="val">0C A0 F5 3F</span> <span class="key">C0</span>
-                                    <span class="dim">^ register address, LE32</span>
+                           <span class="dim">^ register address, LE32</span>
 
 <span class="cm">// chip responds with the register value (32-bit LE)</span>
 <span class="key">C0</span> <span class="kw">01 0A</span> <span class="val">04 00</span> <span class="num">A4 7C 24 BC</span> <span class="val">00 00 00 00</span> <span class="key">C0</span>
-                  <span class="dim">^ value goes in the "value" field, not data</span></pre>
+               <span class="dim">^ value goes in the "value" field, not data</span></pre>
 
   <p>READ_REG and WRITE_REG don't use the data field for results. The 32-bit register value comes back in what would be the checksum slot of the response packet. Awkward, but that's how the protocol grew.</p>
 </section>
 
 <!-- stub -->
-<section id="stub">
+<section id="stub" data-num="05">
   <h2>The <em class="cy">Stub</em> Loader</h2>
   <div class="section-bar cy"></div>
   <p>The ROM bootloader on every ESP32 chip is fixed silicon-or-mask-ROM and can't be patched. It's also pretty minimal: no compression, no faster baud, no MD5 verification, slow flash writes. To work around this, esptool uploads a small program to RAM at the start of every session called the <em>stub loader</em>. The stub re-implements the same protocol but with extra commands and fewer bugs.</p>
@@ -655,26 +773,26 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 
   <pre class="diagram cy"><span class="dim">    HOST                                        CHIP (ROM)</span>
       <span class="acc2">│</span>                                            <span class="acc">│</span>
-      <span class="acc2">│</span>  SYNC ──────────────────────────────────▶ <span class="acc">│</span>
-      <span class="acc2">│</span>  ◀──────────────────────────────── ack    <span class="acc">│</span>
+      <span class="acc2">│</span>  SYNC ───────────────────────────────────▶ <span class="acc">│</span>
+      <span class="acc2">│</span>  ◀───────────────────────────────── ack    <span class="acc">│</span>
       <span class="acc2">│</span>                                            <span class="acc">│</span>
       <span class="acc2">│</span>  MEM_BEGIN(addr=stub.text_addr,            <span class="acc">│</span>
       <span class="acc2">│</span>            size=stub.text_size,            <span class="acc">│</span>
       <span class="acc2">│</span>            blocks=N, blocksize=4096) ────▶ <span class="acc">│</span>
-      <span class="acc2">│</span>  ◀──────────────────────────────── ack    <span class="acc">│</span>
+      <span class="acc2">│</span>  ◀───────────────────────────────── ack    <span class="acc">│</span>
       <span class="acc2">│</span>                                            <span class="acc">│</span>
-      <span class="acc2">│</span>  MEM_DATA(seq=0, payload=text_block_0) ─▶ <span class="acc">│</span>
-      <span class="acc2">│</span>  MEM_DATA(seq=1, payload=text_block_1) ─▶ <span class="acc">│</span>
+      <span class="acc2">│</span>  MEM_DATA(seq=0, payload=text_block_0) ──▶ <span class="acc">│</span>
+      <span class="acc2">│</span>  MEM_DATA(seq=1, payload=text_block_1) ──▶ <span class="acc">│</span>
       <span class="acc2">│</span>  ...                                       <span class="acc">│</span>
       <span class="acc2">│</span>                                            <span class="acc">│</span>
       <span class="acc2">│</span>  MEM_BEGIN(addr=stub.data_addr, ...) ────▶ <span class="acc">│</span>
-      <span class="acc2">│</span>  MEM_DATA(seq=0, payload=data_block_0) ─▶ <span class="acc">│</span>
+      <span class="acc2">│</span>  MEM_DATA(seq=0, payload=data_block_0) ──▶ <span class="acc">│</span>
       <span class="acc2">│</span>  ...                                       <span class="acc">│</span>
       <span class="acc2">│</span>                                            <span class="acc">│</span>
-      <span class="acc2">│</span>  MEM_END(entry=stub.entry_addr) ────────▶ <span class="acc">│</span>
+      <span class="acc2">│</span>  MEM_END(entry=stub.entry_addr) ─────────▶ <span class="acc">│</span>
       <span class="acc2">│</span>                                            <span class="acc">│</span>  jump to entry
       <span class="acc2">│</span>                                            <span class="acc3">│</span>  STUB now running
-      <span class="acc2">│</span>  ◀──── 4 bytes <span class="hi">"OHAI"</span> over UART          <span class="acc3">│</span>  prints OHAI
+      <span class="acc2">│</span>  ◀──── 4 bytes <span class="hi">"OHAI"</span> over UART            <span class="acc3">│</span>  prints OHAI
       <span class="acc2">│</span>                                            <span class="acc3">│</span>
       <span class="acc2">│</span>  CHANGE_BAUDRATE(921600) ────────────────▶ <span class="acc3">│</span>
       <span class="acc2">│</span>  ◀───────────────────────────────── ack    <span class="acc3">│</span>
@@ -733,7 +851,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 </section>
 
 <!-- flash -->
-<section id="flash">
+<section id="flash" data-num="06">
   <h2>Flash <em class="yl">Geometry</em></h2>
   <div class="section-bar yl"></div>
   <p>Where things live on the SPI flash chip is one of the most chip-variant-specific aspects of the ESP32 family. The flash itself is a generic 25-series SPI chip (Winbond, GigaDevice, ISSI, XMC), but the address at which the bootloader expects to start is hardcoded into the silicon ROM. Putting the bootloader at the wrong offset means a chip that successfully accepts the write but never boots.</p>
@@ -761,26 +879,26 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 <span class="num">0x000000</span>  <span class="dim">┌─────────────────────────────────┐</span>  <span class="cm">// reserved (secure boot digest area)</span>
           <span class="dim">│  empty / digest                 │</span>
 <span class="num">0x001000</span>  <span class="dim">├─────────────────────────────────┤</span>
-          <span class="dim">│  </span><span class="hi">2nd-stage bootloader</span><span class="dim">             │</span>  <span class="cm">// bootloader.bin (~25KB)</span>
+          <span class="dim">│  </span><span class="hi">2nd-stage bootloader</span><span class="dim">           │</span>  <span class="cm">// bootloader.bin (~25KB)</span>
           <span class="dim">│                                 │</span>
 <span class="num">0x008000</span>  <span class="dim">├─────────────────────────────────┤</span>
-          <span class="dim">│  </span><span class="hi">partition table</span><span class="dim">                  │</span>  <span class="cm">// 4KB, ends with MD5 entry</span>
+          <span class="dim">│  </span><span class="hi">partition table</span><span class="dim">                │</span>  <span class="cm">// 4KB, ends with MD5 entry</span>
 <span class="num">0x009000</span>  <span class="dim">├─────────────────────────────────┤</span>
           <span class="dim">│  </span><span class="acc3">nvs</span><span class="dim"> (data/wifi)                │</span>  <span class="cm">// 24KB key-value store</span>
 <span class="num">0x00f000</span>  <span class="dim">├─────────────────────────────────┤</span>
-          <span class="dim">│  </span><span class="acc3">phy_init</span><span class="dim">                        │</span>  <span class="cm">// 4KB RF calibration</span>
+          <span class="dim">│  </span><span class="acc3">phy_init</span><span class="dim">                       │</span>  <span class="cm">// 4KB RF calibration</span>
 <span class="num">0x010000</span>  <span class="dim">├─────────────────────────────────┤</span>
           <span class="dim">│                                 │</span>
-          <span class="dim">│  </span><span class="acc">factory app</span><span class="dim"> (or ota_0)          │</span>  <span class="cm">// 1MB+, your code</span>
+          <span class="dim">│  </span><span class="acc">factory app</span><span class="dim"> (or ota_0)         │</span>  <span class="cm">// 1MB+, your code</span>
           <span class="dim">│                                 │</span>
 <span class="num">0x110000</span>  <span class="dim">├─────────────────────────────────┤</span>
-          <span class="dim">│  </span><span class="acc">ota_1</span><span class="dim"> (if dual-OTA layout)      │</span>  <span class="cm">// matches ota_0 size</span>
+          <span class="dim">│  </span><span class="acc">ota_1</span><span class="dim"> (if dual-OTA layout)     │</span>  <span class="cm">// matches ota_0 size</span>
           <span class="dim">│                                 │</span>
 <span class="num">0x210000</span>  <span class="dim">├─────────────────────────────────┤</span>
-          <span class="dim">│  </span><span class="acc3">spiffs</span><span class="dim"> / </span><span class="acc3">littlefs</span><span class="dim"> / userdata    │</span>
+          <span class="dim">│  </span><span class="acc3">spiffs</span><span class="dim"> / </span><span class="acc3">littlefs</span><span class="dim"> / userdata   │</span>
           <span class="dim">│                                 │</span>
 <span class="num">0x3FF000</span>  <span class="dim">├─────────────────────────────────┤</span>
-          <span class="dim">│  </span><span class="acc3">otadata</span><span class="dim">                         │</span>  <span class="cm">// 8KB, holds active OTA slot</span>
+          <span class="dim">│  </span><span class="acc3">otadata</span><span class="dim">                        │</span>  <span class="cm">// 8KB, holds active OTA slot</span>
 <span class="num">0x400000</span>  <span class="dim">└─────────────────────────────────┘</span>  <span class="cm">// end of 4MB flash</span></pre>
 
   <h3 class="yl">The partition table</h3>
@@ -789,11 +907,11 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
   <pre class="yl"><span class="label">partition table entry layout</span>
  0       1       2       3       4       5       6       7
 +-------+-------+-------+-------+-------+-------+-------+-------+
-| <span class="kw">MAGIC (LE16)</span>  | <span class="kw">TYPE</span>  | <span class="kw">SUB</span>   | <span class="kw">OFFSET (LE32)</span>             |
+| <span class="kw">MAGIC (LE16)</span>  | <span class="kw">TYPE</span>  | <span class="kw">SUB</span>   | <span class="kw">OFFSET (LE32)</span>                 |
 +-------+-------+-------+-------+-------+-------+-------+-------+
-| <span class="kw">SIZE (LE32)</span>                  | <span class="kw">LABEL (16 bytes, null-padded)</span>
+| <span class="kw">SIZE (LE32)</span>                   | <span class="kw">LABEL (16 bytes, null-padded)</span>
 +-------+-------+-------+-------+-------+-------+-------+-------+
-                                | <span class="kw">FLAGS (LE32)</span>              |
+                                | <span class="kw">FLAGS (LE32)</span>                  |
                                 +-------+-------+-------+-------+
 
   <span class="hi">MAGIC</span>   0xAA50  (regular entry) or 0xEBEB (md5 trailer)
@@ -859,7 +977,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 </section>
 
 <!-- read write -->
-<section id="rw">
+<section id="rw" data-num="07">
   <h2><em class="or">Read</em>, Write &amp; Verify</h2>
   <div class="section-bar"></div>
   <p>The everyday operations. The flags below mostly compose: <code>--port</code>, <code>--baud</code>, <code>--chip</code>, <code>--before</code>, <code>--after</code> apply to all of them.</p>
@@ -968,7 +1086,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 </section>
 
 <!-- image format -->
-<section id="image">
+<section id="image" data-num="08">
   <h2><em class="cy">Image</em> Format &amp; elf2image</h2>
   <div class="section-bar cy"></div>
   <p>The <code>.bin</code> file you flash is not just a copy of your <code>.elf</code>. It's a structured container with a header, a list of segments, and a checksum (and on newer chips, a SHA-256). The conversion happens via <code>esptool.py elf2image</code>, which the IDF build system runs automatically.</p>
@@ -978,13 +1096,13 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
   <pre class="cy"><span class="label">esp32 firmware image header (24 bytes)</span>
  0       1       2       3       4       5       6       7
 +-------+-------+-------+-------+-------+-------+-------+-------+
-| <span class="kw">MAGIC</span> | <span class="kw">SEG#</span>  | <span class="kw">FMODE</span> | <span class="kw">FSF</span>   | <span class="kw">ENTRY POINT (LE32)</span>        |
+| <span class="kw">MAGIC</span> | <span class="kw">SEG#</span>  | <span class="kw">FMODE</span> | <span class="kw">FSF</span>   | <span class="kw">ENTRY POINT (LE32)</span>            |
 +-------+-------+-------+-------+-------+-------+-------+-------+
-| <span class="kw">WP_PIN</span>| <span class="kw">CLK_DRV / Q_DRV</span> ...        | <span class="kw">CHIP_ID (LE16)</span> |       |
+| <span class="kw">WP_PIN</span>| <span class="kw">CLK_DRV / Q_DRV</span> ...   | <span class="kw">CHIP_ID (LE16)</span>|               |
 +-------+-------+-------+-------+-------+-------+-------+-------+
-| <span class="kw">MIN_REV</span>...                | <span class="kw">MAX_REV</span> ...                | <span class="kw">RESVD</span> |
+| <span class="kw">MIN_REV</span> ...           | <span class="kw">MAX_REV</span> ...           | <span class="kw">RESVD</span>         |
 +-------+-------+-------+-------+-------+-------+-------+-------+
-| <span class="kw">HASH_APPENDED</span>                                                  |
+| <span class="kw">HASH_APPENDED</span>                                                 |
 +-------+
 
   <span class="hi">MAGIC</span>          0xE9
@@ -1000,12 +1118,12 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 
   <pre class="cy"><span class="label">segment (variable length)</span>
 +-------+-------+-------+-------+
-| <span class="kw">LOAD ADDR (LE32)</span>            |
+| <span class="kw">LOAD ADDR (LE32)</span>              |
 +-------+-------+-------+-------+
-| <span class="kw">DATA LEN (LE32)</span>             |
+| <span class="kw">DATA LEN (LE32)</span>               |
 +-------+-------+-------+-------+
-| <span class="key">DATA bytes ...                              </span>|
-+--------------------------------+
+| <span class="key">DATA bytes ...                </span>|
++-------------------------------+
 
   <span class="cm">// repeats SEG# times</span>
   <span class="cm">// padded so total image length is multiple of 16 bytes</span>
@@ -1076,7 +1194,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 </section>
 
 <!-- efuse -->
-<section id="efuse">
+<section id="efuse" data-num="09">
   <h2><em class="rd">eFuse</em> &amp; Security</h2>
   <div class="section-bar rd"></div>
   <p>eFuses are one-time-programmable (OTP) bits inside every ESP32 chip. They store the factory MAC address, the chip revision, calibration values, and a small set of user-burnable security keys and flags. Once a fuse is burned (set to 1), it cannot be unburned. Misusing <code>espefuse.py</code> is a fast way to brick a chip permanently.</p>
@@ -1191,7 +1309,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 </section>
 
 <!-- idf -->
-<section id="idf">
+<section id="idf" data-num="10">
   <h2>ESP-IDF: <em class="or">idf.py</em></h2>
   <div class="section-bar"></div>
   <p>Before <code>idf.py</code>, an ESP-IDF build was a CMake invocation, a Python script to merge images, and a separate esptool call. The wrapper folds all of it into one CLI. Under the hood it still calls esptool; you can see the exact command with <code>-v</code>.</p>
@@ -1260,7 +1378,7 @@ build/
 </section>
 
 <!-- serial -->
-<section id="serial">
+<section id="serial" data-num="11">
   <h2>Serial Monitors &amp; <em class="cy">Discovery</em></h2>
   <div class="section-bar cy"></div>
   <p>Half of ESP32 troubleshooting is figuring out which <code>/dev/ttyXXX</code> the board mounted as, what driver it's using, and whether the host's getty has stolen it. These are the commands.</p>
@@ -1349,7 +1467,7 @@ build/
 </section>
 
 <!-- jtag -->
-<section id="jtag">
+<section id="jtag" data-num="12">
   <h2><em class="yl">JTAG</em>, OpenOCD, GDB</h2>
   <div class="section-bar yl"></div>
   <p>For anything beyond <code>printf</code> debugging — single-stepping, watching memory, breaking on hardware events — you need JTAG. Espressif provides a customized OpenOCD fork that knows about Xtensa LX6/LX7 (ESP32, S2, S3) and standard RISC-V (C3, C6, H2, P4) cores.</p>
@@ -1443,7 +1561,7 @@ build/
 </section>
 
 <!-- brick -->
-<section id="brick">
+<section id="brick" data-num="13">
   <h2>Brick <em class="rd">Recovery</em></h2>
   <div class="section-bar rd"></div>
   <p>The flowchart for "my ESP32 doesn't work anymore." Most apparent bricks are not actual silicon failures, they're recoverable software states.</p>
@@ -1456,19 +1574,19 @@ build/
   <span class="dim">▼</span>
   <span class="acc">does esptool.py chip_id work?</span>
   <span class="dim">├── no  ────▶ go to "no comms" branch</span>
-  <span class="dim">└── yes ───▶ go to "comms ok" branch</span>
+  <span class="dim">└── yes ────▶ go to "comms ok" branch</span>
 
 
 <span class="hi">no comms branch</span>
   <span class="dim">│</span>
   <span class="dim">├──▶</span> manual download mode? (hold BOOT, pulse EN)
-  <span class="dim">│      ├── now works ──▶ auto-reset circuit broken: solder, swap board, or use --before no_reset</span>
+  <span class="dim">│      ├── now works ────▶ auto-reset circuit broken: solder, swap board, or use --before no_reset</span>
   <span class="dim">│      └── still fails ──▶ continue</span>
   <span class="dim">│</span>
   <span class="dim">├──▶</span> different USB cable + port? swap.
   <span class="dim">│</span>
   <span class="dim">├──▶</span> dmesg shows USB enumeration?
-  <span class="dim">│      ├── no ──▶ dead USB-serial chip or board power, check 3.3V rail</span>
+  <span class="dim">│      ├── no  ──▶ dead USB-serial chip or board power, check 3.3V rail</span>
   <span class="dim">│      └── yes ──▶ continue</span>
   <span class="dim">│</span>
   <span class="dim">├──▶</span> ROM is reachable but won't enter download:
@@ -1562,7 +1680,7 @@ build/
 </section>
 
 <!-- further -->
-<section id="further">
+<section id="further" data-num="14">
   <h2><em class="or">Further</em> Rabbit Holes</h2>
   <div class="section-bar"></div>
   <p>Things to read and experiment with to keep deepening. Each one leads to better questions.</p>
@@ -1653,20 +1771,25 @@ build/
   <span><a href="https://docs.espressif.com">docs.espressif.com</a></span>
 </div>
 
-<div class="spine">// boot · wire · stub · flash · rw · image · efuse · idf · serial · jtag · brick //</div>
+<div class="spine">// variants · boot · wire · stub · flash · rw · image · efuse · idf · serial · jtag · brick //</div>
 
 <script>
-const sections = document.querySelectorAll('section[id]');
+const sections = document.querySelectorAll('.container > section[id]');
 const navLinks = document.querySelectorAll('.nav a');
-window.addEventListener('scroll', () => {
-  let current = '';
-  sections.forEach(s => {
-    if (window.scrollY >= s.offsetTop - 80) current = s.id;
-  });
-  navLinks.forEach(a => {
-    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
-  });
-});
+function activate(id) {
+  const target = document.getElementById(id) ? id : sections[0].id;
+  sections.forEach(s => s.classList.toggle('active', s.id === target));
+  navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + target));
+  window.scrollTo(0, 0);
+}
+navLinks.forEach(a => a.addEventListener('click', e => {
+  e.preventDefault();
+  const id = a.getAttribute('href').slice(1);
+  history.replaceState(null, '', '#' + id);
+  activate(id);
+}));
+window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
+activate(location.hash.slice(1));
 </script>
 </body>
 </html>
