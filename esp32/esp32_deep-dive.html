@@ -74,30 +74,97 @@ body {
   background: var(--bg);
   border-bottom: 1px solid var(--border);
   padding: 0 20px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
 }
 .nav-inner {
   max-width: 1100px;
   margin: 0 auto;
+  height: 44px;
   display: flex;
-  gap: 0;
-  white-space: nowrap;
+  align-items: center;
+  justify-content: space-between;
 }
-.nav a {
-  display: block;
-  padding: 12px 14px;
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 1px;
+.nav-brand {
+  font-size: 9px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   color: var(--dim);
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
+}
+.nav-current {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 }
-.nav a:hover { color: var(--orange); border-bottom-color: var(--orange); }
-.nav a.active { color: var(--orange); border-bottom-color: var(--orange); }
+.nav-current:hover { border-color: var(--orange); color: var(--orange); }
+.nav-current .num { color: var(--orange); }
+.nav-hint { color: var(--dim2); margin-left: 6px; }
+
+/* radial dial */
+.radial {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(242, 241, 238, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.radial.open { opacity: 1; pointer-events: auto; }
+body.dial-open { overflow: hidden; }
+.radial-ring {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+}
+.radial-center {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  cursor: pointer;
+}
+.radial-center:hover { color: var(--orange); }
+.radial-item {
+  position: absolute;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--dim);
+  padding: 4px 6px;
+}
+.radial-item span { color: var(--dim2); margin-right: 5px; }
+.radial-item:hover, .radial-item.active { color: var(--orange); }
+.radial-item:hover span, .radial-item.active span { color: var(--orange); }
+.radial-dot {
+  position: absolute;
+  width: 5px; height: 5px;
+  background: var(--dim2);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.radial-dot.active { background: var(--orange); }
+@media (max-width: 620px) {
+  .radial.open { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .radial-ring, .radial-dot, .radial-center { display: none; }
+  .radial-item { position: static !important; transform: none !important; font-size: 12px; padding: 7px; }
+}
 
 /* layout */
 .container {
@@ -350,22 +417,17 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 <!-- nav -->
 <div class="nav">
   <div class="nav-inner">
-    <a href="#intro">Intro</a>
-    <a href="#variants">Variants</a>
-    <a href="#cores">Cores</a>
-    <a href="#boot">Boot Modes</a>
-    <a href="#wire">SLIP Wire</a>
-    <a href="#stub">Stub Loader</a>
-    <a href="#flash">Flash Geometry</a>
-    <a href="#rw">Read &amp; Write</a>
-    <a href="#image">Image Format</a>
-    <a href="#efuse">eFuse &amp; Security</a>
-    <a href="#idf">ESP-IDF</a>
-    <a href="#serial">Serial &amp; Discovery</a>
-    <a href="#jtag">JTAG &amp; OpenOCD</a>
-    <a href="#brick">Brick Recovery</a>
-    <a href="#further">Further</a>
+    <span class="nav-brand">ESP32 Deep Dive</span>
+    <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
+      <span class="num" id="navNum">01 //</span> <span id="navLabel">Intro</span> <span class="nav-hint">◎</span>
+    </button>
   </div>
+</div>
+
+<!-- radial dial -->
+<div class="radial" id="radial">
+  <div class="radial-ring" id="radialRing"></div>
+  <button class="radial-center" id="radialCenter" title="close (Esc)">01</button>
 </div>
 
 <div class="container">
@@ -1894,22 +1956,86 @@ build/
 <div class="spine">// variants · cores · boot · wire · stub · flash · rw · image · efuse · idf · serial · jtag · brick //</div>
 
 <script>
+const LABELS = {
+  intro: 'Intro', variants: 'Variants', cores: 'Cores', boot: 'Boot Modes',
+  wire: 'SLIP Wire', stub: 'Stub Loader', flash: 'Flash Geometry', rw: 'Read & Write',
+  image: 'Image Format', efuse: 'eFuse & Security', idf: 'ESP-IDF',
+  serial: 'Serial & Discovery', jtag: 'JTAG & OpenOCD', brick: 'Brick Recovery', further: 'Further'
+};
 const sections = [...document.querySelectorAll('.container > section[id]')];
-const navLinks = [...document.querySelectorAll('.nav a')];
+const radial = document.getElementById('radial');
+const ring = document.getElementById('radialRing');
+const center = document.getElementById('radialCenter');
+const navNum = document.getElementById('navNum');
+const navLabel = document.getElementById('navLabel');
+
+const items = sections.map(s => {
+  const a = document.createElement('a');
+  a.href = '#' + s.id;
+  a.className = 'radial-item';
+  a.innerHTML = '<span>' + s.dataset.num + '</span>' + (LABELS[s.id] || s.id);
+  radial.appendChild(a);
+  const dot = document.createElement('span');
+  dot.className = 'radial-dot';
+  radial.appendChild(dot);
+  return { sec: s, a, dot };
+});
+
+function layout() {
+  const rx = Math.max(140, Math.min(innerWidth * 0.5 - 150, 330));
+  const ry = Math.max(150, Math.min(innerHeight * 0.5 - 100, 330));
+  ring.style.width = (rx - 26) * 2 + 'px';
+  ring.style.height = (ry - 26) * 2 + 'px';
+  items.forEach((it, i) => {
+    const ang = -Math.PI / 2 + i * 2 * Math.PI / items.length;
+    const x = Math.cos(ang), y = Math.sin(ang);
+    it.a.style.left = 'calc(50% + ' + (rx * x).toFixed(1) + 'px)';
+    it.a.style.top = 'calc(50% + ' + (ry * y).toFixed(1) + 'px)';
+    const tx = x > 0.35 ? '0%' : x < -0.35 ? '-100%' : '-50%';
+    const ty = y > 0.35 ? '0%' : y < -0.35 ? '-100%' : '-50%';
+    it.a.style.transform = 'translate(' + tx + ', ' + ty + ')';
+    it.dot.style.left = 'calc(50% + ' + ((rx - 26) * x).toFixed(1) + 'px)';
+    it.dot.style.top = 'calc(50% + ' + ((ry - 26) * y).toFixed(1) + 'px)';
+  });
+}
+function openDial() { layout(); radial.classList.add('open'); document.body.classList.add('dial-open'); }
+function closeDial() { radial.classList.remove('open'); document.body.classList.remove('dial-open'); }
+
 function activate(id) {
   const el = document.getElementById(id);
   const sec = el ? (el.closest('.container > section[id]') || sections[0]) : sections[0];
   sections.forEach(s => s.classList.toggle('active', s === sec));
-  navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + sec.id));
+  items.forEach(it => {
+    it.a.classList.toggle('active', it.sec === sec);
+    it.dot.classList.toggle('active', it.sec === sec);
+  });
+  navNum.textContent = sec.dataset.num + ' //';
+  navLabel.textContent = LABELS[sec.id] || sec.id;
+  center.textContent = sec.dataset.num;
+  closeDial();
   if (el && el !== sec) el.scrollIntoView();
   else window.scrollTo(0, 0);
 }
-document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+function go(id) { history.replaceState(null, '', '#' + id); activate(id); }
+
+document.getElementById('navCurrent').addEventListener('click', openDial);
+center.addEventListener('click', closeDial);
+radial.addEventListener('click', e => { if (e.target === radial) closeDial(); });
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
   e.preventDefault();
-  const id = a.getAttribute('href').slice(1);
-  history.replaceState(null, '', '#' + id);
-  activate(id);
-}));
+  go(a.getAttribute('href').slice(1));
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') return closeDial();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const cur = sections.findIndex(s => s.classList.contains('active'));
+    const next = (cur + (e.key === 'ArrowRight' ? 1 : sections.length - 1)) % sections.length;
+    go(sections[next].id);
+  }
+});
+window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
 window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
 activate(location.hash.slice(1));
 </script>
