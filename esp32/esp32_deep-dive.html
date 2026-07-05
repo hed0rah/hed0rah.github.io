@@ -261,6 +261,9 @@ td.meth { color: var(--orange); font-weight: 700; white-space: nowrap; }
 td.cy   { color: var(--cyan); }
 td.rd   { color: var(--red); }
 td.yl   { color: var(--yellow); }
+td.meth a { color: inherit; text-decoration: none; border-bottom: 1px dashed currentColor; }
+td.meth a:hover { color: var(--bright); }
+h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 
 /* two col */
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; align-items: stretch; }
@@ -349,6 +352,7 @@ td.yl   { color: var(--yellow); }
   <div class="nav-inner">
     <a href="#intro">Intro</a>
     <a href="#variants">Variants</a>
+    <a href="#cores">Cores</a>
     <a href="#boot">Boot Modes</a>
     <a href="#wire">SLIP Wire</a>
     <a href="#stub">Stub Loader</a>
@@ -370,12 +374,71 @@ td.yl   { color: var(--yellow); }
 <section id="intro" data-num="01">
   <h2>Beyond the <em class="or">Datasheet</em></h2>
   <div class="section-bar"></div>
-  <p>Most people interact with ESP32 chips through one command: <code>esptool.py write_flash</code>. It works, the LED blinks, you move on. This document is for when it doesn't work, or when you need to do something more interesting than blink the LED, or when you want to understand why an ESP32-C3 has its bootloader at <code>0x0</code> while ESP32-classic has it at <code>0x1000</code>.</p>
-  <p>Scope: ESP32 family chips (classic, S2, S3, C3, C5, C6, H2, P4) talking to a host computer over UART or native USB. Reference tooling is <code>esptool.py</code> v4.x, <code>espefuse.py</code>, <code>espsecure.py</code>, and the ESP-IDF wrapper <code>idf.py</code>. Where chip variants differ, called out explicitly.</p>
+  <p>What happens between <code>esptool.py write_flash</code> and a booting chip: strap pins, the SLIP wire protocol, the stub loader, flash geometry, eFuses, JTAG, brick recovery. Reference tooling is <code>esptool.py</code> v4.x, <code>espefuse.py</code>, <code>espsecure.py</code>, <code>idf.py</code>, and Espressif's OpenOCD fork. The family matrix lives in <a href="#variants">Variants</a>, the CPU architecture detail in <a href="#cores">Cores</a>.</p>
+
+  <h3>The board on your desk</h3>
+
+  <pre class="diagram"><span class="dim">        ESP32-DevKitC V4 · ESP32-WROOM-32 module · top view, USB at the bottom</span>
+
+                          <span class="dim">┌───────────────────────────┐</span>
+<span class="acc3">                3.3V out</span><span class="dim"> ─┤</span> <span class="acc3">3V3  </span>               <span class="acc3">  GND</span> <span class="dim">├─ </span><span class="acc3">ground</span>
+<span class="acc">         reset · CHIP_PU</span><span class="dim"> ─┤</span> <span class="acc">EN   </span>                IO23 <span class="dim">├─ </span>VSPI MOSI
+  input-only · ADC1 · 36<span class="dim"> ─┤</span> VP                   IO22 <span class="dim">├─ </span>I2C SCL
+  input-only · ADC1 · 39<span class="dim"> ─┤</span> VN                  <span class="acc2">  TX0</span> <span class="dim">├─ </span><span class="acc2">UART0 TX · esptool + console</span>
+       input-only · ADC1<span class="dim"> ─┤</span> IO34                <span class="acc2">  RX0</span> <span class="dim">├─ </span><span class="acc2">UART0 RX · esptool + console</span>
+       input-only · ADC1<span class="dim"> ─┤</span> IO35                 IO21 <span class="dim">├─ </span>I2C SDA
+                          <span class="dim">│</span> IO32                <span class="acc3">  GND</span> <span class="dim">├─ </span><span class="acc3">ground</span>
+                          <span class="dim">│</span> IO33                 IO19 <span class="dim">├─ </span>VSPI MISO
+                    DAC1<span class="dim"> ─┤</span> IO25                 IO18 <span class="dim">├─ </span>VSPI SCK
+                    DAC2<span class="dim"> ─┤</span> IO26                <span class="acc">  IO5</span> <span class="dim">├─ </span><span class="acc">VSPI CS · strap</span>
+                          <span class="dim">│</span> IO27                 IO17 <span class="dim">│</span>
+                HSPI SCK<span class="dim"> ─┤</span> IO14                 IO16 <span class="dim">│</span>
+<span class="acc"> strap · MTDI · VDD_SDIO</span><span class="dim"> ─┤</span> <span class="acc">IO12 </span>                 IO4 <span class="dim">│</span>
+<span class="acc3">                  ground</span><span class="dim"> ─┤</span> <span class="acc3">GND  </span>               <span class="acc">  IO0</span> <span class="dim">├─ </span><span class="acc">strap · BOOT button</span>
+               HSPI MOSI<span class="dim"> ─┤</span> IO13                <span class="acc">  IO2</span> <span class="dim">├─ </span><span class="acc">strap · low/float to flash</span>
+<span class="hi">      flash · do not use</span><span class="dim"> ─┤</span> <span class="hi">SD2  </span>               <span class="acc"> IO15</span> <span class="dim">├─ </span><span class="acc">strap · MTDO · ROM log</span>
+<span class="hi">      flash · do not use</span><span class="dim"> ─┤</span> <span class="hi">SD3  </span>               <span class="hi">  SD1</span> <span class="dim">├─ </span><span class="hi">flash · do not use</span>
+<span class="hi">      flash · do not use</span><span class="dim"> ─┤</span> <span class="hi">CMD  </span>               <span class="hi">  SD0</span> <span class="dim">├─ </span><span class="hi">flash · do not use</span>
+<span class="acc3">             5V from USB</span><span class="dim"> ─┤</span> <span class="acc3">5V   </span>               <span class="hi">  CLK</span> <span class="dim">├─ </span><span class="hi">flash · do not use</span>
+                          <span class="dim">└──────────┤ USB ├──────────┘</span>
+                               <span class="dim">micro-B · CP2102 · DTR/RTS auto-reset wired to EN + IO0</span>
+
+    <span class="acc">strap</span> · <span class="acc2">UART0</span> · <span class="acc3">power</span> · <span class="hi">bonded to internal flash — leave alone</span> · in-only pins have no pull-ups</pre>
+
+  <div class="info-box warn">
+    <strong>This pinout is classic ESP32 only</strong>
+    The boot strap moves per variant: GPIO0 (classic/S2/S3), GPIO9 (C2/C3/C6/H2), GPIO28 (C5), GPIO35 (P4). Input-only pins, DACs, and the flash-bonded pins move too. The strap table in <a href="#boot">Boot Modes</a> covers every chip; JTAG pins are in <a href="#jtag">JTAG &amp; OpenOCD</a>.
+  </div>
+
+  <h3 class="cy">What's inside the package</h3>
+
+  <pre class="diagram cy">   <span class="dim">┌───────────────────────────</span><span class="hi"> ESP32-family SoC </span><span class="dim">───────────────────────────┐</span>
+   <span class="dim">│</span>                                                                        <span class="dim">│</span>
+   <span class="dim">│</span>   <span class="dim">┌─────────────────┐  ┌───────────────┐  ┌──────────────────────────┐ │</span>
+   <span class="dim">│</span>   <span class="dim">│</span><span class="hi"> CPU core(s)     </span><span class="dim">│</span>  <span class="dim">│</span><span class="hi"> boot ROM      </span><span class="dim">│</span>  <span class="dim">│</span><span class="hi"> radio                    </span><span class="dim">│</span> <span class="dim">│</span>
+   <span class="dim">│</span>   <span class="dim">│</span> Xtensa LX6/LX7  <span class="dim">│</span>  <span class="dim">│</span> mask ROM +    <span class="dim">│</span>  <span class="dim">│</span> Wi-Fi · BT · 802.15.4    <span class="dim">│</span> <span class="dim">│</span>
+   <span class="dim">│</span>   <span class="dim">│</span> or RISC-V, 1-2  <span class="dim">│</span>  <span class="dim">│</span> UART loader   <span class="dim">│</span>  <span class="dim">│</span> varies · none on P4      <span class="dim">│</span> <span class="dim">│</span>
+   <span class="dim">│</span>   <span class="dim">└────────┬────────┘  └───────────────┘  └──────────────────────────┘ │</span>
+   <span class="dim">│</span>            <span class="dim">│</span>                                                           <span class="dim">│</span>
+   <span class="dim">│</span>   <span class="dim">┌────────┴────────┐  ┌───────────────┐  ┌──────────────────────────┐ │</span>
+   <span class="dim">│</span>   <span class="dim">│</span><span class="hi"> cache / MMU     </span><span class="dim">│</span>  <span class="dim">│</span><span class="hi"> SRAM          </span><span class="dim">│</span>  <span class="dim">│</span><span class="hi"> RTC / LP domain          </span><span class="dim">│</span> <span class="dim">│</span>
+   <span class="dim">│</span>   <span class="dim">│</span> maps flash into <span class="dim">│</span>  <span class="dim">│</span> 272-768 KB    <span class="dim">│</span>  <span class="dim">│</span> ULP or LP core, RTC      <span class="dim">│</span> <span class="dim">│</span>
+   <span class="dim">│</span>   <span class="dim">│</span> IROM + DROM     <span class="dim">│</span>  <span class="dim">│</span>               <span class="dim">│</span>  <span class="dim">│</span> mem, runs in sleep       <span class="dim">│</span> <span class="dim">│</span>
+   <span class="dim">│</span>   <span class="dim">└────────┬────────┘  └───────────────┘  └──────────────────────────┘ │</span>
+   <span class="dim">│</span>            <span class="dim">│</span>                                                           <span class="dim">│</span>
+   <span class="dim">│</span>   <span class="dim">┌────────┴────────┐  ┌───────────────┐  ┌──────────────────────────┐ │</span>
+   <span class="dim">│</span>   <span class="dim">│</span><span class="hi"> SPI0/1 flash +  </span><span class="dim">│</span>  <span class="dim">│</span><span class="hi"> eFuse OTP     </span><span class="dim">│</span>  <span class="dim">│</span><span class="hi"> peripherals              </span><span class="dim">│</span> <span class="dim">│</span>
+   <span class="dim">│</span>   <span class="dim">│</span> PSRAM controller<span class="dim">│</span>  <span class="dim">│</span> MAC · keys ·  <span class="dim">│</span>  <span class="dim">│</span> UART · SPI · I2C · ADC   <span class="dim">│</span> <span class="dim">│</span>
+   <span class="dim">│</span>   <span class="dim">│</span>                 <span class="dim">│</span>  <span class="dim">│</span> config bits   <span class="dim">│</span>  <span class="dim">│</span> USB on newer chips       <span class="dim">│</span> <span class="dim">│</span>
+   <span class="dim">│</span>   <span class="dim">└────────┬────────┘  └───────────────┘  └──────────────────────────┘ │</span>
+   <span class="dim">│</span>            <span class="dim">│</span>                                                           <span class="dim">│</span>
+   <span class="dim">└────────────┼───────────────────────────────────────────────────────────┘</span>
+                <span class="dim">▼</span>
+      <span class="acc3">SPI flash · external or in-package · the thing esptool writes</span></pre>
 
   <div class="info-box cy">
     <strong>How to read this</strong>
-    Each section is independent. If you only have 10 minutes and a brick on your desk, read Boot Modes and Brick Recovery. If you're debugging upload failures, read SLIP Wire and Stub Loader. If you're chasing a flash size mismatch, read Flash Geometry. The diagrams are the load-bearing part, not the prose.
+    Each tab is independent. Brick on the desk: <a href="#boot">Boot Modes</a> + <a href="#brick">Brick Recovery</a>. Upload failures: <a href="#wire">SLIP Wire</a> + <a href="#stub">Stub Loader</a>. Flash size mismatch: <a href="#flash">Flash Geometry</a>. The diagrams are the load-bearing part, not the prose.
   </div>
 </section>
 
@@ -383,7 +446,7 @@ td.yl   { color: var(--yellow); }
 <section id="variants" data-num="02">
   <h2>Variant <em class="cy">Comparison</em></h2>
   <div class="section-bar cy"></div>
-  <p>Eleven shipping SoC families on two CPU architectures: Xtensa (LX6 in the original ESP32, LX7 in S2/S3) and RISC-V (everything since the C3, Espressif's first RISC-V chip, announced November 2020). All of them run ESP-IDF. The single most important selection axis is the radio: only C6 (2.4 GHz) and C5 (dual-band 2.4/5 GHz) combine Wi-Fi 6 + BLE 5 + 802.15.4. H2 has 802.15.4 + BLE but no Wi-Fi. S2 has Wi-Fi but no Bluetooth. The original ESP32 is the only one with Bluetooth Classic (BR/EDR). P4 has no radio at all.</p>
+  <p>Eleven shipping SoC families on two CPU architectures: Xtensa (LX6 in the original ESP32, LX7 in S2/S3) and RISC-V (everything since the C3, Espressif's first RISC-V chip, announced November 2020). All of them run ESP-IDF. The single most important selection axis is the radio: only C6 (2.4 GHz) and C5 (dual-band 2.4/5 GHz) combine Wi-Fi 6 + BLE 5 + 802.15.4. H2 has 802.15.4 + BLE but no Wi-Fi. S2 has Wi-Fi but no Bluetooth. The original ESP32 is the only one with Bluetooth Classic (BR/EDR). P4 has no radio at all. Chip names in the matrix link to per-core architecture detail in <a href="#cores">Cores</a>.</p>
 
   <h3 class="cy">Quick reference matrix</h3>
 
@@ -400,16 +463,16 @@ td.yl   { color: var(--yellow); }
       <th>USB</th>
       <th>Notable</th>
     </tr>
-    <tr><td class="meth">ESP32</td><td>Xtensa LX6 / 2</td><td>240</td><td>b/g/n</td><td>4.2 BR/EDR+LE</td><td>—</td><td>520 KB</td><td>34</td><td>—</td><td>Only BT Classic; Ethernet MAC; 2&times;DAC</td></tr>
-    <tr><td class="meth">ESP32-S2</td><td>Xtensa LX7 / 1</td><td>240</td><td>b/g/n</td><td>—</td><td>—</td><td>320 KB</td><td>43</td><td>FS OTG</td><td>Wi-Fi + USB, no BT; 2&times;DAC; touch</td></tr>
-    <tr><td class="meth">ESP32-S3</td><td>Xtensa LX7 / 2</td><td>240</td><td>b/g/n</td><td class="cy">5 (LE)</td><td>—</td><td>512 KB</td><td>45</td><td>FS OTG</td><td>AI SIMD/vector; camera/LCD; octal PSRAM</td></tr>
-    <tr><td class="meth">ESP32-C2</td><td>RISC-V / 1</td><td>120</td><td>b/g/n</td><td class="cy">5.3 LE</td><td>—</td><td>272 KB</td><td>14</td><td>—</td><td>Cheapest/smallest (sold as ESP8684 SiP)</td></tr>
-    <tr><td class="meth">ESP32-C3</td><td>RISC-V / 1</td><td>160</td><td>b/g/n</td><td class="cy">5 (LE)</td><td>—</td><td>400 KB</td><td>22</td><td>Serial/JTAG</td><td>Mainstream low-cost RISC-V</td></tr>
-    <tr><td class="meth">ESP32-C6</td><td>RISC-V HP+LP</td><td>160</td><td class="cy">Wi-Fi 6 (2.4G)</td><td class="cy">5 (LE)</td><td class="cy">yes</td><td>512+16 KB</td><td>30/22</td><td>Serial/JTAG</td><td>Matter Wi-Fi / Thread hub</td></tr>
-    <tr><td class="meth">ESP32-C5</td><td>RISC-V HP+LP</td><td>240</td><td class="cy">Wi-Fi 6 dual-band</td><td class="cy">5 (LE)</td><td class="cy">yes</td><td>384 KB</td><td>29</td><td>Serial/JTAG</td><td>Only 5 GHz part; PSRAM support</td></tr>
-    <tr><td class="meth">ESP32-C61</td><td>RISC-V / 1</td><td>160</td><td class="cy">Wi-Fi 6 (2.4G)</td><td class="cy">5 (LE) + Mesh 1.1</td><td>—</td><td>320 KB</td><td>few</td><td>Serial/JTAG</td><td>Affordable Wi-Fi 6; quad PSRAM</td></tr>
-    <tr><td class="meth">ESP32-H2</td><td>RISC-V / 1</td><td>96</td><td>—</td><td class="cy">5.3 LE</td><td class="cy">yes</td><td>320 KB</td><td>19</td><td>Serial/JTAG</td><td>Radio-only Thread/Zigbee endpoint</td></tr>
-    <tr><td class="meth">ESP32-P4</td><td>RISC-V HP&times;2 + LP</td><td>400</td><td>—</td><td>—</td><td>—</td><td>768 KB</td><td>55</td><td class="cy">HS+FS OTG</td><td>Vision/HMI host; MIPI, H.264, no radio</td></tr>
+    <tr><td class="meth"><a href="#core-esp32">ESP32</a></td><td>Xtensa LX6 / 2</td><td>240</td><td>b/g/n</td><td>4.2 BR/EDR+LE</td><td>—</td><td>520 KB</td><td>34</td><td>—</td><td>Only BT Classic; Ethernet MAC; 2&times;DAC</td></tr>
+    <tr><td class="meth"><a href="#core-s2">ESP32-S2</a></td><td>Xtensa LX7 / 1</td><td>240</td><td>b/g/n</td><td>—</td><td>—</td><td>320 KB</td><td>43</td><td>FS OTG</td><td>Wi-Fi + USB, no BT; 2&times;DAC; touch</td></tr>
+    <tr><td class="meth"><a href="#core-s3">ESP32-S3</a></td><td>Xtensa LX7 / 2</td><td>240</td><td>b/g/n</td><td class="cy">5 (LE)</td><td>—</td><td>512 KB</td><td>45</td><td>FS OTG</td><td>AI SIMD/vector; camera/LCD; octal PSRAM</td></tr>
+    <tr><td class="meth"><a href="#core-c2">ESP32-C2</a></td><td>RISC-V / 1</td><td>120</td><td>b/g/n</td><td class="cy">5.3 LE</td><td>—</td><td>272 KB</td><td>14</td><td>—</td><td>Cheapest/smallest (sold as ESP8684 SiP)</td></tr>
+    <tr><td class="meth"><a href="#core-c3">ESP32-C3</a></td><td>RISC-V / 1</td><td>160</td><td>b/g/n</td><td class="cy">5 (LE)</td><td>—</td><td>400 KB</td><td>22</td><td>Serial/JTAG</td><td>Mainstream low-cost RISC-V</td></tr>
+    <tr><td class="meth"><a href="#core-c6">ESP32-C6</a></td><td>RISC-V HP+LP</td><td>160</td><td class="cy">Wi-Fi 6 (2.4G)</td><td class="cy">5 (LE)</td><td class="cy">yes</td><td>512+16 KB</td><td>30/22</td><td>Serial/JTAG</td><td>Matter Wi-Fi / Thread hub</td></tr>
+    <tr><td class="meth"><a href="#core-c5">ESP32-C5</a></td><td>RISC-V HP+LP</td><td>240</td><td class="cy">Wi-Fi 6 dual-band</td><td class="cy">5 (LE)</td><td class="cy">yes</td><td>384 KB</td><td>29</td><td>Serial/JTAG</td><td>Only 5 GHz part; PSRAM support</td></tr>
+    <tr><td class="meth"><a href="#core-c61">ESP32-C61</a></td><td>RISC-V / 1</td><td>160</td><td class="cy">Wi-Fi 6 (2.4G)</td><td class="cy">5 (LE) + Mesh 1.1</td><td>—</td><td>320 KB</td><td>few</td><td>Serial/JTAG</td><td>Affordable Wi-Fi 6; quad PSRAM</td></tr>
+    <tr><td class="meth"><a href="#core-h2">ESP32-H2</a></td><td>RISC-V / 1</td><td>96</td><td>—</td><td class="cy">5.3 LE</td><td class="cy">yes</td><td>320 KB</td><td>19</td><td>Serial/JTAG</td><td>Radio-only Thread/Zigbee endpoint</td></tr>
+    <tr><td class="meth"><a href="#core-p4">ESP32-P4</a></td><td>RISC-V HP&times;2 + LP</td><td>400</td><td>—</td><td>—</td><td>—</td><td>768 KB</td><td>55</td><td class="cy">HS+FS OTG</td><td>Vision/HMI host; MIPI, H.264, no radio</td></tr>
   </table>
 
   <h3 class="cy">CPU &amp; memory</h3>
@@ -497,8 +560,65 @@ td.yl   { color: var(--yellow); }
   </div>
 </section>
 
+<!-- cores -->
+<section id="cores" data-num="03">
+  <h2>The <em class="or">Cores</em></h2>
+  <div class="section-bar"></div>
+  <p>Two ISAs in one family. Xtensa (LX6 in classic, LX7 in S2/S3) is licensed, configurable core IP from Cadence/Tensilica with Espressif-specific instruction extensions bolted on. Everything since the C3 is RISC-V, which Espressif can extend without per-core royalties and which mainline GCC, LLVM, GDB, and objdump understand out of the box. ESP-IDF papers over the difference almost completely; the seams show in debugging, assembly, and performance work.</p>
+
+  <h3>Per-chip core matrix</h3>
+
+  <table>
+    <tr>
+      <th>Chip</th>
+      <th>Core</th>
+      <th>ISA / microarch</th>
+      <th>FPU</th>
+      <th>SIMD / vector</th>
+      <th>CoreMark</th>
+      <th>LP / ULP companion</th>
+    </tr>
+    <tr id="core-esp32"><td class="meth">ESP32</td><td>2&times; Xtensa LX6 @240 MHz</td><td>Xtensa windowed ABI + MAC16</td><td>single-precision</td><td>—</td><td>1080 (540 single-core)</td><td>ULP FSM coprocessor</td></tr>
+    <tr id="core-s2"><td class="meth">ESP32-S2</td><td>1&times; Xtensa LX7 @240 MHz</td><td>Xtensa windowed ABI, 7-stage</td><td>—</td><td>—</td><td>543</td><td>PicoRV32 ULP + FSM, 8 KB</td></tr>
+    <tr id="core-s3"><td class="meth">ESP32-S3</td><td>2&times; Xtensa LX7 @240 MHz</td><td>Xtensa windowed ABI</td><td>single-precision</td><td>PIE, 128-bit</td><td>1182</td><td>PicoRV32 ULP + FSM, 8 KB</td></tr>
+    <tr id="core-c2"><td class="meth">ESP32-C2</td><td>1&times; RISC-V @120 MHz</td><td>RV32IMAC, 4-stage in-order</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+    <tr id="core-c3"><td class="meth">ESP32-C3</td><td>1&times; RISC-V @160 MHz</td><td>RV32IMC, 4-stage in-order</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+    <tr id="core-c6"><td class="meth">ESP32-C6</td><td>RISC-V HP @160 MHz</td><td>RV32IMAC</td><td>—</td><td>—</td><td>—</td><td>LP RISC-V @20 MHz</td></tr>
+    <tr id="core-c5"><td class="meth">ESP32-C5</td><td>RISC-V HP @240 MHz</td><td>RV32 (IMAC-class)</td><td>—</td><td>—</td><td>—</td><td>LP RISC-V @40 MHz</td></tr>
+    <tr id="core-c61"><td class="meth">ESP32-C61</td><td>1&times; RISC-V @160 MHz</td><td>RV32</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+    <tr id="core-h2"><td class="meth">ESP32-H2</td><td>1&times; RISC-V @96 MHz</td><td>RV32</td><td>—</td><td>—</td><td>303</td><td>—</td></tr>
+    <tr id="core-p4"><td class="meth">ESP32-P4</td><td>2&times; RISC-V HP @400 MHz</td><td>RV32IMAFC, 5-stage, branch predictor, HW loops</td><td>single-precision</td><td>128-bit AI/DSP extension</td><td>—</td><td>LP RISC-V @40 MHz, 8 KB TCM</td></tr>
+  </table>
+
+  <h3>Xtensa LX6 / LX7 — classic, S2, S3</h3>
+  <p>Xtensa is not an ARM competitor so much as a construction kit: the licensee picks options (register windowing, zero-overhead loops, a 16-bit MAC on classic ESP32) and can add custom instructions through TIE (Tensilica Instruction Extension). That configurability is how the S3 grew 128-bit vector ops without a new ISA — and why you need Espressif's toolchain builds (<code>xtensa-esp32-elf-</code>, <code>xtensa-esp32s3-elf-</code>) rather than a generic compiler.</p>
+
+  <h4>The windowed register file</h4>
+  <p>Code sees 16 registers (a0-a15), but they're a sliding window onto a larger physical file (64 AR registers). <code>CALL4/CALL8/CALL12</code> rotate the window by 4/8/12 instead of pushing to the stack; when the physical file wraps, a window-overflow exception spills old frames to the stack behind your back. Calls are cheap, but the consequences leak everywhere: backtraces have to walk spilled register windows (IDF's panic decoder does this for you), stack corruption produces Guru Meditation errors with plausible-looking but rotated register values, and the debugger must be window-aware — plain GDB cannot unwind an Xtensa stack.</p>
+
+  <h4>What the S3 adds: PIE</h4>
+  <p>The Processor Instruction Extensions are 128-bit SIMD: wide loads/stores, parallel MAC, saturation arithmetic. ESP-DSP and ESP-NN are hand-written around them, which is the entire hardware basis of the S3's AI positioning — dot products and convolutions, several-fold faster than scalar code. You get at them via those libraries or intrinsics, not from the C compiler's autovectorizer.</p>
+
+  <h4>FPU fine print</h4>
+  <p>Classic ESP32 and S3 have a single-precision FPU; S2 has none; <code>double</code> is software-emulated on every Xtensa chip. The FPU is also disabled in ISRs by default (context-save cost), so a stray <code>float</code> in an interrupt handler is a classic panic source.</p>
+
+  <h3 class="cy">RISC-V — C2, C3, C5, C6, C61, H2, P4</h3>
+  <p>The letters after RV32 are the feature string: <code>I</code> integer base, <code>M</code> hardware multiply/divide, <code>A</code> atomics, <code>C</code> 16-bit compressed instructions, <code>F</code> single-precision float. So C3 = RV32IMC, C2 and C6 = RV32IMAC, and P4 = RV32IMAFC plus Espressif's own 128-bit vector/DSP extension and hardware-loop instructions. The C-series cores are small in-order 4-stage machines; the P4's HP cores add a branch predictor and a 5-stage pipeline at 400 MHz.</p>
+
+  <h4>HP + LP core pairs</h4>
+  <p>C6, C5, and P4 pair the main core with a second low-power RISC-V core (20 / 40 / 40 MHz) that keeps running through deep sleep. It's the successor to the classic ULP FSM — except you program it in C with the ULP-RISC-V toolchain instead of a four-instruction assembly language.</p>
+
+  <h4>Debug and toolchain</h4>
+  <p>This is where RISC-V quietly wins. <code>riscv32-esp-elf-</code> is ordinary mainline GCC/LLVM, objdump output reads like the ISA spec, mainline GDB unwinds it, and you get 4 hardware breakpoints instead of Xtensa's 2. If you live in disassembly or on the JTAG port, the RISC-V chips are simply nicer neighborhoods.</p>
+
+  <div class="info-box">
+    <strong>Moving code between the two</strong>
+    ESP-IDF hides nearly all of it. What actually bites: hand-written assembly and PIE/MAC16 intrinsics (rewrite), anything that pokes FreeRTOS port internals (window spill vs plain stack frames), ISR float-usage rules, and performance assumptions — dual 240 MHz LX7 to a single 160 MHz RV32 is not a lateral move. Check <code>image_info</code>'s CHIP_ID before assuming a binary is portable; it never is.
+  </div>
+</section>
+
 <!-- boot modes -->
-<section id="boot" data-num="03">
+<section id="boot" data-num="04">
   <h2><em class="or">Boot</em> Modes &amp; Strap Pins</h2>
   <div class="section-bar"></div>
   <p>Every ESP32 chip samples a handful of GPIO pins in the first few microseconds after reset comes high. Those samples decide whether the chip boots from flash, enters the UART download bootloader, or does something weird. If you have flashing problems and the wiring looks right, it's almost always strap pins.</p>
@@ -653,7 +773,7 @@ td.yl   { color: var(--yellow); }
 </section>
 
 <!-- wire -->
-<section id="wire" data-num="04">
+<section id="wire" data-num="05">
   <h2>SLIP <em class="cy">Wire</em> Protocol</h2>
   <div class="section-bar cy"></div>
   <p>esptool talks to the ROM bootloader using a binary command protocol over UART, framed with SLIP (Serial Line Internet Protocol, RFC 1055). Reading a SLIP-framed esptool exchange from a logic analyzer is one of the fastest ways to understand what's happening when uploads fail.</p>
@@ -764,7 +884,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 </section>
 
 <!-- stub -->
-<section id="stub" data-num="05">
+<section id="stub" data-num="06">
   <h2>The <em class="cy">Stub</em> Loader</h2>
   <div class="section-bar cy"></div>
   <p>The ROM bootloader on every ESP32 chip is fixed silicon-or-mask-ROM and can't be patched. It's also pretty minimal: no compression, no faster baud, no MD5 verification, slow flash writes. To work around this, esptool uploads a small program to RAM at the start of every session called the <em>stub loader</em>. The stub re-implements the same protocol but with extra commands and fewer bugs.</p>
@@ -851,7 +971,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 </section>
 
 <!-- flash -->
-<section id="flash" data-num="06">
+<section id="flash" data-num="07">
   <h2>Flash <em class="yl">Geometry</em></h2>
   <div class="section-bar yl"></div>
   <p>Where things live on the SPI flash chip is one of the most chip-variant-specific aspects of the ESP32 family. The flash itself is a generic 25-series SPI chip (Winbond, GigaDevice, ISSI, XMC), but the address at which the bootloader expects to start is hardcoded into the silicon ROM. Putting the bootloader at the wrong offset means a chip that successfully accepts the write but never boots.</p>
@@ -977,7 +1097,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 </section>
 
 <!-- read write -->
-<section id="rw" data-num="07">
+<section id="rw" data-num="08">
   <h2><em class="or">Read</em>, Write &amp; Verify</h2>
   <div class="section-bar"></div>
   <p>The everyday operations. The flags below mostly compose: <code>--port</code>, <code>--baud</code>, <code>--chip</code>, <code>--before</code>, <code>--after</code> apply to all of them.</p>
@@ -1086,7 +1206,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 </section>
 
 <!-- image format -->
-<section id="image" data-num="08">
+<section id="image" data-num="09">
   <h2><em class="cy">Image</em> Format &amp; elf2image</h2>
   <div class="section-bar cy"></div>
   <p>The <code>.bin</code> file you flash is not just a copy of your <code>.elf</code>. It's a structured container with a header, a list of segments, and a checksum (and on newer chips, a SHA-256). The conversion happens via <code>esptool.py elf2image</code>, which the IDF build system runs automatically.</p>
@@ -1194,7 +1314,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 </section>
 
 <!-- efuse -->
-<section id="efuse" data-num="09">
+<section id="efuse" data-num="10">
   <h2><em class="rd">eFuse</em> &amp; Security</h2>
   <div class="section-bar rd"></div>
   <p>eFuses are one-time-programmable (OTP) bits inside every ESP32 chip. They store the factory MAC address, the chip revision, calibration values, and a small set of user-burnable security keys and flags. Once a fuse is burned (set to 1), it cannot be unburned. Misusing <code>espefuse.py</code> is a fast way to brick a chip permanently.</p>
@@ -1309,7 +1429,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 </section>
 
 <!-- idf -->
-<section id="idf" data-num="10">
+<section id="idf" data-num="11">
   <h2>ESP-IDF: <em class="or">idf.py</em></h2>
   <div class="section-bar"></div>
   <p>Before <code>idf.py</code>, an ESP-IDF build was a CMake invocation, a Python script to merge images, and a separate esptool call. The wrapper folds all of it into one CLI. Under the hood it still calls esptool; you can see the exact command with <code>-v</code>.</p>
@@ -1378,7 +1498,7 @@ build/
 </section>
 
 <!-- serial -->
-<section id="serial" data-num="11">
+<section id="serial" data-num="12">
   <h2>Serial Monitors &amp; <em class="cy">Discovery</em></h2>
   <div class="section-bar cy"></div>
   <p>Half of ESP32 troubleshooting is figuring out which <code>/dev/ttyXXX</code> the board mounted as, what driver it's using, and whether the host's getty has stolen it. These are the commands.</p>
@@ -1467,7 +1587,7 @@ build/
 </section>
 
 <!-- jtag -->
-<section id="jtag" data-num="12">
+<section id="jtag" data-num="13">
   <h2><em class="yl">JTAG</em>, OpenOCD, GDB</h2>
   <div class="section-bar yl"></div>
   <p>For anything beyond <code>printf</code> debugging — single-stepping, watching memory, breaking on hardware events — you need JTAG. Espressif provides a customized OpenOCD fork that knows about Xtensa LX6/LX7 (ESP32, S2, S3) and standard RISC-V (C3, C6, H2, P4) cores.</p>
@@ -1561,7 +1681,7 @@ build/
 </section>
 
 <!-- brick -->
-<section id="brick" data-num="13">
+<section id="brick" data-num="14">
   <h2>Brick <em class="rd">Recovery</em></h2>
   <div class="section-bar rd"></div>
   <p>The flowchart for "my ESP32 doesn't work anymore." Most apparent bricks are not actual silicon failures, they're recoverable software states.</p>
@@ -1680,7 +1800,7 @@ build/
 </section>
 
 <!-- further -->
-<section id="further" data-num="14">
+<section id="further" data-num="15">
   <h2><em class="or">Further</em> Rabbit Holes</h2>
   <div class="section-bar"></div>
   <p>Things to read and experiment with to keep deepening. Each one leads to better questions.</p>
@@ -1771,18 +1891,20 @@ build/
   <span><a href="https://docs.espressif.com">docs.espressif.com</a></span>
 </div>
 
-<div class="spine">// variants · boot · wire · stub · flash · rw · image · efuse · idf · serial · jtag · brick //</div>
+<div class="spine">// variants · cores · boot · wire · stub · flash · rw · image · efuse · idf · serial · jtag · brick //</div>
 
 <script>
-const sections = document.querySelectorAll('.container > section[id]');
-const navLinks = document.querySelectorAll('.nav a');
+const sections = [...document.querySelectorAll('.container > section[id]')];
+const navLinks = [...document.querySelectorAll('.nav a')];
 function activate(id) {
-  const target = document.getElementById(id) ? id : sections[0].id;
-  sections.forEach(s => s.classList.toggle('active', s.id === target));
-  navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + target));
-  window.scrollTo(0, 0);
+  const el = document.getElementById(id);
+  const sec = el ? (el.closest('.container > section[id]') || sections[0]) : sections[0];
+  sections.forEach(s => s.classList.toggle('active', s === sec));
+  navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + sec.id));
+  if (el && el !== sec) el.scrollIntoView();
+  else window.scrollTo(0, 0);
 }
-navLinks.forEach(a => a.addEventListener('click', e => {
+document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
   e.preventDefault();
   const id = a.getAttribute('href').slice(1);
   history.replaceState(null, '', '#' + id);
