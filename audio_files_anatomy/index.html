@@ -16,7 +16,7 @@
   --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
 }
 :root[data-theme="dark"]{--paper:#191a17;--panel:#212320;--ink:#e6e6e1;--soft:#abaca1;--faint:#7c7d72;--line:#383a32;--hair:#2b2d26;--accent:#9da69e}
-:root[data-theme="dark"] .mp3 .name{color:#9da69e}:root[data-theme="dark"] .wav .name{color:#94a5aa}:root[data-theme="dark"] .flac .name{color:#a1a3b6}:root[data-theme="dark"] .aiff .name{color:#94ada8}:root[data-theme="dark"] .midi .name{color:#ad9fae}:root[data-theme="dark"] .mp4 .name{color:#bba391}:root[data-theme="dark"] .ogg .name{color:#a5ad91}:root[data-theme="dark"] .bitwig .name{color:#bba38a}:root[data-theme="dark"] .ncw .name{color:#bb988a}:root[data-theme="dark"] .ni .name{color:#b39388}:root[data-theme="dark"] .vital .name{color:#a59bb2}
+:root[data-theme="dark"] .mp3 .name{color:#9da69e}:root[data-theme="dark"] .wav .name{color:#94a5aa}:root[data-theme="dark"] .flac .name{color:#a1a3b6}:root[data-theme="dark"] .aiff .name{color:#94ada8}:root[data-theme="dark"] .midi .name{color:#ad9fae}:root[data-theme="dark"] .mp4 .name{color:#bba391}:root[data-theme="dark"] .ogg .name{color:#a5ad91}:root[data-theme="dark"] .bitwig .name{color:#bba38a}:root[data-theme="dark"] .ncw .name{color:#bb988a}:root[data-theme="dark"] .ni .name{color:#b39388}:root[data-theme="dark"] .vital .name{color:#a59bb2}:root[data-theme="dark"] .wt .name{color:#90aba2}:root[data-theme="dark"] .fxp .name{color:#9098b4}:root[data-theme="dark"] .rmid .name{color:#b496ab}:root[data-theme="dark"] .multisample .name{color:#98ac95}:root[data-theme="dark"] .rx2 .name{color:#ab9686}
 :root[data-theme="dark"] .sw.val{background:#2e3a33;border-color:#9da69e}:root[data-theme="dark"] .sw.flag{background:#3a3226;border-color:#c3b392}
 .theme-toggle{position:fixed;bottom:0.9rem;right:0.9rem;z-index:50;font-family:var(--ff);font-size:0.56rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--soft);background:var(--panel);border:1px solid var(--line);padding:0.45rem 0.7rem;cursor:pointer;font-weight:400;transition:color .15s,border-color .15s}.theme-toggle:hover{color:var(--accent);border-color:var(--accent)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -75,6 +75,11 @@ a{color:inherit;text-decoration:none}
 .ncw  .tab{background:#8A452E} .ncw  .name{color:#733a26}
 .ni   .tab{background:#7A3A2A} .ni   .name{color:#663022}
 .vital .tab{background:#5E4A7D} .vital .name{color:#4f3e69}
+.wt   .tab{background:#3F6E5E} .wt   .name{color:#345c4e}
+.fxp  .tab{background:#3F4E7D} .fxp  .name{color:#354268}
+.rmid .tab{background:#7D4A6E} .rmid .name{color:#683e5c}
+.multisample .tab{background:#4E7048} .multisample .name{color:#415e3c}
+.rx2  .tab{background:#6E4A2E} .rx2  .name{color:#5c3e26}
 
 footer{margin-top:3rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent);border-color:var(--accent)}
@@ -91,7 +96,7 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
         <div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div>
         <h1>Audio File Anatomy</h1>
       </div>
-      <div class="stamp"><b>11 formats</b>interactive<br>rev 2026.06</div>
+      <div class="stamp"><b>16 formats</b>interactive<br>rev 2026.07</div>
     </div>
     <div class="strip">
       <div>view <b>byte / bit maps</b></div>
@@ -109,7 +114,7 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
     <span><span class="sw val"></span>value (read from a table)</span>
     <span><span class="sw flag"></span>flag bit</span>
     <span><span class="sw dim"></span>offset / reserved</span>
-    <span>colour marks kind, like syntax highlighting</span>
+    <span>color marks kind, like syntax highlighting</span>
   </div>
 
   <h2 class="sec">Formats</h2>
@@ -143,6 +148,12 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
       <div><div class="name">MIDI</div>
         <div class="d">An MThd header and MTrk tracks. The division field expanded bit by bit, where the top bit flips ticks-per-quarter into SMPTE frame timing.</div></div>
       <span class="t">bit + byte</span>
+    </a>
+    <a class="row rmid" href="rmid-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">RMID</div>
+        <div class="d">A Standard MIDI File wrapped in a RIFF container. Little-endian RIFF framing drawn byte by byte around the big-endian SMF it carries in a data chunk.</div></div>
+      <span class="t">byte map</span>
     </a>
     <a class="row mp4" href="mp4-anatomy.html">
       <span class="tab"></span>
@@ -179,6 +190,30 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
       <div><div class="name">NCW / NI Compressed Wave</div>
         <div class="d">Native Instruments' compressed audio: the header, the per-block deltas, and the bit-packing that stores Kontakt sample content.</div></div>
       <span class="t">byte map</span>
+    </a>
+    <a class="row fxp" href="fxp-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">VST FXP</div>
+        <div class="d">A VST 2 preset. The 28-byte big-endian CcnK header byte by byte: the preset kind, the plugin FourCC (XfsX = Serum), and the opaque-chunk vs float-params split.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row rx2" href="rx2-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">ReCycle RX2</div>
+        <div class="d">A sliced loop. The big-endian CAT/REX2 IFF group drawn byte by byte, and the transient slice markers hidden in a nested SLCL sub-group.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row wt" href="wt-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">Bitwig Wavetable</div>
+        <div class="d">A vawt container: a 12-byte little-endian header (wave length, wave count, data offset) byte by byte, then raw int16 samples, one single-cycle wave after another.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row multisample" href="multisample-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">Bitwig Multisample</div>
+        <div class="d">A ZIP: a multisample.xml zone map plus the member WAVs. The zone bindings (key range, root note, velocity, loop) and Bitwig's mismatched-CRC quirk.</div></div>
+      <span class="t">zip / xml</span>
     </a>
   </div>
 
