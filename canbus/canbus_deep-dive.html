@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAN Bus Deep Dive // Frames to ECUs</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* masthead */
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+.masthead .companion {
+  margin-top: 14px;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 2px;
+}
+
+/* nav */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-brand {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.nav-current {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-current:hover { border-color: var(--orange); color: var(--orange); }
+.nav-current .num { color: var(--orange); }
+.nav-hint { color: var(--dim2); margin-left: 6px; }
+
+/* sidebar */
+.side {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 248px;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  z-index: 150;
+  padding: 26px 0 20px;
+  overflow-y: auto;
+}
+.side-brand {
+  padding: 0 20px 16px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--bright);
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 12px;
+}
+.side-brand span { color: var(--orange); }
+.side a {
+  display: block;
+  padding: 7px 24px 7px 21px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.side a span { color: var(--dim2); margin-right: 7px; }
+.side a:hover { color: var(--orange); }
+.side a.active { color: var(--orange); border-left-color: var(--orange); background: var(--surface); }
+.side a.active span { color: var(--orange); }
+.side-dial {
+  display: block;
+  margin: 16px 20px 0 17px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--border2);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.side-dial:hover { color: var(--orange); border-color: var(--orange); }
+@media (min-width: 1100px) {
+  .side { display: block; }
+  body { padding-left: 248px; }
+  .nav { display: none; }
+}
+
+/* radial dial */
+.radial {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(242, 241, 238, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.radial.open { opacity: 1; pointer-events: auto; }
+body.dial-open { overflow: hidden; }
+.radial-ring {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+}
+.radial-center {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  cursor: pointer;
+}
+.radial-center:hover { color: var(--orange); }
+.radial-item {
+  position: absolute;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--dim);
+  padding: 4px 6px;
+}
+.radial-item span { color: var(--dim2); margin-right: 5px; }
+.radial-item:hover, .radial-item.active { color: var(--orange); }
+.radial-item:hover span, .radial-item.active span { color: var(--orange); }
+.radial-dot {
+  position: absolute;
+  width: 5px; height: 5px;
+  background: var(--dim2);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.radial-dot.active { background: var(--orange); }
+@media (max-width: 620px) {
+  .radial.open { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .radial-ring, .radial-dot, .radial-center { display: none; }
+  .radial-item { position: static !important; transform: none !important; font-size: 12px; padding: 7px; }
+}
+
+/* layout */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+}
+section { padding: 52px 0; display: none; }
+section.active { display: block; }
+section::before {
+  content: attr(data-num) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+/* headings */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--yellow); }
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+.section-bar.yl { background: var(--yellow); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+h3.cy { color: var(--cyan); }
+h3.yl { color: var(--yellow); }
+h3.rd { color: var(--red); }
+h4 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  margin: 20px 0 8px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+
+/* code */
+code {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--bright);
+}
+pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre.yl { border-left-color: var(--yellow); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .flag   { color: #7A7870; }
+
+/* diagrams */
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #8A8880;
+}
+.diagram.cy { border-left-color: var(--cyan); }
+.diagram.yl { border-left-color: var(--yellow); }
+.diagram.rd { border-left-color: var(--red); }
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .acc3 { color: #C8A030; }
+.diagram .dim  { color: #4A4942; }
+.diagram .hi   { color: #CCCBC4; }
+
+/* info boxes */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy    { border-left-color: var(--cyan); }
+.info-box.warn  { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; vertical-align: top; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; white-space: nowrap; }
+td.cy   { color: var(--cyan); }
+td.rd   { color: var(--red); }
+td.yl   { color: var(--yellow); }
+td.meth a { color: inherit; text-decoration: none; border-bottom: 1px dashed currentColor; }
+td.meth a:hover { color: var(--bright); }
+h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
+
+/* two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; align-items: stretch; }
+.two-col > div { display: flex; flex-direction: column; }
+.two-col > div > pre { flex: 1; margin-bottom: 0; }
+
+/* step list */
+.step-list { list-style: none; counter-reset: step; margin: 16px 0; }
+.step-list li {
+  counter-increment: step;
+  position: relative;
+  padding: 10px 0 10px 42px;
+  border-bottom: 1px dashed var(--border2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-list li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  width: 34px;
+}
+.step-list li strong { color: var(--bright); display: block; margin-bottom: 2px; }
+.step-list.cy li::before { color: var(--cyan); }
+.step-list.rd li::before { color: var(--red); }
+
+/* footer */
+.footer {
+  border-top: 1px solid var(--border2);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+.footer a { color: var(--orange); text-decoration: none; }
+
+/* spine */
+.spine {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* responsive */
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .masthead { padding: 40px 20px 28px; }
+}
+@media (max-width: 1280px) { .spine { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- masthead -->
+<div class="masthead">
+  <h1>CAN Bus <em>Deep</em> Dive</h1>
+  <div class="subtitle"><span>Differential Bus · Frame Anatomy · SocketCAN · UDS · ECU Dumping</span></div>
+  <div class="companion">can-utils · SavvyCAN · caringcaribou · ESP32 TWAI · MCP2515 // bench &amp; vcan only // OBD-II to firmware</div>
+</div>
+
+<!-- sidebar -->
+<nav class="side">
+  <div class="side-brand">CAN Bus <span>//</span> Deep Dive</div>
+  <a href="#intro"><span>01</span>Intro</a>
+  <a href="#frame"><span>02</span>Frame Anatomy</a>
+  <a href="#hardware"><span>03</span>Interfaces</a>
+  <a href="#esp32"><span>04</span>ESP32 / MCP2515</a>
+  <a href="#socketcan"><span>05</span>SocketCAN</a>
+  <a href="#canutils"><span>06</span>can-utils</a>
+  <a href="#re"><span>07</span>Reverse Eng</a>
+  <a href="#dbc"><span>08</span>DBC Files</a>
+  <a href="#practice"><span>09</span>Practice</a>
+  <a href="#diag"><span>10</span>UDS / OBD-II</a>
+  <a href="#ecu"><span>11</span>ECU Dumping</a>
+  <a href="#gotchas"><span>12</span>Gotchas</a>
+  <a href="#resources"><span>13</span>Resources</a>
+  <button class="side-dial" id="sideDial" title="radial section dial">◎ dial</button>
+</nav>
+
+<!-- nav -->
+<div class="nav">
+  <div class="nav-inner">
+    <span class="nav-brand">CAN Bus Deep Dive</span>
+    <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
+      <span class="num" id="navNum">01 //</span> <span id="navLabel">Intro</span> <span class="nav-hint">◎</span>
+    </button>
+  </div>
+</div>
+
+<!-- radial dial -->
+<div class="radial" id="radial">
+  <div class="radial-ring" id="radialRing"></div>
+  <button class="radial-center" id="radialCenter" title="close (Esc)">01</button>
+</div>
+
+<div class="container">
+
+<!-- intro -->
+<section id="intro" data-num="01">
+  <h2>The <em class="or">Two-Wire</em> Bus</h2>
+  <div class="section-bar"></div>
+
+  <div class="info-box danger">
+    <strong>Bench and vcan only</strong>
+    Everything on this page assumes a bench setup, a parked vehicle, or ICSim/vcan for practice (see <a href="#practice">Practice</a>). Injecting onto a live, moving vehicle's bus is not a lab activity -- treat it as out of scope for this reference.
+  </div>
+
+  <p>CAN is a 2-wire differential bus: <strong>CAN-H</strong> and <strong>CAN-L</strong>, 120ohm termination at each end. There is no source/destination addressing at the frame level and no built-in authentication -- any node physically on the bus can send any ID it wants. That absence of addressing and auth is the entire reason this field exists: possession of the bus is authorization.</p>
+
+  <h3>OBD-II connector: pins 6, 14, 4/5, 16</h3>
+  <p>On the OBD-II connector (16-pin, SAE J1962, in-car): pin 6 = CAN-H, pin 14 = CAN-L, pins 4/5 = ground, pin 16 = battery+ (permanently powered, not switched by ignition). Most passenger cars run high-speed CAN (ISO 11898-2) at <strong>500 kbps</strong> on the OBD-II port; some run a second bus (body/comfort) at 125 kbps.</p>
+
+  <pre class="diagram"><span class="dim">   OBD-II 16-pin connector (SAE J1962), pins as viewed on the connector face</span>
+
+    <span class="dim">+----+----+----+</span><span class="acc">----+----+</span><span class="acc2">----+</span><span class="dim">----+----+</span>
+    <span class="dim">|</span>  1 <span class="dim">|</span>  2 <span class="dim">|</span>  3 <span class="dim">|</span><span class="acc">  4 </span><span class="dim">|</span><span class="acc">  5 </span><span class="dim">|</span><span class="acc2">  6 </span><span class="dim">|</span>  7 <span class="dim">|</span>  8 <span class="dim">|</span>
+    <span class="dim">|</span>mfr <span class="dim">|</span>J850<span class="dim">|</span>mfr <span class="dim">|</span><span class="acc">chas</span><span class="dim">|</span><span class="acc">sig </span><span class="dim">|</span><span class="acc2">CANH</span><span class="dim">|</span>K-ln<span class="dim">|</span>mfr <span class="dim">|</span>
+    <span class="dim">+----+----+----+----+----+----+----+----+</span>
+    <span class="dim">|</span>  9 <span class="dim">|</span> 10 <span class="dim">|</span> 11 <span class="dim">|</span> 12 <span class="dim">|</span> 13 <span class="dim">|</span><span class="acc2"> 14 </span><span class="dim">|</span> 15 <span class="dim">|</span><span class="acc3"> 16 </span><span class="dim">|</span>
+    <span class="dim">|</span>mfr <span class="dim">|</span>J850<span class="dim">|</span>mfr <span class="dim">|</span>mfr <span class="dim">|</span>mfr <span class="dim">|</span><span class="acc2">CANL</span><span class="dim">|</span>L-ln<span class="dim">|</span><span class="acc3">+12V</span><span class="dim">|</span>
+    <span class="dim">+----+----+----+----+----+----+----+----+</span>
+
+      <span class="acc">pin 4/5</span>  chassis / signal ground
+      <span class="acc2">pin 6/14</span> CAN-H / CAN-L differential pair (ISO 15765-4 / J2284), 500 kbps
+      <span class="acc3">pin 16</span>   battery + (~12V), permanently powered
+
+    both ends of the in-vehicle bus already carry 120ohm termination -- a flying-lead
+    tap elsewhere on the harness needs its own termination or reflections corrupt frames</pre>
+
+  <h3>Arbitration and payload</h3>
+  <p>A classic CAN frame carries an 11-bit (standard) or 29-bit (extended) arbitration ID plus up to 8 data bytes. Lower ID wins arbitration -- it has priority, and it wins with zero collision or retransmission delay. CAN-FD extends the payload to 64 bytes and adds a bitrate switch; newer vehicles increasingly use it. The bit-level breakdown of a frame, and exactly how arbitration works, is in <a href="#frame">Frame Anatomy</a>.</p>
+
+  <div class="info-box cy">
+    <strong>How to read this</strong>
+    Fresh hardware: <a href="#hardware">Interfaces</a> + <a href="#esp32">ESP32 / MCP2515</a>. Getting a bus up: <a href="#socketcan">SocketCAN</a>. Staring at traffic: <a href="#canutils">can-utils</a> + <a href="#re">Reverse Eng</a>. Talking to a specific ECU: <a href="#diag">UDS / OBD-II</a>. Pulling firmware: <a href="#ecu">ECU Dumping</a>. Each tab is independent.
+  </div>
+</section>
+
+<!-- frame -->
+<section id="frame" data-num="02">
+  <h2>Frame <em class="cy">Anatomy</em></h2>
+  <div class="section-bar cy"></div>
+  <p>The fundamentals in <a href="#intro">Intro</a> said "11-bit ID plus up to 8 data bytes." Here's what that looks like at the bit level, per CAN 2.0 / ISO 11898-1.</p>
+
+  <h3 class="cy">Standard data frame, field by field</h3>
+
+  <pre class="diagram cy"><span class="dim">CAN 2.0A data frame, 11-bit standard ID (bit widths, not bytes)</span>
+
+  <span class="acc">SOF</span>    <span class="acc2">ARBITRATION</span>          <span class="acc3">CONTROL</span>              <span class="hi">DATA</span>          <span class="acc">CRC</span>          <span class="dim">ACK</span>        <span class="dim">EOF</span>
+  <span class="dim">1 bit</span>  <span class="acc2">ID[10:0] + RTR</span>      <span class="acc3">IDE + r0 + DLC[3:0]</span>  <span class="hi">0-8 bytes</span>    <span class="acc">15 bits</span>     <span class="dim">slot+dlm</span>  <span class="dim">7 bits</span>
+         <span class="acc2">11+1 = 12 bits</span>     <span class="acc3">1+1+4 = 6 bits</span>       <span class="hi">0-64 bits</span>    <span class="acc">+1 dlm bit</span> <span class="dim">1+1 bits</span>
+
+  <span class="dim">SOF   dominant (0), every node syncs to it -- this is what "start of frame" means on the wire</span>
+  <span class="dim">RTR   0 = data frame, 1 = remote (request) frame -- remote frames carry no data</span>
+  <span class="dim">IDE   0 = standard 11-bit ID, 1 = extended -- next field becomes an 18-bit ID extension</span>
+  <span class="dim">r0    reserved bit, sent dominant</span>
+  <span class="dim">DLC   4-bit data length code, 0-8 in classic CAN (9-15 reserved / meaningful only in CAN-FD)</span>
+  <span class="dim">CRC   15-bit checksum + 1 recessive delimiter bit</span>
+  <span class="dim">ACK   transmitter sends recessive; any receiver that got a valid CRC pulls it dominant</span>
+  <span class="dim">EOF   7 recessive bits, marks the end -- no other field is ever 7 bits of recessive</span></pre>
+
+  <h3 class="cy">Standard vs extended vs CAN-FD</h3>
+
+  <table>
+    <tr>
+      <th>Property</th>
+      <th>Standard (CAN 2.0A)</th>
+      <th>Extended (CAN 2.0B)</th>
+      <th>CAN-FD</th>
+    </tr>
+    <tr><td class="meth">ID width</td><td>11 bits</td><td>29 bits (11-bit base + 18-bit extension)</td><td>11 or 29 bits</td></tr>
+    <tr><td class="meth">Max payload</td><td>8 bytes</td><td>8 bytes</td><td class="cy">64 bytes</td></tr>
+    <tr><td class="meth">IDE bit</td><td>0</td><td>1</td><td>0 or 1</td></tr>
+    <tr><td class="meth">Bit rate</td><td>single rate throughout</td><td>single rate throughout</td><td class="cy">BRS bit switches to a faster rate for control+data+CRC</td></tr>
+    <tr><td class="meth">Distinguishing bit</td><td>-- </td><td>-- </td><td>FDF (formerly r0) set = FD frame</td></tr>
+    <tr><td class="meth">CRC</td><td>15-bit</td><td>15-bit</td><td>17-bit (payload &le;16B) or 21-bit (&gt;16B)</td></tr>
+  </table>
+
+  <h3 class="cy">Arbitration: why the lower ID always wins</h3>
+  <p>CAN uses non-destructive bitwise arbitration. A 0 bit is <em>dominant</em>, a 1 bit is <em>recessive</em> -- if any node drives dominant while another drives recessive, the bus physically reads dominant (a wired-AND on the differential pair). During the arbitration field, every transmitting node sends its ID bit by bit and simultaneously reads back what's actually on the wire. The instant a node sends recessive but reads dominant, it knows a node with a numerically lower ID is also transmitting, and it immediately stops driving and becomes a receiver. The node whose ID never mismatches wins outright -- no collision, no backoff, no retransmission delay. This is what makes CAN suitable for real-time control traffic instead of just a best-effort network.</p>
+
+  <div class="info-box cy">
+    <strong>Priority is a side effect of addressing, not a separate field</strong>
+    There's no dedicated priority byte -- whoever designs the DBC picks low IDs for time-critical frames (engine/brake torque, airbag) and high IDs for chatty, non-urgent ones (infotainment, climate). This is why 0x000-range IDs are almost always safety-critical on a real vehicle bus, and it's worth keeping in mind before fuzzing (see <a href="#practice">Practice</a>).
+  </div>
+</section>
+
+<!-- hardware -->
+<section id="hardware" data-num="03">
+  <h2><em class="or">Interfaces</em></h2>
+  <div class="section-bar"></div>
+  <p>What actually gets a CAN bus onto a Linux box as a SocketCAN interface, from cheapest to most polished.</p>
+
+  <table>
+    <tr>
+      <th>Interface</th>
+      <th>What it is</th>
+      <th>SocketCAN story</th>
+    </tr>
+    <tr><td class="meth">MCP2515 + TJA1050/TJA1051</td><td>SPI CAN controller + transceiver, cheap breakout boards</td><td>Native kernel driver + device-tree overlay (Pi hat) or bit-banged SPI (ESP32/Arduino); shows up as <code>can0</code> once the overlay probes</td></tr>
+    <tr><td class="meth">PCAN-USB (Peak-System)</td><td>Commercial USB-CAN adapter, ~$200</td><td>Native SocketCAN interface with no extra driver -- the "just works" option</td></tr>
+    <tr><td class="meth">CANtact / candleLight dongles</td><td>Open hardware USB-CAN dongles</td><td><code>gs_usb</code> driver built into mainline Linux, shows up as <code>can0</code> directly, no <code>slcand</code> step needed. Cheap clones exist widely</td></tr>
+    <tr><td class="meth">MCP2515+CH340 slcan boards</td><td>Cheap USB-serial CAN board</td><td>Speaks the slcan (LAWICEL) serial protocol, needs <code>slcand</code> to bridge into SocketCAN</td></tr>
+    <tr><td class="meth">Macchina M2</td><td>Open source dual/quad CAN board, OBD-II connector form factor</td><td>Popular in the car-hacking community for in-vehicle use</td></tr>
+  </table>
+
+  <p>The MCP2515 is the default first interface for a reason: it's cheap, well documented, and runs directly off an ESP32 or Raspberry Pi SPI bus with no USB layer in between. The register-level detail of talking to it -- and the ESP32's own native CAN controller -- is in <a href="#esp32">ESP32 / MCP2515</a>.</p>
+</section>
+
+<!-- esp32 -->
+<section id="esp32" data-num="04">
+  <h2>ESP32 <em class="cy">TWAI</em> &amp; MCP2515</h2>
+  <div class="section-bar cy"></div>
+  <p>Two ways to get CAN frames in and out of a microcontroller: the ESP32's built-in TWAI controller (TWAI = Two-Wire Automotive Interface, Espressif's name for their CAN 2.0 implementation), or an MCP2515 driven over SPI from any MCU. Both need an external transceiver -- neither chip drives the differential pair directly.</p>
+
+  <div class="info-box warn">
+    <strong>The ESP32 has the controller, not the PHY</strong>
+    TWAI implements the CAN protocol logic, but the SoC pins are single-ended logic level. You still need an external transceiver -- SN65HVD230 (3.3V) or TJA1050/TJA1051 (5V, needs level shifting) -- between the ESP32's TX/RX pins and the actual CAN-H/CAN-L wires.
+  </div>
+
+  <h3 class="cy">ESP32 native TWAI (ESP-IDF)</h3>
+  <p>The <code>twai</code> driver in ESP-IDF wraps the peripheral: general config picks GPIO pins and mode, timing config picks bitrate, filter config picks which IDs to accept.</p>
+
+  <pre class="cy"><span class="label">esp-idf twai init + transmit</span>
+<span class="kw">#include</span> <span class="st">"driver/twai.h"</span>
+
+<span class="kw">#define</span> TX_GPIO GPIO_NUM_5
+<span class="kw">#define</span> RX_GPIO GPIO_NUM_4
+
+<span class="kw">void</span> <span class="fn">twai_init</span>(<span class="kw">void</span>) {
+    twai_general_config_t g_config <span class="key">=</span>
+        <span class="fn">TWAI_GENERAL_CONFIG_DEFAULT</span>(TX_GPIO, RX_GPIO, TWAI_MODE_NORMAL);
+    twai_timing_config_t t_config <span class="key">=</span> <span class="fn">TWAI_TIMING_CONFIG_500KBITS</span>();
+    twai_filter_config_t f_config <span class="key">=</span> <span class="fn">TWAI_FILTER_CONFIG_ACCEPT_ALL</span>();
+
+    <span class="fn">ESP_ERROR_CHECK</span>(<span class="fn">twai_driver_install</span>(&amp;g_config, &amp;t_config, &amp;f_config));
+    <span class="fn">ESP_ERROR_CHECK</span>(<span class="fn">twai_start</span>());
+}
+
+<span class="kw">void</span> <span class="fn">twai_send_frame</span>(uint32_t id, uint8_t <span class="key">*</span>data, uint8_t len) {
+    twai_message_t msg <span class="key">=</span> {<span class="num">0</span>};
+    msg.identifier <span class="key">=</span> id;
+    msg.data_length_code <span class="key">=</span> len;
+    msg.flags <span class="key">=</span> TWAI_MSG_FLAG_NONE;   <span class="cm">// standard 11-bit ID, data frame</span>
+    <span class="fn">memcpy</span>(msg.data, data, len);
+
+    <span class="fn">twai_transmit</span>(&amp;msg, <span class="fn">pdMS_TO_TICKS</span>(<span class="num">100</span>));
+}</pre>
+
+  <pre class="cy"><span class="label">esp-idf twai receive/dump loop</span>
+<span class="kw">void</span> <span class="fn">twai_rx_loop</span>(<span class="kw">void</span>) {
+    twai_message_t msg;
+    <span class="kw">for</span> (;;) {
+        <span class="kw">if</span> (<span class="fn">twai_receive</span>(&amp;msg, <span class="fn">pdMS_TO_TICKS</span>(<span class="num">1000</span>)) <span class="key">==</span> ESP_OK) {
+            <span class="fn">printf</span>(<span class="st">"id=0x%03lx dlc=%d data="</span>, msg.identifier, msg.data_length_code);
+            <span class="kw">for</span> (<span class="kw">int</span> i <span class="key">=</span> <span class="num">0</span>; i <span class="key">&lt;</span> msg.data_length_code; i<span class="key">++</span>)
+                <span class="fn">printf</span>(<span class="st">"%02x "</span>, msg.data[i]);
+            <span class="fn">printf</span>(<span class="st">"\n"</span>);
+        }
+    }
+}</pre>
+
+  <h3 class="cy">MCP2515 over SPI, register level</h3>
+  <p>No HAL, just the Microchip datasheet: SPI command bytes, then key registers for mode control, bit timing, and the TX/RX buffers.</p>
+
+  <pre class="cy"><span class="label">mcp2515 spi opcodes + registers (microchip datasheet)</span><span class="cm">// SPI instruction bytes</span>
+<span class="kw">#define</span> MCP_RESET        <span class="num">0xC0</span>
+<span class="kw">#define</span> MCP_READ         <span class="num">0x03</span>
+<span class="kw">#define</span> MCP_WRITE        <span class="num">0x02</span>
+<span class="kw">#define</span> MCP_READ_STATUS  <span class="num">0xA0</span>
+<span class="kw">#define</span> MCP_RX_STATUS    <span class="num">0xB0</span>
+<span class="kw">#define</span> MCP_BIT_MODIFY   <span class="num">0x05</span>
+<span class="kw">#define</span> MCP_READ_RXB0    <span class="num">0x90</span>
+<span class="kw">#define</span> MCP_LOAD_TXB0    <span class="num">0x40</span>
+<span class="kw">#define</span> MCP_RTS(n)       (<span class="num">0x80</span> <span class="key">|</span> (<span class="num">1</span> <span class="key">&lt;&lt;</span> (n)))   <span class="cm">// n = tx buffer 0-2</span>
+
+<span class="cm">// key registers</span>
+<span class="kw">#define</span> MCP_CANCTRL   <span class="num">0x0F</span>
+<span class="kw">#define</span> MCP_CANSTAT   <span class="num">0x0E</span>
+<span class="kw">#define</span> MCP_CNF1      <span class="num">0x2A</span>
+<span class="kw">#define</span> MCP_CNF2      <span class="num">0x29</span>
+<span class="kw">#define</span> MCP_CNF3      <span class="num">0x28</span>
+<span class="kw">#define</span> MCP_CANINTE   <span class="num">0x2B</span>
+<span class="kw">#define</span> MCP_CANINTF   <span class="num">0x2C</span>
+
+<span class="kw">#define</span> MCP_TXB0CTRL  <span class="num">0x30</span>
+<span class="kw">#define</span> MCP_TXB0SIDH  <span class="num">0x31</span>
+<span class="kw">#define</span> MCP_TXB0SIDL  <span class="num">0x32</span>
+<span class="kw">#define</span> MCP_TXB0DLC   <span class="num">0x35</span>
+<span class="kw">#define</span> MCP_TXB0D0    <span class="num">0x36</span>
+
+<span class="kw">#define</span> MCP_RXB0CTRL  <span class="num">0x60</span>
+<span class="kw">#define</span> MCP_RXB0SIDH  <span class="num">0x61</span>
+
+<span class="cm">// CANCTRL[7:5] mode bits (REQOP)</span>
+<span class="kw">#define</span> MODE_CONFIG      <span class="num">0x80</span>
+<span class="kw">#define</span> MODE_NORMAL      <span class="num">0x00</span>
+<span class="kw">#define</span> MODE_LISTENONLY  <span class="num">0x60</span>
+<span class="kw">#define</span> MODE_LOOPBACK    <span class="num">0x40</span>
+<span class="kw">#define</span> MODE_SLEEP       <span class="num">0x20</span></pre>
+
+  <pre class="cy"><span class="label">register read/write helpers over spi_device_transmit</span>
+<span class="kw">static void</span> <span class="fn">mcp_write_reg</span>(spi_device_handle_t spi, uint8_t reg, uint8_t val) {
+    uint8_t tx[<span class="num">3</span>] <span class="key">=</span> { MCP_WRITE, reg, val };
+    spi_transaction_t t <span class="key">=</span> {
+        .length <span class="key">=</span> <span class="num">8</span> <span class="key">*</span> <span class="fn">sizeof</span>(tx),
+        .tx_buffer <span class="key">=</span> tx,
+    };
+    <span class="fn">spi_device_transmit</span>(spi, &amp;t);
+}
+
+<span class="kw">static</span> uint8_t <span class="fn">mcp_read_reg</span>(spi_device_handle_t spi, uint8_t reg) {
+    uint8_t tx[<span class="num">3</span>] <span class="key">=</span> { MCP_READ, reg, <span class="num">0x00</span> };
+    uint8_t rx[<span class="num">3</span>] <span class="key">=</span> {<span class="num">0</span>};
+    spi_transaction_t t <span class="key">=</span> {
+        .length <span class="key">=</span> <span class="num">8</span> <span class="key">*</span> <span class="fn">sizeof</span>(tx),
+        .tx_buffer <span class="key">=</span> tx,
+        .rx_buffer <span class="key">=</span> rx,
+    };
+    <span class="fn">spi_device_transmit</span>(spi, &amp;t);
+    <span class="kw">return</span> rx[<span class="num">2</span>];
+}
+
+<span class="kw">static void</span> <span class="fn">mcp_reset</span>(spi_device_handle_t spi) {
+    uint8_t cmd <span class="key">=</span> MCP_RESET;
+    spi_transaction_t t <span class="key">=</span> { .length <span class="key">=</span> <span class="num">8</span>, .tx_buffer <span class="key">=</span> &amp;cmd };
+    <span class="fn">spi_device_transmit</span>(spi, &amp;t);
+}</pre>
+
+  <pre class="cy"><span class="label">config mode + bit timing for 500kbps @ 8mhz xtal</span>
+<span class="kw">static void</span> <span class="fn">mcp_set_bitrate_500k_8mhz</span>(spi_device_handle_t spi) {
+    <span class="cm">// BIT MODIFY CANCTRL: mask REQOP[7:5], set config mode</span>
+    uint8_t tx[<span class="num">4</span>] <span class="key">=</span> { MCP_BIT_MODIFY, MCP_CANCTRL, <span class="num">0xE0</span>, MODE_CONFIG };
+    spi_transaction_t t <span class="key">=</span> { .length <span class="key">=</span> <span class="num">8</span> <span class="key">*</span> <span class="fn">sizeof</span>(tx), .tx_buffer <span class="key">=</span> tx };
+    <span class="fn">spi_device_transmit</span>(spi, &amp;t);
+    <span class="kw">while</span> ((<span class="fn">mcp_read_reg</span>(spi, MCP_CANSTAT) <span class="key">&amp;</span> <span class="num">0xE0</span>) <span class="key">!=</span> MODE_CONFIG) ;
+
+    <span class="cm">// 8MHz crystal, 500kbps -- known-good CNF1-3 values for this combo</span>
+    <span class="fn">mcp_write_reg</span>(spi, MCP_CNF1, <span class="num">0x00</span>);
+    <span class="fn">mcp_write_reg</span>(spi, MCP_CNF2, <span class="num">0x90</span>);
+    <span class="fn">mcp_write_reg</span>(spi, MCP_CNF3, <span class="num">0x02</span>);
+
+    <span class="cm">// back to normal mode</span>
+    uint8_t tx2[<span class="num">4</span>] <span class="key">=</span> { MCP_BIT_MODIFY, MCP_CANCTRL, <span class="num">0xE0</span>, MODE_NORMAL };
+    spi_transaction_t t2 <span class="key">=</span> { .length <span class="key">=</span> <span class="num">8</span> <span class="key">*</span> <span class="fn">sizeof</span>(tx2), .tx_buffer <span class="key">=</span> tx2 };
+    <span class="fn">spi_device_transmit</span>(spi, &amp;t2);
+}</pre>
+
+  <pre class="cy"><span class="label">load txb0 + request-to-send</span>
+<span class="kw">void</span> <span class="fn">mcp_send_frame</span>(spi_device_handle_t spi, uint16_t id, uint8_t <span class="key">*</span>data, uint8_t len) {
+    <span class="fn">mcp_write_reg</span>(spi, MCP_TXB0SIDH, id <span class="key">&gt;&gt;</span> <span class="num">3</span>);
+    <span class="fn">mcp_write_reg</span>(spi, MCP_TXB0SIDL, (id <span class="key">&amp;</span> <span class="num">0x07</span>) <span class="key">&lt;&lt;</span> <span class="num">5</span>);
+    <span class="fn">mcp_write_reg</span>(spi, MCP_TXB0DLC, len <span class="key">&amp;</span> <span class="num">0x0F</span>);
+    <span class="kw">for</span> (uint8_t i <span class="key">=</span> <span class="num">0</span>; i <span class="key">&lt;</span> len; i<span class="key">++</span>)
+        <span class="fn">mcp_write_reg</span>(spi, MCP_TXB0D0 <span class="key">+</span> i, data[i]);
+
+    <span class="cm">// request-to-send on TXB0 -- opcode 0x81 = RTS | (1 << 0)</span>
+    uint8_t rts <span class="key">=</span> <span class="fn">MCP_RTS</span>(<span class="num">0</span>);
+    spi_transaction_t t <span class="key">=</span> { .length <span class="key">=</span> <span class="num">8</span>, .tx_buffer <span class="key">=</span> &amp;rts };
+    <span class="fn">spi_device_transmit</span>(spi, &amp;t);
+}</pre>
+
+  <div class="info-box warn">
+    <strong>Bit timing has to match the crystal</strong>
+    CNF1/CNF2/CNF3 encode the sync/propagation/phase segments relative to the MCP2515's oscillator frequency. Get them wrong for your board's crystal (8 MHz vs the also-common 16 MHz) and you don't get a clean error -- you get bus-off, silently mangled frames, or a controller that never leaves config mode. Always match CNF1-3 to the crystal actually on the board.
+  </div>
+</section>
+
+<!-- socketcan -->
+<section id="socketcan" data-num="05">
+  <h2><em class="or">SocketCAN</em></h2>
+  <div class="section-bar"></div>
+  <p>SocketCAN is a Linux kernel subsystem, not a library -- a CAN interface behaves like a network interface (<code>ip link</code>, <code>ifconfig</code>) and frames move through a raw socket.</p>
+
+  <h3>Virtual bus for testing without hardware</h3>
+  <pre><span class="label">vcan setup</span>
+<span class="kw">sudo</span> <span class="flag">modprobe</span> vcan
+<span class="kw">sudo</span> ip link add dev vcan0 type vcan
+<span class="kw">sudo</span> ip link set up vcan0</pre>
+
+  <h3>Real interface, native SocketCAN device</h3>
+  <p>MCP2515 hat, PCAN-USB, CANtact/gs_usb dongle -- anything that shows up as <code>can0</code> directly.</p>
+  <pre><span class="label">bring up can0</span>
+<span class="kw">sudo</span> ip link set can0 type can bitrate <span class="num">500000</span>
+<span class="kw">sudo</span> ip link set can0 up
+<span class="cm"># undo:</span>
+<span class="kw">sudo</span> ip link set can0 down</pre>
+
+  <h3>MCP2515 on a Raspberry Pi SPI bus</h3>
+  <p>Needs a device-tree overlay in <code>/boot/config.txt</code> (or <code>/boot/firmware/config.txt</code> on newer Raspberry Pi OS):</p>
+  <pre><span class="label">/boot/config.txt</span>
+dtoverlay<span class="key">=</span>mcp2515-can0,oscillator<span class="key">=</span>16000000,interrupt<span class="key">=</span>25
+dtoverlay<span class="key">=</span>spi-bcm2835-overlay</pre>
+  <p>Then <code>dmesg | grep -i mcp2515</code> to confirm probe, and bring <code>can0</code> up as above.</p>
+
+  <h3>Serial/slcan adapters</h3>
+  <p>LAWICEL protocol -- most cheap USB-CAN dongles speak this over a serial port.</p>
+  <pre><span class="label">slcand bridge</span>
+<span class="kw">sudo</span> slcand <span class="flag">-o -c -s6</span> /dev/ttyUSB0 can0   <span class="cm"># -s6 = 500kbit, see slcand -h for the -sN table</span>
+<span class="kw">sudo</span> ip link set can0 up</pre>
+
+  <h3 class="cy">Raw AF_CAN socket, no library</h3>
+  <p>This is the library-free way to talk SocketCAN, and mirrors exactly what <code>candump</code> does under the hood: open a <code>PF_CAN</code>/<code>SOCK_RAW</code> socket, resolve the interface index, bind, then read/write fixed-size <code>struct can_frame</code>s.</p>
+
+  <pre class="cy"><span class="label">raw AF_CAN, linux &lt;linux/can.h&gt;</span>
+<span class="kw">#include</span> <span class="key">&lt;</span>stdio.h<span class="key">&gt;</span>
+<span class="kw">#include</span> <span class="key">&lt;</span>string.h<span class="key">&gt;</span>
+<span class="kw">#include</span> <span class="key">&lt;</span>unistd.h<span class="key">&gt;</span>
+<span class="kw">#include</span> <span class="key">&lt;</span>net/if.h<span class="key">&gt;</span>
+<span class="kw">#include</span> <span class="key">&lt;</span>sys/ioctl.h<span class="key">&gt;</span>
+<span class="kw">#include</span> <span class="key">&lt;</span>sys/socket.h<span class="key">&gt;</span>
+<span class="kw">#include</span> <span class="key">&lt;</span>linux/can.h<span class="key">&gt;</span>
+<span class="kw">#include</span> <span class="key">&lt;</span>linux/can/raw.h<span class="key">&gt;</span>
+
+<span class="kw">int</span> <span class="fn">main</span>(<span class="kw">void</span>) {
+    <span class="kw">int</span> s <span class="key">=</span> <span class="fn">socket</span>(PF_CAN, SOCK_RAW, CAN_RAW);
+
+    <span class="kw">struct</span> ifreq ifr;
+    <span class="fn">strcpy</span>(ifr.ifr_name, <span class="st">"can0"</span>);
+    <span class="fn">ioctl</span>(s, SIOCGIFINDEX, &amp;ifr);
+
+    <span class="kw">struct</span> sockaddr_can addr <span class="key">=</span> {<span class="num">0</span>};
+    addr.can_family <span class="key">=</span> AF_CAN;
+    addr.can_ifindex <span class="key">=</span> ifr.ifr_ifindex;
+    <span class="fn">bind</span>(s, (<span class="kw">struct</span> sockaddr <span class="key">*</span>)&amp;addr, <span class="fn">sizeof</span>(addr));
+
+    <span class="kw">struct</span> can_frame frame;
+    frame.can_id <span class="key">=</span> <span class="num">0x123</span>;
+    frame.can_dlc <span class="key">=</span> <span class="num">4</span>;
+    <span class="fn">memcpy</span>(frame.data, <span class="st">"\xDE\xAD\xBE\xEF"</span>, <span class="num">4</span>);
+    <span class="fn">write</span>(s, &amp;frame, <span class="fn">sizeof</span>(frame));
+
+    <span class="kw">for</span> (;;) {
+        <span class="kw">int</span> n <span class="key">=</span> <span class="fn">read</span>(s, &amp;frame, <span class="fn">sizeof</span>(frame));
+        <span class="kw">if</span> (n <span class="key">!=</span> <span class="fn">sizeof</span>(frame)) <span class="kw">continue</span>;
+        <span class="fn">printf</span>(<span class="st">"id=0x%03X dlc=%d\n"</span>, frame.can_id, frame.can_dlc);
+    }
+}</pre>
+</section>
+
+<!-- canutils -->
+<section id="canutils" data-num="06">
+  <h2><em class="yl">can-utils</em></h2>
+  <div class="section-bar yl"></div>
+  <p>Install (Debian/Ubuntu): <code>sudo apt install can-utils</code>. Source: <code>linux-can/can-utils</code> on GitHub if you need a newer build -- the isotp tools especially lag in distro packages.</p>
+
+  <table>
+    <tr><th>Command</th><th>What it does</th></tr>
+    <tr><td class="meth">candump can0</td><td>Live dump, all IDs</td></tr>
+    <tr><td class="meth">candump can0,123:7FF</td><td>Filter: ID 0x123 exact match (mask 7FF)</td></tr>
+    <tr><td class="meth">candump -l can0</td><td>Log to <code>candump-&lt;timestamp&gt;.log</code></td></tr>
+    <tr><td class="meth">candump -L can0</td><td>Log in ASC-ish long format</td></tr>
+    <tr><td class="meth">cansend can0 123#DEADBEEF</td><td>Send one frame, ID 0x123, data DE AD BE EF</td></tr>
+    <tr><td class="meth">cangen vcan0 -g 100 -I 1A0 -L 8 -D i</td><td>Generate frames every 100ms, ID 1A0, 8 bytes, incrementing data</td></tr>
+    <tr><td class="meth">cansniffer can0</td><td>Live view, highlights <em>changing</em> bytes -- best RE starting point</td></tr>
+    <tr><td class="meth">canplayer -I candump.log</td><td>Replay a captured log back onto the bus</td></tr>
+    <tr><td class="meth">canbusload can0@500000</td><td>Bus utilization %, needs the bitrate for the math</td></tr>
+    <tr><td class="meth">cangw -A -s can0 -d can1 -e</td><td>Gateway/forward frames between two CAN interfaces</td></tr>
+    <tr><td class="meth">log2asc / asc2log</td><td>Convert between candump log format and Vector ASC</td></tr>
+  </table>
+
+  <div class="info-box yl">
+    <strong>cansniffer is the fastest RE starting point</strong>
+    Put the bus in <code>cansniffer</code>, wiggle one thing in the car (indicator, window, throttle), and watch which bytes flip. It's the fastest way to answer "what CAN ID changes when I press this button" -- faster than diffing candump logs by hand for a first pass.
+  </div>
+</section>
+
+<!-- re -->
+<section id="re" data-num="07">
+  <h2><em class="or">Reverse</em> Engineering</h2>
+  <div class="section-bar"></div>
+  <p>No magic here -- reverse engineering unknown CAN IDs is differential analysis.</p>
+
+  <ol class="step-list">
+    <li><strong>Capture a baseline</strong> <code>candump -l can0</code> with nothing happening.</li>
+    <li><strong>Capture again while triggering exactly one action</strong> turn signal on, RPM rising, brake pedal -- one variable at a time.</li>
+    <li><strong>Diff the two logs</strong> or just watch <code>cansniffer</code> live, to isolate the ID/byte that moved.</li>
+    <li><strong>Narrow further by bisecting</strong> does the value scale with RPM (a linear signal), or is it a bitfield (one bit per door, e.g.)?</li>
+  </ol>
+
+  <h3>Tools beyond raw candump/cansniffer</h3>
+  <table>
+    <tr><th>Tool</th><th>What it's for</th></tr>
+    <tr><td class="meth">SavvyCAN</td><td>Cross-platform Qt GUI -- graphing, bitfield/signal discovery, comparison between captures, DBC import/export. The standard GUI tool for this.</td></tr>
+    <tr><td class="meth">cabana</td><td>comma.ai, part of the openpilot tools repo -- browser-based CAN visualizer/DBC editor, good for correlating signals against a synced video if you have one.</td></tr>
+    <tr><td class="meth">caringcaribou</td><td>Python framework with <code>dump</code>, <code>send</code>, and diagnostic (UDS/XCP) modules -- useful for scripted, repeatable RE rather than clicking through a GUI.</td></tr>
+  </table>
+</section>
+
+<!-- dbc -->
+<section id="dbc" data-num="08">
+  <h2>DBC <em class="cy">Signals</em></h2>
+  <div class="section-bar cy"></div>
+  <p>A <code>.dbc</code> file maps raw CAN IDs/bytes to named, scaled signals (e.g. <code>EngineRPM</code>). Once you've reverse engineered a signal, write it into a DBC so you -- and tooling -- can decode it by name going forward.</p>
+
+  <pre class="cy"><span class="label">cantools cli</span>
+<span class="kw">pip install</span> cantools
+cantools decode my.dbc <span class="key">&lt;</span> candump.log      <span class="cm"># decode a candump-format log using a DBC</span>
+cantools dump my.dbc                       <span class="cm"># print all messages/signals defined</span></pre>
+
+  <pre class="cy"><span class="label">cantools python api</span>
+<span class="kw">import</span> cantools
+db <span class="key">=</span> cantools.database.<span class="fn">load_file</span>(<span class="st">'my.dbc'</span>)
+msg <span class="key">=</span> db.<span class="fn">get_message_by_frame_id</span>(<span class="num">0x123</span>)
+<span class="fn">print</span>(msg.<span class="fn">decode</span>(<span class="fn">bytes.fromhex</span>(<span class="st">'deadbeefdeadbeef'</span>)))</pre>
+
+  <p>For real-world reference DBCs to cross-check IDs against (many common signals are similar across a manufacturer's lineup): <a href="https://github.com/commaai/opendbc">commaai/opendbc</a> has a large collection of production DBC files pulled from openpilot-supported vehicles.</p>
+
+  <div class="info-box warn">
+    <strong>Endianness and scaling bite constantly</strong>
+    When reverse engineering by hand, a value that looks nonsensical is often just byte-order (Motorola/big-endian vs Intel/little-endian bit layout in the DBC) or a wrong scale/offset, not a wrong signal. Before concluding an ID is unrelated, try the other endianness and a couple of obvious scale factors first.
+  </div>
+</section>
+
+<!-- practice -->
+<section id="practice" data-num="09">
+  <h2><em class="or">Practice</em> &amp; Fuzzing</h2>
+  <div class="section-bar"></div>
+
+  <h3>Practicing without a car: ICSim</h3>
+  <p><code>zombieCraig/ICSim</code> on GitHub -- a fake instrument cluster + control panel that talks over a vcan interface. The standard way to practice replay/fuzzing without touching a real vehicle.</p>
+
+  <pre><span class="label">ICSim setup</span>
+git clone https://github.com/zombieCraig/ICSim
+<span class="kw">cd</span> ICSim <span class="key">&amp;&amp;</span> make
+./icsim vcan0        <span class="cm"># dashboard window</span>
+./controls vcan0      <span class="cm"># keyboard-driven control panel that sends CAN frames</span></pre>
+
+  <h3>Fuzzing</h3>
+  <pre><span class="label">cangen fuzz</span>
+cangen vcan0 <span class="flag">-g 50 -I r -L r -D r</span>          <span class="cm"># random ID, random length, random data, every 50ms</span>
+cangen vcan0 <span class="flag">-I 220 -D r -L 8 -g 20</span>        <span class="cm"># fixed ID, random payload -- fuzz one message's data</span></pre>
+
+  <p>For anything more structured than can-utils gives you (mutation seeded from a real capture, ID-range sweeps, replay-then-fuzz), caringcaribou's <code>dump</code>/<code>send</code> modules or a short custom python-can script are the next step up.</p>
+</section>
+
+<!-- diag -->
+<section id="diag" data-num="10">
+  <h2>ISO-TP · UDS · <em class="cy">OBD-II</em></h2>
+  <div class="section-bar cy"></div>
+
+  <h3 class="cy">ISO-TP (ISO 15765-2)</h3>
+  <p>Segments payloads &gt;8 bytes over CAN -- this is the transport UDS diagnostics rides on. Kernel module is mainline since Linux 5.10; on older kernels build <code>can-isotp</code> from <code>hartkopp/can-isotp</code>.</p>
+
+  <pre class="cy"><span class="label">isotp tools</span>
+<span class="kw">sudo</span> modprobe can-isotp
+isotpsend can0 <span class="flag">-s 7e0 -d 7e8</span>      <span class="cm"># send, src/dst arbitration IDs</span>
+isotprecv can0 <span class="flag">-s 7e8 -d 7e0</span>
+isotpdump can0 <span class="flag">-s 7e0 -d 7e8</span>      <span class="cm"># sniff a specific ISO-TP conversation</span></pre>
+
+  <h3 class="cy">UDS (ISO 14229) service IDs</h3>
+  <p>Reach for a library rather than hand-rolling frames: <strong>python-udsoncan</strong> (<code>pylessard/python-udsoncan</code>) + <strong>python-can-isotp</strong> as the transport layer, or caringcaribou's <code>uds</code> module for quick discovery (<code>cc.py uds discovery can0</code> sweeps arbitration IDs looking for a diagnostic responder).</p>
+
+  <table>
+    <tr><th>SID</th><th>Service</th></tr>
+    <tr><td class="meth">0x10</td><td>DiagnosticSessionControl</td></tr>
+    <tr><td class="meth">0x27</td><td>SecurityAccess (seed/key)</td></tr>
+    <tr><td class="meth">0x22</td><td>ReadDataByIdentifier</td></tr>
+    <tr><td class="meth">0x2E</td><td>WriteDataByIdentifier</td></tr>
+    <tr><td class="meth">0x31</td><td>RoutineControl</td></tr>
+    <tr><td class="meth">0x23</td><td>ReadMemoryByAddress</td></tr>
+    <tr><td class="meth">0x3D</td><td>WriteMemoryByAddress</td></tr>
+    <tr><td class="meth">0x34</td><td>RequestDownload</td></tr>
+    <tr><td class="meth">0x36</td><td>TransferData</td></tr>
+    <tr><td class="meth">0x37</td><td>RequestTransferExit</td></tr>
+  </table>
+
+  <h3 class="cy">OBD-II</h3>
+  <p>Standard OBD-II PIDs (mode 01) are a tiny, standardized subset of what's actually on the bus -- most interesting signals are manufacturer-specific and require reverse engineering or a factory DBC/UDS spec, not OBD-II.</p>
+
+  <table>
+    <tr><th>PID</th><th>Signal</th></tr>
+    <tr><td class="meth">0x0C</td><td>Engine RPM</td></tr>
+    <tr><td class="meth">0x0D</td><td>Vehicle speed</td></tr>
+    <tr><td class="meth">0x05</td><td>Coolant temperature</td></tr>
+  </table>
+
+  <pre class="cy"><span class="label">python-obd</span>
+<span class="kw">pip install</span> obd</pre>
+  <pre class="cy"><span class="label">python-obd query</span>
+<span class="kw">import</span> obd
+conn <span class="key">=</span> obd.<span class="fn">OBD</span>(<span class="st">"/dev/ttyUSB0"</span>)     <span class="cm"># auto-detects an ELM327-compatible adapter</span>
+<span class="fn">print</span>(conn.<span class="fn">query</span>(obd.commands.RPM))</pre>
+
+  <div class="info-box warn">
+    <strong>ELM327 clones vary wildly</strong>
+    If <code>python-obd</code> can't get a clean response, talk to the adapter directly over serial first (<code>ATZ</code> reset, <code>ATE0</code> echo off, <code>ATSP0</code> auto-protocol) to rule out the dongle before blaming the code.
+  </div>
+</section>
+
+<!-- ecu -->
+<section id="ecu" data-num="11">
+  <h2>ECU <em class="rd">Firmware</em> Dumping</h2>
+  <div class="section-bar rd"></div>
+
+  <div class="info-box danger">
+    <strong>Authorized, bench work only</strong>
+    Everything below assumes a board on your bench that you own or have explicit authorization to work on -- pulled from a vehicle or a spare part, not probed in-situ on a running car.
+  </div>
+
+  <h3 class="rd">Common ECU MCU families</h3>
+  <table>
+    <tr><th>Family</th><th>Where it shows up</th><th>Debug interface</th></tr>
+    <tr><td class="meth">Infineon TriCore</td><td>TC1766, TC1796, TC2xx -- very common in Bosch/Continental/Delphi ECUs</td><td>JTAG/DAP historically needs Lauterbach or PLS commercial tools; OpenOCD TriCore support exists but is limited/community-maintained -- check current state before assuming it'll just work</td></tr>
+    <tr><td class="meth">Freescale/NXP/ST MPC55xx / SPC56x</td><td>PowerPC e200z -- common in older-generation Bosch/Delphi ECUs</td><td>BDM (background debug mode) or JTAG; P&amp;E Micro Multilink and USBDM are the usual affordable options</td></tr>
+    <tr><td class="meth">ARM Cortex-M (STM32 etc.)</td><td>Increasingly common in simpler modules (BCM, gateways, some newer ECUs)</td><td>Standard SWD -- OpenOCD + ST-Link/J-Link/Black Magic Probe just works</td></tr>
+    <tr><td class="meth">Renesas RH850</td><td>Shows up in newer Denso/Hitachi ECUs</td><td>Vendor debug tooling; check current OpenOCD/probe support</td></tr>
+  </table>
+
+  <h3 class="rd">Workflow when you have a board and no documentation</h3>
+  <ol class="step-list rd">
+    <li><strong>Find the debug pins</strong> if unpopulated header/test points exist, a JTAGulator (Grand Idea Studio) brute-forces JTAG and UART pinouts blind -- much faster than probing with a multimeter. A logic analyzer (Saleae, or a Bus Pirate) on candidate pins while the board boots is the fallback.</li>
+    <li><strong>Try UART first</strong> many ECU bootloaders/debug consoles are plain 3.3V or 5V TTL serial. Common baud rates to sweep: 9600, 19200, 38400, 115200. A boot-time console often leaks memory layout, bootloader version, or even a shell -- worth checking before reaching for JTAG.</li>
+    <li><strong>JTAG/SWD dump</strong> once pins and voltage are confirmed, with the debugger matched to the MCU family above.</li>
+    <li><strong>UDS bootloader route</strong> if the ECU is reachable over CAN and security access isn't locked down: <code>$10</code> diagnostic session, <code>$27</code> SecurityAccess (seed/key -- may require knowing the OEM's algorithm), then <code>$34</code>/<code>$36</code>/<code>$37</code> (RequestDownload/TransferData/RequestTransferExit) or <code>$23</code> (ReadMemoryByAddress) to pull flash contents over the bus with no physical access to the board at all. caringcaribou or a custom python-udsoncan script.</li>
+    <li><strong>Chip-off, last resort</strong> if the flash is a discrete external chip (some simpler modules), desolder and read directly with a CH341A or TL866 programmer. Doesn't work when flash is internal to a BGA MCU -- you're back to the debug interface for those.</li>
+  </ol>
+
+  <h3 class="rd">Once you have a raw dump</h3>
+  <pre class="rd"><span class="label">first pass on a firmware image</span>
+binwalk <span class="flag">-e</span> firmware.bin        <span class="cm"># carve out embedded filesystems/known signatures</span>
+strings <span class="flag">-n 8</span> firmware.bin <span class="key">|</span> less</pre>
+  <p>Then Ghidra (native PowerPC/ARM support; TriCore needs a community processor module -- check what's current) or IDA for actual disassembly/RE.</p>
+</section>
+
+<!-- gotchas -->
+<section id="gotchas" data-num="12">
+  <h2><em class="rd">Gotchas</em></h2>
+  <div class="section-bar rd"></div>
+
+  <div class="info-box warn">
+    <strong>Bitrate mismatch is silent-ish</strong>
+    Wrong bitrate on a real bus doesn't throw a clean error -- you get garbage/no frames or bus-off errors. Check error counters with <code>ip -details -statistics link show can0</code>. Confirm bitrate (usually 500k on the OBD-II port) before assuming the interface or wiring is bad.
+  </div>
+
+  <div class="info-box warn">
+    <strong>Termination</strong>
+    A vcan bus needs none of this; a real bus with a flying-lead tap (rather than the OBD-II connector, which already has both ends terminated in-vehicle) can behave badly without correct 120ohm termination at both physical ends.
+  </div>
+
+  <div class="info-box cy">
+    <strong>DBC signal endianness/scaling</strong>
+    Bites constantly when reverse engineering by hand -- a value that looks nonsensical is often just byte-order or a wrong scale/offset, not a wrong signal. See <a href="#dbc">DBC Files</a>.
+  </div>
+
+  <div class="info-box danger">
+    <strong>Live-vehicle injection is out of scope</strong>
+    Injecting onto a live, moving vehicle's bus is not a lab activity. Everything on this page assumes a bench setup, a parked vehicle, or ICSim/vcan.
+  </div>
+</section>
+
+<!-- resources -->
+<section id="resources" data-num="13">
+  <h2><em class="or">Resources</em></h2>
+  <div class="section-bar"></div>
+
+  <table>
+    <tr><th>Resource</th><th>What</th><th>Where</th></tr>
+    <tr><td class="meth">opengarages.org</td><td>Craig Smith's site; hosts the free <em>Car Hacker's Handbook</em> PDF, still the best single starting reference for this whole field</td><td><a href="https://opengarages.org">opengarages.org</a></td></tr>
+    <tr><td class="meth">DEF CON Car Hacking Village</td><td>Yearly talks/CTF, most content ends up on YouTube afterward</td><td><a href="https://www.carhackingvillage.com">car-hacking-village.com</a></td></tr>
+    <tr><td class="meth">opendbc</td><td>Large real-world DBC file collection</td><td><a href="https://github.com/commaai/opendbc">github.com/commaai/opendbc</a></td></tr>
+    <tr><td class="meth">ICSim</td><td>Practice rig -- fake instrument cluster over vcan</td><td><a href="https://github.com/zombieCraig/ICSim">github.com/zombieCraig/ICSim</a></td></tr>
+    <tr><td class="meth">SavvyCAN</td><td>GUI RE tool</td><td><a href="https://github.com/collin80/SavvyCAN">github.com/collin80/SavvyCAN</a></td></tr>
+    <tr><td class="meth">can-utils</td><td>Upstream source for everything in the can-utils section</td><td><a href="https://github.com/linux-can/can-utils">github.com/linux-can/can-utils</a></td></tr>
+    <tr><td class="meth">caringcaribou</td><td>UDS/XCP diagnostic framework</td><td><a href="https://github.com/CaringCaribou/caringcaribou">github.com/CaringCaribou/caringcaribou</a></td></tr>
+    <tr><td class="meth">python-udsoncan</td><td>UDS library stack</td><td><a href="https://github.com/pylessard/python-udsoncan">github.com/pylessard/python-udsoncan</a></td></tr>
+    <tr><td class="meth">python-can-isotp</td><td>ISO-TP transport layer for udsoncan</td><td><a href="https://github.com/pylessard/python-can-isotp">github.com/pylessard/python-can-isotp</a></td></tr>
+  </table>
+
+  <p>GitHub topic/search <code>awesome-vehicle-security</code> and <code>awesome-car-hacking</code> for continuously updated tool lists -- worth a periodic re-check, this space moves fast.</p>
+
+  <div class="info-box cy">
+    <strong>The meta-question to hold</strong>
+    Every signal on the bus is just a byte that changed when you did something. If you can't tie a byte to an action, keep sniffing -- there's no field-level metadata to lean on, only correlation.
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<div class="footer">
+  <span>CAN BUS DEEP DIVE // FRAMES TO ECUS // BENCH &amp; VCAN ONLY</span>
+  <span><a href="https://opengarages.org">opengarages.org</a></span>
+</div>
+
+<div class="spine">// frame · hardware · esp32 · socketcan · can-utils · re · dbc · diag · ecu · gotchas //</div>
+
+<script>
+const LABELS = {
+  intro:'Intro', frame:'Frame Anatomy', hardware:'Interfaces', esp32:'ESP32 / MCP2515',
+  socketcan:'SocketCAN', canutils:'can-utils', re:'Reverse Eng', dbc:'DBC Files',
+  practice:'Practice', diag:'UDS / OBD-II', ecu:'ECU Dumping', gotchas:'Gotchas', resources:'Resources'
+};
+const sections = [...document.querySelectorAll('.container > section[id]')];
+const sideLinks = [...document.querySelectorAll('.side a')];
+const radial = document.getElementById('radial');
+const ring = document.getElementById('radialRing');
+const center = document.getElementById('radialCenter');
+const navNum = document.getElementById('navNum');
+const navLabel = document.getElementById('navLabel');
+
+const items = sections.map(s => {
+  const a = document.createElement('a');
+  a.href = '#' + s.id;
+  a.className = 'radial-item';
+  a.innerHTML = '<span>' + s.dataset.num + '</span>' + (LABELS[s.id] || s.id);
+  radial.appendChild(a);
+  const dot = document.createElement('span');
+  dot.className = 'radial-dot';
+  radial.appendChild(dot);
+  return { sec: s, a, dot };
+});
+
+function layout() {
+  const rx = Math.max(140, Math.min(innerWidth * 0.5 - 150, 330));
+  const ry = Math.max(150, Math.min(innerHeight * 0.5 - 100, 330));
+  ring.style.width = (rx - 26) * 2 + 'px';
+  ring.style.height = (ry - 26) * 2 + 'px';
+  items.forEach((it, i) => {
+    const ang = -Math.PI / 2 + i * 2 * Math.PI / items.length;
+    const x = Math.cos(ang), y = Math.sin(ang);
+    it.a.style.left = 'calc(50% + ' + (rx * x).toFixed(1) + 'px)';
+    it.a.style.top = 'calc(50% + ' + (ry * y).toFixed(1) + 'px)';
+    const tx = x > 0.35 ? '0%' : x < -0.35 ? '-100%' : '-50%';
+    const ty = y > 0.35 ? '0%' : y < -0.35 ? '-100%' : '-50%';
+    it.a.style.transform = 'translate(' + tx + ', ' + ty + ')';
+    it.dot.style.left = 'calc(50% + ' + ((rx - 26) * x).toFixed(1) + 'px)';
+    it.dot.style.top = 'calc(50% + ' + ((ry - 26) * y).toFixed(1) + 'px)';
+  });
+}
+function openDial() { layout(); radial.classList.add('open'); document.body.classList.add('dial-open'); }
+function closeDial() { radial.classList.remove('open'); document.body.classList.remove('dial-open'); }
+
+function activate(id) {
+  const el = document.getElementById(id);
+  const sec = el ? (el.closest('.container > section[id]') || sections[0]) : sections[0];
+  sections.forEach(s => s.classList.toggle('active', s === sec));
+  items.forEach(it => {
+    it.a.classList.toggle('active', it.sec === sec);
+    it.dot.classList.toggle('active', it.sec === sec);
+  });
+  sideLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + sec.id));
+  navNum.textContent = sec.dataset.num + ' //';
+  navLabel.textContent = LABELS[sec.id] || sec.id;
+  center.textContent = sec.dataset.num;
+  closeDial();
+  if (el && el !== sec) el.scrollIntoView();
+  else window.scrollTo(0, 0);
+}
+function go(id) { history.replaceState(null, '', '#' + id); activate(id); }
+
+document.getElementById('navCurrent').addEventListener('click', openDial);
+document.getElementById('sideDial').addEventListener('click', openDial);
+center.addEventListener('click', closeDial);
+radial.addEventListener('click', e => { if (e.target === radial) closeDial(); });
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  e.preventDefault();
+  go(a.getAttribute('href').slice(1));
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') return closeDial();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const cur = sections.findIndex(s => s.classList.contains('active'));
+    const next = (cur + (e.key === 'ArrowRight' ? 1 : sections.length - 1)) % sections.length;
+    go(sections[next].id);
+  }
+});
+window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
+window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
+activate(location.hash.slice(1));
+</script>
+</body>
+</html>

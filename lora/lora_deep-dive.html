@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoRa Deep Dive // Chirp to Cipher</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* masthead */
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+.masthead .companion {
+  margin-top: 14px;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 2px;
+}
+
+/* nav */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-brand {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.nav-current {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-current:hover { border-color: var(--orange); color: var(--orange); }
+.nav-current .num { color: var(--orange); }
+.nav-hint { color: var(--dim2); margin-left: 6px; }
+
+/* sidebar */
+.side {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 248px;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  z-index: 150;
+  padding: 26px 0 20px;
+  overflow-y: auto;
+}
+.side-brand {
+  padding: 0 20px 16px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--bright);
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 12px;
+}
+.side-brand span { color: var(--orange); }
+.side a {
+  display: block;
+  padding: 7px 24px 7px 21px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.side a span { color: var(--dim2); margin-right: 7px; }
+.side a:hover { color: var(--orange); }
+.side a.active { color: var(--orange); border-left-color: var(--orange); background: var(--surface); }
+.side a.active span { color: var(--orange); }
+.side-dial {
+  display: block;
+  margin: 16px 20px 0 17px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--border2);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.side-dial:hover { color: var(--orange); border-color: var(--orange); }
+@media (min-width: 1100px) {
+  .side { display: block; }
+  body { padding-left: 248px; }
+  .nav { display: none; }
+}
+
+/* radial dial */
+.radial {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(242, 241, 238, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.radial.open { opacity: 1; pointer-events: auto; }
+body.dial-open { overflow: hidden; }
+.radial-ring {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+}
+.radial-center {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  cursor: pointer;
+}
+.radial-center:hover { color: var(--orange); }
+.radial-item {
+  position: absolute;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--dim);
+  padding: 4px 6px;
+}
+.radial-item span { color: var(--dim2); margin-right: 5px; }
+.radial-item:hover, .radial-item.active { color: var(--orange); }
+.radial-item:hover span, .radial-item.active span { color: var(--orange); }
+.radial-dot {
+  position: absolute;
+  width: 5px; height: 5px;
+  background: var(--dim2);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.radial-dot.active { background: var(--orange); }
+@media (max-width: 620px) {
+  .radial.open { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .radial-ring, .radial-dot, .radial-center { display: none; }
+  .radial-item { position: static !important; transform: none !important; font-size: 12px; padding: 7px; }
+}
+
+/* layout */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+}
+section { padding: 52px 0; display: none; }
+section.active { display: block; }
+section::before {
+  content: attr(data-num) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+/* headings */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--yellow); }
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+.section-bar.yl { background: var(--yellow); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+h3.cy { color: var(--cyan); }
+h3.yl { color: var(--yellow); }
+h3.rd { color: var(--red); }
+h4 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  margin: 20px 0 8px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+
+/* code */
+code {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--bright);
+}
+pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre.yl { border-left-color: var(--yellow); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .flag   { color: #7A7870; }
+
+/* diagrams */
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #8A8880;
+}
+.diagram.cy { border-left-color: var(--cyan); }
+.diagram.yl { border-left-color: var(--yellow); }
+.diagram.rd { border-left-color: var(--red); }
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .acc3 { color: #C8A030; }
+.diagram .dim  { color: #4A4942; }
+.diagram .hi   { color: #CCCBC4; }
+
+/* info boxes */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy    { border-left-color: var(--cyan); }
+.info-box.warn  { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; vertical-align: top; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; white-space: nowrap; }
+td.cy   { color: var(--cyan); }
+td.rd   { color: var(--red); }
+td.yl   { color: var(--yellow); }
+td.meth a { color: inherit; text-decoration: none; border-bottom: 1px dashed currentColor; }
+td.meth a:hover { color: var(--bright); }
+h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
+
+/* two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; align-items: stretch; }
+.two-col > div { display: flex; flex-direction: column; }
+.two-col > div > pre { flex: 1; margin-bottom: 0; }
+
+/* step list */
+.step-list { list-style: none; counter-reset: step; margin: 16px 0; }
+.step-list li {
+  counter-increment: step;
+  position: relative;
+  padding: 10px 0 10px 42px;
+  border-bottom: 1px dashed var(--border2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-list li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  width: 34px;
+}
+.step-list li strong { color: var(--bright); display: block; margin-bottom: 2px; }
+.step-list.cy li::before { color: var(--cyan); }
+.step-list.rd li::before { color: var(--red); }
+
+/* footer */
+.footer {
+  border-top: 1px solid var(--border2);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+.footer a { color: var(--orange); text-decoration: none; }
+
+/* spine */
+.spine {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* responsive */
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .masthead { padding: 40px 20px 28px; }
+}
+@media (max-width: 1280px) { .spine { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- masthead -->
+<div class="masthead">
+  <h1>LoRa <em>Deep</em> Dive</h1>
+  <div class="subtitle"><span>Chirp Spread Spectrum · SX127x · SX126x · LoRaWAN MAC · Register-Level</span></div>
+  <div class="companion">SX1276/RFM95 · SX1262/RA-01SC · ESP-IDF SPI // bare-register C, no RadioLib // EU868 · US915</div>
+</div>
+
+<!-- sidebar -->
+<nav class="side">
+  <div class="side-brand">LoRa <span>//</span> Deep Dive</div>
+  <a href="#intro"><span>01</span>Intro</a>
+  <a href="#css"><span>02</span>CSS Waveform</a>
+  <a href="#chain"><span>03</span>Coding Chain</a>
+  <a href="#packet"><span>04</span>PHY Packet</a>
+  <a href="#toa"><span>05</span>Time on Air</a>
+  <a href="#sx127x"><span>06</span>SX127x Regs</a>
+  <a href="#sx126x"><span>07</span>SX126x Cmds</a>
+  <a href="#compare"><span>08</span>127x vs 126x</a>
+  <a href="#esp32"><span>09</span>ESP32 Wire</a>
+  <a href="#lorawan"><span>10</span>LoRaWAN MAC</a>
+  <a href="#p2p"><span>11</span>P2P &amp; CAD</a>
+  <a href="#gotchas"><span>12</span>Gotchas</a>
+  <a href="#further"><span>13</span>Further</a>
+  <button class="side-dial" id="sideDial" title="radial section dial">◎ dial</button>
+</nav>
+
+<!-- nav -->
+<div class="nav">
+  <div class="nav-inner">
+    <span class="nav-brand">LoRa Deep Dive</span>
+    <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
+      <span class="num" id="navNum">01 //</span> <span id="navLabel">Intro</span> <span class="nav-hint">◎</span>
+    </button>
+  </div>
+</div>
+
+<!-- radial dial -->
+<div class="radial" id="radial">
+  <div class="radial-ring" id="radialRing"></div>
+  <button class="radial-center" id="radialCenter" title="close (Esc)">01</button>
+</div>
+
+<div class="container">
+
+<!-- intro -->
+<section id="intro" data-num="01">
+  <h2>Chirp &amp; <em class="or">Cipher</em></h2>
+  <div class="section-bar"></div>
+  <p>LoRa is a chirp-spread-spectrum (CSS) PHY: each symbol is one linear frequency sweep carrying SF bits across 2^SF chips. LoRaWAN is the AES-secured star-network MAC layer built on top of that PHY. Everything on this page is register-level, bare C -- no RadioLib, no arduino-LoRa -- because the point is to see exactly what goes over SPI.</p>
+
+  <h3>Two chips, two philosophies</h3>
+  <p>The <strong>SX127x</strong> (RFM95 module; SX1276/77/78 silicon, Semtech datasheet Rev. 0.0 May 2013) exposes a flat register-poke SPI interface -- one address byte with the R/W bit in bit 7, then data. The <strong>SX126x</strong> (SX1262 silicon, RA-01SC module; datasheet Rev. 1.1 Dec 2017 / Rev. 1.2 Jun 2019) replaces that with a command/opcode interface gated by a BUSY pin, adds a mandatory image-calibration step, cuts typical RX current from ~11 mA to ~4.6 mA, and pushes TX to +22 dBm versus +20 dBm. Register/opcode detail lives in <a href="#sx127x">SX127x Regs</a> and <a href="#sx126x">SX126x Cmds</a>; the head-to-head is in <a href="#compare">127x vs 126x</a>.</p>
+
+  <pre class="diagram"><span class="label">a lora node, signal path</span>
+<span class="dim">┌──────────┐</span>          <span class="acc">SPI bus</span>          <span class="dim">┌───────────────────────┐</span>     <span class="dim">┌───────────────────┐</span>     <span class="dim">┌─────────┐</span>
+<span class="dim">│</span>  <span class="hi">ESP32</span>   <span class="dim">│</span>  <span class="acc">MOSI · MISO · SCK · CS</span>  <span class="dim">│</span>   <span class="hi">SX127x / SX126x</span>     <span class="dim">│</span>     <span class="dim">│</span>  <span class="hi">matching net /</span>   <span class="dim">│</span>     <span class="dim">│</span> <span class="hi">antenna</span> <span class="dim">│</span>
+<span class="dim">│</span> host MCU <span class="dim">├───────────────────────▶│</span>   radio transceiver    <span class="dim">├────▶│</span>  <span class="hi">RF frontend</span>       <span class="dim">├────▶│</span>  50Ω    <span class="dim">│</span>
+<span class="dim">└──────────┘</span> <span class="dim">+ RESET · DIO0/1 · BUSY</span> <span class="dim">└───────────────────────┘</span>     <span class="dim">└───────────────────┘</span>     <span class="dim">└─────────┘</span>
+                                        <span class="dim">chirp modulation happens entirely inside this chip --</span>
+                                        <span class="dim">the MCU only ever sees register/command bytes and raw payload bytes</span></pre>
+
+  <div class="info-box cy">
+    <strong>How to read this</strong>
+    Waveform math is in <a href="#css">CSS Waveform</a>, the TX bit-chain in <a href="#chain">Coding Chain</a>. Wiring and register/opcode reference for each chip live in <a href="#sx127x">SX127x Regs</a>, <a href="#sx126x">SX126x Cmds</a>, and <a href="#esp32">ESP32 Wire</a>. Building LoRaWAN rather than raw P2P: skip to <a href="#lorawan">LoRaWAN MAC</a>. Debugging a dead link: start at <a href="#gotchas">Gotchas</a>.
+  </div>
+</section>
+
+<!-- css -->
+<section id="css" data-num="02">
+  <h2>Chirp <em class="cy">Spread</em> Spectrum</h2>
+  <div class="section-bar cy"></div>
+  <p>LoRa modulates data onto <strong>chirps</strong>: signals whose instantaneous frequency ramps linearly across the channel bandwidth B. A base <strong>up-chirp</strong> sweeps from −B/2 to +B/2; a <strong>down-chirp</strong> does the reverse. The <strong>spreading factor</strong> SF ∈ {7…12} (SX126x also allows SF5/SF6) sets the number of chips per symbol as <strong>N = 2^SF</strong>, and each symbol carries SF raw bits.</p>
+
+  <h3 class="cy">Symbol = cyclically-shifted chirp</h3>
+  <p>A symbol of value s ∈ {0,…,N−1} is a cyclically-shifted up-chirp: the sweep starts at frequency f0 = (s·B/N − B/2), rises at B/N per chip until it hits the Nyquist edge +B/2, then folds back to −B/2 at chip n_fold = N − s and continues to the end of the symbol. Where the fold-back lands is where the symbol value is encoded.</p>
+
+  <pre class="diagram cy"><span class="label">base up-chirp, symbol s=0</span>
+<span class="hi">+B/2</span> ┤                                              <span class="acc2">╱</span>
+     │                                        <span class="acc2">╱</span>
+     │                                  <span class="acc2">╱</span>
+     │                            <span class="acc2">╱</span>
+     │                      <span class="acc2">╱</span>
+  <span class="dim">0</span>  ┤                <span class="acc2">╱</span>
+     │          <span class="acc2">╱</span>
+     │    <span class="acc2">╱</span>
+<span class="hi">-B/2</span> ┤<span class="acc2">╱</span>
+     └──────────────────────────────────────────────▶ <span class="dim">time, 0 → Tsym (N chips)</span>
+
+<span class="label">shifted symbol s, fold-back encodes the value</span>
+<span class="hi">+B/2</span> ┤                <span class="acc">╱</span><span class="dim">│</span>                              <span class="acc">╱</span>
+     │          <span class="acc">╱</span>    <span class="dim">│</span>                        <span class="acc">╱</span>
+     │    <span class="acc">╱</span>          <span class="dim">│</span>                  <span class="acc">╱</span>
+  <span class="dim">0</span>  ┤                <span class="dim">│</span>            <span class="acc">╱</span>
+     │                <span class="dim">│</span>      <span class="acc">╱</span>
+<span class="hi">-B/2</span> ┤<span class="acc">╱</span>              <span class="dim">│</span><span class="acc">╱</span>
+     └────────────────▲───────────────────────────────▶ <span class="dim">time</span>
+                <span class="dim">n_fold = N − s -- chip index where frequency wraps +B/2 → −B/2</span></pre>
+
+  <p>The discrete baseband symbol below is referenced to a base up-chirp. Demodulation is <strong>de-chirping</strong>: multiply the received signal by the conjugate of the base down-chirp, take an FFT, and the bin with the peak magnitude is the symbol value.</p>
+
+  <pre class="cy"><span class="label">symbol / reference chirp</span>
+<span class="cm">// symbol s, discrete baseband, n = 0..N-1</span>
+<span class="fn">x_s</span>[n]   = <span class="kw">exp</span>( j·2π · (((s+n) <span class="kw">mod</span> N) · n) / N )
+
+<span class="cm">// base up-chirp used for de-chirping (conjugate, multiply, then FFT)</span>
+<span class="fn">x_ref</span>[n] = <span class="kw">exp</span>( j·2π · (n²/(2N) − n/2) )</pre>
+
+  <h3 class="cy">Timing and link budget</h3>
+  <table>
+    <tr><th>Quantity</th><th>Formula</th><th>Notes</th></tr>
+    <tr><td class="meth">Symbol duration</td><td>Tsym = 2^SF / B</td><td>SF7/125kHz: 128/125000 = 1.024 ms · SF12/125kHz: 4096/125000 = 32.768 ms</td></tr>
+    <tr><td class="meth">Chip rate</td><td>= B</td><td>one chip per 1/B seconds; 2^SF chips per symbol</td></tr>
+    <tr><td class="meth">Processing gain</td><td>≈ 10·log10(2^SF) dB</td><td>each SF step doubles Tsym, adds ~2.5 dB link budget, halves bitrate</td></tr>
+    <tr><td class="meth">Bandwidth</td><td>125 / 250 / 500 kHz</td><td>doubling BW halves Tsym (doubles bitrate) for the same SF</td></tr>
+  </table>
+
+  <p>Spreading factors are quasi-orthogonal, so different SFs coexist on one channel with limited mutual interference -- the basis of LoRaWAN's adaptive data rate in <a href="#lorawan">LoRaWAN MAC</a>.</p>
+</section>
+
+<!-- chain -->
+<section id="chain" data-num="03">
+  <h2>The <em class="or">Coding</em> Chain</h2>
+  <div class="section-bar"></div>
+  <p>The LoRa TX chain was reverse-engineered by Knight/Seeber and the EPFL/GNU Radio teams, since Semtech never fully documented it: <strong>whitening → Hamming FEC → interleaving → Gray mapping → chirp modulation.</strong></p>
+
+  <pre class="diagram"><span class="label">tx bit-processing pipeline</span>
+<span class="hi">payload bytes</span>
+      <span class="dim">│</span>
+      <span class="acc">▼</span>
+<span class="dim">┌───────────────────┐</span>   <span class="dim">XOR with a pseudo-random LFSR sequence, removes DC bias / long runs</span>
+<span class="dim">│</span> <span class="hi">whitening</span>          <span class="dim">│</span>   <span class="dim">(sequence experimentally derived, not published by Semtech)</span>
+<span class="dim">└─────────┬─────────┘</span>
+          <span class="acc">▼</span>
+<span class="dim">┌───────────────────┐</span>   <span class="dim">CR 4/5..4/8 -- true (4,7)/(4,8) Hamming @ 4/7,4/8 (correct 1 bit)</span>
+<span class="dim">│</span> <span class="hi">Hamming FEC</span>        <span class="dim">│</span>   <span class="dim">4/6 punctured (detect only), 4/5 single parity bit (detect only)</span>
+<span class="dim">└─────────┬─────────┘</span>
+          <span class="acc">▼</span>
+<span class="dim">┌───────────────────┐</span>   <span class="dim">diagonal interleaver: spreads each block of SF codewords</span>
+<span class="dim">│</span> <span class="hi">interleaving</span>       <span class="dim">│</span>   <span class="dim">(CR+4 bits each) across CR+4 symbols -- a noise burst hitting</span>
+<span class="dim">└─────────┬─────────┘</span>   <span class="dim">one symbol is scattered across many codewords</span>
+          <span class="acc">▼</span>
+<span class="dim">┌───────────────────┐</span>
+<span class="dim">│</span> <span class="hi">Gray mapping</span>       <span class="dim">│</span>
+<span class="dim">└─────────┬─────────┘</span>
+          <span class="acc">▼</span>
+<span class="dim">┌───────────────────┐</span>
+<span class="dim">│</span> <span class="hi">chirp modulation</span>   <span class="dim">│</span>   <span class="dim">→ on air, see</span> <span class="acc3">CSS Waveform</span>
+<span class="dim">└───────────────────┘</span></pre>
+
+  <h3>Coding rate options</h3>
+  <table>
+    <tr><th>Register value</th><th>CR</th><th>Type</th><th>Behavior</th></tr>
+    <tr><td class="meth">1</td><td>4/5</td><td>parity</td><td>single even-parity bit -- detect only</td></tr>
+    <tr><td class="meth">2</td><td>4/6</td><td>punctured</td><td>punctured (4,6) code -- detect only</td></tr>
+    <tr><td class="meth">3</td><td>4/7</td><td>Hamming</td><td>true (4,7) Hamming -- corrects 1 bit-error per codeword</td></tr>
+    <tr><td class="meth">4</td><td>4/8</td><td>Hamming</td><td>true (4,8) Hamming -- corrects 1 bit-error per codeword; used for the PHY header</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>The header is always coded at 4/8</strong>
+    Regardless of the payload's configured CR, the PHY header (when present) is coded at 4/8 -- the strongest available rate -- because the receiver must decode the header before it knows what CR the payload uses.
+  </div>
+
+  <p>An optional 16-bit payload CRC is enabled via RxPayloadCrcOn; on RX, a PayloadCrcError IRQ flags failures. See <a href="#packet">PHY Packet</a> for where CRC sits in the frame.</p>
+</section>
+
+<!-- packet -->
+<section id="packet" data-num="04">
+  <h2>PHY <em class="cy">Packet</em> Structure</h2>
+  <div class="section-bar cy"></div>
+  <p>Over-the-air order: <strong>Preamble → Sync word → SFD → [Header + Header CRC] → Payload → [Payload CRC]</strong>.</p>
+
+  <pre class="diagram cy"><span class="label">over-the-air frame, explicit header</span>
+<span class="dim">┌───────────────┬───────────┬───────────┬────────────────────┬───────────────┬─────────────┐</span>
+<span class="dim">│</span>  <span class="hi">preamble</span>     <span class="dim">│</span> <span class="acc">sync word</span> <span class="dim">│</span>   <span class="acc2">SFD</span>     <span class="dim">│</span>  <span class="acc3">header + hdr CRC</span>  <span class="dim">│</span>   payload     <span class="dim">│</span> payload CRC <span class="dim">│</span>
+<span class="dim">│</span>  n_preamble    <span class="dim">│</span> 2 symbols <span class="dim">│</span> 2.25 sym  <span class="dim">│</span>  4/8 coded, opt.   <span class="dim">│</span>  up to 255 B  <span class="dim">│</span>  optional   <span class="dim">│</span>
+<span class="dim">│</span>  up-chirps     <span class="dim">│</span>           <span class="dim">│</span> down-chirp<span class="dim">│</span>                    <span class="dim">│</span>               <span class="dim">│</span>             <span class="dim">│</span>
+<span class="dim">└───────────────┴───────────┴───────────┴────────────────────┴───────────────┴─────────────┘</span>
+  <span class="dim">Tpreamble = (n_preamble + 4.25) · Tsym  -- the +4.25 covers sync word + SFD</span></pre>
+
+  <h3 class="cy">Preamble &amp; sync word</h3>
+  <p>The preamble is a programmable number of unmodulated up-chirps (default 8 in LoRaWAN, register n_preamble). The radio hardware appends the 2 sync-word symbols and the 2.25-symbol SFD (start-of-frame delimiter, a down-chirp) automatically. Longer preambles let RX duty-cycle sleep -- Meshtastic uses 16.</p>
+
+  <p>The last preamble up-chirps encode a network identifier, the <strong>sync word</strong>. On SX127x it's <code>RegSyncWord</code> (0x39), default 0x12 (private); 0x34 is reserved for LoRaWAN. On SX126x it's two registers at 0x0740/0x0741 (0x1424 private, 0x3444 public). It's a "soft" filter -- packets with a mismatched sync word can still leak through, unlike FSK.</p>
+
+  <h3 class="cy">Header modes</h3>
+  <table>
+    <tr><th>Mode</th><th>Behavior</th></tr>
+    <tr><td class="meth">Explicit</td><td>header carries payload length, CR, and CRC-presence, protected by its own CRC; receiver auto-detects payload length/CR. Adds ~SF−2 codewords of overhead.</td></tr>
+    <tr><td class="meth">Implicit</td><td>header omitted entirely; both ends must pre-agree length/CR/CRC out of band. Mandatory for SF6.</td></tr>
+  </table>
+
+  <p>Max payload is 255 bytes; each on-air symbol maps to SF bits after the coding chain in <a href="#chain">Coding Chain</a>.</p>
+</section>
+
+<!-- toa -->
+<section id="toa" data-num="05">
+  <h2>Time <em class="yl">On Air</em></h2>
+  <div class="section-bar yl"></div>
+  <p>Semtech AN1200.13 gives the exact time-on-air formula used to size duty cycles and airtime budgets.</p>
+
+  <pre class="yl"><span class="label">an1200.13 time-on-air</span>
+<span class="key">Tsym</span>          = 2^SF / BW                         <span class="cm">// seconds; BW in Hz</span>
+<span class="key">Tpreamble</span>     = (n_preamble + 4.25) · Tsym
+<span class="key">payloadSymbNb</span> = 8 + max( ceil( (8·PL − 4·SF + 28 + 16·CRC − 20·IH)
+                               / (4·(SF − 2·DE)) ) · (CR + 4), 0 )
+<span class="key">Tpayload</span>      = payloadSymbNb · Tsym
+<span class="key">ToA</span>           = Tpreamble + Tpayload
+
+<span class="cm">// PL = payload bytes, CRC = 1 if payload CRC on else 0, IH = 1 if implicit header else 0</span>
+<span class="cm">// DE = 1 if Low-Data-Rate-Optimization on else 0, CR = 1..4 for 4/5..4/8</span></pre>
+
+  <div class="info-box warn">
+    <strong>LDRO is mandatory above Tsym = 16 ms</strong>
+    Low-Data-Rate-Optimization (DE=1) is mandatory whenever Tsym &gt; 16 ms -- SF11/SF12 at 125 kHz. Set it via the LowDataRateOptimize bit in RegModemConfig3 (SX127x) or ModParam4 (SX126x). Skipping it at high SF causes symbol-timing drift and corrupted decodes on longer packets.
+  </div>
+
+  <h3 class="yl">Worked example</h3>
+  <p>SF7 / 125 kHz / CR 4/5, 20-byte payload ≈ <strong>41 ms</strong> total time on air. LoRaWAN adds ~13 bytes of MAC overhead (MHDR + FHDR + FPort + MIC) on top of the application payload, and the SX127x adds ~2 ms of TX ramp-up on top of the formula's result.</p>
+
+  <h3 class="yl">Duty-cycle math</h3>
+  <p>EU868 allows 1% duty cycle per sub-band, i.e. ~36 s of TX per hour. Divide 36000 ms by ToA to get the maximum packets/hour for a given configuration -- at SF12/125 kHz with a full 51-byte payload, ToA can exceed 2 seconds, so duty cycle rather than raw airtime often becomes the binding constraint at high SF.</p>
+</section>
+
+<!-- sx127x -->
+<section id="sx127x" data-num="06">
+  <h2>SX127x <em class="or">Registers</em></h2>
+  <div class="section-bar"></div>
+  <p>SPI transaction: <strong>one address byte, then data.</strong> MSB of the address byte is the R/W bit -- set bit 7 = 1 for write, 0 for read. Holding NSS low and streaming further bytes gives burst/sequential access (address auto-increments; the FIFO at 0x00 does not auto-increment, enabling block FIFO reads/writes). SPI <strong>Mode 0</strong> (CPOL=0, CPHA=0), up to 10 MHz.</p>
+
+  <h3>Key registers (LoRa mode)</h3>
+  <table>
+    <tr><th>Reg</th><th>Addr</th><th>Purpose</th></tr>
+    <tr><td class="meth">RegFifo</td><td>0x00</td><td>FIFO read/write</td></tr>
+    <tr><td class="meth">RegOpMode</td><td>0x01</td><td>bit7 LongRangeMode (1=LoRa), bit3 LowFreqModeOn, bits2:0 Mode (000 SLEEP, 001 STDBY, 011 TX, 101 RXCONT, 110 RXSINGLE, 111 CAD)</td></tr>
+    <tr><td class="meth">RegFrfMsb/Mid/Lsb</td><td>0x06–0x08</td><td>24-bit carrier frequency</td></tr>
+    <tr><td class="meth">RegPaConfig</td><td>0x09</td><td>PaSelect(bit7), MaxPower(6:4), OutputPower(3:0)</td></tr>
+    <tr><td class="meth">RegOcp</td><td>0x0B</td><td>overcurrent trim</td></tr>
+    <tr><td class="meth">RegLna</td><td>0x0C</td><td>LnaGain(7:5), LnaBoostHf(1:0)=0x03 to boost</td></tr>
+    <tr><td class="meth">RegFifoAddrPtr</td><td>0x0D</td><td>FIFO pointer</td></tr>
+    <tr><td class="meth">RegFifoTxBaseAddr</td><td>0x0E</td><td>default 0x80</td></tr>
+    <tr><td class="meth">RegFifoRxBaseAddr</td><td>0x0F</td><td>default 0x00</td></tr>
+    <tr><td class="meth">RegFifoRxCurrentAddr</td><td>0x10</td><td>start of last packet</td></tr>
+    <tr><td class="meth">RegIrqFlags</td><td>0x12</td><td>see bits below</td></tr>
+    <tr><td class="meth">RegRxNbBytes</td><td>0x13</td><td>received byte count</td></tr>
+    <tr><td class="meth">RegPktSnrValue</td><td>0x19</td><td>SNR·4 (signed)</td></tr>
+    <tr><td class="meth">RegPktRssiValue</td><td>0x1A</td><td>packet RSSI</td></tr>
+    <tr><td class="meth">RegRssiValue</td><td>0x1B</td><td>current RSSI</td></tr>
+    <tr><td class="meth">RegModemConfig1</td><td>0x1D</td><td>Bw(7:4), CodingRate(3:1), ImplicitHeaderOn(0)</td></tr>
+    <tr><td class="meth">RegModemConfig2</td><td>0x1E</td><td>SpreadingFactor(7:4), TxContinuous(3), RxPayloadCrcOn(2), SymbTimeout MSB(1:0)</td></tr>
+    <tr><td class="meth">RegModemConfig3</td><td>0x26</td><td>LowDataRateOptimize(3), AgcAutoOn(2)</td></tr>
+    <tr><td class="meth">RegSymbTimeout</td><td>0x1F</td><td>RX single timeout LSB</td></tr>
+    <tr><td class="meth">RegPreambleMsb/Lsb</td><td>0x20/0x21</td><td>preamble length</td></tr>
+    <tr><td class="meth">RegPayloadLength</td><td>0x22</td><td>payload length (implicit/TX)</td></tr>
+    <tr><td class="meth">RegSyncWord</td><td>0x39</td><td>0x12 private / 0x34 LoRaWAN</td></tr>
+    <tr><td class="meth">RegDioMapping1/2</td><td>0x40/0x41</td><td>DIO0–5 function select</td></tr>
+    <tr><td class="meth">RegVersion</td><td>0x42</td><td>0x12 for SX1276</td></tr>
+    <tr><td class="meth">RegPaDac</td><td>0x4D</td><td>0x87 enables +20 dBm on PA_BOOST</td></tr>
+  </table>
+
+  <h3>RegIrqFlags (0x12) bits</h3>
+  <p>bit7 RxTimeout · bit6 RxDone · bit5 PayloadCrcError · bit4 ValidHeader · bit3 TxDone · bit2 CadDone · bit1 FhssChangeChannel · bit0 CadDetected. Flags are cleared by <strong>writing a 1</strong> to the bit.</p>
+
+  <h3>Register access helper</h3>
+  <p>Every read/write is one SPI transaction: address byte (with R/W bit) followed by the data byte, both in the same <code>spi_transaction_t</code> so CS stays low across both. <code>.length</code> is in <strong>bits</strong>, not bytes -- see <a href="#esp32">ESP32 Wire</a>.</p>
+
+  <pre><span class="label">sx127x_reg.c -- single-byte access + fifo burst</span>
+<span class="cm">// write: bit7=1 selects write, addr in bits6:0</span>
+<span class="kw">static void</span> <span class="fn">sx127x_write_reg</span>(spi_device_handle_t dev, uint8_t addr, uint8_t val) {
+    uint8_t tx[2] = { (uint8_t)(addr | <span class="num">0x80</span>), val };
+    spi_transaction_t t = { .length = <span class="num">16</span>, .tx_buffer = tx };  <span class="cm">// .length is in BITS</span>
+    <span class="fn">spi_device_transmit</span>(dev, &amp;t);
+}
+
+<span class="cm">// read: bit7=0 selects read, clock a dummy byte to receive the reply</span>
+<span class="kw">static</span> uint8_t <span class="fn">sx127x_read_reg</span>(spi_device_handle_t dev, uint8_t addr) {
+    uint8_t tx[2] = { (uint8_t)(addr &amp; <span class="num">0x7F</span>), <span class="num">0x00</span> };
+    uint8_t rx[2] = { <span class="num">0</span> };
+    spi_transaction_t t = { .length = <span class="num">16</span>, .tx_buffer = tx, .rx_buffer = rx };
+    <span class="fn">spi_device_transmit</span>(dev, &amp;t);
+    <span class="kw">return</span> rx[<span class="num">1</span>];
+}
+
+<span class="cm">// RegFifo (0x00) does not auto-increment -- streaming N payload bytes in</span>
+<span class="cm">// one CS-low window is the standard fast path for burst fifo writes</span>
+<span class="kw">static void</span> <span class="fn">sx127x_write_fifo</span>(spi_device_handle_t dev, <span class="kw">const</span> uint8_t *payload, size_t len) {
+    uint8_t tx[<span class="num">256</span>];
+    tx[<span class="num">0</span>] = <span class="num">0x00</span> | <span class="num">0x80</span>;              <span class="cm">// RegFifo, write</span>
+    <span class="fn">memcpy</span>(&amp;tx[<span class="num">1</span>], payload, len);
+    spi_transaction_t t = { .length = (len + <span class="num">1</span>) * <span class="num">8</span>, .tx_buffer = tx };
+    <span class="fn">spi_device_transmit</span>(dev, &amp;t);
+}</pre>
+
+  <h3>Init sequence</h3>
+  <p>LoRa mode can only be toggled from SLEEP -- see the <a href="#gotchas">Gotchas</a> entry on why writing LongRangeMode from STANDBY fails silently.</p>
+
+  <pre><span class="label">sx127x_init.c -- register pokes, commented per step</span>
+<span class="kw">void</span> <span class="fn">sx127x_init</span>(spi_device_handle_t dev, uint32_t freq_hz) {
+    <span class="cm">// (1) RESET pulse done externally via gpio_set_level; (2) confirm silicon</span>
+    uint8_t ver = <span class="fn">sx127x_read_reg</span>(dev, <span class="num">0x42</span>);          <span class="cm">// RegVersion, expect 0x12 on SX1276</span>
+
+    <span class="cm">// (3) LoRa bit can only be set while in SLEEP</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x01</span>, <span class="num">0x80</span>);         <span class="cm">// RegOpMode: LongRangeMode=1, MODE=SLEEP</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x01</span>, <span class="num">0x81</span>);         <span class="cm">// RegOpMode: LoRa + STANDBY</span>
+
+    <span class="cm">// (4) carrier frequency: Frf = freq_hz * 2^19 / 32e6, FSTEP ~= 61.035 Hz</span>
+    uint32_t frf = (uint32_t)(((uint64_t)freq_hz &lt;&lt; <span class="num">19</span>) / <span class="num">32000000</span>ULL);
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x06</span>, (frf &gt;&gt; <span class="num">16</span>) &amp; <span class="num">0xFF</span>);  <span class="cm">// RegFrfMsb</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x07</span>, (frf &gt;&gt; <span class="num">8</span>) &amp; <span class="num">0xFF</span>);   <span class="cm">// RegFrfMid</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x08</span>, frf &amp; <span class="num">0xFF</span>);          <span class="cm">// RegFrfLsb</span>
+
+    <span class="cm">// (5) fifo base addresses -- shared 256-byte fifo, tx/rx halves</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x0E</span>, <span class="num">0x80</span>);         <span class="cm">// RegFifoTxBaseAddr</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x0F</span>, <span class="num">0x00</span>);         <span class="cm">// RegFifoRxBaseAddr</span>
+
+    <span class="cm">// (6) LNA: max gain, boost the HF path</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x0C</span>, <span class="num">0x23</span>);         <span class="cm">// RegLna: MaxGain | LnaBoostHf=11</span>
+
+    <span class="cm">// (7)(8) modem config: BW=125kHz, CR=4/5, explicit header, SF7, CRC on</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x1D</span>, <span class="num">0x72</span>);         <span class="cm">// RegModemConfig1</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x1E</span>, <span class="num">0x74</span>);         <span class="cm">// RegModemConfig2</span>
+
+    <span class="cm">// (9) LDRO off -- BW125/SF7 Tsym is well under the 16ms mandatory threshold</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x26</span>, <span class="num">0x04</span>);         <span class="cm">// RegModemConfig3: AgcAutoOn=1, LDRO=0</span>
+
+    <span class="cm">// (10) preamble length = 8 symbols</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x20</span>, <span class="num">0x00</span>);         <span class="cm">// RegPreambleMsb</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x21</span>, <span class="num">0x08</span>);         <span class="cm">// RegPreambleLsb</span>
+
+    <span class="cm">// (11) tx power: PA_BOOST pin, +17dBm base, +20dBm dac boost enabled</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x09</span>, <span class="num">0x8F</span>);         <span class="cm">// RegPaConfig: PaSelect=1, OutputPower=15</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x4D</span>, <span class="num">0x87</span>);         <span class="cm">// RegPaDac: enable +20dBm on PA_BOOST</span>
+
+    <span class="cm">// (12) private network sync word</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x39</span>, <span class="num">0x12</span>);         <span class="cm">// RegSyncWord</span>
+}</pre>
+
+  <h3>TX sequence</h3>
+
+  <pre><span class="label">sx127x_tx.c</span>
+<span class="kw">void</span> <span class="fn">sx127x_tx</span>(spi_device_handle_t dev, <span class="kw">const</span> uint8_t *payload, size_t len) {
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x01</span>, <span class="num">0x81</span>);              <span class="cm">// STANDBY</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x40</span>, <span class="num">0x40</span>);              <span class="cm">// RegDioMapping1: DIO0 = TxDone</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x0D</span>, <span class="num">0x80</span>);              <span class="cm">// RegFifoAddrPtr = RegFifoTxBaseAddr</span>
+
+    <span class="fn">sx127x_write_fifo</span>(dev, payload, len);
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x22</span>, (uint8_t)len);       <span class="cm">// RegPayloadLength</span>
+
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x01</span>, <span class="num">0x83</span>);              <span class="cm">// RegOpMode: TX</span>
+
+    <span class="kw">while</span> (!(<span class="fn">sx127x_read_reg</span>(dev, <span class="num">0x12</span>) &amp; <span class="num">0x08</span>)) {  <span class="cm">// poll RegIrqFlags.TxDone (bit3)</span>
+        <span class="fn">vTaskDelay</span>(<span class="fn">pdMS_TO_TICKS</span>(<span class="num">1</span>));
+        <span class="cm">// production code: block on a DIO0 rising-edge ISR/semaphore instead</span>
+    }
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x12</span>, <span class="num">0x08</span>);              <span class="cm">// clear TxDone: write 1 to the bit</span>
+}</pre>
+
+  <h3>RX continuous</h3>
+
+  <pre><span class="label">sx127x_rx.c</span>
+size_t <span class="fn">sx127x_rx_continuous</span>(spi_device_handle_t dev, uint8_t *out, size_t max_len) {
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x01</span>, <span class="num">0x81</span>);              <span class="cm">// STANDBY</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x40</span>, <span class="num">0x00</span>);              <span class="cm">// RegDioMapping1: DIO0 = RxDone</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x0D</span>, <span class="num">0x00</span>);              <span class="cm">// RegFifoAddrPtr = RegFifoRxBaseAddr</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x01</span>, <span class="num">0x85</span>);              <span class="cm">// RegOpMode: RXCONTINUOUS</span>
+
+    <span class="kw">for</span> (;;) {
+        uint8_t irq = <span class="fn">sx127x_read_reg</span>(dev, <span class="num">0x12</span>);
+        <span class="kw">if</span> (!(irq &amp; <span class="num">0x40</span>)) <span class="kw">continue</span>;            <span class="cm">// wait for RxDone (bit6)</span>
+
+        <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x12</span>, <span class="num">0xFF</span>);          <span class="cm">// clear all irq flags</span>
+        <span class="kw">if</span> (irq &amp; <span class="num">0x20</span>) <span class="kw">continue</span>;                <span class="cm">// PayloadCrcError -- drop, keep listening</span>
+
+        uint8_t n   = <span class="fn">sx127x_read_reg</span>(dev, <span class="num">0x13</span>);        <span class="cm">// RegRxNbBytes</span>
+        uint8_t cur = <span class="fn">sx127x_read_reg</span>(dev, <span class="num">0x10</span>);        <span class="cm">// RegFifoRxCurrentAddr</span>
+        <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x0D</span>, cur);              <span class="cm">// RegFifoAddrPtr = start of last packet</span>
+
+        size_t n_read = n &lt; max_len ? n : max_len;
+        <span class="kw">for</span> (size_t i = <span class="num">0</span>; i &lt; n_read; i++) {
+            out[i] = <span class="fn">sx127x_read_reg</span>(dev, <span class="num">0x00</span>);      <span class="cm">// RegFifo, sequential reads</span>
+        }
+        <span class="kw">return</span> n_read;
+    }
+}</pre>
+</section>
+
+<!-- sx126x -->
+<section id="sx126x" data-num="07">
+  <h2>SX126x <em class="cy">Commands</em></h2>
+  <div class="section-bar cy"></div>
+  <p>The SX126x is <strong>command-based</strong>: every SPI transaction is <code>opcode + parameter bytes</code>, and the chip returns a <strong>status byte on MISO</strong> simultaneously with every byte. A <strong>BUSY pin</strong> must be polled low before each new command (the chip is processing). Register reads (opcode 0x1D) and buffer reads (0x1E) require a NOP/dummy byte after the address before data appears. SPI Mode 0, up to 16 MHz.</p>
+
+  <h3 class="cy">Core opcodes</h3>
+  <table>
+    <tr><th>Opcode</th><th>Command</th></tr>
+    <tr><td class="meth">0x80</td><td>SetStandby</td></tr>
+    <tr><td class="meth">0x84</td><td>SetSleep</td></tr>
+    <tr><td class="meth">0xC1</td><td>SetFs</td></tr>
+    <tr><td class="meth">0x83</td><td>SetTx</td></tr>
+    <tr><td class="meth">0x82</td><td>SetRx</td></tr>
+    <tr><td class="meth">0xC5</td><td>SetCad</td></tr>
+    <tr><td class="meth">0x88</td><td>SetCadParams</td></tr>
+    <tr><td class="meth">0x96</td><td>SetRegulatorMode</td></tr>
+    <tr><td class="meth">0x89</td><td>Calibrate</td></tr>
+    <tr><td class="meth">0x98</td><td>CalibrateImage</td></tr>
+    <tr><td class="meth">0x95</td><td>SetPaConfig</td></tr>
+    <tr><td class="meth">0x0D</td><td>WriteRegister</td></tr>
+    <tr><td class="meth">0x1D</td><td>ReadRegister</td></tr>
+    <tr><td class="meth">0x0E</td><td>WriteBuffer</td></tr>
+    <tr><td class="meth">0x1E</td><td>ReadBuffer</td></tr>
+    <tr><td class="meth">0x8F</td><td>SetBufferBaseAddress</td></tr>
+    <tr><td class="meth">0x08</td><td>SetDioIrqParams</td></tr>
+    <tr><td class="meth">0x12</td><td>GetIrqStatus</td></tr>
+    <tr><td class="meth">0x02</td><td>ClearIrqStatus</td></tr>
+    <tr><td class="meth">0x9D</td><td>SetDIO2AsRfSwitchCtrl</td></tr>
+    <tr><td class="meth">0x97</td><td>SetDIO3AsTcxoCtrl</td></tr>
+    <tr><td class="meth">0x86</td><td>SetRfFrequency</td></tr>
+    <tr><td class="meth">0x8A</td><td>SetPacketType</td></tr>
+    <tr><td class="meth">0x8E</td><td>SetTxParams</td></tr>
+    <tr><td class="meth">0x8B</td><td>SetModulationParams</td></tr>
+    <tr><td class="meth">0x8C</td><td>SetPacketParams</td></tr>
+    <tr><td class="meth">0x13</td><td>GetRxBufferStatus</td></tr>
+    <tr><td class="meth">0x14</td><td>GetPacketStatus</td></tr>
+    <tr><td class="meth">0xC0</td><td>GetStatus</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>Mandatory command order</strong>
+    SetPacketType(LoRa=0x01) <strong>first</strong>, then SetModulationParams, then SetPacketParams. Getting this order wrong is one of the most common SX126x bring-up mistakes -- the chip silently ignores modulation/packet params set before the packet type.
+  </div>
+
+  <h3 class="cy">Exact encodings</h3>
+  <p>Confirmed against Semtech mbed SX126xLib, RadioLib, tinygo, and RadioHead.</p>
+  <table>
+    <tr><th>Command</th><th>Params</th></tr>
+    <tr><td class="meth">SetRfFrequency</td><td>RF = f_Hz · 2^25 / 32e6, FSTEP ≈ 0.95367 Hz. <code>frf = freq_Hz * 33554432 / 32000000</code></td></tr>
+    <tr><td class="meth">SetModulationParams</td><td>ModParam1 = SF byte (SF5=0x05…SF12=0x0C) · ModParam2 = BW (125k=0x04, 250k=0x05, 500k=0x06, 62.5k=0x03, 41.7k=0x0A, 31.25k=0x02, 20.8k=0x09, 15.6k=0x01, 10.4k=0x08, 7.8k=0x00) · ModParam3 = CR (4/5=0x01…4/8=0x04) · ModParam4 = LDRO (0x00 off / 0x01 on)</td></tr>
+    <tr><td class="meth">SetPacketParams</td><td>preamble length (16-bit) · header type (0x00 explicit / 0x01 implicit) · payload length · CRC type (on/off) · InvertIQ (0x00 standard / 0x01 inverted -- LoRaWAN downlinks use inverted IQ)</td></tr>
+    <tr><td class="meth">SetPaConfig @ +22dBm</td><td>paDutyCycle=0x04, hpMax=0x07, deviceSel=0x00 (0x01=SX1261), paLut=0x01</td></tr>
+    <tr><td class="meth">SetTxParams</td><td>power=0x16 (22 dBm), rampTime (0x04 = 200µs, 0x07 = 3400µs)</td></tr>
+    <tr><td class="meth">SetStandby</td><td>STDBY_RC=0x00, STDBY_XOSC=0x01</td></tr>
+    <tr><td class="meth">SetRegulatorMode</td><td>LDO=0x00, DC-DC/SMPS=0x01 (SMPS roughly halves RX/TX current)</td></tr>
+  </table>
+
+  <h3 class="cy">Status byte layout</h3>
+  <p>bits[6:4] chip mode (0x2 STBY_RC, 0x3 STBY_XOSC, 0x4 FS, 0x5 RX, 0x6 TX) · bits[3:1] command status (0x2 data available, 0x3 command timeout, 0x4 processing error/invalid opcode, 0x5 fail to execute, 0x6 command TX done). Example: <code>0x2C = 0b0010_1100</code> → STBY_RC + command-TX-done.</p>
+
+  <h3 class="cy">IRQ bits (GetIrqStatus / SetDioIrqParams)</h3>
+  <p>bit0 TxDone · bit1 RxDone · bit2 PreambleDetected · bit3 SyncWordValid · bit4 HeaderValid · bit5 HeaderErr · bit6 CrcErr · bit7 CadDone · bit8 CadDetected · bit9 Timeout. IRQs route to DIO1/DIO2/DIO3 via SetDioIrqParams and clear with ClearIrqStatus.</p>
+
+  <h3 class="cy">Command helper</h3>
+
+  <pre class="cy"><span class="label">sx126x_cmd.c -- opcode + params, BUSY-gated, status echoed on MISO</span>
+<span class="kw">static void</span> <span class="fn">sx126x_wait_busy</span>(gpio_num_t busy_pin) {
+    <span class="kw">while</span> (<span class="fn">gpio_get_level</span>(busy_pin)) {
+        <span class="cm">// chip is still processing the previous command</span>
+    }
+}
+
+<span class="kw">static</span> uint8_t <span class="fn">sx126x_cmd</span>(spi_device_handle_t dev, gpio_num_t busy_pin,
+                       uint8_t opcode, <span class="kw">const</span> uint8_t *params, size_t plen,
+                       uint8_t *resp, size_t rlen) {
+    <span class="fn">sx126x_wait_busy</span>(busy_pin);
+
+    uint8_t tx[<span class="num">260</span>] = { opcode };
+    <span class="fn">memcpy</span>(&amp;tx[<span class="num">1</span>], params, plen);
+    uint8_t rx[<span class="num">260</span>] = { <span class="num">0</span> };
+
+    size_t total = (plen &gt; rlen ? plen : rlen) + <span class="num">1</span>;   <span class="cm">// some commands read more than they write</span>
+    spi_transaction_t t = { .length = total * <span class="num">8</span>, .tx_buffer = tx, .rx_buffer = rx };
+    <span class="fn">spi_device_transmit</span>(dev, &amp;t);
+
+    <span class="kw">if</span> (resp &amp;&amp; rlen) <span class="fn">memcpy</span>(resp, &amp;rx[<span class="num">1</span>], rlen);
+    <span class="kw">return</span> rx[<span class="num">0</span>];                <span class="cm">// status byte, shadowed back on the first MISO byte</span>
+}</pre>
+
+  <h3 class="cy">Init, calibrate, set frequency</h3>
+
+  <pre class="cy"><span class="label">sx126x_init.c</span>
+<span class="kw">void</span> <span class="fn">sx126x_init</span>(spi_device_handle_t dev, gpio_num_t busy, uint32_t freq_hz) {
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x80</span>, (uint8_t[]){ <span class="num">0x00</span> }, <span class="num">1</span>, NULL, <span class="num">0</span>);  <span class="cm">// SetStandby(STDBY_RC)</span>
+
+    <span class="cm">// packet type must be set before modulation/packet params -- mandatory order</span>
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x8A</span>, (uint8_t[]){ <span class="num">0x01</span> }, <span class="num">1</span>, NULL, <span class="num">0</span>);  <span class="cm">// SetPacketType(LoRa)</span>
+
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x96</span>, (uint8_t[]){ <span class="num">0x01</span> }, <span class="num">1</span>, NULL, <span class="num">0</span>);  <span class="cm">// SetRegulatorMode(DC-DC)</span>
+
+    <span class="cm">// on a TCXO board: SetDIO3AsTcxoCtrl(0x97,...) here first; XTAL boards skip it</span>
+
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x89</span>, (uint8_t[]){ <span class="num">0x7F</span> }, <span class="num">1</span>, NULL, <span class="num">0</span>);  <span class="cm">// Calibrate(all blocks)</span>
+    <span class="fn">sx126x_wait_busy</span>(busy);
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x98</span>, (uint8_t[]){ <span class="num">0xD7</span>,<span class="num">0xDB</span> }, <span class="num">2</span>, NULL, <span class="num">0</span>); <span class="cm">// CalibrateImage, 863-870MHz band</span>
+
+    <span class="cm">// SetRfFrequency: frf = freq_hz * 2^25 / 32e6</span>
+    uint32_t frf = (uint32_t)(((uint64_t)freq_hz &lt;&lt; <span class="num">25</span>) / <span class="num">32000000</span>ULL);
+    uint8_t frf_b[<span class="num">4</span>] = { (frf&gt;&gt;<span class="num">24</span>)&amp;<span class="num">0xFF</span>, (frf&gt;&gt;<span class="num">16</span>)&amp;<span class="num">0xFF</span>, (frf&gt;&gt;<span class="num">8</span>)&amp;<span class="num">0xFF</span>, frf&amp;<span class="num">0xFF</span> };
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x86</span>, frf_b, <span class="num">4</span>, NULL, <span class="num">0</span>);            <span class="cm">// SetRfFrequency</span>
+
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x95</span>, (uint8_t[]){ <span class="num">0x04</span>,<span class="num">0x07</span>,<span class="num">0x00</span>,<span class="num">0x01</span> }, <span class="num">4</span>, NULL, <span class="num">0</span>); <span class="cm">// SetPaConfig, +22dBm</span>
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x8E</span>, (uint8_t[]){ <span class="num">0x16</span>,<span class="num">0x04</span> }, <span class="num">2</span>, NULL, <span class="num">0</span>);       <span class="cm">// SetTxParams: 22dBm, 200us ramp</span>
+
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x8F</span>, (uint8_t[]){ <span class="num">0x00</span>,<span class="num">0x00</span> }, <span class="num">2</span>, NULL, <span class="num">0</span>);       <span class="cm">// SetBufferBaseAddress: tx=0, rx=0</span>
+
+    <span class="cm">// SF7, BW125, CR4/5, LDRO off</span>
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x8B</span>, (uint8_t[]){ <span class="num">0x07</span>,<span class="num">0x04</span>,<span class="num">0x01</span>,<span class="num">0x00</span> }, <span class="num">4</span>, NULL, <span class="num">0</span>); <span class="cm">// SetModulationParams</span>
+
+    <span class="cm">// preamble=8, explicit header, length set per-tx, CRC on, standard IQ</span>
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x8C</span>,
+        (uint8_t[]){ <span class="num">0x00</span>,<span class="num">0x08</span>, <span class="num">0x00</span>, <span class="num">0x00</span>, <span class="num">0x01</span>, <span class="num">0x00</span> }, <span class="num">6</span>, NULL, <span class="num">0</span>);           <span class="cm">// SetPacketParams</span>
+
+    <span class="cm">// route TxDone(bit0) + RxDone(bit1) + Timeout(bit9) to DIO1</span>
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x08</span>,
+        (uint8_t[]){ <span class="num">0x02</span>,<span class="num">0x03</span>, <span class="num">0x02</span>,<span class="num">0x03</span>, <span class="num">0x00</span>,<span class="num">0x00</span>, <span class="num">0x00</span>,<span class="num">0x00</span> }, <span class="num">8</span>, NULL, <span class="num">0</span>); <span class="cm">// SetDioIrqParams</span>
+}</pre>
+
+  <h3 class="cy">TX via WriteBuffer + SetTx</h3>
+
+  <pre class="cy"><span class="label">sx126x_tx.c</span>
+<span class="kw">void</span> <span class="fn">sx126x_tx</span>(spi_device_handle_t dev, gpio_num_t busy, <span class="kw">const</span> uint8_t *payload, size_t len) {
+    uint8_t buf[<span class="num">257</span>];
+    buf[<span class="num">0</span>] = <span class="num">0x00</span>;                                    <span class="cm">// WriteBuffer offset = 0</span>
+    <span class="fn">memcpy</span>(&amp;buf[<span class="num">1</span>], payload, len);
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x0E</span>, buf, len + <span class="num">1</span>, NULL, <span class="num">0</span>);       <span class="cm">// WriteBuffer</span>
+
+    uint8_t pkt[<span class="num">6</span>] = { <span class="num">0x00</span>,<span class="num">0x08</span>, <span class="num">0x00</span>, (uint8_t)len, <span class="num">0x01</span>, <span class="num">0x00</span> };
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x8C</span>, pkt, <span class="num">6</span>, NULL, <span class="num">0</span>);              <span class="cm">// SetPacketParams, length updated</span>
+
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x83</span>, (uint8_t[]){ <span class="num">0x00</span>,<span class="num">0x00</span>,<span class="num">0x00</span> }, <span class="num">3</span>, NULL, <span class="num">0</span>); <span class="cm">// SetTx, timeout=0 (single-shot)</span>
+
+    <span class="cm">// wait on DIO1 rising edge (TxDone) in production code, then ClearIrqStatus</span>
+}</pre>
+
+  <h3 class="cy">RX</h3>
+
+  <pre class="cy"><span class="label">sx126x_rx.c</span>
+size_t <span class="fn">sx126x_rx</span>(spi_device_handle_t dev, gpio_num_t busy, uint8_t *out, size_t max_len) {
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x82</span>, (uint8_t[]){ <span class="num">0xFF</span>,<span class="num">0xFF</span>,<span class="num">0xFF</span> }, <span class="num">3</span>, NULL, <span class="num">0</span>); <span class="cm">// SetRx, continuous</span>
+
+    <span class="cm">// wait on DIO1 rising edge in production code -- polling shown for clarity</span>
+    uint8_t irq[<span class="num">2</span>];
+    <span class="kw">do</span> {
+        <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x12</span>, (uint8_t[]){ <span class="num">0x00</span> }, <span class="num">1</span>, irq, <span class="num">2</span>);   <span class="cm">// GetIrqStatus</span>
+    } <span class="kw">while</span> (!(irq[<span class="num">1</span>] &amp; <span class="num">0x02</span>));                                       <span class="cm">// bit1 RxDone</span>
+
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x02</span>, (uint8_t[]){ <span class="num">0xFF</span>,<span class="num">0xFF</span> }, <span class="num">2</span>, NULL, <span class="num">0</span>);       <span class="cm">// ClearIrqStatus, all bits</span>
+
+    uint8_t status[<span class="num">2</span>];
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x13</span>, (uint8_t[]){ <span class="num">0x00</span> }, <span class="num">1</span>, status, <span class="num">2</span>);      <span class="cm">// GetRxBufferStatus</span>
+    uint8_t len = status[<span class="num">0</span>], offset = status[<span class="num">1</span>];
+
+    uint8_t req[<span class="num">2</span>] = { offset, <span class="num">0x00</span> };                              <span class="cm">// offset, then required NOP byte</span>
+    uint8_t buf[<span class="num">256</span>];
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x1E</span>, req, <span class="num">2</span>, buf, len);                     <span class="cm">// ReadBuffer</span>
+
+    size_t n = len &lt; max_len ? len : max_len;
+    <span class="fn">memcpy</span>(out, buf, n);
+    <span class="kw">return</span> n;
+}</pre>
+</section>
+
+<!-- compare -->
+<section id="compare" data-num="08">
+  <h2>127x <em class="yl">vs</em> 126x</h2>
+  <div class="section-bar yl"></div>
+
+  <table>
+    <tr><th>Attribute</th><th>SX127x (SX1276/78, RFM95)</th><th>SX126x (SX1262, RA-01SC)</th></tr>
+    <tr><td class="meth">Interface</td><td>Flat register poke (addr+R/W bit)</td><td>Command/opcode + BUSY handshake</td></tr>
+    <tr><td class="meth">Datasheet/launch</td><td>Rev. 0.0, May 2013</td><td>Rev. 1.1 Dec 2017 / 1.2 Jun 2019 (recommended for new designs)</td></tr>
+    <tr><td class="meth">Max TX power</td><td>+20 dBm (PA_BOOST) / +14 (RFO)</td><td>+22 dBm (SX1262/68), +14/15 (SX1261)</td></tr>
+    <tr><td class="meth">RX current</td><td>~11 mA (Semtech selection guide)</td><td>~4.6 mA (DC-DC)</td></tr>
+    <tr><td class="meth">TX current</td><td>~120 mA @ 20 dBm</td><td>~118 mA @ 22 dBm (DC-DC)</td></tr>
+    <tr><td class="meth">Sleep</td><td>~0.2 µA (200 nA register retention)</td><td>~600 nA warm / ~900 nA cold</td></tr>
+    <tr><td class="meth">Sensitivity SF12/125k</td><td>~ −137 dBm</td><td>~ −148 dBm (~11 dB better)</td></tr>
+    <tr><td class="meth">SF range</td><td>SF6–SF12</td><td>SF5–SF12</td></tr>
+    <tr><td class="meth">Freq range</td><td>137–1020 MHz (band-specific RF pins)</td><td>150–960 MHz (single RF port)</td></tr>
+    <tr><td class="meth">Freq divisor</td><td>2^19 / 32 MHz (FSTEP 61.035 Hz)</td><td>2^25 / 32 MHz (FSTEP 0.95 Hz)</td></tr>
+    <tr><td class="meth">Image reject</td><td>no explicit cal step</td><td><strong>requires Calibrate + CalibrateImage</strong></td></tr>
+    <tr><td class="meth">TCXO control</td><td>RegTcxo (0x4B)</td><td>DIO3 (SetDIO3AsTcxoCtrl)</td></tr>
+    <tr><td class="meth">RF switch</td><td>host GPIO / external</td><td>DIO2 (SetDIO2AsRfSwitchCtrl)</td></tr>
+    <tr><td class="meth">IRQ pins</td><td>DIO0/DIO1/DIO2</td><td>BUSY + DIO1 (DIO2/3 repurposed)</td></tr>
+    <tr><td class="meth">Package</td><td>6×6 mm QFN</td><td>4×4 mm QFN</td></tr>
+    <tr><td class="meth">Modules</td><td>RFM95/96/98, Ra-02, HopeRF</td><td>Ra-01SC/SH, E22, Wio-E5, Heltec V3</td></tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>Worked battery example</strong>
+    Transmit every 15 min with Class-A RX windows: the SX1262's ~4.6 mA RX (vs ~10.8 mA) roughly halves daily consumption, extending a 2000 mAh cell from ~1.5 to ~2.6 years -- the RX-current gap dominates for any listen-mostly node.
+  </div>
+</section>
+
+<!-- esp32 -->
+<section id="esp32" data-num="09">
+  <h2>ESP32 <em class="or">SPI</em> Wire</h2>
+  <div class="section-bar"></div>
+  <p>Both chips are SPI Mode 0 (CPOL=0, CPHA=0), 3.3V only. SX127x max SCLK ~10 MHz; SX126x ~16 MHz. Use SPI2_HOST/SPI3_HOST (the old HSPI/VSPI).</p>
+
+  <pre><span class="label">esp-idf spi setup</span>
+spi_bus_config_t buscfg = {
+    .mosi_io_num = PIN_MOSI, .miso_io_num = PIN_MISO,
+    .sclk_io_num = PIN_SCLK, .quadwp_io_num = -<span class="num">1</span>, .quadhd_io_num = -<span class="num">1</span>,
+    .max_transfer_sz = <span class="num">256</span> };
+<span class="fn">spi_bus_initialize</span>(SPI2_HOST, &amp;buscfg, SPI_DMA_CH_AUTO);
+
+spi_device_interface_config_t devcfg = {
+    .clock_speed_hz = <span class="num">8</span>*<span class="num">1000</span>*<span class="num">1000</span>,   <span class="cm">// 8 MHz, under the 10 MHz SX127x limit</span>
+    .mode = <span class="num">0</span>,                        <span class="cm">// CPOL=0 CPHA=0</span>
+    .spics_io_num = PIN_CS,           <span class="cm">// driver toggles CS automatically</span>
+    .queue_size = <span class="num">1</span> };
+spi_device_handle_t dev;
+<span class="fn">spi_bus_add_device</span>(SPI2_HOST, &amp;devcfg, &amp;dev);
+
+<span class="cm">// sx127x register write: addr|0x80 then value</span>
+uint8_t tx[<span class="num">2</span>] = { reg | <span class="num">0x80</span>, val }, rx[<span class="num">2</span>];
+spi_transaction_t t = { .length = <span class="num">16</span>, .tx_buffer = tx, .rx_buffer = rx };
+<span class="fn">spi_device_transmit</span>(dev, &amp;t);   <span class="cm">// .length is in BITS, not bytes</span></pre>
+
+  <h3>Wiring differences</h3>
+  <table>
+    <tr><th>Chip</th><th>Minimum wiring beyond SPI</th><th>Notes</th></tr>
+    <tr><td class="meth">SX127x</td><td>RESET, DIO0 (RxDone/TxDone)</td><td>DIO1 optional; wire DIO0/DIO1 to GPIOs as rising-edge interrupts</td></tr>
+    <tr><td class="meth">SX126x</td><td>RESET, BUSY, DIO1</td><td>BUSY must be polled low before every command; DIO1 is the main IRQ line</td></tr>
+  </table>
+
+  <p>Many boards let the driver control NSS manually (<code>spics_io_num = -1</code>) when NSS sits behind an I/O expander. Keep CS and clock lines short -- the SX126x's mandatory BUSY poll makes bit-banging awkward but possible.</p>
+
+  <div class="info-box warn">
+    <strong>BUSY polling is not optional on SX126x</strong>
+    A missed BUSY poll before issuing a command causes dropped or garbled commands with no obvious error -- the chip just silently ignores or mis-executes the write. Always wait for BUSY low before every single opcode transaction, not just at init.
+  </div>
+</section>
+
+<!-- lorawan -->
+<section id="lorawan" data-num="10">
+  <h2>LoRaWAN <em class="cy">MAC</em></h2>
+  <div class="section-bar cy"></div>
+  <p><strong>Architecture:</strong> end devices ↔ gateways (transparent PHY bridges) ↔ Network Server (dedup, MAC, ADR, routing) ↔ Application Server (payload decrypt); in 1.1 a <strong>Join Server</strong> holds root keys.</p>
+
+  <h3 class="cy">Device classes</h3>
+  <table>
+    <tr><th>Class</th><th>Behavior</th></tr>
+    <tr><td class="meth">A</td><td>mandatory, lowest power. Every uplink is followed by two short RX windows: RX1 (same freq as uplink, after RX1 Delay = 1s default) and RX2 (fixed freq/DR, +1s). Downlinks only in these windows. OTAA join uses JOIN_ACCEPT_DELAY1 = 5s and DELAY2 = 6s.</td></tr>
+    <tr><td class="meth">B</td><td>adds gateway-beacon-synchronized ping slots for scheduled downlinks at bounded latency.</td></tr>
+    <tr><td class="meth">C</td><td>RX2 window kept open continuously except while transmitting -- lowest downlink latency, highest power (mains devices).</td></tr>
+  </table>
+
+  <h3 class="cy">OTAA vs ABP</h3>
+  <table>
+    <tr><th>Mode</th><th>Provisioning</th><th>Notes</th></tr>
+    <tr><td class="meth">OTAA</td><td>DevEUI (64-bit) + JoinEUI/AppEUI (64-bit) + AppKey (AES-128 root, +NwkKey in 1.1)</td><td>Join-Request = JoinEUI | DevEUI | DevNonce (must be non-repeating/persistent -- replay protection). Server replies with encrypted Join-Accept = AppNonce/JoinNonce | NetID | DevAddr | DLSettings | RxDelay | [CFList], MIC'd with AppKey. AppKey is never transmitted.</td></tr>
+    <tr><td class="meth">ABP</td><td>DevAddr + NwkSKey + AppSKey burned in</td><td>No join. Simpler but weaker: static keys, frame-counter reset risk.</td></tr>
+  </table>
+
+  <pre class="cy"><span class="label">otaa session key derivation, 1.0.x</span>
+<span class="key">NwkSKey</span> = <span class="fn">aes128_encrypt</span>(AppKey, <span class="num">0x01</span> | AppNonce | NetID | DevNonce | pad16)
+<span class="key">AppSKey</span> = <span class="fn">aes128_encrypt</span>(AppKey, <span class="num">0x02</span> | AppNonce | NetID | DevNonce | pad16)
+
+<span class="cm">// 1.1 splits further into FNwkSIntKey / SNwkSIntKey / NwkSEncKey / AppSKey,</span>
+<span class="cm">// derived from NwkKey / AppKey and keyed on JoinEUI / JoinNonce</span></pre>
+
+  <h3 class="cy">PHYPayload frame format</h3>
+
+  <pre class="diagram cy"><span class="label">phypayload -> macpayload -> fhdr</span>
+<span class="dim">┌─────────┬───────────────────────────────────────────┬─────────┐</span>
+<span class="dim">│</span>  <span class="hi">MHDR</span>   <span class="dim">│</span>                <span class="acc">MACPayload</span>                    <span class="dim">│</span>  <span class="hi">MIC</span>    <span class="dim">│</span>
+<span class="dim">│</span> 1 byte  <span class="dim">│</span>                 7…M bytes                    <span class="dim">│</span> 4 bytes <span class="dim">│</span>
+<span class="dim">└─────────┴───────────────────────────────────────────┴─────────┘</span>
+                              <span class="dim">│</span>
+                              <span class="acc">▼</span>
+              <span class="dim">┌────────────────────────┬──────────┬──────────────┐</span>
+              <span class="dim">│</span>          <span class="acc2">FHDR</span>          <span class="dim">│</span> <span class="acc3">FPort</span>    <span class="dim">│</span> <span class="acc3">FRMPayload</span>   <span class="dim">│</span>
+              <span class="dim">│</span> DevAddr|FCtrl|FCnt|FOpts<span class="dim">│</span> 0-1 byte <span class="dim">│</span>  encrypted   <span class="dim">│</span>
+              <span class="dim">└────────────────────────┴──────────┴──────────────┘</span>
+                         <span class="dim">│</span>
+                         <span class="acc2">▼</span>
+       <span class="dim">┌──────────────┬────────┬────────┬──────────────┐</span>
+       <span class="dim">│</span>   DevAddr    <span class="dim">│</span> FCtrl  <span class="dim">│</span> FCnt   <span class="dim">│</span>    FOpts     <span class="dim">│</span>
+       <span class="dim">│</span> 4B, little-e <span class="dim">│</span> 1 byte <span class="dim">│</span> 2 byte <span class="dim">│</span>   0-15 bytes  <span class="dim">│</span>
+       <span class="dim">└──────────────┴────────┴────────┴──────────────┘</span></pre>
+
+  <p><strong>MHDR:</strong> MType(7:5), RFU(4:2), Major(1:0). <strong>FCtrl</strong> holds ADR, ADRACKReq, ACK, FPending (downlink), FOptsLen. <strong>FPort:</strong> 0 = FRMPayload carries MAC commands (encrypted with NwkSKey); 1–223 = application data (encrypted with AppSKey). <strong>MIC:</strong> 4 bytes, AES-CMAC over the frame using NwkSKey (network-integrity); FRMPayload itself is AES-128-CTR encrypted. TTN DevAddrs start 0x26/0x27.</p>
+
+  <table>
+    <tr><th>MType</th><th>Bits</th></tr>
+    <tr><td class="meth">Join-Request</td><td>000</td></tr>
+    <tr><td class="meth">Join-Accept</td><td>001</td></tr>
+    <tr><td class="meth">Unconfirmed Data Up</td><td>010</td></tr>
+    <tr><td class="meth">Unconfirmed Data Down</td><td>011</td></tr>
+    <tr><td class="meth">Confirmed Data Up</td><td>100</td></tr>
+    <tr><td class="meth">Confirmed Data Down</td><td>101</td></tr>
+  </table>
+
+  <h3 class="cy">MAC commands (CID)</h3>
+  <p>Shared by Req/Ans in opposite directions.</p>
+  <table>
+    <tr><th>CID</th><th>Command</th></tr>
+    <tr><td class="meth">0x02</td><td>LinkCheckReq(up) / Ans(down)</td></tr>
+    <tr><td class="meth">0x03</td><td>LinkADRReq(down) / Ans(up)</td></tr>
+    <tr><td class="meth">0x04</td><td>DutyCycleReq/Ans</td></tr>
+    <tr><td class="meth">0x05</td><td>RXParamSetupReq/Ans</td></tr>
+    <tr><td class="meth">0x06</td><td>DevStatusReq/Ans (battery, margin)</td></tr>
+    <tr><td class="meth">0x07</td><td>NewChannelReq/Ans</td></tr>
+    <tr><td class="meth">0x08</td><td>RXTimingSetupReq/Ans</td></tr>
+    <tr><td class="meth">0x09</td><td>TXParamSetupReq/Ans</td></tr>
+    <tr><td class="meth">0x0A</td><td>DlChannelReq/Ans</td></tr>
+    <tr><td class="meth">0x0D</td><td>DeviceTimeReq/Ans</td></tr>
+  </table>
+  <p>1.0.4 adds RekeyInd 0x0B, ADRParamSetupReq 0x0C, ForceRejoinReq 0x0E, RejoinParamSetupReq 0x0F.</p>
+
+  <h3 class="cy">Adaptive Data Rate (ADR)</h3>
+  <p>When the device sets the ADR bit, the Network Server uses the max SNR over recent uplinks (ChirpStack/TTS use ~20 frames) minus the required SNR for the current DR minus an installation margin (~10 dB) to compute how many DR steps up or TX-power steps down are possible, then issues <strong>LinkADRReq</strong> (DataRate_TXPower, ChMask, Redundancy/NbTrans). The device confirms with LinkADRAns. Device-side: after ADR_ACK_LIMIT uplinks with no downlink it sets ADRACKReq; if no answer within ADR_ACK_DELAY it steps down the DR / increases power to regain connectivity.</p>
+
+  <h3 class="cy">Regional plans</h3>
+  <table>
+    <tr><th>Region</th><th>Channels</th><th>Data rates</th><th>Duty / dwell</th><th>Power</th></tr>
+    <tr><td class="meth">EU868</td><td>3 mandatory join channels 868.1/868.3/868.5 MHz, 125 kHz</td><td>DR0=SF12…DR5=SF7 (DR6=SF7/250kHz, DR7=FSK)</td><td>1% duty cycle per sub-band (~36s/hr)</td><td>max EIRP +16 dBm; RX2 = 869.525 MHz/DR0(SF12)</td></tr>
+    <tr><td class="meth">US915</td><td>64×125kHz uplink channels (902.3–914.9 MHz, 200kHz spacing) + 8×500kHz</td><td>DR0=SF10/125kHz…DR3=SF7, DR4=SF8/500kHz</td><td>no duty cycle, 400ms max dwell (FCC)</td><td>+30 dBm EIRP allowed</td></tr>
+  </table>
+  <p>US915 devices hop channels and use sub-bands (FSB); ADR/channel-mask must agree between 8-channel gateways and nodes or uplinks silently fail to be heard.</p>
+</section>
+
+<!-- p2p -->
+<section id="p2p" data-num="11">
+  <h2>P2P <em class="or">&amp; CAD</em></h2>
+  <div class="section-bar"></div>
+  <p>For a raw P2P link, both ends must match <strong>carrier frequency, SF, BW, CR, preamble length, sync word, CRC and IQ polarity</strong> exactly. Use sync word <strong>0x12</strong> (private) to stay off LoRaWAN; SX126x uses 0x1424 for the same. Sync-word filtering is imperfect -- 0x12 and 0x34 are the two recommended values that maximize cross-network rejection; other values behave unpredictably (on SX126x the surrounding nibbles must stay 0x_4_4).</p>
+
+  <h3>App-level framing</h3>
+  <p>Two typical schemes: fixed-length implicit-header ping-pong, or a small app header <code>[dstAddr][srcAddr][seq][len]</code> inside the payload with software address filtering and ACKs. Explicit header + payload CRC is the robust default; implicit header + CR4/8 + CRC-off trims airtime when both ends are fixed and pre-agreed.</p>
+
+  <h3>Channel Activity Detection (CAD)</h3>
+  <p>CAD is a low-power scan that detects a LoRa <strong>preamble</strong> without full RX. On SX127x, set RegOpMode = CAD (0b111); the radio locks the PLL, captures ~one preamble symbol (~10 mA), then correlates. On CadDone IRQ, check CadDetected -- if set, switch to RX; else sleep. Per AN1200.85 the SX127x detects only the preamble; SX126x/SX128x can detect the full packet. On SX126x, configure SetCadParams (cadSymbolNum, cadDetPeak, cadDetMin, cadExitMode, timeout) then issue SetCad (0xC5); results come back via CadDone/CadDetected IRQs. CAD costs a few mA-ms versus continuous RX at ~5–11 mA, extending battery life dramatically for listen-mostly nodes.</p>
+
+  <pre><span class="label">sx127x_cad.c -- cheap listen-before-talk</span>
+<span class="kw">bool</span> <span class="fn">sx127x_cad</span>(spi_device_handle_t dev) {
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x40</span>, <span class="num">0x80</span>);   <span class="cm">// RegDioMapping1: DIO0 = CadDone</span>
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x01</span>, <span class="num">0x87</span>);   <span class="cm">// RegOpMode: MODE=CAD (0b111)</span>
+
+    <span class="kw">while</span> (!(<span class="fn">sx127x_read_reg</span>(dev, <span class="num">0x12</span>) &amp; <span class="num">0x04</span>)) {  <span class="cm">// wait CadDone (bit2)</span>
+        <span class="fn">vTaskDelay</span>(<span class="fn">pdMS_TO_TICKS</span>(<span class="num">1</span>));
+    }
+    uint8_t irq = <span class="fn">sx127x_read_reg</span>(dev, <span class="num">0x12</span>);
+    <span class="fn">sx127x_write_reg</span>(dev, <span class="num">0x12</span>, <span class="num">0xFF</span>);   <span class="cm">// clear flags</span>
+
+    <span class="kw">return</span> irq &amp; <span class="num">0x01</span>;                   <span class="cm">// bit0 CadDetected -- caller switches to RX if true</span>
+}</pre>
+</section>
+
+<!-- gotchas -->
+<section id="gotchas" data-num="12">
+  <h2>Low-Level <em class="rd">Gotchas</em></h2>
+  <div class="section-bar rd"></div>
+
+  <div class="info-box danger">
+    <strong>Modem switch only works from SLEEP</strong>
+    Writing LongRangeMode in STANDBY fails silently -- the write is dropped and reading back the register still shows the old mode. Always go SLEEP → set the LoRa bit → STANDBY, in that order.
+  </div>
+
+  <div class="info-box warn">
+    <strong>PA_BOOST vs RFO</strong>
+    RFM95/Ra-02 modules route only the PA_BOOST pin. Forgetting PaSelect=1 in RegPaConfig gives near-zero output even though the radio reports TxDone normally. +20 dBm additionally needs RegPaDac = 0x87.
+  </div>
+
+  <div class="info-box cy">
+    <strong>SX127x RSSI/SNR math</strong>
+    SNR = <code>RegPktSnrValue (signed) / 4</code> dB. RSSI offset differs by port: <code>RSSI = −157 + PktRssi</code> (HF, ≥779 MHz) or <code>RSSI = −164 + PktRssi</code> (LF). The band threshold is ~525 MHz (RF_MID_BAND_THRESH), not 868 MHz -- a common bug. When SNR &lt; 0: <code>RSSI = offset + PktRssi + PktSnr·0.25</code>; when SNR ≥ 0 the slope is corrected: <code>RSSI = offset + 16/15·PktRssi</code>. Offsets shift with external LNA / LnaBoost, so single-point calibration matters for accuracy.
+  </div>
+
+  <div class="info-box danger">
+    <strong>SX126x image calibration is mandatory</strong>
+    After setting frequency you must call Calibrate (all blocks, 0x7F) and CalibrateImage for the band (e.g. 0xD7/0xDB for 863–870 MHz, 0xE1/0xE9 for 902–928 MHz). Skipping it degrades sensitivity and image rejection with no hard error -- the link just performs worse than it should. SX127x has no equivalent mandatory step.
+  </div>
+
+  <div class="info-box warn">
+    <strong>TCXO vs XTAL mismatch (SX126x)</strong>
+    Driving DIO3 TCXO voltage on an XTAL-only board causes an SPI command-fail (−707); treating a TCXO board as XTAL causes an infinite calibration loop. Match the module's actual crystal circuit, not what the reference design assumes.
+  </div>
+
+  <div class="info-box">
+    <strong>RF switch / antenna</strong>
+    Modules with a front-end need RXEN/TXEN or DIO2-as-RF-switch set correctly, or you transmit into the RX path. On SX126x set SetDIO2AsRfSwitchCtrl(1); on SX127x drive the FEM GPIOs directly in software.
+  </div>
+
+  <div class="info-box">
+    <strong>Clearing IRQs differs between chips</strong>
+    SX127x clears by writing a 1 to the RegIrqFlags bit; SX126x clears via ClearIrqStatus with a bitmask. Stale flags on either chip block the next RxDone from ever firing.
+  </div>
+
+  <div class="info-box danger">
+    <strong>LoRaWAN downlink IQ inversion</strong>
+    Downlinks use inverted IQ (SetPacketParams InvertIQ=0x01 / RegInvertIQ) -- a P2P RX with standard IQ will never hear a gateway, and vice versa. A real-world RadioLib bug: an SX126x RX window that warm-start-sleeps across the 5s join delay and wakes to SetRx without re-applying modem/packet/sync config silently receives nothing.
+  </div>
+
+  <div class="info-box warn">
+    <strong>BUSY handling (SX126x)</strong>
+    Every command must wait for BUSY low first. A missed poll causes dropped or garbled commands -- see <a href="#esp32">ESP32 Wire</a>.
+  </div>
+</section>
+
+<!-- further -->
+<section id="further" data-num="13">
+  <h2><em class="or">Further</em> Reading</h2>
+  <div class="section-bar"></div>
+
+  <table>
+    <tr><th>Topic</th><th>Why</th><th>Where</th></tr>
+    <tr><td class="meth">SX1276 datasheet</td><td>The authoritative SX127x register map -- Rev. 0.0 May 2013 through Rev. 5/7.</td><td>Semtech SX1276/77/78/79 datasheet</td></tr>
+    <tr><td class="meth">SX1261/2 datasheet</td><td>The authoritative SX126x opcode/command reference.</td><td>Semtech SX1261/2 datasheet, Rev. 1.1 Dec 2017 / 1.2 Jun 2019 / 2.1</td></tr>
+    <tr><td class="meth">AN1200.13</td><td>Time-on-air formula, worked derivations.</td><td>Semtech application note AN1200.13</td></tr>
+    <tr><td class="meth">AN1200.85 / AN1200.21</td><td>CAD behavior and tuning.</td><td>Semtech application notes</td></tr>
+    <tr><td class="meth">LoRaWAN 1.0.x / 1.1 spec + RP002</td><td>MAC layer and regional parameters, the ground truth for anything in <a href="#lorawan">LoRaWAN MAC</a>.</td><td>LoRa Alliance technical specifications</td></tr>
+    <tr><td class="meth">Open-source drivers</td><td>Cross-check register/opcode values against independent implementations.</td><td>RadioLib, LoRaMac-node, tinygo, RadioHead, arduino-LoRa</td></tr>
+    <tr><td class="meth">PHY reverse-engineering literature</td><td>The whitening sequence, interleaver, and sync-word chip encoding were never published by Semtech -- this is where those values actually come from.</td><td>Knight/Seeber papers, EPFL/GNU Radio gr-lora, arXiv PHY papers</td></tr>
+  </table>
+
+  <h3>Recommendations</h3>
+  <ol class="step-list cy">
+    <li><strong>New designs → SX126x</strong> (SX1262/RA-01SC or Wio-E5/STM32WLE integrated). The ~11 dB sensitivity gain, ~2× lower RX current, and +22 dBm justify the extra BUSY/calibration complexity. Reserve SX127x/RFM95 for maintaining existing fleets or reusing register-level code.</li>
+    <li><strong>Bring-up order:</strong> verify SPI first -- read RegVersion=0x12 on SX127x, or read sync-word register 0x0740=0x1424 on SX126x. Only then configure the modem. On SX126x, get BUSY polling and image calibration right before blaming RF.</li>
+    <li><strong>For duty-cycle-limited regions,</strong> compute ToA up front with the AN1200.13 formula, add LoRaWAN's ~13-byte overhead, enable LDRO at SF11/12/125kHz, and budget packets/hour against the 1% (EU) or 400ms dwell (US) limit.</li>
+    <li><strong>For P2P telemetry,</strong> lock all PHY params on both ends, use private sync word 0x12/0x1424, explicit header + CRC while debugging, and add CAD-before-TX plus a small addressed app header for multi-node channels.</li>
+    <li><strong>Thresholds that change the decision:</strong> if your node listens &gt;~1% of the time, SX126x RX current alone pays back; if you need &gt;+20 dBm ERP, SX126x is required; if you're locked to an existing SX127x gateway/codebase and battery isn't critical, stay on SX127x.</li>
+  </ol>
+
+  <div class="info-box cy">
+    <strong>The meta-question to hold</strong>
+    Every time the LoRa link feels like magic, ask: what bytes went over SPI, what chirp encoded this symbol, what CMAC bytes proved this frame. There's no hidden layer. If you can't trace it to chirps, symbols, and CMAC bytes, you don't understand it yet.
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<div class="footer">
+  <span>LORA DEEP DIVE // CHIRP TO CIPHER // BARE-REGISTER C</span>
+  <span><a href="https://www.semtech.com/products/wireless-rf/lora-connect">semtech.com</a></span>
+</div>
+
+<div class="spine">// css · chain · packet · toa · sx127x · sx126x · compare · esp32 · lorawan · p2p · gotchas //</div>
+
+<script>
+const LABELS = {
+  intro:'Intro', css:'CSS Waveform', chain:'Coding Chain', packet:'PHY Packet',
+  toa:'Time on Air', sx127x:'SX127x Regs', sx126x:'SX126x Cmds', compare:'127x vs 126x',
+  esp32:'ESP32 Wire', lorawan:'LoRaWAN MAC', p2p:'P2P & CAD', gotchas:'Gotchas', further:'Further'
+};
+const sections = [...document.querySelectorAll('.container > section[id]')];
+const sideLinks = [...document.querySelectorAll('.side a')];
+const radial = document.getElementById('radial');
+const ring = document.getElementById('radialRing');
+const center = document.getElementById('radialCenter');
+const navNum = document.getElementById('navNum');
+const navLabel = document.getElementById('navLabel');
+
+const items = sections.map(s => {
+  const a = document.createElement('a');
+  a.href = '#' + s.id;
+  a.className = 'radial-item';
+  a.innerHTML = '<span>' + s.dataset.num + '</span>' + (LABELS[s.id] || s.id);
+  radial.appendChild(a);
+  const dot = document.createElement('span');
+  dot.className = 'radial-dot';
+  radial.appendChild(dot);
+  return { sec: s, a, dot };
+});
+
+function layout() {
+  const rx = Math.max(140, Math.min(innerWidth * 0.5 - 150, 330));
+  const ry = Math.max(150, Math.min(innerHeight * 0.5 - 100, 330));
+  ring.style.width = (rx - 26) * 2 + 'px';
+  ring.style.height = (ry - 26) * 2 + 'px';
+  items.forEach((it, i) => {
+    const ang = -Math.PI / 2 + i * 2 * Math.PI / items.length;
+    const x = Math.cos(ang), y = Math.sin(ang);
+    it.a.style.left = 'calc(50% + ' + (rx * x).toFixed(1) + 'px)';
+    it.a.style.top = 'calc(50% + ' + (ry * y).toFixed(1) + 'px)';
+    const tx = x > 0.35 ? '0%' : x < -0.35 ? '-100%' : '-50%';
+    const ty = y > 0.35 ? '0%' : y < -0.35 ? '-100%' : '-50%';
+    it.a.style.transform = 'translate(' + tx + ', ' + ty + ')';
+    it.dot.style.left = 'calc(50% + ' + ((rx - 26) * x).toFixed(1) + 'px)';
+    it.dot.style.top = 'calc(50% + ' + ((ry - 26) * y).toFixed(1) + 'px)';
+  });
+}
+function openDial() { layout(); radial.classList.add('open'); document.body.classList.add('dial-open'); }
+function closeDial() { radial.classList.remove('open'); document.body.classList.remove('dial-open'); }
+
+function activate(id) {
+  const el = document.getElementById(id);
+  const sec = el ? (el.closest('.container > section[id]') || sections[0]) : sections[0];
+  sections.forEach(s => s.classList.toggle('active', s === sec));
+  items.forEach(it => {
+    it.a.classList.toggle('active', it.sec === sec);
+    it.dot.classList.toggle('active', it.sec === sec);
+  });
+  sideLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + sec.id));
+  navNum.textContent = sec.dataset.num + ' //';
+  navLabel.textContent = LABELS[sec.id] || sec.id;
+  center.textContent = sec.dataset.num;
+  closeDial();
+  if (el && el !== sec) el.scrollIntoView();
+  else window.scrollTo(0, 0);
+}
+function go(id) { history.replaceState(null, '', '#' + id); activate(id); }
+
+document.getElementById('navCurrent').addEventListener('click', openDial);
+document.getElementById('sideDial').addEventListener('click', openDial);
+center.addEventListener('click', closeDial);
+radial.addEventListener('click', e => { if (e.target === radial) closeDial(); });
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  e.preventDefault();
+  go(a.getAttribute('href').slice(1));
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') return closeDial();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const cur = sections.findIndex(s => s.classList.contains('active'));
+    const next = (cur + (e.key === 'ArrowRight' ? 1 : sections.length - 1)) % sections.length;
+    go(sections[next].id);
+  }
+});
+window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
+window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
+activate(location.hash.slice(1));
+</script>
+</body>
+</html>
