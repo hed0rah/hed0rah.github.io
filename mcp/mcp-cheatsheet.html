@@ -418,15 +418,74 @@ td.yl   { color: var(--yellow); }
   .masthead { padding: 40px 20px 28px; }
 }
 @media (max-width: 1280px) { .spine { display: none; } }
+
+/* theme toggle in nav */
+.theme-toggle {
+  margin-left: auto;
+  align-self: center;
+  position: sticky;
+  right: 0;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  color: var(--dim);
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+.theme-toggle:hover { color: var(--orange); border-color: var(--orange); }
+
+/* dark mode -- ink + gunmetal + teal/orange accents */
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:        #16181C;
+  --surface:   #101217;
+  --surface2:  #20242B;
+  --border:    #3A3F47;
+  --border2:   #262A31;
+  --orange:    #FF4D00;
+  --cyan:      #08F9DF;
+  --yellow:    #E0913E;
+  --red:       #E04858;
+  --green:     #4DC26B;
+  --magenta:   #C97FD4;
+  --dim:       #8A9099;
+  --dim2:      #5A616A;
+  --text:      #C9CDD3;
+  --bright:    #ECE9DF;
+}
+:root[data-theme="dark"] ::selection { background: #08F9DF; color: #16181C; }
+:root[data-theme="dark"] pre,
+:root[data-theme="dark"] .diagram {
+  background: #101217;
+  border-top-color: #262A31;
+  border-right-color: #262A31;
+  border-bottom-color: #262A31;
+}
+:root[data-theme="dark"] pre .label { color: #565B63; }
+:root[data-theme="dark"] pre .cm, :root[data-theme="dark"] .diagram .dim { color: #62676F; }
+:root[data-theme="dark"] pre .kw { color: #F56A31; }
 </style>
 </head>
 <body>
+<script>
+(function () {
+  const saved = localStorage.getItem('theme');
+  const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+})();
+</script>
 
 <!-- ══════ MASTHEAD ══════ -->
 <div class="masthead">
   <h1>Model <em>Context</em> Protocol</h1>
   <div class="subtitle">
-    <span>Tools · Resources · Prompts</span> // JSON-RPC 2.0 // stdio · SSE
+    <span>Tools · Resources · Prompts</span> // JSON-RPC 2.0 // stdio · streamable http
   </div>
 </div>
 
@@ -443,6 +502,7 @@ td.yl   { color: var(--yellow); }
     <a href="#errors">Errors</a>
     <a href="#sdk">SDK</a>
     <a href="#quickref">Quick Ref</a>
+    <button class="theme-toggle" title="toggle dark mode">◐ dark</button>
   </div>
 </div>
 
@@ -461,7 +521,7 @@ td.yl   { color: var(--yellow); }
 │  │  <span class="acc2">MCP Client</span>      │      │  <span class="acc2">MCP Client</span>      │  ...         │
 │  └────────┬────────┘      └────────┬────────┘              │
 └───────────┼────────────────────────┼───────────────────────┘
-            │ <span class="yl">stdio / SSE</span>           │ <span class="yl">stdio / SSE</span>
+            │<span class="yl">stdio / streamable http</span> │ <span class="yl">stdio / streamable http</span>
    ┌────────▼────────┐      ┌────────▼────────┐
    │  <span class="acc">MCP Server</span>      │      │  <span class="acc">MCP Server</span>      │
    │                 │      │                 │
@@ -495,7 +555,7 @@ td.yl   { color: var(--yellow); }
 <section id="primitives">
   <h2>The 3 <em class="or">Primitives</em></h2>
   <div class="section-bar"></div>
-  <p>Everything a server exposes falls into one of three capability types. A server can implement any combination.</p>
+  <p>Tools, resources, and prompts are the three feature primitives a server exposes; server capabilities also include logging, completions, and tasks (2025-11-25). A server can implement any combination.</p>
 
   <div class="prim-grid">
     <div class="prim-card" data-type="tools">
@@ -533,7 +593,7 @@ td.yl   { color: var(--yellow); }
 <section id="transport">
   <h2><em class="or">Transport</em> Layer</h2>
   <div class="section-bar"></div>
-  <p>MCP is transport-agnostic. The two standard transports cover local processes and remote HTTP services.</p>
+  <p>MCP is transport-agnostic. The two standard transports are stdio (local processes) and Streamable HTTP (remote services). The older HTTP+SSE transport is deprecated since 2025-03-26.</p>
 
   <div class="two-col">
     <div>
@@ -554,8 +614,9 @@ td.yl   { color: var(--yellow); }
 }</pre>
     </div>
     <div>
-      <h3>SSE (HTTP)</h3>
-      <pre class="cy"><span class="label">remote / network</span>
+      <h3>SSE (HTTP) — legacy</h3>
+      <pre class="cy"><span class="label">deprecated 2025-03-26</span>
+<span class="cm"># legacy transport, superseded by streamable http</span>
 <span class="cm"># Server exposes two endpoints:</span>
 <span class="cm">#   GET  /sse   — event stream (server → client)</span>
 <span class="cm">#   POST /message — messages (client → server)</span>
@@ -573,7 +634,7 @@ td.yl   { color: var(--yellow); }
 
   <div class="info-box warn">
     <strong>Streamable HTTP (2025-03-26+)</strong>
-    The newer spec replaces SSE with a single <code>POST /mcp</code> endpoint that can return either a single JSON response or an SSE stream. Older clients use legacy SSE; check spec version via <code>protocolVersion</code> in the initialize handshake.
+    Replaces legacy SSE with a single endpoint (e.g. <code>/mcp</code>) supporting both POST and GET: POST sends client messages and can return a single JSON response or an SSE stream; GET opens a server-initiated SSE stream; DELETE ends the session. Since 2025-06-18 clients MUST send the negotiated version in an <code>MCP-Protocol-Version</code> header on subsequent HTTP requests.
   </div>
 </section>
 
@@ -844,7 +905,7 @@ focusing on security issues:
     <div class="flow-step">
       <div class="step-label">Either</div>
       <div class="step-name">shutdown</div>
-      <div class="step-detail">graceful close</div>
+      <div class="step-detail">transport-level, no message (close stdio / HTTP DELETE)</div>
     </div>
   </div>
 
@@ -854,7 +915,7 @@ focusing on security issues:
 {
   <span class="key">"method"</span>: <span class="st">"initialize"</span>,
   <span class="key">"params"</span>: {
-    <span class="key">"protocolVersion"</span>: <span class="st">"2025-03-26"</span>,
+    <span class="key">"protocolVersion"</span>: <span class="st">"2025-11-25"</span>,
     <span class="key">"capabilities"</span>: {
       <span class="key">"roots"</span>:    { <span class="key">"listChanged"</span>: <span class="kw">true</span> },
       <span class="key">"sampling"</span>: {}
@@ -870,7 +931,7 @@ focusing on security issues:
       <pre><span class="label">initialize response (server)</span>
 {
   <span class="key">"result"</span>: {
-    <span class="key">"protocolVersion"</span>: <span class="st">"2025-03-26"</span>,
+    <span class="key">"protocolVersion"</span>: <span class="st">"2025-11-25"</span>,
     <span class="key">"capabilities"</span>: {
       <span class="key">"tools"</span>:     { <span class="key">"listChanged"</span>: <span class="kw">true</span> },
       <span class="key">"resources"</span>: { <span class="key">"subscribe"</span>: <span class="kw">true</span> },
@@ -989,6 +1050,7 @@ server = <span class="fn">Server</span>(<span class="st">"my-server"</span>)
 
   <div id="tab-ts" class="tab-content">
     <pre><span class="label">TypeScript</span>
+<span class="cm">// low-level API; the high-level McpServer + registerTool() is the current recommended pattern</span>
 <span class="kw">import</span> { Server }              <span class="kw">from</span> <span class="st">"@modelcontextprotocol/sdk/server/index.js"</span>;
 <span class="kw">import</span> { StdioServerTransport } <span class="kw">from</span> <span class="st">"@modelcontextprotocol/sdk/server/stdio.js"</span>;
 <span class="kw">import</span> { ListToolsRequestSchema, CallToolRequestSchema } <span class="kw">from</span> <span class="st">"..."</span>;
@@ -1030,18 +1092,22 @@ server.<span class="fn">setRequestHandler</span>(CallToolRequestSchema, <span cl
 
   <div class="two-col">
     <div>
-      <h3>All Methods</h3>
+      <h3>Core Methods</h3>
       <table>
         <tr><th>Method</th><th>Direction</th></tr>
         <tr><td class="meth">initialize</td><td>client → server</td></tr>
         <tr><td class="meth">tools/list</td><td>client → server</td></tr>
         <tr><td class="meth">tools/call</td><td>client → server</td></tr>
         <tr><td class="meth">resources/list</td><td>client → server</td></tr>
+        <tr><td class="meth">resources/templates/list</td><td>client → server</td></tr>
         <tr><td class="meth">resources/read</td><td>client → server</td></tr>
         <tr><td class="meth">resources/subscribe</td><td>client → server</td></tr>
         <tr><td class="meth">prompts/list</td><td>client → server</td></tr>
         <tr><td class="meth">prompts/get</td><td>client → server</td></tr>
+        <tr><td class="meth">completion/complete</td><td>client → server</td></tr>
+        <tr><td class="meth">logging/setLevel</td><td>client → server</td></tr>
         <tr><td class="meth">sampling/createMessage</td><td>server → client</td></tr>
+        <tr><td class="meth">elicitation/create</td><td>server → client (2025-06-18)</td></tr>
         <tr><td class="meth">roots/list</td><td>server → client</td></tr>
         <tr><td class="meth">ping</td><td>either</td></tr>
       </table>
@@ -1057,7 +1123,7 @@ server.<span class="fn">setRequestHandler</span>(CallToolRequestSchema, <span cl
         <tr><td class="meth">notifications/resources/updated</td><td>server</td></tr>
         <tr><td class="meth">notifications/prompts/list_changed</td><td>server</td></tr>
         <tr><td class="meth">notifications/progress</td><td>either</td></tr>
-        <tr><td class="meth">notifications/message</td><td>either (logging)</td></tr>
+        <tr><td class="meth">notifications/message</td><td>server (logging)</td></tr>
         <tr><td class="meth">notifications/cancelled</td><td>either</td></tr>
       </table>
     </div>
@@ -1070,7 +1136,9 @@ server.<span class="fn">setRequestHandler</span>(CallToolRequestSchema, <span cl
         <tr><th>Type</th><th>Fields</th></tr>
         <tr><td class="meth">text</td><td><code>text: string</code></td></tr>
         <tr><td class="meth">image</td><td><code>data: base64, mimeType</code></td></tr>
+        <tr><td class="meth">audio</td><td><code>data: base64, mimeType</code> (2025-03-26)</td></tr>
         <tr><td class="meth">resource</td><td><code>resource: { uri, text|blob }</code></td></tr>
+        <tr><td class="meth">resource_link</td><td><code>uri</code> only, reference without contents (2025-06-18)</td></tr>
       </table>
     </div>
     <div>
@@ -1078,7 +1146,9 @@ server.<span class="fn">setRequestHandler</span>(CallToolRequestSchema, <span cl
       <table>
         <tr><th>Version</th><th>Key additions</th></tr>
         <tr><td class="meth">2024-11-05</td><td>Initial stable release. Tools, resources, prompts, sampling.</td></tr>
-        <tr><td class="meth">2025-03-26</td><td>Streamable HTTP transport, tool annotations, OAuth 2.1 auth, resource links in tool results.</td></tr>
+        <tr><td class="meth">2025-03-26</td><td>Streamable HTTP transport, tool annotations, OAuth 2.1 auth, JSON-RPC batching, audio content.</td></tr>
+        <tr><td class="meth">2025-06-18</td><td>Structured tool output, elicitation, resource links in tool results, OAuth resource-server model + RFC 8707, MCP-Protocol-Version header, batching removed.</td></tr>
+        <tr><td class="meth">2025-11-25</td><td>Tasks, sampling with tools, OIDC discovery, JSON Schema 2020-12 default.</td></tr>
       </table>
     </div>
   </div>
@@ -1088,7 +1158,7 @@ server.<span class="fn">setRequestHandler</span>(CallToolRequestSchema, <span cl
 
 <!-- ══════ FOOTER ══════ -->
 <div class="footer">
-  <span>MODEL CONTEXT PROTOCOL // ANTHROPIC // SPEC 2025-03-26</span>
+  <span>MODEL CONTEXT PROTOCOL // ANTHROPIC // SPEC 2025-11-25</span>
   <span><a href="https://modelcontextprotocol.io">modelcontextprotocol.io</a></span>
 </div>
 
@@ -1114,6 +1184,21 @@ window.addEventListener('scroll', () => {
     a.classList.toggle('active', a.getAttribute('href') === '#' + current);
   });
 });
+
+// dark mode toggle (initial theme set by the inline script in <body>)
+const themeButtons = [...document.querySelectorAll('.theme-toggle')];
+function paintTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  themeButtons.forEach(b => b.textContent = dark ? '◑ light' : '◐ dark');
+}
+themeButtons.forEach(b => b.addEventListener('click', () => {
+  const dark = document.documentElement.getAttribute('data-theme') !== 'dark';
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+  paintTheme();
+}));
+paintTheme();
 </script>
 </body>
 </html>

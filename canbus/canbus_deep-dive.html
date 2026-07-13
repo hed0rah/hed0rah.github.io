@@ -458,9 +458,51 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   .masthead { padding: 40px 20px 28px; }
 }
 @media (max-width: 1280px) { .spine { display: none; } }
+
+/* dark mode -- ink + gunmetal + teal/orange accents */
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:        #16181C;
+  --surface:   #101217;
+  --surface2:  #20242B;
+  --border:    #3A3F47;
+  --border2:   #262A31;
+  --orange:    #FF4D00;
+  --cyan:      #08F9DF;
+  --yellow:    #E0913E;
+  --red:       #E04858;
+  --green:     #4DC26B;
+  --magenta:   #C97FD4;
+  --dim:       #8A9099;
+  --dim2:      #5A616A;
+  --text:      #C9CDD3;
+  --bright:    #ECE9DF;
+}
+:root[data-theme="dark"] ::selection { background: #08F9DF; color: #16181C; }
+:root[data-theme="dark"] pre,
+:root[data-theme="dark"] .diagram {
+  background: #101217;
+  border-top-color: #2A2E35;
+  border-right-color: #2A2E35;
+  border-bottom-color: #2A2E35;
+}
+:root[data-theme="dark"] pre .label { color: #565B63; }
+:root[data-theme="dark"] pre .cm, :root[data-theme="dark"] .diagram .dim { color: #62676F; }
+:root[data-theme="dark"] pre .kw { color: #F56A31; }
+:root[data-theme="dark"] pre .key, :root[data-theme="dark"] .diagram .acc2 { color: #5CD9CE; }
+:root[data-theme="dark"] .radial { background: rgba(16, 18, 23, 0.96); }
+.theme-toggle { white-space: nowrap; }
 </style>
 </head>
 <body>
+<script>
+(function () {
+  const saved = localStorage.getItem('theme');
+  const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+})();
+</script>
 
 <!-- masthead -->
 <div class="masthead">
@@ -486,15 +528,19 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   <a href="#gotchas"><span>12</span>Gotchas</a>
   <a href="#resources"><span>13</span>Resources</a>
   <button class="side-dial" id="sideDial" title="radial section dial">◎ dial</button>
+  <button class="side-dial theme-toggle" title="toggle dark mode">◐ dark</button>
 </nav>
 
 <!-- nav -->
 <div class="nav">
   <div class="nav-inner">
     <span class="nav-brand">CAN Bus Deep Dive</span>
-    <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
-      <span class="num" id="navNum">01 //</span> <span id="navLabel">Intro</span> <span class="nav-hint">◎</span>
-    </button>
+    <span style="display:flex;gap:6px">
+      <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
+        <span class="num" id="navNum">01 //</span> <span id="navLabel">Intro</span> <span class="nav-hint">◎</span>
+      </button>
+      <button class="nav-current theme-toggle" title="toggle dark mode">◐</button>
+    </span>
   </div>
 </div>
 
@@ -626,7 +672,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 
   <div class="info-box warn">
     <strong>The ESP32 has the controller, not the PHY</strong>
-    TWAI implements the CAN protocol logic, but the SoC pins are single-ended logic level. You still need an external transceiver -- SN65HVD230 (3.3V) or TJA1050/TJA1051 (5V, needs level shifting) -- between the ESP32's TX/RX pins and the actual CAN-H/CAN-L wires.
+    TWAI implements the CAN protocol logic, but the SoC pins are single-ended logic level. You still need an external transceiver -- SN65HVD230 (3.3V) or TJA1050 (5V, needs level shifting; the TJA1051T/3 variant has a VIO pin for 3.3V MCUs) -- between the ESP32's TX/RX pins and the actual CAN-H/CAN-L wires.
   </div>
 
   <h3 class="cy">ESP32 native TWAI (ESP-IDF)</h3>
@@ -800,8 +846,8 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   <h3>MCP2515 on a Raspberry Pi SPI bus</h3>
   <p>Needs a device-tree overlay in <code>/boot/config.txt</code> (or <code>/boot/firmware/config.txt</code> on newer Raspberry Pi OS):</p>
   <pre><span class="label">/boot/config.txt</span>
-dtoverlay<span class="key">=</span>mcp2515-can0,oscillator<span class="key">=</span>16000000,interrupt<span class="key">=</span>25
-dtoverlay<span class="key">=</span>spi-bcm2835-overlay</pre>
+dtparam<span class="key">=</span>spi<span class="key">=</span>on
+dtoverlay<span class="key">=</span>mcp2515-can0,oscillator<span class="key">=</span>16000000,interrupt<span class="key">=</span>25</pre>
   <p>Then <code>dmesg | grep -i mcp2515</code> to confirm probe, and bring <code>can0</code> up as above.</p>
 
   <h3>Serial/slcan adapters</h3>
@@ -860,7 +906,7 @@ dtoverlay<span class="key">=</span>spi-bcm2835-overlay</pre>
     <tr><td class="meth">candump can0</td><td>Live dump, all IDs</td></tr>
     <tr><td class="meth">candump can0,123:7FF</td><td>Filter: ID 0x123 exact match (mask 7FF)</td></tr>
     <tr><td class="meth">candump -l can0</td><td>Log to <code>candump-&lt;timestamp&gt;.log</code></td></tr>
-    <tr><td class="meth">candump -L can0</td><td>Log in ASC-ish long format</td></tr>
+    <tr><td class="meth">candump -L can0</td><td>Log-file format on stdout (same format <code>-l</code> writes; pipe-friendly)</td></tr>
     <tr><td class="meth">cansend can0 123#DEADBEEF</td><td>Send one frame, ID 0x123, data DE AD BE EF</td></tr>
     <tr><td class="meth">cangen vcan0 -g 100 -I 1A0 -L 8 -D i</td><td>Generate frames every 100ms, ID 1A0, 8 bytes, incrementing data</td></tr>
     <tr><td class="meth">cansniffer can0</td><td>Live view, highlights <em>changing</em> bytes -- best RE starting point</td></tr>
@@ -1180,6 +1226,21 @@ document.addEventListener('keydown', e => {
 window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
 window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
 activate(location.hash.slice(1));
+
+// dark mode toggle (initial theme set by the inline script in <body>)
+const themeButtons = [...document.querySelectorAll('.theme-toggle')];
+function paintTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  themeButtons.forEach(b => b.textContent = (b.classList.contains('side-dial') ? (dark ? '◑ light' : '◐ dark') : (dark ? '◑' : '◐')));
+}
+themeButtons.forEach(b => b.addEventListener('click', () => {
+  const dark = document.documentElement.getAttribute('data-theme') !== 'dark';
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+  paintTheme();
+}));
+paintTheme();
 </script>
 </body>
 </html>

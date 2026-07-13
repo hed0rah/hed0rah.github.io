@@ -507,9 +507,69 @@ details.inspect > pre { margin: 0; border: none; }
   .container { padding: 0 18px; }
 }
 @media (max-width: 1280px) { .spine { display: none; } }
+
+/* theme toggle in nav */
+.theme-toggle {
+  margin-left: auto;
+  align-self: center;
+  position: sticky;
+  right: 0;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  color: var(--dim);
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+.theme-toggle:hover { color: var(--orange); border-color: var(--orange); }
+
+/* dark mode -- ink + gunmetal + teal/orange accents */
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:        #16181C;
+  --surface:   #101217;
+  --surface2:  #20242B;
+  --border:    #3A3F47;
+  --border2:   #262A31;
+  --orange:    #FF4D00;
+  --cyan:      #08F9DF;
+  --yellow:    #E0913E;
+  --red:       #E04858;
+  --green:     #4DC26B;
+  --magenta:   #C97FD4;
+  --dim:       #8A9099;
+  --dim2:      #5A616A;
+  --text:      #C9CDD3;
+  --bright:    #ECE9DF;
+}
+:root[data-theme="dark"] ::selection { background: #08F9DF; color: #16181C; }
+:root[data-theme="dark"] pre,
+:root[data-theme="dark"] .diagram,
+:root[data-theme="dark"] .svg-plate {
+  background: #101217;
+  border-top-color: #262A31;
+  border-right-color: #262A31;
+  border-bottom-color: #262A31;
+}
+:root[data-theme="dark"] pre .label { color: #565B63; }
+:root[data-theme="dark"] pre .cm, :root[data-theme="dark"] .diagram .dim { color: #62676F; }
+:root[data-theme="dark"] pre .kw { color: #F56A31; }
 </style>
 </head>
 <body>
+<script>
+(function () {
+  const saved = localStorage.getItem('theme');
+  const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+})();
+</script>
 
 <div class="spine">LINUX // MM // VAS // PTE // BUDDY // SLAB // OOM // NUMA // 2026</div>
 
@@ -536,6 +596,7 @@ details.inspect > pre { margin: 0; border: none; }
     <a href="#oom">Pressure / OOM</a>
     <a href="#numa">NUMA</a>
     <a href="#tools">Tooling</a>
+    <button class="theme-toggle" title="toggle dark mode">◐ dark</button>
   </div>
 </div>
 
@@ -557,7 +618,7 @@ details.inspect > pre { margin: 0; border: none; }
     </div>
     <div class="prim-card" data-type="cy">
       <div class="p-name">Larger than RAM</div>
-      <div class="p-method">256 TiB user space</div>
+      <div class="p-method">128 TiB user space</div>
       <div class="p-desc">The virtual space is decoupled from physical capacity. You can address far more memory than you have, and the kernel pages in only what's touched.</div>
     </div>
     <div class="prim-card" data-type="yl">
@@ -646,7 +707,7 @@ details.inspect > pre { margin: 0; border: none; }
 <section id="vas">
   <h2>The <em class="or">x86_64</em> Virtual Address Space <span class="htag">canonical · 48 bits</span></h2>
   <div class="section-bar"></div>
-  <p>x86_64 hardware uses 48-bit virtual addresses (5-level paging extends this to 57, but most kernels still ship 4-level). The high 16 bits must be a sign-extension of bit 47 — addresses must be <em>canonical</em>. Anything else faults. This carves the 64-bit space into two halves with a giant unmappable hole in the middle.</p>
+  <p>x86_64 hardware uses 48-bit virtual addresses (5-level paging extends this to 57; distro kernels ship 5-level-capable and drop to 4-level at boot when the CPU lacks LA57 — still the common case on client hardware). The high 16 bits must be a sign-extension of bit 47 — addresses must be <em>canonical</em>. Anything else faults. This carves the 64-bit space into two halves with a giant unmappable hole in the middle.</p>
 
   <div class="kv-grid">
     <div class="kv"><div class="k">Page size</div><div class="v">4 KiB <span class="hex">(0x1000)</span></div></div>
@@ -750,7 +811,7 @@ details.inspect > pre { margin: 0; border: none; }
     <tr><td class="cy">.data</td><td>ELF LOAD</td><td>rw-</td><td>file (COW)</td><td>initialized globals/statics</td></tr>
     <tr><td class="cy">.bss</td><td>kernel</td><td>rw-</td><td>anonymous (zero)</td><td>no file bytes; zeroed on first touch</td></tr>
     <tr><td class="yl">heap</td><td>brk/sbrk</td><td>rw-</td><td>anonymous</td><td>extended in pages, never released piecemeal</td></tr>
-    <tr><td class="mg">mmap</td><td>mmap()</td><td>varies</td><td>file or anon</td><td>unmappable individually via munmap()</td></tr>
+    <tr><td class="mg">mmap</td><td>mmap()</td><td>varies</td><td>file or anon</td><td>can be unmapped individually via munmap()</td></tr>
     <tr><td class="meth">stack</td><td>kernel (auto)</td><td>rw-</td><td>anonymous</td><td>grows on fault, capped by RLIMIT_STACK</td></tr>
     <tr><td class="rd">vDSO/vvar</td><td>kernel</td><td>r-x / r--</td><td>shared kernel</td><td>fast-path syscalls (gettimeofday, etc.)</td></tr>
   </table>
@@ -1007,7 +1068,7 @@ LD_DEBUG=files ./myapp 2&gt;&amp;1 | grep 'calling init'</pre>
 
   <div class="info-box warn">
     <strong>Why 9 + 9 + 9 + 9 + 12?</strong>
-    A 4 KiB table holds 4096 / 8 = 512 entries, and 512 = 2<sup>9</sup>. So each level consumes 9 bits of address. Four levels give 36 bits of indexing, plus 12 bits of in-page offset = <strong>48 bits</strong> total. That's where the 256 TiB user space comes from: 2<sup>47</sup> = 128 TiB on each half.
+    A 4 KiB table holds 4096 / 8 = 512 entries, and 512 = 2<sup>9</sup>. So each level consumes 9 bits of address. Four levels give 36 bits of indexing, plus 12 bits of in-page offset = <strong>48 bits</strong> total. That's where the 128 TiB user space comes from — 2<sup>47</sup> bytes; the kernel half mirrors it for 256 TiB of canonical space total.
   </div>
 
   <h3 class="cy">Hugepages skip levels</h3>
@@ -1212,10 +1273,10 @@ flags:  <span class="val">P</span> = PREV_INUSE   (1 if prev chunk is in use)
 
   <table>
     <tr><th>Bin type</th><th>Sizes</th><th>Structure</th><th>Notes</th></tr>
-    <tr><td class="gr">tcache</td><td>per-thread, ≤ 0x420 default</td><td>singly-linked, 7 entries each, 64 sizes</td><td>fastest path, no locks, glibc 2.26+</td></tr>
-    <tr><td class="yl">fastbins</td><td>16-160 bytes default</td><td>LIFO singly-linked</td><td>no coalescing on free</td></tr>
+    <tr><td class="gr">tcache</td><td>per-thread, ≤ 0x410 chunk size (0x408 usable) default</td><td>singly-linked, 7 entries each, 64 sizes</td><td>fastest path, no locks, glibc 2.26+</td></tr>
+    <tr><td class="yl">fastbins</td><td>chunk sizes 32-128 bytes default on 64-bit (up to 160 via mallopt M_MXFAST)</td><td>LIFO singly-linked</td><td>no coalescing on free</td></tr>
     <tr><td class="meth">unsorted bin</td><td>any</td><td>doubly-linked</td><td>recently freed; first stop on alloc</td></tr>
-    <tr><td class="meth">smallbins</td><td>16 ... 1008 bytes</td><td>62 bins, FIFO doubly-linked</td><td>exact-size match per bin</td></tr>
+    <tr><td class="meth">smallbins</td><td>32 ... 1008 bytes on 64-bit</td><td>62 bins, FIFO doubly-linked</td><td>exact-size match per bin</td></tr>
     <tr><td class="meth">largebins</td><td>1024+ bytes</td><td>63 bins, sorted by size</td><td>best-fit search within bin</td></tr>
     <tr><td class="mg">top chunk</td><td>tail of arena</td><td>single chunk</td><td>extended via brk/mmap when too small</td></tr>
   </table>
@@ -1364,7 +1425,7 @@ heaptrack ./myapp &amp;&amp; heaptrack_print heaptrack.myapp.*.gz | head -30</pr
     <tr><td class="meth">MAP_LOCKED</td><td>like mlock: pages won't be swapped out (needs RLIMIT_MEMLOCK)</td></tr>
     <tr><td class="meth">MAP_HUGETLB</td><td>allocate from the hugepage pool (2 MiB or 1 GiB pages)</td></tr>
     <tr><td class="meth">MAP_FIXED_NOREPLACE</td><td>try a specific address but fail rather than displace existing mappings (use this, not raw MAP_FIXED)</td></tr>
-    <tr><td class="meth">MAP_NORESERVE</td><td>don't pre-reserve swap; allows huge sparse mappings; risk: SIGBUS on fault if swap is full</td></tr>
+    <tr><td class="meth">MAP_NORESERVE</td><td>don't pre-reserve swap; allows huge sparse mappings; risk: SIGSEGV on fault if swap is full</td></tr>
     <tr><td class="meth">MAP_STACK</td><td>hint that this mapping will be used as a stack</td></tr>
   </table>
 
@@ -1539,7 +1600,7 @@ heaptrack ./myapp &amp;&amp; heaptrack_print heaptrack.myapp.*.gz | head -30</pr
 <span class="cm">Node 0, zone   Normal  88412  41203   9871    412     22  ...</span></pre>
 
   <h3 class="cy">Slab / SLUB — cache of fixed-size objects</h3>
-  <p>Most kernel allocations aren't full pages — they're little structs (256 bytes for a <code>task_struct</code>, 192 for a <code>file</code>, etc). The slab allocator sits on top of buddy: it asks for pages in bulk, then carves them into fixed-size object slots, keeping per-CPU and per-NUMA-node caches to avoid lock contention.</p>
+  <p>Most kernel allocations aren't full pages — they're little structs (~192-256 bytes for a <code>struct file</code>, 192 for a <code>dentry</code>, etc). The slab allocator sits on top of buddy: it asks for pages in bulk, then carves them into fixed-size object slots, keeping per-CPU and per-NUMA-node caches to avoid lock contention.</p>
 
 <pre><span class="label">$ sudo head /proc/slabinfo</span><span class="cm">slabinfo - version: 2.1</span>
 <span class="cm"># name              active_objs num_objs objsize objperslab pagesperslab</span>
@@ -1590,13 +1651,13 @@ heaptrack ./myapp &amp;&amp; heaptrack_print heaptrack.myapp.*.gz | head -30</pr
     <li><strong>Anonymous pages</strong> — write to swap, then drop. If no swap, can't reclaim — this is when OOM looms.</li>
   </ul>
 
-  <p>Reclaim uses an active/inactive LRU per zone, biased by the PTE accessed bit and adjusted by <code>vm.swappiness</code> (0-200, default 60). Lower values discourage anon swap-out in favor of reclaiming file cache.</p>
+  <p>Reclaim uses an active/inactive LRU per NUMA node (per-memcg per-node since kernel 4.8), biased by the PTE accessed bit and adjusted by <code>vm.swappiness</code> (0-200, default 60). Lower values discourage anon swap-out in favor of reclaiming file cache. The modern alternative is MGLRU (6.1+), which replaces active/inactive with multiple generations and ships enabled by default on several distros.</p>
 
   <h3 class="cy">Watermarks</h3>
   <p>Each zone has three watermarks: <em>min</em>, <em>low</em>, <em>high</em>. Allocations below <em>min</em> only succeed for kernel atomic contexts. Crossing <em>low</em> wakes <code>kswapd</code>. Below <em>high</em>, <code>kswapd</code> works until it's restored. See <code>/proc/zoneinfo</code>.</p>
 
   <h3 class="rd">The OOM killer</h3>
-  <p>If reclaim can't free enough memory, the OOM killer picks a victim and sends <code>SIGKILL</code>. The score is computed in <code>/proc/[pid]/oom_score</code>, derived from RSS and tunable via <code>/proc/[pid]/oom_score_adj</code> (-1000 to +1000; -1000 = immune).</p>
+  <p>If reclaim can't free enough memory, the OOM killer picks a victim and sends <code>SIGKILL</code>. The score is computed in <code>/proc/[pid]/oom_score</code>, derived from RSS plus swap entries plus page-table pages, normalized against usable memory, and tunable via <code>/proc/[pid]/oom_score_adj</code> (-1000 to +1000; -1000 = immune).</p>
 
 <pre class="rd"><span class="label">C // oom_protect.c</span><span class="pp">#include &lt;fcntl.h&gt;</span>
 <span class="pp">#include &lt;unistd.h&gt;</span>
@@ -1750,6 +1811,9 @@ numastat -p $PID
 cat /proc/$PID/numa_maps | head
 
 <span class="cm"># node-level allocator stats: hits, misses, foreign</span>
+numastat
+
+<span class="cm"># per-node meminfo view</span>
 numastat -m
 
 <span class="cm"># pin a workload manually</span>
@@ -1827,7 +1891,7 @@ cat /sys/kernel/mm/transparent_hugepage/enabled</pre>
   <h3 class="cy">Further reading worth your time</h3>
   <ul>
     <li><strong>Mel Gorman</strong>, <em>Understanding the Linux Virtual Memory Manager</em> — the canonical text. Older (2.6 era) but the core architecture is unchanged.</li>
-    <li><strong>kernel.org/doc/html/latest/vm/</strong> — current kernel documentation for memory subsystems.</li>
+    <li><strong>kernel.org/doc/html/latest/mm/</strong> — current kernel documentation for memory subsystems.</li>
     <li><strong>Linux source</strong>: <code>mm/page_alloc.c</code> (buddy), <code>mm/slub.c</code>, <code>mm/memory.c</code> (fault handling), <code>mm/mmap.c</code>, <code>arch/x86/mm/fault.c</code>.</li>
     <li><strong>glibc</strong>: <code>malloc/malloc.c</code> — ptmalloc2 source, well-commented for what it is.</li>
     <li><strong>Bryant &amp; O'Hallaron</strong>, <em>Computer Systems: A Programmer's Perspective</em> — chapter 9 is the gentlest serious intro to virtual memory anywhere.</li>
@@ -1838,9 +1902,25 @@ cat /sys/kernel/mm/transparent_hugepage/enabled</pre>
 
 <div class="footer">
   <span>LINUX // MEMORY MANAGEMENT // x86_64 // KERNEL 6.x</span>
-  <span><a href="https://kernel.org/doc/html/latest/vm/">kernel.org/doc/vm</a></span>
+  <span><a href="https://www.kernel.org/doc/html/latest/mm/">kernel.org/doc/mm</a></span>
   <span>2026.04 // hed0rah</span>
 </div>
 
+<script>
+// dark mode toggle (initial theme set by the inline script in <body>)
+const themeButtons = [...document.querySelectorAll('.theme-toggle')];
+function paintTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  themeButtons.forEach(b => b.textContent = dark ? '◑ light' : '◐ dark');
+}
+themeButtons.forEach(b => b.addEventListener('click', () => {
+  const dark = document.documentElement.getAttribute('data-theme') !== 'dark';
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+  paintTheme();
+}));
+paintTheme();
+</script>
 </body>
 </html>

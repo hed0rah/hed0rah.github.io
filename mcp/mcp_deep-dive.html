@@ -330,9 +330,68 @@ td.yl   { color: var(--yellow); }
   .masthead { padding: 40px 20px 28px; }
 }
 @media (max-width: 1280px) { .spine { display: none; } }
+
+/* theme toggle in nav */
+.theme-toggle {
+  margin-left: auto;
+  align-self: center;
+  position: sticky;
+  right: 0;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  color: var(--dim);
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+.theme-toggle:hover { color: var(--orange); border-color: var(--orange); }
+
+/* dark mode -- ink + gunmetal + teal/orange accents */
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:        #16181C;
+  --surface:   #101217;
+  --surface2:  #20242B;
+  --border:    #3A3F47;
+  --border2:   #262A31;
+  --orange:    #FF4D00;
+  --cyan:      #08F9DF;
+  --yellow:    #E0913E;
+  --red:       #E04858;
+  --green:     #4DC26B;
+  --magenta:   #C97FD4;
+  --dim:       #8A9099;
+  --dim2:      #5A616A;
+  --text:      #C9CDD3;
+  --bright:    #ECE9DF;
+}
+:root[data-theme="dark"] ::selection { background: #08F9DF; color: #16181C; }
+:root[data-theme="dark"] pre,
+:root[data-theme="dark"] .diagram {
+  background: #101217;
+  border-top-color: #262A31;
+  border-right-color: #262A31;
+  border-bottom-color: #262A31;
+}
+:root[data-theme="dark"] pre .label { color: #565B63; }
+:root[data-theme="dark"] pre .cm, :root[data-theme="dark"] .diagram .dim { color: #62676F; }
+:root[data-theme="dark"] pre .kw { color: #F56A31; }
 </style>
 </head>
 <body>
+<script>
+(function () {
+  const saved = localStorage.getItem('theme');
+  const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+})();
+</script>
 
 <!-- masthead -->
 <div class="masthead">
@@ -340,7 +399,7 @@ td.yl   { color: var(--yellow); }
   <div class="subtitle">
     <span>Wire Format · Message Pump · State Machine · Internals</span>
   </div>
-  <div class="companion">Companion to the MCP Cheatsheet // Spec 2024-11-05 / 2025-03-26</div>
+  <div class="companion">Companion to the MCP Cheatsheet // Written against Spec 2024-11-05 / 2025-03-26 · Current Spec 2025-11-25</div>
 </div>
 
 <!-- nav -->
@@ -357,6 +416,7 @@ td.yl   { color: var(--yellow); }
     <a href="#content">Content Blocks</a>
     <a href="#convert">Text Conversion</a>
     <a href="#further">Further</a>
+    <button class="theme-toggle" title="toggle dark mode">◐ dark</button>
   </div>
 </div>
 
@@ -367,7 +427,7 @@ td.yl   { color: var(--yellow); }
   <h2>Beyond the <em class="or">Schema</em></h2>
   <div class="section-bar"></div>
   <p>The cheatsheet covers the surface: methods, schemas, primitives, what to call and what comes back. This covers what happens underneath. What the bytes look like on the wire. What the server process is actually doing while your tool runs. Why your cancel worked or didn't. How <code>@mcp.tool()</code> becomes a JSON Schema. How the schema becomes part of the model's prompt. The stuff that trips people up because nobody talks about it.</p>
-  <p>Scope: stdio transport (most common for local dev), FastMCP (Python) as the reference implementation, 2024-11-05 and 2025-03-26 spec versions. Where the two specs differ, called out explicitly.</p>
+  <p>Scope: stdio transport (most common for local dev), FastMCP (Python) as the reference implementation, written against the 2024-11-05 and 2025-03-26 spec versions. Where the two specs differ, called out explicitly. The current spec is 2025-11-25; short "since 2025-06-18/2025-11-25" notes flag where later revisions superseded what's described here.</p>
 
   <div class="info-box cy">
     <strong>How to read this</strong>
@@ -402,8 +462,8 @@ td.yl   { color: var(--yellow); }
     Stdout is the protocol channel. Any debug print to stdout, any library that logs to stdout, any traceback to stdout, corrupts the stream. The client will try to parse your stack trace as JSON-RPC, fail, and disconnect. All logging must go to stderr. FastMCP's <code>ctx.info()</code> flows back as <code>notifications/message</code> which is the correct path.
   </div>
 
-  <h3 class="cy">SSE: event stream framing</h3>
-  <p>The 2024-11-05 SSE transport uses two HTTP endpoints. The server maintains a long-lived GET for events flowing server-to-client. The client sends requests as POSTs to a separate endpoint. The POST response is a bare acknowledgement; the actual JSON-RPC response comes back over the open SSE stream, matched by id.</p>
+  <h3 class="cy">SSE: event stream framing (deprecated)</h3>
+  <p>The 2024-11-05 HTTP+SSE transport is deprecated, replaced by Streamable HTTP in 2025-03-26; it survives only for backwards compatibility. It uses two HTTP endpoints. The server maintains a long-lived GET for events flowing server-to-client. The client sends requests as POSTs to a separate endpoint. The POST response is a bare acknowledgement; the actual JSON-RPC response comes back over the open SSE stream, matched by id.</p>
 
   <pre class="cy"><span class="label">SSE event framing</span>
 <span class="cm">// GET /sse  (server → client stream)</span>
@@ -427,7 +487,7 @@ Content-Type: application/json
   <p>The asymmetric design surprises people. You POST a request, get a 202, then wait for the SSE stream to deliver the response. Your HTTP client is NOT waiting for the response on the POST socket. This matters for client implementations: you need a correlation table keyed by request id.</p>
 
   <h3 class="cy">Streamable HTTP (2025-03-26+)</h3>
-  <p>The newer spec folds everything onto a single endpoint. Client POSTs to <code>/mcp</code>. The server can return one of two content types: <code>application/json</code> for a single immediate response, or <code>text/event-stream</code> if the server wants to stream events (progress, responses, notifications). Same endpoint handles both directions via session id headers for reconnection.</p>
+  <p>The newer spec folds everything onto a single endpoint. Client POSTs to <code>/mcp</code>. The server can return one of two content types: <code>application/json</code> for a single immediate response, or <code>text/event-stream</code> if the server wants to stream events (progress, responses, notifications). Same endpoint handles both directions. The <code>MCP-Session-Id</code> header carries session identity only; reconnection/resumability uses SSE event ids, which the client replays via <code>Last-Event-ID</code> on a GET. Since 2025-06-18, HTTP clients MUST also send an <code>MCP-Protocol-Version</code> header on every request after initialization.</p>
 
   <div class="info-box warn">
     <strong>The gzip flush trap</strong>
@@ -533,7 +593,7 @@ Content-Type: application/json
     </li>
     <li>
       <strong>Client builds JSON-RPC envelope</strong>
-      Wraps as <code>{"jsonrpc":"2.0","id":N,"method":"tools/call","params":{"name":"...","arguments":{...}}}</code>. The id is a monotonically increasing integer per client.
+      Wraps as <code>{"jsonrpc":"2.0","id":N,"method":"tools/call","params":{"name":"...","arguments":{...}}}</code>. The id may be a string or a number; it MUST NOT be null and MUST NOT repeat within a session. Monotonically increasing integers are just the common convention.
     </li>
     <li>
       <strong>Client writes to transport</strong>
@@ -592,14 +652,14 @@ Content-Type: application/json
 <span class="dim">           ▼</span>
 <span class="dim">   ┌───────────────┐</span>
 <span class="dim">   │</span> <span class="acc">INITIALIZING</span>  <span class="dim">│</span>     server processes initialize, returns capabilities
-<span class="dim">   └───────┬───────┘</span>     ONLY legal inbound method: <span class="acc2">initialize</span>
+<span class="dim">   └───────┬───────┘</span>     ONLY legal inbound method: <span class="acc2">initialize (+ ping)</span>
 <span class="dim">           │</span>
 <span class="dim">           │</span>  server responds
 <span class="dim">           │</span>  client sends <span class="acc2">notifications/initialized</span>
 <span class="dim">           ▼</span>
 <span class="dim">   ┌───────────────┐</span>
 <span class="dim">   │</span>     <span class="acc">READY</span>     <span class="dim">│</span>     all capability methods legal (tools/*, resources/*, prompts/*)
-<span class="dim">   └───────┬───────┘</span>     notifications/*: cancel, progress, list_changed, updated
+<span class="dim">   └───────┬───────┘</span>     notifications/*: cancelled, progress, .../list_changed, resources/updated
 <span class="dim">           │</span>
 <span class="dim">           │</span>  transport closes OR fatal error
 <span class="dim">           ▼</span>
@@ -612,7 +672,7 @@ Content-Type: application/json
     <tr><th>State</th><th>Legal inbound</th><th>Error on illegal</th></tr>
     <tr>
       <td class="meth">CONNECTED</td>
-      <td><code>initialize</code></td>
+      <td><code>initialize</code> (+ <code>ping</code>; the spec also permits server logging before init completes)</td>
       <td>-32600 invalid request</td>
     </tr>
     <tr>
@@ -633,10 +693,11 @@ Content-Type: application/json
   </table>
 
   <h3 class="cy">Capability negotiation inside initialize</h3>
-  <p>The initialize exchange is where client and server agree on what the server actually supports. The client advertises what it can consume (roots, sampling), the server advertises what it provides (tools, resources, prompts). Each capability can have sub-flags:</p>
+  <p>The initialize exchange is where client and server agree on what the server actually supports. The client advertises what it can consume (roots, sampling; plus elicitation since 2025-06-18 and tasks since 2025-11-25), the server advertises what it provides (tools, resources, prompts). Each capability can have sub-flags:</p>
 
   <pre class="cy"><span class="label">server initialize response</span>
 {
+  <span class="key">"protocolVersion"</span>: <span class="st">"2025-03-26"</span>,
   <span class="key">"capabilities"</span>: {
     <span class="key">"tools"</span>:     { <span class="key">"listChanged"</span>: <span class="kw">true</span> },
     <span class="key">"resources"</span>: {
@@ -649,6 +710,10 @@ Content-Type: application/json
       <span class="key">"wrapster.concurrent_dispatch"</span>: <span class="kw">true</span>,
       <span class="key">"wrapster.output_handles"</span>: <span class="kw">true</span>
     }
+  },
+  <span class="key">"serverInfo"</span>: {
+    <span class="key">"name"</span>:    <span class="st">"wrapster"</span>,
+    <span class="key">"version"</span>: <span class="st">"1.0.0"</span>
   }
 }</pre>
 
@@ -688,11 +753,11 @@ Content-Type: application/json
 <span class="dim">  │                                                │</span>  handler's context becomes cancelled
 <span class="dim">  │                                                │</span>  HTTP client aborts the in-flight request
 <span class="dim">  │                                                │</span>  handler raises <span class="hi">CancelledError</span>
-<span class="dim">  │                                                │</span>  handler catches, returns isError:true
+<span class="dim">  │                                                │</span>  handler stops work, frees resources
 <span class="dim">  │                                                │</span>  <span class="hi">del cancelRegistry[42]</span>
+<span class="dim">  │                                                │</span>  <span class="acc">NO response sent for id 42</span>
 <span class="dim">  │                                                │</span>
-<span class="dim">  │</span>  response <span class="acc3">{id: 42, error: "cancelled"}</span>        <span class="dim">│</span>
-<span class="dim">  │</span> ◀──────────────────────────────────────────────<span class="dim">│</span></pre>
+<span class="dim">  │</span>  <span class="acc3">(client ignores any late response to 42)</span>      <span class="dim">│</span></pre>
 
   <h3 class="rd">Why it fails</h3>
   <table>
@@ -784,7 +849,7 @@ Content-Type: application/json
     include_subtasks: bool = <span class="fn">Field</span>(<span class="kw">False</span>, description=<span class="st">"Whether to include subtask issues"</span>)</pre>
 
   <h3>Stage 3: JSON Schema generation</h3>
-  <p>Pydantic's <code>model_json_schema()</code> walks the model and emits draft-07 JSON Schema. Primitive types map directly. <code>Optional[X]</code> becomes <code>{type: [X, "null"]}</code> or excluded from required. <code>Literal["a", "b"]</code> becomes <code>{enum: ["a", "b"]}</code>. Nested Pydantic models become <code>$ref</code> to a <code>$defs</code> entry.</p>
+  <p>Pydantic's <code>model_json_schema()</code> walks the model and emits Draft 2020-12 JSON Schema (the Pydantic v2 default; the current MCP spec assumes 2020-12 when no <code>$schema</code> is present). Primitive types map directly. <code>Optional[X]</code> becomes <code>anyOf: [{...}, {"type": "null"}]</code>. <code>Literal["a", "b"]</code> becomes <code>{enum: ["a", "b"]}</code>. Nested Pydantic models become <code>$ref</code> to a <code>$defs</code> entry.</p>
 
   <pre class="cy"><span class="label">resulting schema</span>
 {
@@ -928,9 +993,9 @@ parameters you must provide.
 <section id="content">
   <h2>Content <em class="or">Block</em> Anatomy</h2>
   <div class="section-bar"></div>
-  <p>The return value of a tool call is <code>{content: [ContentBlock], isError: bool}</code>. That <code>content</code> array is more interesting than people realize. You can return multiple blocks, mix types, and use the resource block type to avoid inlining content at all.</p>
+  <p>The return value of a tool call is <code>{content: [ContentBlock], isError: bool}</code> (since 2025-06-18 the result may also carry <code>structuredContent</code>, a JSON object validated against an optional <code>outputSchema</code> on the tool). That <code>content</code> array is more interesting than people realize. You can return multiple blocks, mix types, and use the <code>resource_link</code> block type (2025-06-18+) to avoid inlining content at all.</p>
 
-  <h3>The four types</h3>
+  <h3>The five types</h3>
   <pre><span class="label">text block</span>
 {
   <span class="key">"type"</span>: <span class="st">"text"</span>,
@@ -944,7 +1009,7 @@ parameters you must provide.
   <span class="key">"mimeType"</span>: <span class="st">"image/png"</span>
 }</pre>
 
-  <pre class="yl"><span class="label">resource block (embedded)</span>
+  <pre class="yl"><span class="label">resource block (embedded, requires text or blob)</span>
 {
   <span class="key">"type"</span>: <span class="st">"resource"</span>,
   <span class="key">"resource"</span>: {
@@ -952,6 +1017,14 @@ parameters you must provide.
     <span class="key">"mimeType"</span>: <span class="st">"text/markdown"</span>,
     <span class="key">"text"</span>:     <span class="st">"# Architecture Overview\n\n..."</span>
   }
+}</pre>
+
+  <pre class="yl"><span class="label">resource_link block (2025-06-18+, uri-only reference)</span>
+{
+  <span class="key">"type"</span>:     <span class="st">"resource_link"</span>,
+  <span class="key">"uri"</span>:      <span class="st">"confluence://TEAM/architecture-overview"</span>,
+  <span class="key">"name"</span>:     <span class="st">"architecture-overview"</span>,
+  <span class="key">"mimeType"</span>: <span class="st">"text/markdown"</span>
 }</pre>
 
   <pre><span class="label">audio block (2025-03-26+)</span>
@@ -977,13 +1050,13 @@ parameters you must provide.
       <td>Claude vision: ~1.5k tokens per 1024x1024 image regardless of file size</td>
     </tr>
     <tr>
-      <td class="meth">resource (inline)</td>
+      <td class="meth">resource (embedded)</td>
       <td>minimal</td>
       <td>same as text</td>
-      <td>Same cost as text but semantically addressable by uri</td>
+      <td>Same cost as text but semantically addressable by uri. Must carry text or blob; a uri alone is not valid.</td>
     </tr>
     <tr>
-      <td class="meth">resource (reference)</td>
+      <td class="meth">resource_link (2025-06-18+)</td>
       <td>near zero</td>
       <td>near zero until fetched</td>
       <td>Return just the uri, client fetches on demand via resources/read</td>
@@ -1219,8 +1292,8 @@ model output  →  <span class="hi">Markdown</span>  →  ADF / Storage  →  At
     </tr>
     <tr>
       <td class="meth">JSON-RPC batching</td>
-      <td>The spec allows batched requests. Most MCP servers don't handle them. Worth knowing what breaks.</td>
-      <td>JSON-RPC 2.0 spec, batch section</td>
+      <td>Only ever allowed in 2025-03-26 and earlier; removed in 2025-06-18. Each Streamable HTTP POST now carries a single message. Worth knowing so you don't build on it.</td>
+      <td>2025-06-18 changelog on modelcontextprotocol.io</td>
     </tr>
     <tr>
       <td class="meth">Resource subscriptions</td>
@@ -1239,7 +1312,7 @@ model output  →  <span class="hi">Markdown</span>  →  ADF / Storage  →  At
     </tr>
     <tr>
       <td class="meth">Streamable HTTP auth (OAuth 2.1)</td>
-      <td>The 2025-03-26 transport adds proper auth. Essential for hosted MCP servers.</td>
+      <td>The 2025-03-26 transport adds proper auth. Essential for hosted MCP servers. Since 2025-06-18 the auth model was reworked: MCP servers are OAuth resource servers with protected-resource metadata discovery (RFC 9728), and clients must use RFC 8707 resource indicators to bind tokens to the server. 2025-11-25 added OIDC discovery.</td>
       <td>MCP spec auth section</td>
     </tr>
     <tr>
@@ -1291,6 +1364,21 @@ window.addEventListener('scroll', () => {
     a.classList.toggle('active', a.getAttribute('href') === '#' + current);
   });
 });
+
+// dark mode toggle (initial theme set by the inline script in <body>)
+const themeButtons = [...document.querySelectorAll('.theme-toggle')];
+function paintTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  themeButtons.forEach(b => b.textContent = dark ? '◑ light' : '◐ dark');
+}
+themeButtons.forEach(b => b.addEventListener('click', () => {
+  const dark = document.documentElement.getAttribute('data-theme') !== 'dark';
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+  paintTheme();
+}));
+paintTheme();
 </script>
 </body>
 </html>

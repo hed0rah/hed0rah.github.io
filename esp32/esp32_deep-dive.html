@@ -458,9 +458,51 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   .masthead { padding: 40px 20px 28px; }
 }
 @media (max-width: 1280px) { .spine { display: none; } }
+
+/* dark mode -- ink + gunmetal + teal/orange accents */
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:        #16181C;
+  --surface:   #101217;
+  --surface2:  #20242B;
+  --border:    #3A3F47;
+  --border2:   #262A31;
+  --orange:    #FF4D00;
+  --cyan:      #08F9DF;
+  --yellow:    #E0913E;
+  --red:       #E04858;
+  --green:     #4DC26B;
+  --magenta:   #C97FD4;
+  --dim:       #8A9099;
+  --dim2:      #5A616A;
+  --text:      #C9CDD3;
+  --bright:    #ECE9DF;
+}
+:root[data-theme="dark"] ::selection { background: #08F9DF; color: #16181C; }
+:root[data-theme="dark"] pre,
+:root[data-theme="dark"] .diagram {
+  background: #101217;
+  border-top-color: #2A2E35;
+  border-right-color: #2A2E35;
+  border-bottom-color: #2A2E35;
+}
+:root[data-theme="dark"] pre .label { color: #565B63; }
+:root[data-theme="dark"] pre .cm, :root[data-theme="dark"] .diagram .dim { color: #62676F; }
+:root[data-theme="dark"] pre .kw { color: #F56A31; }
+:root[data-theme="dark"] pre .key, :root[data-theme="dark"] .diagram .acc2 { color: #5CD9CE; }
+:root[data-theme="dark"] .radial { background: rgba(16, 18, 23, 0.96); }
+.theme-toggle { white-space: nowrap; }
 </style>
 </head>
 <body>
+<script>
+(function () {
+  const saved = localStorage.getItem('theme');
+  const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+})();
+</script>
 
 <!-- masthead -->
 <div class="masthead">
@@ -490,15 +532,19 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   <a href="#brick"><span>14</span>Brick Recovery</a>
   <a href="#further"><span>15</span>Further</a>
   <button class="side-dial" id="sideDial" title="radial section dial">◎ dial</button>
+  <button class="side-dial theme-toggle" title="toggle dark mode">◐ dark</button>
 </nav>
 
 <!-- nav -->
 <div class="nav">
   <div class="nav-inner">
     <span class="nav-brand">ESP32 Deep Dive</span>
-    <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
-      <span class="num" id="navNum">01 //</span> <span id="navLabel">Intro</span> <span class="nav-hint">◎</span>
-    </button>
+    <span style="display:flex;gap:6px">
+      <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
+        <span class="num" id="navNum">01 //</span> <span id="navLabel">Intro</span> <span class="nav-hint">◎</span>
+      </button>
+      <button class="nav-current theme-toggle" title="toggle dark mode">◐</button>
+    </span>
   </div>
 </div>
 
@@ -514,7 +560,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 <section id="intro" data-num="01">
   <h2>Beyond the <em class="or">Datasheet</em></h2>
   <div class="section-bar"></div>
-  <p>What happens between <code>esptool.py write_flash</code> and a booting chip: strap pins, the SLIP wire protocol, the stub loader, flash geometry, eFuses, JTAG, brick recovery. Reference tooling is <code>esptool.py</code> v4.x, <code>espefuse.py</code>, <code>espsecure.py</code>, <code>idf.py</code>, and Espressif's OpenOCD fork. The family matrix lives in <a href="#variants">Variants</a>, the CPU architecture detail in <a href="#cores">Cores</a>.</p>
+  <p>What happens between <code>esptool.py write_flash</code> and a booting chip: strap pins, the SLIP wire protocol, the stub loader, flash geometry, eFuses, JTAG, brick recovery. Reference tooling is <code>esptool.py</code> v4.x, <code>espefuse.py</code>, <code>espsecure.py</code>, <code>idf.py</code>, and Espressif's OpenOCD fork. Note that esptool v5 (2025) renamed commands and options to dashed forms (<code>write-flash</code>, <code>--flash-mode</code>, etc.); this page uses the v4 spellings, which still work as deprecated aliases. The family matrix lives in <a href="#variants">Variants</a>, the CPU architecture detail in <a href="#cores">Cores</a>.</p>
 
   <h3>The board on your desk</h3>
 
@@ -749,7 +795,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   <p>C6, C5, and P4 pair the main core with a second low-power RISC-V core (20 / 40 / 40 MHz) that keeps running through deep sleep. It's the successor to the classic ULP FSM — except you program it in C with the ULP-RISC-V toolchain instead of a four-instruction assembly language.</p>
 
   <h4>Debug and toolchain</h4>
-  <p>This is where RISC-V quietly wins. <code>riscv32-esp-elf-</code> is ordinary mainline GCC/LLVM, objdump output reads like the ISA spec, mainline GDB unwinds it, and you get 4 hardware breakpoints instead of Xtensa's 2. If you live in disassembly or on the JTAG port, the RISC-V chips are simply nicer neighborhoods.</p>
+  <p>This is where RISC-V quietly wins. <code>riscv32-esp-elf-</code> is ordinary mainline GCC/LLVM, objdump output reads like the ISA spec, mainline GDB unwinds it, and you get more hardware breakpoints than Xtensa's 2 (8 on the C3, 4 on C6/H2-class parts). If you live in disassembly or on the JTAG port, the RISC-V chips are simply nicer neighborhoods.</p>
 
   <div class="info-box">
     <strong>Moving code between the two</strong>
@@ -804,7 +850,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
     <tr>
       <td class="meth">ESP32-C5</td>
       <td>GPIO28 (low = download); 3-pin code GPIO26/27/28</td>
-      <td>GPIO27 (ROM log), GPIO7 (JTAG select — no internal pull, must be driven). Download Boot 0 (USB/UART/SPI): GPIO28=0, GPIO27=1. Download Boot 1 (UART/SDIO): GPIO27=0, GPIO28=0.</td>
+      <td>GPIO27 (ROM log), GPIO7 (JTAG select — no internal pull, must be driven). Download boot: GPIO28=0, GPIO27=1 (GPIO27 must be high for serial download; GPIO27=0 with GPIO28=0 is an invalid combination).</td>
     </tr>
     <tr>
       <td class="meth">ESP32-P4</td>
@@ -815,7 +861,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 
   <div class="info-box warn">
     <strong>C5 and P4 use multi-pin boot codes</strong>
-    Unlike the classic/S/C3/C6/H2 chips where a single GPIO (0 or 9) low = download mode, the C5 and P4 use a 3- and 4-pin strapping code respectively. For C5: GPIO28 low triggers download mode; GPIO27 selects between Download Boot 0 (USB Serial/JTAG + UART) and Download Boot 1 (UART + SDIO). For P4: GPIO35 low + GPIO36 high = Joint Download Boot (USB OTG FS + UART + SPI Slave). Neither C5 nor P4 has the auto-reset transistor circuit on most dev boards — check your specific module.
+    Unlike the classic/S/C3/C6/H2 chips where a single GPIO (0 or 9) low = download mode, the C5 and P4 use a 3- and 4-pin strapping code respectively. For C5: GPIO28 low with GPIO27 high triggers download mode (GPIO27 low + GPIO28 low is an invalid combination). For P4: GPIO35 low + GPIO36 high = Joint Download Boot (USB OTG FS + UART + SPI Slave). Neither C5 nor P4 has the auto-reset transistor circuit on most dev boards — check your specific module.
   </div>
 
   <div class="info-box">
@@ -972,14 +1018,14 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
     <tr><td class="meth">0x0A</td><td>READ_REG</td><td>ROM + stub</td><td>Read a 32-bit memory-mapped register.</td></tr>
     <tr><td class="meth">0x0B</td><td>SPI_SET_PARAMS</td><td>ROM + stub</td><td>Tell SPI controller flash size + page/sector geometry.</td></tr>
     <tr><td class="meth">0x0D</td><td>SPI_ATTACH</td><td>ROM + stub</td><td>Configure SPI pins (relevant for octal/quad PSRAM combos).</td></tr>
-    <tr><td class="meth">0x0F</td><td>CHANGE_BAUDRATE</td><td>stub only</td><td>Switch UART baud mid-session.</td></tr>
-    <tr><td class="meth">0x10</td><td>FLASH_DEFL_BEGIN</td><td>stub only</td><td>Begin compressed flash write (zlib).</td></tr>
-    <tr><td class="meth">0x11</td><td>FLASH_DEFL_DATA</td><td>stub only</td><td>One block of deflate-compressed data.</td></tr>
-    <tr><td class="meth">0x12</td><td>FLASH_DEFL_END</td><td>stub only</td><td>End compressed flash session.</td></tr>
-    <tr><td class="meth">0x13</td><td>SPI_FLASH_MD5</td><td>stub only</td><td>Compute MD5 over a flash region; used by verify_flash.</td></tr>
-    <tr><td class="meth">0x14</td><td>ERASE_FLASH</td><td>stub only</td><td>Whole-chip erase via SPI flash command 0xC7.</td></tr>
-    <tr><td class="meth">0x15</td><td>ERASE_REGION</td><td>stub only</td><td>4KB-aligned sector erase loop.</td></tr>
-    <tr><td class="meth">0x16</td><td>READ_FLASH</td><td>stub only</td><td>Stream a flash region back to host.</td></tr>
+    <tr><td class="meth">0x0F</td><td>CHANGE_BAUDRATE</td><td>ESP32+ ROM + stub</td><td>Switch UART baud mid-session. Only the ESP8266 ROM lacks it.</td></tr>
+    <tr><td class="meth">0x10</td><td>FLASH_DEFL_BEGIN</td><td>ESP32+ ROM + stub</td><td>Begin compressed flash write (zlib).</td></tr>
+    <tr><td class="meth">0x11</td><td>FLASH_DEFL_DATA</td><td>ESP32+ ROM + stub</td><td>One block of deflate-compressed data.</td></tr>
+    <tr><td class="meth">0x12</td><td>FLASH_DEFL_END</td><td>ESP32+ ROM + stub</td><td>End compressed flash session.</td></tr>
+    <tr><td class="meth">0x13</td><td>SPI_FLASH_MD5</td><td>ESP32+ ROM + stub</td><td>Compute MD5 over a flash region; used by verify_flash.</td></tr>
+    <tr><td class="meth">0xD0</td><td>ERASE_FLASH</td><td>stub only</td><td>Whole-chip erase via SPI flash command 0xC7.</td></tr>
+    <tr><td class="meth">0xD1</td><td>ERASE_REGION</td><td>stub only</td><td>4KB-aligned sector erase loop.</td></tr>
+    <tr><td class="meth">0xD2</td><td>READ_FLASH</td><td>stub only</td><td>Stream a flash region back to host.</td></tr>
   </table>
 
   <h3 class="cy">The SYNC handshake</h3>
@@ -995,7 +1041,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 <span class="cm">// host sleeps ~100ms between sync attempts to let chip latch baud rate</span>
 <span class="cm">// chip echoes empty SYNC response when it accepts</span></pre>
 
-  <p>The eight 0x55 bytes (binary <code>01010101</code>) are deliberate: alternating bits help a UART auto-baud routine lock onto the host's baud rate. ESP32 ROMs do auto-baud detection on the first SYNC, which is why esptool can connect at any rate from 9600 up to 115200 without telling the chip in advance.</p>
+  <p>The 32 bytes of 0x55 (binary <code>01010101</code>) are deliberate: alternating bits help a UART auto-baud routine lock onto the host's baud rate. ESP32 ROMs do auto-baud detection on the first SYNC, which is why esptool can connect at any rate from 9600 up to 115200 without telling the chip in advance.</p>
 
   <div class="info-box danger">
     <strong>"Failed to connect" is almost always strapping</strong>
@@ -1027,7 +1073,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 <section id="stub" data-num="06">
   <h2>The <em class="cy">Stub</em> Loader</h2>
   <div class="section-bar cy"></div>
-  <p>The ROM bootloader on every ESP32 chip is fixed silicon-or-mask-ROM and can't be patched. It's also pretty minimal: no compression, no faster baud, no MD5 verification, slow flash writes. To work around this, esptool uploads a small program to RAM at the start of every session called the <em>stub loader</em>. The stub re-implements the same protocol but with extra commands and fewer bugs.</p>
+  <p>The ROM bootloader on every ESP32 chip is fixed silicon-or-mask-ROM and can't be patched. It's also slow at flash writes and carries per-chip quirks (the ESP8266 ROM additionally lacks compression, baud switching, and MD5 verification). To work around this, esptool uploads a small program to RAM at the start of every session called the <em>stub loader</em>. The stub re-implements the same protocol but with extra commands and fewer bugs.</p>
 
   <h3 class="cy">Stub upload sequence</h3>
 
@@ -1069,16 +1115,16 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
       <th>ROM only</th>
       <th>With stub</th>
     </tr>
-    <tr><td class="meth">Max baud</td><td>115200 (auto-baud limit)</td><td>921600+ via CHANGE_BAUDRATE</td></tr>
-    <tr><td class="meth">Compressed flash</td><td>no</td><td>yes (zlib via FLASH_DEFL_*)</td></tr>
-    <tr><td class="meth">Flash MD5</td><td>no</td><td>yes (SPI_FLASH_MD5)</td></tr>
+    <tr><td class="meth">Max baud</td><td>921600+ on ESP32+ (ESP8266 ROM is stuck at its boot rate)</td><td>921600+ via CHANGE_BAUDRATE on every chip</td></tr>
+    <tr><td class="meth">Compressed flash</td><td>yes on ESP32+, no on ESP8266</td><td>yes (zlib via FLASH_DEFL_*)</td></tr>
+    <tr><td class="meth">Flash MD5</td><td>yes on ESP32+, no on ESP8266</td><td>yes (SPI_FLASH_MD5)</td></tr>
     <tr><td class="meth">Read flash</td><td>no</td><td>yes (READ_FLASH streams blocks)</td></tr>
     <tr><td class="meth">Write throughput</td><td>~22 KB/s typical</td><td>200-300 KB/s typical</td></tr>
     <tr><td class="meth">Block buffering</td><td>flush per block</td><td>queue blocks while previous flushes</td></tr>
   </table>
 
   <h3 class="cy">Where the stub lives in RAM</h3>
-  <p>Stub addresses are chip-specific because each variant has different IRAM/DRAM layouts and the stub has to fit somewhere that won't collide with the ROM bootloader's own variables. esptool ships pre-compiled stubs (one per chip) embedded as hex blobs in the source.</p>
+  <p>Stub addresses are chip-specific because each variant has different IRAM/DRAM layouts and the stub has to fit somewhere that won't collide with the ROM bootloader's own variables. esptool ships pre-compiled stubs (one per chip) as base64-encoded JSON blobs in the package.</p>
 
   <table>
     <tr>
@@ -1087,22 +1133,22 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
       <th>Stub data load</th>
       <th>Source location</th>
     </tr>
-    <tr><td class="meth">ESP32</td><td>0x4009_0000</td><td>0x3FFE_8000</td><td>flasher_stub/stub_flasher_chip.bin</td></tr>
-    <tr><td class="meth">ESP32-S2</td><td>0x4002_4000</td><td>0x3FFE_8000</td><td>same dir, different binary</td></tr>
-    <tr><td class="meth">ESP32-S3</td><td>0x4037_8000</td><td>0x3FCB_8000</td><td>same dir</td></tr>
-    <tr><td class="meth">ESP32-C3</td><td>0x4038_0000</td><td>0x3FCD_C000</td><td>same dir</td></tr>
-    <tr><td class="meth">ESP32-C6</td><td>0x4080_8000</td><td>0x4082_8000</td><td>same dir</td></tr>
+    <tr><td class="meth">ESP32</td><td>0x400B_E000</td><td>0x3FFD_EBA8</td><td>esptool/targets/stub_flasher/1/esp32.json</td></tr>
+    <tr><td class="meth">ESP32-S2</td><td>0x4002_8000</td><td>0x3FFE_2BFC</td><td>same dir, esp32s2.json</td></tr>
+    <tr><td class="meth">ESP32-S3</td><td>0x4037_8000</td><td>0x3FCB_2BFC</td><td>same dir, esp32s3.json</td></tr>
+    <tr><td class="meth">ESP32-C3</td><td>0x4038_0000</td><td>0x3FC9_6BB4</td><td>same dir, esp32c3.json</td></tr>
+    <tr><td class="meth">ESP32-C6</td><td>0x4080_0000</td><td>0x4085_2BB0</td><td>same dir, esp32c6.json</td></tr>
   </table>
 
   <h3 class="cy">Skipping the stub</h3>
-  <p>Two situations want raw ROM mode: when the stub itself is misbehaving (rare, but happens on early production chips and on some clones), and when you're testing pure ROM bootloader behavior. Pass <code>--no-stub</code> to esptool. You lose compression, MD5, fast baud, and read_flash. Most operations still work, just slower.</p>
+  <p>Two situations want raw ROM mode: when the stub itself is misbehaving (rare, but happens on early production chips and on some clones), and when you're testing pure ROM bootloader behavior. Pass <code>--no-stub</code> to esptool. You lose the stub's write speed and its fast READ_FLASH (reads fall back to the ROM's slow path); on ESP8266 you also lose compression, MD5, and baud switching. Most operations still work, just slower.</p>
 
   <pre class="cy"><span class="label">stub vs no-stub</span>
 <span class="kw">esptool.py</span> <span class="flag">--port</span> /dev/ttyUSB0 <span class="kw">write_flash</span> <span class="num">0x10000</span> firmware.bin
-<span class="cm"># default: uploads stub, uses compressed write at 460800 baud</span>
+<span class="cm"># default: uploads stub, uses compressed write at 115200 baud (raise with -b)</span>
 
 <span class="kw">esptool.py</span> <span class="flag">--no-stub</span> <span class="flag">--port</span> /dev/ttyUSB0 <span class="kw">write_flash</span> <span class="num">0x10000</span> firmware.bin
-<span class="cm"># raw ROM: uncompressed, 115200 baud max, no md5 verify after</span></pre>
+<span class="cm"># raw ROM: no stub niceties, slower writes and reads</span></pre>
 
   <div class="info-box warn">
     <strong>The "Stub running..." line that hides errors</strong>
@@ -1144,7 +1190,9 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 <span class="num">0x008000</span>  <span class="dim">├─────────────────────────────────┤</span>
           <span class="dim">│  </span><span class="hi">partition table</span><span class="dim">                │</span>  <span class="cm">// 4KB, ends with MD5 entry</span>
 <span class="num">0x009000</span>  <span class="dim">├─────────────────────────────────┤</span>
-          <span class="dim">│  </span><span class="acc3">nvs</span><span class="dim"> (data/wifi)                │</span>  <span class="cm">// 24KB key-value store</span>
+          <span class="dim">│  </span><span class="acc3">nvs</span><span class="dim"> (data/wifi)                │</span>  <span class="cm">// 16KB key-value store</span>
+<span class="num">0x00d000</span>  <span class="dim">├─────────────────────────────────┤</span>
+          <span class="dim">│  </span><span class="acc3">otadata</span><span class="dim">                        │</span>  <span class="cm">// 8KB, holds active OTA slot</span>
 <span class="num">0x00f000</span>  <span class="dim">├─────────────────────────────────┤</span>
           <span class="dim">│  </span><span class="acc3">phy_init</span><span class="dim">                       │</span>  <span class="cm">// 4KB RF calibration</span>
 <span class="num">0x010000</span>  <span class="dim">├─────────────────────────────────┤</span>
@@ -1157,8 +1205,6 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 <span class="num">0x210000</span>  <span class="dim">├─────────────────────────────────┤</span>
           <span class="dim">│  </span><span class="acc3">spiffs</span><span class="dim"> / </span><span class="acc3">littlefs</span><span class="dim"> / userdata   │</span>
           <span class="dim">│                                 │</span>
-<span class="num">0x3FF000</span>  <span class="dim">├─────────────────────────────────┤</span>
-          <span class="dim">│  </span><span class="acc3">otadata</span><span class="dim">                        │</span>  <span class="cm">// 8KB, holds active OTA slot</span>
 <span class="num">0x400000</span>  <span class="dim">└─────────────────────────────────┘</span>  <span class="cm">// end of 4MB flash</span></pre>
 
   <h3 class="yl">The partition table</h3>
@@ -1251,7 +1297,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
       <th>Notes</th>
     </tr>
     <tr><td class="meth">--port / -p</td><td>auto-detect</td><td>Serial device. Linux: <code>/dev/ttyUSB0</code>, <code>/dev/ttyACM0</code>. macOS: <code>/dev/cu.usbserial-XXXX</code>. Windows: <code>COM5</code>.</td></tr>
-    <tr><td class="meth">--baud / -b</td><td>115200</td><td>Initial baud. Stub bumps to 460800 unless overridden. Some CH340 clones max at 921600; FTDI does 3M.</td></tr>
+    <tr><td class="meth">--baud / -b</td><td>115200</td><td>Session baud. esptool never auto-raises it; pass <code>-b 460800</code> or set <code>ESPTOOL_BAUD</code> to go faster (it's <code>idf.py flash</code> that defaults to 460800). Some CH340 clones max at 921600; FTDI does 3M.</td></tr>
     <tr><td class="meth">--chip / -c</td><td>auto</td><td>esp32, esp32s2, esp32s3, esp32c3, esp32c6, esp32h2, esp32p4. Auto works but is slower because it has to fingerprint.</td></tr>
     <tr><td class="meth">--connect-attempts</td><td>7</td><td>How many times to retry SYNC before giving up.</td></tr>
     <tr><td class="meth">--trace</td><td>off</td><td>Print every byte going in and out of the serial port. Indispensable for debugging.</td></tr>
@@ -1288,7 +1334,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
   <span class="flag">--erase-all</span>                  <span class="cm"># erase whole chip first (optional)</span>
   <span class="flag">--verify</span>                      <span class="cm"># MD5 check after write</span>
   <span class="flag">--encrypt</span>                     <span class="cm"># encrypt during write (flash encryption enabled chips)</span>
-  <span class="flag">--ignore-flash-encryption-efuse-setting</span>   <span class="cm"># override safety check</span>
+  <span class="flag">--ignore-flash-encryption-efuse-setting</span>   <span class="cm"># override safety check (v5: --ignore-flash-enc-efuse)</span>
   <span class="num">0x1000</span>  bootloader.bin
   <span class="num">0x8000</span>  partitions.bin
   <span class="num">0x10000</span> firmware.bin
@@ -1560,7 +1606,7 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
       <th>V1 (classic ESP32 only)</th>
       <th>V2 (S2/S3/C3/C6/H2 + classic v3)</th>
     </tr>
-    <tr><td class="meth">Algorithm</td><td>AES-256 ECB + SHA-256 digest</td><td>RSA-PSS-3072 or ECDSA-P256</td></tr>
+    <tr><td class="meth">Algorithm</td><td>AES-256 ECB + SHA-512 digest of the ciphertext</td><td>RSA-PSS-3072 or ECDSA-P256</td></tr>
     <tr><td class="meth">Key in eFuse</td><td>256-bit symmetric (BLK2)</td><td>SHA-256 digest of public key (1-3 slots)</td></tr>
     <tr><td class="meth">Key revocation</td><td>impossible (single key, burned forever)</td><td>up to 3 slots, individually revocable</td></tr>
     <tr><td class="meth">Image trailer</td><td>32-byte digest</td><td>signature block (1216 bytes per signature)</td></tr>
@@ -1610,10 +1656,11 @@ A1 B2 <span class="kw">C0</span> D4 <span class="kw">DB</span> F6
 <span class="kw">Ctrl+T  Ctrl+R</span>  reset chip (hardware EN pulse via DTR)
 <span class="kw">Ctrl+T  Ctrl+F</span>  build &amp; flash app, then resume monitoring
 <span class="kw">Ctrl+T  Ctrl+A</span>  build &amp; flash app only (no monitor break)
-<span class="kw">Ctrl+T  Ctrl+P</span>  pause chip (suspend output)
+<span class="kw">Ctrl+T  Ctrl+P</span>  reset chip into bootloader (download mode, button-less)
 <span class="kw">Ctrl+T  Ctrl+Y</span>  toggle log printing on/off
-<span class="kw">Ctrl+T  Ctrl+L</span>  toggle timestamp prefix on each line
-<span class="kw">Ctrl+T  Ctrl+T</span>  reset chip + enter download mode (button-less)
+<span class="kw">Ctrl+T  Ctrl+L</span>  toggle saving log output to file
+<span class="kw">Ctrl+T  Ctrl+I</span>  toggle timestamp prefix on each line
+<span class="kw">Ctrl+T  Ctrl+T</span>  send the literal Ctrl+T character to the target
 <span class="kw">Ctrl+]</span>          quit (this is also Ctrl+5 on some keyboards)</pre>
 
   <p>The Ctrl+T sequence exists because Ctrl+] is the GNU screen escape and they didn't want collisions. The trade-off is that anyone unfamiliar with the binding spends a minute discovering they can't quit without a kill -9. <code>Ctrl+]</code> is the safety hatch.</p>
@@ -1746,9 +1793,9 @@ build/
     <tr><td class="meth">ESP32</td><td>GPIO13</td><td>GPIO14</td><td>GPIO12</td><td>GPIO15</td><td>no, external probe</td></tr>
     <tr><td class="meth">ESP32-S2</td><td>GPIO39</td><td>GPIO42</td><td>GPIO41</td><td>GPIO40</td><td>no, external probe</td></tr>
     <tr><td class="meth">ESP32-S3</td><td>GPIO39</td><td>GPIO42</td><td>GPIO41</td><td>GPIO40</td><td>yes, native USB-Serial-JTAG</td></tr>
-    <tr><td class="meth">ESP32-C3</td><td>GPIO6</td><td>GPIO5</td><td>GPIO4</td><td>GPIO7</td><td>yes, native USB-Serial-JTAG</td></tr>
-    <tr><td class="meth">ESP32-C6</td><td>GPIO6</td><td>GPIO5</td><td>GPIO4</td><td>GPIO7</td><td>yes, native USB-Serial-JTAG</td></tr>
-    <tr><td class="meth">ESP32-H2</td><td>GPIO27</td><td>GPIO26</td><td>GPIO25</td><td>GPIO28</td><td>yes</td></tr>
+    <tr><td class="meth">ESP32-C3</td><td>GPIO6</td><td>GPIO4</td><td>GPIO5</td><td>GPIO7</td><td>yes, native USB-Serial-JTAG</td></tr>
+    <tr><td class="meth">ESP32-C6</td><td>GPIO6</td><td>GPIO4</td><td>GPIO5</td><td>GPIO7</td><td>yes, native USB-Serial-JTAG</td></tr>
+    <tr><td class="meth">ESP32-H2</td><td>GPIO4</td><td>GPIO2</td><td>GPIO5</td><td>GPIO3</td><td>yes</td></tr>
   </table>
 
   <p>Classic ESP32 needs an external probe (FT2232H, J-Link, Olimex ARM-USB-OCD, ESP-Prog). The newer chips with built-in USB-Serial-JTAG let you skip the probe entirely: plug the board's USB-OTG port into your host and OpenOCD talks JTAG over the same USB connection that's giving you the serial console.</p>
@@ -1801,7 +1848,7 @@ build/
 
   <div class="info-box warn">
     <strong>Hardware breakpoints are scarce</strong>
-    Xtensa LX6 has 2 hardware breakpoints + 2 watchpoints, total. RISC-V variants typically have 4. Software breakpoints (regular <code>b</code>) work in IRAM/DRAM (where ROM/IDF can patch instructions) but not in IROM (flash-mapped code, read-only). Use <code>hb</code> (hardware breakpoint) when setting breakpoints on flash-resident code or you'll get the cryptic "cannot insert breakpoint" error.
+    Xtensa LX6 has 2 hardware breakpoints + 2 watchpoints, total. The RISC-V chips do better: ESP32-C3 has 8 breakpoints + 8 watchpoints; C6/H2-class parts have 4. Software breakpoints (regular <code>b</code>) work in IRAM/DRAM (where ROM/IDF can patch instructions) but not in IROM (flash-mapped code, read-only). Use <code>hb</code> (hardware breakpoint) when setting breakpoints on flash-resident code or you'll get the cryptic "cannot insert breakpoint" error.
   </div>
 
   <h3 class="yl">idf.py gdb / openocd shortcuts</h3>
@@ -1877,8 +1924,8 @@ build/
 
   <pre class="rd"><span class="label">capture the ROM bootloader output</span>
 <span class="cm"># put board in normal boot mode (don't hold BOOT)</span>
-<span class="cm"># open serial at 115200 (most chips) or 74880 (classic ESP32 ROM is 74880!)</span>
-<span class="kw">picocom</span> <span class="flag">-b</span> 74880 /dev/ttyUSB0
+<span class="cm"># open serial at 115200 (74880 only for rare 26MHz-crystal hardware)</span>
+<span class="kw">picocom</span> <span class="flag">-b</span> 115200 /dev/ttyUSB0
 <span class="cm"># press EN/RST</span>
 
 <span class="cm"># on classic ESP32 you'll see the cryptic ROM line first:</span>
@@ -1893,7 +1940,7 @@ build/
 <span class="cm"># entry 0x400805e4</span>
 <span class="cm"># [then second-stage bootloader takes over at 115200]</span></pre>
 
-  <p>The ROM speaks at 74880 baud (an artifact of the 26MHz crystal divisor). If the second-stage bootloader never starts, you'll only see ROM output. <code>rst:0x10</code> means RTC_WDT_RTC_RESET — a watchdog timeout caused the reset. <code>boot:0x13</code> is SPI fast flash boot, the normal mode. Other <code>boot</code> codes indicate strap pin states. The header lines are dense but they tell you exactly what mode the chip thinks it's in.</p>
+  <p>The ROM speaks at 115200 baud on standard 40MHz-crystal boards; the odd 74880 rate (an artifact of the 26MHz crystal divisor) belongs to the ESP8266 and the rare 26MHz-crystal ESP32 boards. If the second-stage bootloader never starts, you'll only see ROM output. <code>rst:0x10</code> means RTC_WDT_RTC_RESET — a watchdog timeout caused the reset. <code>boot:0x13</code> is SPI fast flash boot, the normal mode. Other <code>boot</code> codes indicate strap pin states. The header lines are dense but they tell you exactly what mode the chip thinks it's in.</p>
 
   <h3 class="rd">Reset reason codes</h3>
 
@@ -1999,7 +2046,7 @@ build/
     <tr>
       <td class="meth">DFU on S2/S3</td>
       <td>USB DFU via ROM. Alternative to UART download for chips with native USB.</td>
-      <td><code>dfu-util -d 303a:0002</code>, ESP-IDF DFU docs</td>
+      <td><code>dfu-util -d 303a:0002</code> (S2) or <code>303a:0009</code> (S3), ESP-IDF DFU docs</td>
     </tr>
     <tr>
       <td class="meth">USB-Serial-JTAG protocol</td>
@@ -2119,6 +2166,21 @@ document.addEventListener('keydown', e => {
 window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
 window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
 activate(location.hash.slice(1));
+
+// dark mode toggle (initial theme set by the inline script in <body>)
+const themeButtons = [...document.querySelectorAll('.theme-toggle')];
+function paintTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  themeButtons.forEach(b => b.textContent = (b.classList.contains('side-dial') ? (dark ? '◑ light' : '◐ dark') : (dark ? '◑' : '◐')));
+}
+themeButtons.forEach(b => b.addEventListener('click', () => {
+  const dark = document.documentElement.getAttribute('data-theme') !== 'dark';
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+  paintTheme();
+}));
+paintTheme();
 </script>
 </body>
 </html>

@@ -7,7 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap">
 <style>
-:root{--paper:#F2F1EE;--surface:#FFF;--surface2:#C8C7C1;--plate:#1A1918;--plate-bd:#2E2D2A;--plate-tx:#CCCBC4;--plate-dim:#5A5952;--text:#4A4A4A;--bright:#0D0D0D;--dim:#8A8A8A;--dim2:#AAA;--bd:#1A1A1A;--bd2:#D0CFC8;--orange:#E85000;--or-dk:#F09030;--cyan:#007870;--cy-dk:#3AB8AC;--yellow:#906500;--yl-dk:#C8A030;--red:#BF1020;--rd-dk:#B85A6A;--green:#287A38;--mg-dk:#B07AB8}
+:root{--paper:#F2F1EE;--surface:#FFF;--surface2:#C8C7C1;--plate:#1A1918;--plate-bd:#2E2D2A;--plate-tx:#CCCBC4;--plate-dim:#5A5952;--text:#4A4A4A;--bright:#0D0D0D;--dim:#8A8A8A;--dim2:#AAA;--bd:#1A1A1A;--bd2:#D0CFC8;--orange:#E85000;--or-dk:#F09030;--cyan:#007870;--cy-dk:#3AB8AC;--yellow:#906500;--yl-dk:#C8A030;--red:#BF1020;--rd-dk:#B85A6A;--green:#287A38;--mg-dk:#B07AB8;color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark;--paper:#16181C;--surface:#101217;--surface2:#20242B;--plate:#101217;--plate-bd:#262A31;--plate-tx:#C9CDD3;--text:#C9CDD3;--bright:#ECE9DF;--dim:#8A9099;--dim2:#5A616A;--bd:#3A3F47;--bd2:#262A31;--orange:#FF4D00;--cyan:#08F9DF;--yellow:#E0913E;--red:#E04858;--green:#4DC26B}
+:root[data-theme="dark"] ::selection{background:#08F9DF;color:#16181C}
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--paper);color:var(--text);font-family:'Space Mono',monospace;font-size:12px;line-height:1.7;counter-reset:section}
@@ -24,6 +26,8 @@ body{margin:0;background:var(--paper);color:var(--text);font-family:'Space Mono'
 nav.toc{position:sticky;top:0;background:var(--paper);border-bottom:1px solid var(--bd);z-index:100;padding:12px 0;display:flex;gap:24px;overflow-x:auto;font-size:10px;letter-spacing:2px;text-transform:uppercase}
 nav.toc a{color:var(--text);text-decoration:none;border-bottom:1px solid transparent;padding-bottom:2px;transition:.15s;white-space:nowrap}
 nav.toc a:hover{color:var(--orange);border-color:var(--orange)}
+.theme-toggle{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;background:none;border:none;border-bottom:1px solid transparent;padding:0 0 2px;color:var(--text);cursor:pointer;margin-left:auto;white-space:nowrap;transition:.15s}
+.theme-toggle:hover{color:var(--orange);border-color:var(--orange)}
 section{padding:48px 0;border-bottom:1px solid var(--bd2);counter-increment:section}
 section:last-of-type{border-bottom:none}
 section h2{font-family:'Bebas Neue',sans-serif;font-size:32px;font-weight:400;letter-spacing:3px;color:var(--bright);margin:0;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
@@ -124,15 +128,16 @@ svg .node[data-heat="medium"] rect{stroke:var(--cy-dk);stroke-width:1.5}
 @media (max-width:1180px){.spine{display:none}}
 @media (max-width:760px){.container{padding:0 16px}nav.toc{font-size:9px;gap:14px}.cards{grid-template-columns:1fr}.search-input{width:130px}.kbd-hint{display:none}section{padding:32px 0}section h2{font-size:24px}.detail{padding:20px 16px}.detail h3{padding-right:0}.copy-link-btn{position:static;margin:8px 0 0}}
 </style></head><body>
+<script>(function(){var s=localStorage.getItem('theme');var d=s?s==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.setAttribute('data-theme','dark');})();</script>
 <div class="top-bar"></div>
-<div class="spine">MCP // SECURITY // STDIO // SSE // HTTP // OAUTH // 2026</div>
+<div class="spine">MCP // SECURITY // STDIO // STREAMABLE HTTP // OAUTH // 2026</div>
 <div class="container">
 <header class="masthead">
 <h1><em class="or">MCP</em> ATTACK SURFACE <em class="cy">MAP</em></h1>
 <div class="subtitle"><strong>vectors</strong> &middot; <strong>surfaces</strong> &middot; <strong>defenses</strong> &middot; <strong>transports</strong> &middot; 24 attacks &middot; 20 surfaces</div>
-<div class="meta-line">protocol 2025-06-18 // stdio &middot; sse &middot; streamable http</div>
+<div class="meta-line">protocol 2025-11-25 // stdio &middot; streamable http (+ legacy sse)</div>
 </header>
-<nav class="toc"><a href="#topology">// topology</a><a href="#catalog">// catalog</a><a href="#detail">// detail</a></nav>
+<nav class="toc"><a href="#topology">// topology</a><a href="#catalog">// catalog</a><a href="#detail">// detail</a><button class="theme-toggle" title="toggle dark mode">&#9680; dark</button></nav>
 <section id="topology">
 <h2>Topology <span class="htag">protocol surfaces</span></h2>
 <div class="section-bar"></div>
@@ -224,7 +229,7 @@ svg .node[data-heat="medium"] rect{stroke:var(--cy-dk);stroke-width:1.5}
 <p class="section-intro">Selected vector or surface unfolds with full attack path, transport notes, and mitigations. Each item has a copy-link button.</p>
 <div class="detail" id="detail-panel"><span class="label">DETAIL // CTX</span><p class="empty">// select a vector or surface.</p></div>
 </section>
-<footer>MCP // ATTACK SURFACE MAP // PROTOCOL 2025-06-18<span class="signoff">2026.04 // hed0rah</span><div class="keys">shortcuts: <kbd>/</kbd>search <kbd>j</kbd>/<kbd>k</kbd>nav <kbd>a</kbd>attacks <kbd>d</kbd>defenses <kbd>h</kbd>heat <kbd>esc</kbd>clear &middot; <a href="#topology">back to top</a></div></footer>
+<footer>MCP // ATTACK SURFACE MAP // PROTOCOL 2025-11-25<span class="signoff">2026.04 // hed0rah</span><div class="keys">shortcuts: <kbd>/</kbd>search <kbd>j</kbd>/<kbd>k</kbd>nav <kbd>a</kbd>attacks <kbd>d</kbd>defenses <kbd>h</kbd>heat <kbd>esc</kbd>clear &middot; <a href="#topology">back to top</a></div></footer>
 </div>
 <script>
 (function(){
@@ -246,9 +251,9 @@ var V=[
 {i:'agent-loop',c:'tool',s:'medium',n:'agent loop / cost amplification',ns:['llm','client','dispatch','handler-read','ratelimit'],e:['transport-server','rate-dispatch','dispatch-handler-read'],d:'agent enters tool-call loop burning tokens and hammering upstreams without terminating.',t:{stdio:'self-bounded but expensive',sse:'fleet impact',http:'fleet impact'},m:['per-session call cap','token budget at server','short-circuit repeated calls','circuit breaker on error rate']},
 {i:'audit-tamper',c:'server',s:'medium',n:'audit log tampering',ns:['audit','dispatch','handler-write'],e:['audit-handlers'],d:'attacker on server modifies or deletes audit entries to cover tracks.',t:{stdio:'trivial',sse:'unless shipped',http:'unless shipped'},m:['ship logs off-box realtime','append-only store on receiver','separate write vs admin identity','cryptographic chaining']},
 {i:'roots-boundary',c:'tool',s:'high',n:'roots / fs boundary violation',ns:['llm','client','dispatch','handler-read','roots','os'],e:['transport-server','dispatch-handler-read','handlers-os'],d:'agent supplies path traversal or symlink to escape declared MCP roots.',t:{stdio:'highest exposure',sse:'fs-dependent',http:'fs-dependent'},m:['canonicalize before boundary check','no symlink across boundary','realpath plus startswith','reject NUL and encoded slashes']},
-{i:'sampling-abuse',c:'server',s:'medium',n:'sampling abuse / recursive cost',ns:['sampling','llm','dispatch','handler-read'],e:['sampling-llm','dispatch-handler-read'],d:'malicious server uses MCP sampling to drain user model budget, extract context, or recurse.',t:{stdio:'one-user budget',sse:'cross-tenant',http:'cross-tenant'},m:['cap sampling per session','user confirmation','reject sampling that recurses','redact context before forwarding']},
+{i:'sampling-abuse',c:'server',s:'medium',n:'sampling abuse / recursive cost',ns:['sampling','llm','dispatch','handler-read'],e:['sampling-llm','dispatch-handler-read'],d:'malicious server uses MCP sampling to drain user model budget, extract context, or recurse. spec 2025-11-25 lets sampling invoke tools, widening this surface.',t:{stdio:'one-user budget',sse:'cross-tenant',http:'cross-tenant'},m:['cap sampling per session','user confirmation','reject sampling that recurses','redact context before forwarding']},
 {i:'redos-denylist',c:'server',s:'medium',n:'ReDoS in deny list / validator',ns:['validate','ratelimit','dispatch'],e:['authn-validate','validate-rate'],d:'regex deny list itself is a CPU exhaustion vector via catastrophic backtracking.',t:{stdio:'self-DoS',sse:'fleet impact',http:'fleet impact'},m:['use re2 not PCRE','per-call regex timeout','input length cap','fuzz-test deny list']},
-{i:'container-escape',c:'tool',s:'critical',n:'container escape from exec sandbox',ns:['handler-exec','os','network'],e:['handlers-os'],d:'exec sandbox container runtime has known escape (runc, dirty-pipe, namespace abuse).',t:{stdio:'workstation blast',sse:'production blast',http:'production blast'},m:['patch runtime aggressively','no-new-privileges + read-only rootfs','gVisor or kata','monitor unusual syscalls']},
+{i:'container-escape',c:'tool',s:'critical',n:'container escape from exec sandbox',ns:['handler-exec','os','network'],e:['handlers-os'],d:'exec sandbox falls to runtime escapes (runc CVEs) or kernel bugs (dirty-pipe, namespace abuse).',t:{stdio:'workstation blast',sse:'production blast',http:'production blast'},m:['patch runtime and kernel aggressively','no-new-privileges + read-only rootfs','gVisor or kata','monitor unusual syscalls']},
 {i:'federation-confusion',c:'output',s:'medium',n:'federation / cross-server confusion',ns:['client','federation','llm'],e:['client-fed'],d:'multi-MCP setup. one server crafts descriptions misdirecting agent toward tools on another.',t:{stdio:'setup-dependent',sse:'setup-dependent',http:'setup-dependent'},m:['audit descriptions across servers','signed tool manifests','host validates content','system prompt establishes domain authority']},
 {i:'context-pollution',c:'output',s:'medium',n:'model context window pollution',ns:['handler-read','output-shape','client','llm'],e:['handlers-upstream','handler-output'],d:'oversized tool output floods context, displacing system prompt or earlier guidance.',t:{stdio:'same',sse:'same',http:'same'},m:['pagination bounds with explicit limits','strip non-essential fields by default','output token budget per call']},
 {i:'error-side-channel',c:'server',s:'medium',n:'error message side channel',ns:['validate','dispatch','handler-read','output-shape'],e:['authn-validate','validate-rate'],d:'detailed errors reveal internal state: records, schema, paths, versions used for vuln targeting.',t:{stdio:'lower stakes',sse:'real',http:'real'},m:['internal log distinct from caller error','code + retryable + hint only','never echo upstream bodies','redact paths and versions']},
@@ -314,6 +319,10 @@ si.addEventListener('input',function(){cSearch=si.value;rG();});
 window.addEventListener('keydown',function(e){var iF=e.target===si;if(e.key==='/'&&!iF){e.preventDefault();si.focus();si.select();}else if(e.key==='Escape'){if(iF){si.value='';cSearch='';si.blur();rG();}else{cT();aH();cV=null;cS=null;setH(null);selVw(cView,{silent:true});}}else if((e.key==='j'||e.key==='ArrowDown')&&!iF){e.preventDefault();nav(1);}else if((e.key==='k'||e.key==='ArrowUp')&&!iF){e.preventDefault();nav(-1);}else if(e.key==='a'&&!iF&&!e.metaKey&&!e.ctrlKey){e.preventDefault();selVw('attack');}else if(e.key==='d'&&!iF&&!e.metaKey&&!e.ctrlKey){e.preventDefault();selVw('defense');}else if(e.key==='h'&&!iF&&!e.metaKey&&!e.ctrlKey){e.preventDefault();tH();}});
 topo.querySelectorAll('[data-node]').forEach(function(n){n.addEventListener('click',function(){var nid=n.getAttribute('data-node');if(cView==='defense'){var s=S.find(function(x){return x.i===nid;});if(s){selS(nid);return;}}cV=null;cS=null;hN(nid);rND(nid);rG();});});
 window.addEventListener('hashchange',function(){lH();});
+var tt=document.querySelector('.theme-toggle');
+function pTT(){tt.innerHTML=document.documentElement.getAttribute('data-theme')==='dark'?'&#9681; light':'&#9680; dark';}
+tt.addEventListener('click',function(){var d=document.documentElement.getAttribute('data-theme')!=='dark';if(d)document.documentElement.setAttribute('data-theme','dark');else document.documentElement.removeAttribute('data-theme');localStorage.setItem('theme',d?'dark':'light');pTT();});
+pTT();
 rG();
 if(!lH())uS();
 })();

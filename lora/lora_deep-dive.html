@@ -458,9 +458,51 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   .masthead { padding: 40px 20px 28px; }
 }
 @media (max-width: 1280px) { .spine { display: none; } }
+
+/* dark mode -- ink + gunmetal + teal/orange accents */
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:        #16181C;
+  --surface:   #101217;
+  --surface2:  #20242B;
+  --border:    #3A3F47;
+  --border2:   #262A31;
+  --orange:    #FF4D00;
+  --cyan:      #08F9DF;
+  --yellow:    #E0913E;
+  --red:       #E04858;
+  --green:     #4DC26B;
+  --magenta:   #C97FD4;
+  --dim:       #8A9099;
+  --dim2:      #5A616A;
+  --text:      #C9CDD3;
+  --bright:    #ECE9DF;
+}
+:root[data-theme="dark"] ::selection { background: #08F9DF; color: #16181C; }
+:root[data-theme="dark"] pre,
+:root[data-theme="dark"] .diagram {
+  background: #101217;
+  border-top-color: #2A2E35;
+  border-right-color: #2A2E35;
+  border-bottom-color: #2A2E35;
+}
+:root[data-theme="dark"] pre .label { color: #565B63; }
+:root[data-theme="dark"] pre .cm, :root[data-theme="dark"] .diagram .dim { color: #62676F; }
+:root[data-theme="dark"] pre .kw { color: #F56A31; }
+:root[data-theme="dark"] pre .key, :root[data-theme="dark"] .diagram .acc2 { color: #5CD9CE; }
+:root[data-theme="dark"] .radial { background: rgba(16, 18, 23, 0.96); }
+.theme-toggle { white-space: nowrap; }
 </style>
 </head>
 <body>
+<script>
+(function () {
+  const saved = localStorage.getItem('theme');
+  const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+})();
+</script>
 
 <!-- masthead -->
 <div class="masthead">
@@ -486,15 +528,19 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   <a href="#gotchas"><span>12</span>Gotchas</a>
   <a href="#further"><span>13</span>Further</a>
   <button class="side-dial" id="sideDial" title="radial section dial">◎ dial</button>
+  <button class="side-dial theme-toggle" title="toggle dark mode">◐ dark</button>
 </nav>
 
 <!-- nav -->
 <div class="nav">
   <div class="nav-inner">
     <span class="nav-brand">LoRa Deep Dive</span>
-    <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
-      <span class="num" id="navNum">01 //</span> <span id="navLabel">Intro</span> <span class="nav-hint">◎</span>
-    </button>
+    <span style="display:flex;gap:6px">
+      <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
+        <span class="num" id="navNum">01 //</span> <span id="navLabel">Intro</span> <span class="nav-hint">◎</span>
+      </button>
+      <button class="nav-current theme-toggle" title="toggle dark mode">◐</button>
+    </span>
   </div>
 </div>
 
@@ -533,7 +579,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 <section id="css" data-num="02">
   <h2>Chirp <em class="cy">Spread</em> Spectrum</h2>
   <div class="section-bar cy"></div>
-  <p>LoRa modulates data onto <strong>chirps</strong>: signals whose instantaneous frequency ramps linearly across the channel bandwidth B. A base <strong>up-chirp</strong> sweeps from −B/2 to +B/2; a <strong>down-chirp</strong> does the reverse. The <strong>spreading factor</strong> SF ∈ {7…12} (SX126x also allows SF5/SF6) sets the number of chips per symbol as <strong>N = 2^SF</strong>, and each symbol carries SF raw bits.</p>
+  <p>LoRa modulates data onto <strong>chirps</strong>: signals whose instantaneous frequency ramps linearly across the channel bandwidth B. A base <strong>up-chirp</strong> sweeps from −B/2 to +B/2; a <strong>down-chirp</strong> does the reverse. The <strong>spreading factor</strong> SF ∈ {7…12} (SX127x adds SF6 in implicit-header mode; SX126x adds SF5) sets the number of chips per symbol as <strong>N = 2^SF</strong>, and each symbol carries SF raw bits.</p>
 
   <h3 class="cy">Symbol = cyclically-shifted chirp</h3>
   <p>A symbol of value s ∈ {0,…,N−1} is a cyclically-shifted up-chirp: the sweep starts at frequency f0 = (s·B/N − B/2), rises at B/N per chip until it hits the Nyquist edge +B/2, then folds back to −B/2 at chip n_fold = N − s and continues to the end of the symbol. Where the fold-back lands is where the symbol value is encoded.</p>
@@ -680,10 +726,10 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   </div>
 
   <h3 class="yl">Worked example</h3>
-  <p>SF7 / 125 kHz / CR 4/5, 20-byte payload ≈ <strong>41 ms</strong> total time on air. LoRaWAN adds ~13 bytes of MAC overhead (MHDR + FHDR + FPort + MIC) on top of the application payload, and the SX127x adds ~2 ms of TX ramp-up on top of the formula's result.</p>
+  <p>SF7 / 125 kHz / CR 4/5, 20-byte payload: payloadSymbNb = 8 + ceil(176/28)·5 = 43 symbols = 44.0 ms, plus 12.54 ms of preamble ≈ <strong>56.6 ms</strong> total time on air. LoRaWAN adds ~13 bytes of MAC overhead (MHDR + FHDR + FPort + MIC) on top of the application payload, and the SX127x adds ~2 ms of TX ramp-up on top of the formula's result.</p>
 
   <h3 class="yl">Duty-cycle math</h3>
-  <p>EU868 allows 1% duty cycle per sub-band, i.e. ~36 s of TX per hour. Divide 36000 ms by ToA to get the maximum packets/hour for a given configuration -- at SF12/125 kHz with a full 51-byte payload, ToA can exceed 2 seconds, so duty cycle rather than raw airtime often becomes the binding constraint at high SF.</p>
+  <p>EU868 duty cycle ranges from 0.1% to 10% depending on the ETSI sub-band; the join channels sit in the 1% band, i.e. ~36 s of TX per hour. Divide 36000 ms by ToA to get the maximum packets/hour for a given configuration -- at SF12/125 kHz with a full 51-byte payload, ToA can exceed 2 seconds, so duty cycle rather than raw airtime often becomes the binding constraint at high SF.</p>
 </section>
 
 <!-- sx127x -->
@@ -1001,23 +1047,24 @@ size_t <span class="fn">sx126x_rx</span>(spi_device_handle_t dev, gpio_num_t bus
     <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x82</span>, (uint8_t[]){ <span class="num">0xFF</span>,<span class="num">0xFF</span>,<span class="num">0xFF</span> }, <span class="num">3</span>, NULL, <span class="num">0</span>); <span class="cm">// SetRx, continuous</span>
 
     <span class="cm">// wait on DIO1 rising edge in production code -- polling shown for clarity</span>
-    uint8_t irq[<span class="num">2</span>];
+    <span class="cm">// note: Get*/Read* responses are preceded by status byte(s) on MISO -- data starts after them</span>
+    uint8_t irq[<span class="num">3</span>];
     <span class="kw">do</span> {
-        <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x12</span>, (uint8_t[]){ <span class="num">0x00</span> }, <span class="num">1</span>, irq, <span class="num">2</span>);   <span class="cm">// GetIrqStatus</span>
-    } <span class="kw">while</span> (!(irq[<span class="num">1</span>] &amp; <span class="num">0x02</span>));                                       <span class="cm">// bit1 RxDone</span>
+        <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x12</span>, (uint8_t[]){ <span class="num">0x00</span>,<span class="num">0x00</span> }, <span class="num">2</span>, irq, <span class="num">3</span>);   <span class="cm">// GetIrqStatus: status, MSB, LSB</span>
+    } <span class="kw">while</span> (!(irq[<span class="num">2</span>] &amp; <span class="num">0x02</span>));                                       <span class="cm">// bit1 RxDone (in LSB)</span>
 
     <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x02</span>, (uint8_t[]){ <span class="num">0xFF</span>,<span class="num">0xFF</span> }, <span class="num">2</span>, NULL, <span class="num">0</span>);       <span class="cm">// ClearIrqStatus, all bits</span>
 
-    uint8_t status[<span class="num">2</span>];
-    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x13</span>, (uint8_t[]){ <span class="num">0x00</span> }, <span class="num">1</span>, status, <span class="num">2</span>);      <span class="cm">// GetRxBufferStatus</span>
-    uint8_t len = status[<span class="num">0</span>], offset = status[<span class="num">1</span>];
+    uint8_t status[<span class="num">3</span>];
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x13</span>, (uint8_t[]){ <span class="num">0x00</span>,<span class="num">0x00</span> }, <span class="num">2</span>, status, <span class="num">3</span>);      <span class="cm">// GetRxBufferStatus: status, len, ptr</span>
+    uint8_t len = status[<span class="num">1</span>], offset = status[<span class="num">2</span>];
 
     uint8_t req[<span class="num">2</span>] = { offset, <span class="num">0x00</span> };                              <span class="cm">// offset, then required NOP byte</span>
-    uint8_t buf[<span class="num">256</span>];
-    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x1E</span>, req, <span class="num">2</span>, buf, len);                     <span class="cm">// ReadBuffer</span>
+    uint8_t buf[<span class="num">258</span>];
+    <span class="fn">sx126x_cmd</span>(dev, busy, <span class="num">0x1E</span>, req, <span class="num">2</span>, buf, len + <span class="num">2</span>);                <span class="cm">// ReadBuffer: data starts at byte 3</span>
 
     size_t n = len &lt; max_len ? len : max_len;
-    <span class="fn">memcpy</span>(out, buf, n);
+    <span class="fn">memcpy</span>(out, buf + <span class="num">2</span>, n);
     <span class="kw">return</span> n;
 }</pre>
 </section>
@@ -1034,8 +1081,8 @@ size_t <span class="fn">sx126x_rx</span>(spi_device_handle_t dev, gpio_num_t bus
     <tr><td class="meth">Max TX power</td><td>+20 dBm (PA_BOOST) / +14 (RFO)</td><td>+22 dBm (SX1262/68), +14/15 (SX1261)</td></tr>
     <tr><td class="meth">RX current</td><td>~11 mA (Semtech selection guide)</td><td>~4.6 mA (DC-DC)</td></tr>
     <tr><td class="meth">TX current</td><td>~120 mA @ 20 dBm</td><td>~118 mA @ 22 dBm (DC-DC)</td></tr>
-    <tr><td class="meth">Sleep</td><td>~0.2 µA (200 nA register retention)</td><td>~600 nA warm / ~900 nA cold</td></tr>
-    <tr><td class="meth">Sensitivity SF12/125k</td><td>~ −137 dBm</td><td>~ −148 dBm (~11 dB better)</td></tr>
+    <tr><td class="meth">Sleep</td><td>~0.2 µA (200 nA register retention)</td><td>160 nA cold (all off) / 600 nA warm (config retained) / 1.2 µA with RC64k</td></tr>
+    <tr><td class="meth">Sensitivity SF12/125k</td><td>~ −137 dBm</td><td>~ −137 dBm (Rx boosted; −148 dBm only at BW 10.4 kHz)</td></tr>
     <tr><td class="meth">SF range</td><td>SF6–SF12</td><td>SF5–SF12</td></tr>
     <tr><td class="meth">Freq range</td><td>137–1020 MHz (band-specific RF pins)</td><td>150–960 MHz (single RF port)</td></tr>
     <tr><td class="meth">Freq divisor</td><td>2^19 / 32 MHz (FSTEP 61.035 Hz)</td><td>2^25 / 32 MHz (FSTEP 0.95 Hz)</td></tr>
@@ -1169,7 +1216,7 @@ spi_transaction_t t = { .length = <span class="num">16</span>, .tx_buffer = tx, 
     <tr><td class="meth">0x0A</td><td>DlChannelReq/Ans</td></tr>
     <tr><td class="meth">0x0D</td><td>DeviceTimeReq/Ans</td></tr>
   </table>
-  <p>1.0.4 adds RekeyInd 0x0B, ADRParamSetupReq 0x0C, ForceRejoinReq 0x0E, RejoinParamSetupReq 0x0F.</p>
+  <p>The set above (0x02–0x0A plus DeviceTimeReq 0x0D) is LoRaWAN 1.0.4; 1.1 adds RekeyInd 0x0B, ADRParamSetupReq 0x0C, ForceRejoinReq 0x0E, RejoinParamSetupReq 0x0F.</p>
 
   <h3 class="cy">Adaptive Data Rate (ADR)</h3>
   <p>When the device sets the ADR bit, the Network Server uses the max SNR over recent uplinks (ChirpStack/TTS use ~20 frames) minus the required SNR for the current DR minus an installation margin (~10 dB) to compute how many DR steps up or TX-power steps down are possible, then issues <strong>LinkADRReq</strong> (DataRate_TXPower, ChMask, Redundancy/NbTrans). The device confirms with LinkADRAns. Device-side: after ADR_ACK_LIMIT uplinks with no downlink it sets ADRACKReq; if no answer within ADR_ACK_DELAY it steps down the DR / increases power to regain connectivity.</p>
@@ -1177,7 +1224,7 @@ spi_transaction_t t = { .length = <span class="num">16</span>, .tx_buffer = tx, 
   <h3 class="cy">Regional plans</h3>
   <table>
     <tr><th>Region</th><th>Channels</th><th>Data rates</th><th>Duty / dwell</th><th>Power</th></tr>
-    <tr><td class="meth">EU868</td><td>3 mandatory join channels 868.1/868.3/868.5 MHz, 125 kHz</td><td>DR0=SF12…DR5=SF7 (DR6=SF7/250kHz, DR7=FSK)</td><td>1% duty cycle per sub-band (~36s/hr)</td><td>max EIRP +16 dBm; RX2 = 869.525 MHz/DR0(SF12)</td></tr>
+    <tr><td class="meth">EU868</td><td>3 mandatory join channels 868.1/868.3/868.5 MHz, 125 kHz</td><td>DR0=SF12…DR5=SF7 (DR6=SF7/250kHz, DR7=FSK)</td><td>0.1–10% duty cycle depending on sub-band (1% / ~36 s/hr on the join channels)</td><td>max EIRP +16 dBm; RX2 = 869.525 MHz/DR0(SF12)</td></tr>
     <tr><td class="meth">US915</td><td>64×125kHz uplink channels (902.3–914.9 MHz, 200kHz spacing) + 8×500kHz</td><td>DR0=SF10/125kHz…DR3=SF7, DR4=SF8/500kHz</td><td>no duty cycle, 400ms max dwell (FCC)</td><td>+30 dBm EIRP allowed</td></tr>
   </table>
   <p>US915 devices hop channels and use sub-bands (FSB); ADR/channel-mask must agree between 8-channel gateways and nodes or uplinks silently fail to be heard.</p>
@@ -1279,7 +1326,7 @@ spi_transaction_t t = { .length = <span class="num">16</span>, .tx_buffer = tx, 
 
   <h3>Recommendations</h3>
   <ol class="step-list cy">
-    <li><strong>New designs → SX126x</strong> (SX1262/RA-01SC or Wio-E5/STM32WLE integrated). The ~11 dB sensitivity gain, ~2× lower RX current, and +22 dBm justify the extra BUSY/calibration complexity. Reserve SX127x/RFM95 for maintaining existing fleets or reusing register-level code.</li>
+    <li><strong>New designs → SX126x</strong> (SX1262/RA-01SC or Wio-E5/STM32WLE integrated). The ~2× lower RX current, +22 dBm TX, SF5 support, and tighter integration justify the extra BUSY/calibration complexity. Reserve SX127x/RFM95 for maintaining existing fleets or reusing register-level code.</li>
     <li><strong>Bring-up order:</strong> verify SPI first -- read RegVersion=0x12 on SX127x, or read sync-word register 0x0740=0x1424 on SX126x. Only then configure the modem. On SX126x, get BUSY polling and image calibration right before blaming RF.</li>
     <li><strong>For duty-cycle-limited regions,</strong> compute ToA up front with the AN1200.13 formula, add LoRaWAN's ~13-byte overhead, enable LDRO at SF11/12/125kHz, and budget packets/hour against the 1% (EU) or 400ms dwell (US) limit.</li>
     <li><strong>For P2P telemetry,</strong> lock all PHY params on both ends, use private sync word 0x12/0x1424, explicit header + CRC while debugging, and add CAD-before-TX plus a small addressed app header for multi-node channels.</li>
@@ -1386,6 +1433,21 @@ document.addEventListener('keydown', e => {
 window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
 window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
 activate(location.hash.slice(1));
+
+// dark mode toggle (initial theme set by the inline script in <body>)
+const themeButtons = [...document.querySelectorAll('.theme-toggle')];
+function paintTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  themeButtons.forEach(b => b.textContent = (b.classList.contains('side-dial') ? (dark ? '◑ light' : '◐ dark') : (dark ? '◑' : '◐')));
+}
+themeButtons.forEach(b => b.addEventListener('click', () => {
+  const dark = document.documentElement.getAttribute('data-theme') !== 'dark';
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+  paintTheme();
+}));
+paintTheme();
 </script>
 </body>
 </html>
