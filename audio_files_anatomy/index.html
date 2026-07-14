@@ -80,6 +80,10 @@ a{color:inherit;text-decoration:none}
 .rmid .tab{background:#7D4A6E} .rmid .name{color:#683e5c}
 .multisample .tab{background:#4E7048} .multisample .name{color:#415e3c}
 .rx2  .tab{background:#6E4A2E} .rx2  .name{color:#5c3e26}
+.mpc  .tab{background:#A02A3A} .mpc  .name{color:#85242F}
+.sf2  .tab{background:#7A6A2E} .sf2  .name{color:#665827}
+.tracker .tab{background:#9E3A5E} .tracker .name{color:#83304E}
+.rf64 .tab{background:#34687A} .rf64 .name{color:#2C5666}
 
 footer{margin-top:3rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent);border-color:var(--accent)}
@@ -96,7 +100,7 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
         <div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div>
         <h1>Audio File Anatomy</h1>
       </div>
-      <div class="stamp"><b>16 formats</b>interactive<br>rev 2026.07</div>
+      <div class="stamp"><b>20 formats</b>interactive<br>rev 2026.07</div>
     </div>
     <div class="strip">
       <div>view <b>byte / bit maps</b></div>
@@ -214,6 +218,30 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
       <div><div class="name">Bitwig Multisample</div>
         <div class="d">A ZIP: a multisample.xml zone map plus the member WAVs. The zone bindings (key range, root note, velocity, loop) and Bitwig's mismatched-CRC quirk.</div></div>
       <span class="t">zip / xml</span>
+    </a>
+    <a class="row mpc" href="mpc-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">Akai MPC family</div>
+        <div class="d">Nearly four decades in one tabbed sheet: the vintage .snd sounds and .pgm programs as hover-to-decode register maps, and the modern .xpm / .xpn / .xtd / .mpcpattern. In Akai colors.</div></div>
+      <span class="t">byte + json</span>
+    </a>
+    <a class="row sf2" href="sf2-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">SoundFont 2</div>
+        <div class="d">A RIFF (sfbk) sound bank. The pdta preset / instrument / sample-header hierarchy, and the shdr records pointing into one shared smpl PCM pool.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row tracker" href="tracker-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">Tracker Modules</div>
+        <div class="d">The MOD / XM / IT module family: a header, a pattern order, and sample descriptors whose PCM lives elsewhere in the file, each a carveable byte region.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row rf64" href="rf64-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">RF64 / BW64</div>
+        <div class="d">RIFF's 64-bit successor. When a size overflows 32 bits it becomes 0xFFFFFFFF and the true 64-bit sizes live in a ds64 chunk, so a WAV can exceed 4 GB.</div></div>
+      <span class="t">byte map</span>
     </a>
   </div>
 
