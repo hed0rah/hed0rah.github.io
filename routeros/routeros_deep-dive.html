@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RouterOS Deep Dive // MikroTik landfill</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* masthead */
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+.masthead .companion {
+  margin-top: 14px;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 2px;
+}
+
+/* nav */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-brand {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.nav-current {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-current:hover { border-color: var(--orange); color: var(--orange); }
+.nav-current .num { color: var(--orange); }
+.nav-hint { color: var(--dim2); margin-left: 6px; }
+
+/* sidebar */
+.side {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 248px;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  z-index: 150;
+  padding: 26px 0 20px;
+  overflow-y: auto;
+}
+.side-brand {
+  padding: 0 20px 16px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--bright);
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 12px;
+}
+.side-brand span { color: var(--orange); }
+.side a {
+  display: block;
+  padding: 7px 24px 7px 21px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.side a span { color: var(--dim2); margin-right: 7px; }
+.side a:hover { color: var(--orange); }
+.side a.active { color: var(--orange); border-left-color: var(--orange); background: var(--surface); }
+.side a.active span { color: var(--orange); }
+.side-dial {
+  display: block;
+  margin: 16px 20px 0 17px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--border2);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.side-dial:hover { color: var(--orange); border-color: var(--orange); }
+@media (min-width: 1100px) {
+  .side { display: block; }
+  body { padding-left: 248px; }
+  .nav { display: none; }
+}
+
+/* radial dial */
+.radial {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(242, 241, 238, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.radial.open { opacity: 1; pointer-events: auto; }
+body.dial-open { overflow: hidden; }
+.radial-ring {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+}
+.radial-center {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  cursor: pointer;
+}
+.radial-center:hover { color: var(--orange); }
+.radial-item {
+  position: absolute;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--dim);
+  padding: 4px 6px;
+}
+.radial-item span { color: var(--dim2); margin-right: 5px; }
+.radial-item:hover, .radial-item.active { color: var(--orange); }
+.radial-item:hover span, .radial-item.active span { color: var(--orange); }
+.radial-dot {
+  position: absolute;
+  width: 5px; height: 5px;
+  background: var(--dim2);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.radial-dot.active { background: var(--orange); }
+@media (max-width: 620px) {
+  .radial.open { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .radial-ring, .radial-dot, .radial-center { display: none; }
+  .radial-item { position: static !important; transform: none !important; font-size: 12px; padding: 7px; }
+}
+
+/* layout */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+}
+section { padding: 52px 0; display: none; }
+section.active { display: block; }
+section::before {
+  content: attr(data-num) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+/* headings */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--yellow); }
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+.section-bar.yl { background: var(--yellow); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+h3.cy { color: var(--cyan); }
+h3.yl { color: var(--yellow); }
+h3.rd { color: var(--red); }
+h4 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  margin: 20px 0 8px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+
+/* code */
+code {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--bright);
+}
+pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre.yl { border-left-color: var(--yellow); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .flag   { color: #7A7870; }
+
+/* diagrams */
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #8A8880;
+}
+.diagram.cy { border-left-color: var(--cyan); }
+.diagram.yl { border-left-color: var(--yellow); }
+.diagram.rd { border-left-color: var(--red); }
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .acc3 { color: #C8A030; }
+.diagram .dim  { color: #4A4942; }
+.diagram .hi   { color: #CCCBC4; }
+
+/* info boxes */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy    { border-left-color: var(--cyan); }
+.info-box.warn  { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; vertical-align: top; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; white-space: nowrap; }
+td.cy   { color: var(--cyan); }
+td.rd   { color: var(--red); }
+td.yl   { color: var(--yellow); }
+td.meth a { color: inherit; text-decoration: none; border-bottom: 1px dashed currentColor; }
+td.meth a:hover { color: var(--bright); }
+h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
+
+/* two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; align-items: stretch; }
+.two-col > div { display: flex; flex-direction: column; }
+.two-col > div > pre { flex: 1; margin-bottom: 0; }
+
+/* step list */
+.step-list { list-style: none; counter-reset: step; margin: 16px 0; }
+.step-list li {
+  counter-increment: step;
+  position: relative;
+  padding: 10px 0 10px 42px;
+  border-bottom: 1px dashed var(--border2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-list li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  width: 34px;
+}
+.step-list li strong { color: var(--bright); display: block; margin-bottom: 2px; }
+.step-list.cy li::before { color: var(--cyan); }
+.step-list.rd li::before { color: var(--red); }
+
+/* footer */
+.footer {
+  border-top: 1px solid var(--border2);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+.footer a { color: var(--orange); text-decoration: none; }
+
+/* spine */
+.spine {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* responsive */
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .masthead { padding: 40px 20px 28px; }
+}
+@media (max-width: 1280px) { .spine { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- masthead -->
+<div class="masthead">
+  <h1>RouterOS <em>Deep</em> Dive</h1>
+  <div class="subtitle">
+    <span>CLI · Bridges · Firewall · NAT · Switch Mirror · Tools · Backup</span>
+  </div>
+  <div class="companion">MikroTik RB2011UiAS-2HnD // "landfill" sandbox · RouterOS 6.43.4 // WinBox · WebFig · SSH // orientation to port-mirror</div>
+</div>
+
+<!-- sidebar -->
+<nav class="side">
+  <div class="side-brand">RouterOS <span>//</span> Deep Dive</div>
+  <a href="#orient"><span>01</span>Orientation</a>
+  <a href="#cli"><span>02</span>The CLI</a>
+  <a href="#ifaces"><span>03</span>Interfaces &amp; Bridges</a>
+  <a href="#ipaddr"><span>04</span>IP · DHCP · DNS</a>
+  <a href="#firewall"><span>05</span>Firewall &amp; NAT</a>
+  <a href="#wireless"><span>06</span>Wireless</a>
+  <a href="#switch"><span>07</span>Switch &amp; Port Mirror</a>
+  <a href="#tools"><span>08</span>Tools</a>
+  <a href="#manage"><span>09</span>Backup · Export · Upgrade</a>
+  <a href="#landfill"><span>10</span>The Landfill Box</a>
+  <button class="side-dial" id="sideDial" title="radial section dial">◎ dial</button>
+</nav>
+
+<!-- nav -->
+<div class="nav">
+  <div class="nav-inner">
+    <span class="nav-brand">RouterOS Deep Dive</span>
+    <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
+      <span class="num" id="navNum">01 //</span> <span id="navLabel">Orientation</span> <span class="nav-hint">◎</span>
+    </button>
+  </div>
+</div>
+
+<!-- radial dial -->
+<div class="radial" id="radial">
+  <div class="radial-ring" id="radialRing"></div>
+  <button class="radial-center" id="radialCenter" title="close (Esc)">01</button>
+</div>
+
+<div class="container">
+
+<!-- orientation -->
+<section id="orient" data-num="01">
+  <h2>The <em class="or">Landfill</em> Router</h2>
+  <div class="section-bar"></div>
+  <p>RouterOS is MikroTik's Linux-based network OS: everything is a command tree you drive from a console, and the GUIs are just skins over that same tree. Our box is an <code>RB2011UiAS-2HnD</code> running <code>6.43.4</code>, identity <code>landfill</code>. It NATs an isolated sandbox out to the main net and lets nothing initiate back in. Four ways to reach it; all end at the same config.</p>
+
+  <table>
+    <tr><th>Way in</th><th>What</th><th>Port / how</th><th>When</th></tr>
+    <tr><td class="meth">WinBox</td><td>Native GUI (Windows/Wine)</td><td>TCP 8291, or by MAC</td><td>Best for learning — visual, live</td></tr>
+    <tr><td class="meth">WebFig</td><td>Browser UI</td><td><code>http://10.13.0.1</code></td><td>Same config, no install</td></tr>
+    <tr><td class="meth cy">SSH / CLI</td><td>The real command tree</td><td>TCP 22 (legacy algos)</td><td>Scripting, export, what I use</td></tr>
+    <tr><td class="meth cy">mac-telnet / mac-winbox</td><td>Layer-2, no IP needed</td><td>MAC <code>DE:AD:BE:EF:00:03</code></td><td>When there's no working IP path</td></tr>
+  </table>
+
+  <pre class="diagram"><span class="dim">        two networks, a one-way membrane between them</span>
+
+   <span class="hi">MAIN NET</span> 192.168.1.0/24 · SSID "Melt"           <span class="hi">SANDBOX</span> 10.13.0.0/24 · SSID "trash"
+   <span class="dim">┌────────────────────────────┐</span>              <span class="dim">┌──────────────────────────────┐</span>
+   <span class="dim">│</span> ersatz .187   SHUTUP .207   <span class="dim">│</span>              <span class="dim">│</span> <span class="acc2">junker</span> eth0 .254  (bastion)   <span class="dim">│</span>
+   <span class="dim">│</span> WHEREAS .230                <span class="dim">│</span>              <span class="dim">│</span> <span class="acc2">scrappi</span> eth0 .200 (pentest)  <span class="dim">│</span>
+   <span class="dim">└──────────────┬─────────────┘</span>              <span class="dim">└───────────────┬──────────────┘</span>
+                  <span class="dim">│</span>       <span class="acc">junker wlan0 .150 = the only bridge</span>  <span class="dim">│</span>
+                  <span class="dim">└──────────────┐         ┌─────────────────┘</span>
+                          <span class="dim">┌──────┴─────────┴──────┐</span>
+                          <span class="dim">│</span> <span class="acc">MikroTik "landfill"</span>   <span class="dim">│</span>  ether1 = WAN (DHCP .160, NAT out)
+                          <span class="dim">│</span> 10.13.0.1              <span class="dim">│</span>  ether2-10 + wlan1 = sandbox bridge
+                          <span class="dim">└───────────────────────┘</span>
+   <span class="acc3">sandbox can reach OUT · the main net can NOT reach IN · only junker straddles both</span></pre>
+
+  <div class="info-box">
+    <strong>Reaching it right now</strong>
+    From ersatz, hop the bastion: <code>ssh phix@192.168.1.150</code> (junker), then <code>ssh admin@10.13.0.1</code> with legacy KEX/host-key algos. Admin creds live in <code>~/.mikrotik-admin-cred</code> on ersatz. WinBox from your main box needs a scoped firewall rule (or plug a laptop straight into a LAN port) — see <a href="#firewall">Firewall</a>.
+  </div>
+</section>
+
+<!-- cli -->
+<section id="cli" data-num="02">
+  <h2>The <em class="cy">Command Tree</em></h2>
+  <div class="section-bar cy"></div>
+  <p>Everything hangs off <code>/</code>. You navigate menus (<code>/ip firewall filter</code>) and run verbs inside them (<code>print</code>, <code>add</code>, <code>set</code>, <code>remove</code>). <code>?</code> lists what's available at any point, <code>Tab</code> completes, and <code>[find ...]</code> selects items by property instead of by index. Nothing is saved-then-applied — every command takes effect immediately, which is exactly why <span class="or">Safe Mode</span> exists.</p>
+
+  <pre class="cy"><span class="label">CLI basics</span><span class="cm"># menus are paths; run a verb inside one, or give the full path inline</span>
+/ip firewall filter <span class="fn">print</span>              <span class="cm"># list rules in this menu</span>
+/ip address <span class="fn">print</span> <span class="key">detail</span>              <span class="cm"># full properties, not the summary</span>
+/interface <span class="fn">print</span> <span class="key">where</span> type=ether    <span class="cm"># filter the listing</span>
+
+<span class="cm"># add / change / delete</span>
+/ip dns <span class="fn">set</span> <span class="key">servers</span>=<span class="val">1.1.1.1,8.8.8.8</span>
+/ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">input</span> <span class="key">action</span>=<span class="val">accept</span> <span class="key">protocol</span>=<span class="val">icmp</span>
+/ip firewall filter <span class="fn">remove</span> [<span class="fn">find</span> <span class="key">chain</span>=<span class="val">input</span> action=drop]   <span class="cm"># select by property</span>
+
+<span class="cm"># the whole config as text (this is what we exported)</span>
+/export <span class="flag">hide-sensitive</span>                  <span class="cm"># redacts keys/passwords</span>
+/export <span class="flag">file</span>=<span class="val">backup-cfg</span>                <span class="cm"># writes backup-cfg.rsc on the router</span></pre>
+
+  <div class="info-box warn">
+    <strong>Safe Mode is your undo button</strong>
+    Press <code>Ctrl-X</code> to enter Safe Mode (the prompt shows <code>[Safe]</code>). Every change you make is provisional; if your session drops — you just firewalled yourself out — the router auto-reverts everything since you entered. <code>Ctrl-X</code> again to commit, <code>Ctrl-D</code> to abort. <strong>Always Safe-Mode remote firewall/interface edits.</strong>
+  </div>
+
+  <h3 class="cy">The menus you actually use</h3>
+  <table>
+    <tr><th>Path</th><th>What lives there</th></tr>
+    <tr><td class="meth cy">/interface</td><td>ethernet, bridge, wireless, VLAN — every port and virtual iface</td></tr>
+    <tr><td class="meth cy">/ip</td><td>address, dhcp-server, dhcp-client, dns, firewall, route, pool</td></tr>
+    <tr><td class="meth cy">/interface ethernet switch</td><td>the hardware switch chip — VLANs, <em class="or">port mirroring</em></td></tr>
+    <tr><td class="meth cy">/system</td><td>identity, clock, backup, package/upgrade, reboot, resource</td></tr>
+    <tr><td class="meth cy">/tool</td><td>torch, sniffer, netwatch, ping, bandwidth-test — the diagnostics</td></tr>
+  </table>
+</section>
+
+<!-- interfaces -->
+<section id="ifaces" data-num="03">
+  <h2>Interfaces &amp; <em class="or">Bridges</em></h2>
+  <div class="section-bar"></div>
+  <p>Physical ports are <code>ether1..10</code>, <code>sfp1</code>, <code>wlan1</code>. A <strong>bridge</strong> is a software switch: add ports to it and they become one flat L2 segment. Our whole sandbox is one bridge, <code>bridgeLocal</code>, carrying every LAN port plus the wifi. The WAN port (<code>ether1</code>) is deliberately left OUT of the bridge — it's the uplink.</p>
+
+  <pre><span class="label">bridge + ports</span><span class="cm"># make the bridge, then enroll ports into it</span>
+/interface bridge <span class="fn">add</span> <span class="key">name</span>=<span class="val">bridgeLocal</span>
+/interface bridge port <span class="fn">add</span> <span class="key">bridge</span>=<span class="val">bridgeLocal</span> <span class="key">interface</span>=<span class="val">ether2</span>
+/interface bridge port <span class="fn">add</span> <span class="key">bridge</span>=<span class="val">bridgeLocal</span> <span class="key">interface</span>=<span class="val">wlan1</span>
+
+<span class="cm"># what's plugged in and up?</span>
+/interface <span class="fn">print</span> <span class="key">brief</span>
+/interface ethernet <span class="fn">monitor</span> <span class="val">ether4</span> <span class="flag">once</span>   <span class="cm"># link speed / status of one port</span></pre>
+
+  <div class="info-box">
+    <strong>Our port map</strong>
+    <code>ether1</code> = WAN uplink · <code>ether2</code> = junker (bastion) · <code>ether3</code> = scrappi · <code>ether4/ether5</code> = free (this is where a device-under-investigation plugs in). All ten LAN ports are in <code>bridgeLocal</code> on <code>10.13.0.0/24</code>.
+  </div>
+</section>
+
+<!-- ip / dhcp / dns -->
+<section id="ipaddr" data-num="04">
+  <h2>IP · <em class="cy">DHCP</em> · DNS</h2>
+  <div class="section-bar cy"></div>
+  <p>The router holds one address on the bridge (<code>10.13.0.1</code>, the sandbox gateway) and runs a DHCP <em>server</em> for the sandbox plus a DHCP <em>client</em> on the WAN to pull an address from the main net. It's also the sandbox's DNS resolver — which is a handy lever (see the note).</p>
+
+  <pre class="cy"><span class="label">addressing + dhcp + dns</span><span class="cm"># the gateway address on the sandbox bridge</span>
+/ip address <span class="fn">add</span> <span class="key">address</span>=<span class="val">10.13.0.1/24</span> <span class="key">interface</span>=<span class="val">bridgeLocal</span>
+
+<span class="cm"># hand out .10-.254 to sandbox clients; the router itself is DNS</span>
+/ip pool <span class="fn">add</span> <span class="key">name</span>=<span class="val">sandbox</span> <span class="key">ranges</span>=<span class="val">10.13.0.10-10.13.0.254</span>
+/ip dhcp-server <span class="fn">add</span> <span class="key">interface</span>=<span class="val">bridgeLocal</span> <span class="key">address-pool</span>=<span class="val">sandbox</span>
+/ip dhcp-server network <span class="fn">add</span> <span class="key">address</span>=<span class="val">10.13.0.0/24</span> <span class="key">gateway</span>=<span class="val">10.13.0.1</span> <span class="key">dns-server</span>=<span class="val">10.13.0.1</span>
+
+<span class="cm"># pin an IP to a device by MAC (how junker/scrappi never move)</span>
+/ip dhcp-server lease <span class="fn">add</span> <span class="key">address</span>=<span class="val">10.13.0.200</span> <span class="key">mac-address</span>=<span class="val">DE:AD:BE:EF:00:01</span> <span class="key">comment</span>=<span class="val">scrappi</span>
+
+<span class="cm"># WAN side: be a DHCP client on the main net</span>
+/ip dhcp-client <span class="fn">add</span> <span class="key">interface</span>=<span class="val">ether1</span> <span class="key">use-peer-dns</span>=<span class="val">no</span>
+
+<span class="cm"># resolver</span>
+/ip dns <span class="fn">set</span> <span class="key">servers</span>=<span class="val">1.1.1.1,8.8.8.8</span> <span class="key">allow-remote-requests</span>=<span class="val">yes</span></pre>
+
+  <div class="info-box cy">
+    <strong>DNS is a redirect lever</strong>
+    Because the router resolves for the sandbox, one static entry points a device's cloud domain wherever you want — clean MITM with no ARP games: <code>/ip dns static add name=api.example.com address=10.13.0.200</code>. Great for coaxing a device to talk to a fake endpoint you control.
+  </div>
+</section>
+
+<!-- firewall -->
+<section id="firewall" data-num="05">
+  <h2>Firewall &amp; <em class="rd">NAT</em></h2>
+  <div class="section-bar rd"></div>
+  <p>Two things make the sandbox a sandbox: a <strong>filter</strong> that drops anything the main net tries to start inward, and <strong>masquerade NAT</strong> so sandbox hosts can still reach the internet. Chains: <code>input</code> = traffic <em>to</em> the router, <code>forward</code> = traffic <em>through</em> it, <code>output</code> = <em>from</em> it. Rules run top-to-bottom, first match wins.</p>
+
+  <pre class="rd"><span class="label">the isolation ruleset (already live)</span><span class="cm"># INPUT — protect the router itself</span>
+/ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">input</span> <span class="key">connection-state</span>=<span class="val">established,related</span> <span class="key">action</span>=<span class="val">accept</span>
+/ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">input</span> <span class="key">connection-state</span>=<span class="val">invalid</span> <span class="key">action</span>=<span class="val">drop</span>
+/ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">input</span> <span class="key">in-interface</span>=<span class="val">bridgeLocal</span> <span class="key">action</span>=<span class="val">accept</span>
+/ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">input</span> <span class="key">protocol</span>=<span class="val">icmp</span> <span class="key">action</span>=<span class="val">accept</span>
+/ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">input</span> <span class="key">action</span>=<span class="val">drop</span>                <span class="cm"># everything else (i.e. from WAN)</span>
+
+<span class="cm"># FORWARD — one-way membrane</span>
+/ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">forward</span> <span class="key">connection-state</span>=<span class="val">established,related</span> <span class="key">action</span>=<span class="val">accept</span>
+/ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">forward</span> <span class="key">in-interface</span>=<span class="val">bridgeLocal</span> <span class="key">out-interface</span>=<span class="val">ether1</span> <span class="key">action</span>=<span class="val">accept</span>
+/ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">forward</span> <span class="key">connection-state</span>=<span class="val">new</span> <span class="key">in-interface</span>=<span class="val">ether1</span> <span class="key">action</span>=<span class="val">drop</span>
+
+<span class="cm"># NAT — masquerade the sandbox out the WAN</span>
+/ip firewall nat <span class="fn">add</span> <span class="key">chain</span>=<span class="val">srcnat</span> <span class="key">out-interface</span>=<span class="val">ether1</span> <span class="key">action</span>=<span class="val">masquerade</span></pre>
+
+  <div class="info-box danger">
+    <strong>Watch a drop rule to see what's knocking</strong>
+    Add <code>log=yes log-prefix=WAN-DROP</code> to the final input/forward drops and <code>/log print follow</code> shows every uninvited packet — great for spotting a device phoning somewhere odd, or a scan from the main net.
+  </div>
+
+  <h3 class="rd">WinBox from your main box, safely</h3>
+  <p>To manage the router from SHUTUP without plugging in, allow WinBox from one IP only — and do it in Safe Mode:</p>
+  <pre class="rd"><span class="cm"># Ctrl-X first. allow 8291 from SHUTUP only, on the WAN in-interface, placed before the input drop</span>
+/ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">input</span> <span class="key">protocol</span>=<span class="val">tcp</span> <span class="key">dst-port</span>=<span class="val">8291</span> <span class="key">src-address</span>=<span class="val">192.168.1.207</span> <span class="key">action</span>=<span class="val">accept</span> <span class="key">place-before</span>=<span class="val">[find chain=input action=drop]</span></pre>
+</section>
+
+<!-- wireless -->
+<section id="wireless" data-num="06">
+  <h2>Wireless <em class="or">Radio</em></h2>
+  <div class="section-bar"></div>
+  <p>RouterOS splits wifi into a <strong>security-profile</strong> (the auth/encryption) and the <strong>interface</strong> config (band, channel, SSID, mode). Our <code>trash</code> SSID is a 2.4 GHz WPA2 AP on channel 6, bridged into the sandbox — so anything that joins the wifi lands in the same isolated L2 as the wired ports.</p>
+
+  <pre><span class="label">the "trash" AP</span><span class="cm"># auth first</span>
+/interface wireless security-profiles <span class="fn">add</span> <span class="key">name</span>=<span class="val">trash</span> \
+    <span class="key">authentication-types</span>=<span class="val">wpa2-psk</span> <span class="key">mode</span>=<span class="val">dynamic-keys</span> <span class="key">wpa2-pre-shared-key</span>=<span class="val">********</span>
+
+<span class="cm"># then the radio: 2.4GHz AP on ch6, SSID trash, on the sandbox bridge</span>
+/interface wireless <span class="fn">set</span> <span class="val">wlan1</span> <span class="key">mode</span>=<span class="val">ap-bridge</span> <span class="key">band</span>=<span class="val">2ghz-b/g/n</span> \
+    <span class="key">frequency</span>=<span class="val">2437</span> <span class="key">ssid</span>=<span class="val">trash</span> <span class="key">security-profile</span>=<span class="val">trash</span> <span class="key">disabled</span>=<span class="val">no</span>
+
+<span class="cm"># who's connected / what's on the air</span>
+/interface wireless registration-table <span class="fn">print</span>
+/interface wireless <span class="fn">scan</span> <span class="val">wlan1</span></pre>
+</section>
+
+<!-- switch / port mirror -->
+<section id="switch" data-num="07">
+  <h2>Switch &amp; <em class="or">Port Mirror</em></h2>
+  <div class="section-bar"></div>
+  <p>Underneath the software bridge is real switch silicon. The RB2011 has <strong>two switch chips</strong>, and the killer feature for device RE lives here: <strong>port mirroring</strong> — tell the chip to photocopy every frame on one port to another. The device talks to its cloud completely normally; your capture box gets a full copy. No ARP poisoning, no insertion into the path, invisible.</p>
+
+  <pre class="diagram">   <span class="dim">switch1 (Atheros-8327)</span>            <span class="dim">switch2 (Atheros-8227)</span>
+   <span class="dim">┌──────────────────────────┐</span>     <span class="dim">┌──────────────────┐</span>
+   <span class="dim">│</span> sfp1  ether1  ether2     <span class="dim">│</span>     <span class="dim">│</span> ether6  ether7   <span class="dim">│</span>
+   <span class="dim">│</span> ether3 ether4 ether5     <span class="dim">│</span>     <span class="dim">│</span> ether8..10       <span class="dim">│</span>
+   <span class="dim">└──────────────────────────┘</span>     <span class="dim">└──────────────────┘</span>
+     ether1 = <span class="hi">WAN</span>   ether2 = <span class="acc2">junker</span>
+     ether3 = <span class="acc2">scrappi eth0</span>  <span class="acc">ether4/5 = FREE</span>
+
+   <span class="acc3">mirror source + target MUST be on the SAME chip — all our action is on switch1</span></pre>
+
+  <pre><span class="label">port mirror // via the bastion to the router</span><span class="cm"># plug the target device into ether4, capture on scrappi (ether3)</span>
+/interface ethernet switch <span class="fn">set</span> <span class="val">switch1</span> <span class="key">mirror-source</span>=<span class="val">ether4</span> <span class="key">mirror-target</span>=<span class="val">ether3</span>
+
+<span class="cm"># cleaner: a dedicated USB-eth NIC on scrappi into ether5, IP-less</span>
+/interface ethernet switch <span class="fn">set</span> <span class="val">switch1</span> <span class="key">mirror-source</span>=<span class="val">ether4</span> <span class="key">mirror-target</span>=<span class="val">ether5</span>
+
+<span class="cm"># ALWAYS tear down when done</span>
+/interface ethernet switch <span class="fn">set</span> <span class="val">switch1</span> <span class="key">mirror-source</span>=<span class="val">none</span> <span class="key">mirror-target</span>=<span class="val">none</span></pre>
+
+  <div class="info-box">
+    <strong>Then capture on scrappi</strong>
+    <code>/opt/re-lab/port-mirror/capture.sh eth0</code> writes a timestamped pcap. HTTPS payloads stay encrypted, but you get DNS, TLS SNI, endpoints, and any cleartext — the interesting part for watching a device reach its cloud. Full runbook in that project dir.
+  </div>
+</section>
+
+<!-- tools -->
+<section id="tools" data-num="08">
+  <h2>Built-in <em class="cy">Tools</em></h2>
+  <div class="section-bar cy"></div>
+  <p>You don't always need to mirror to a box — RouterOS can watch traffic itself. <strong>Torch</strong> is a live per-flow bandwidth view; the <strong>sniffer</strong> captures pcap you can stream straight into Wireshark; <strong>netwatch</strong> pings hosts and runs scripts on up/down.</p>
+
+  <pre class="cy"><span class="label">diagnostics</span><span class="cm"># live top-talkers on a port (great first look at a new device)</span>
+/tool torch <span class="val">ether4</span> <span class="key">src-address</span>=<span class="val">0.0.0.0/0</span> <span class="key">port</span>=<span class="val">any</span>
+
+<span class="cm"># capture to a file on the router, or stream to Wireshark on your box</span>
+/tool sniffer <span class="fn">set</span> <span class="key">filter-interface</span>=<span class="val">ether4</span> <span class="key">file-name</span>=<span class="val">dev.pcap</span>
+/tool sniffer <span class="fn">start</span> ; <span class="cm">... ; </span>/tool sniffer <span class="fn">stop</span>
+<span class="cm"># TZSP stream -&gt; Wireshark listening on your box:</span>
+/tool sniffer <span class="fn">set</span> <span class="key">streaming-enabled</span>=<span class="val">yes</span> <span class="key">streaming-server</span>=<span class="val">10.13.0.200</span>
+
+<span class="cm"># reachability + health</span>
+/ping <span class="val">10.13.0.200</span> <span class="key">count</span>=<span class="val">4</span>
+/tool netwatch <span class="fn">add</span> <span class="key">host</span>=<span class="val">10.13.0.200</span> <span class="key">interval</span>=<span class="val">30s</span>
+/system resource <span class="fn">print</span>              <span class="cm"># cpu, memory, uptime, version</span></pre>
+</section>
+
+<!-- manage -->
+<section id="manage" data-num="09">
+  <h2>Backup · Export · <em class="yl">Upgrade</em></h2>
+  <div class="section-bar yl"></div>
+  <p>Two kinds of save: <code>/export</code> writes a human-readable <code>.rsc</code> script of your config (diff-able, partial, what we pulled), while <code>/system backup</code> writes an opaque binary that restores the whole box byte-for-byte. Keep both.</p>
+
+  <table>
+    <tr><th>Command</th><th>Produces</th><th>Use</th></tr>
+    <tr><td class="meth yl">/export hide-sensitive</td><td>readable <code>.rsc</code> text</td><td>Review, version-control, cherry-pick</td></tr>
+    <tr><td class="meth yl">/export file=cfg</td><td><code>cfg.rsc</code> on the router</td><td>Portable, re-runnable config</td></tr>
+    <tr><td class="meth yl">/system backup save name=full</td><td><code>full.backup</code> (binary)</td><td>Exact full-box restore</td></tr>
+    <tr><td class="meth yl">/system routerboard print</td><td>model, firmware rev</td><td>Check before upgrading</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>v6 → v7 is a project, not a click</strong>
+    We're on <code>6.43.4</code> (v6, ~2018). RouterOS 7 is current and patches real CVEs, but the switch/bridge/wireless config syntax changed substantially — a straight upgrade can mangle the mirror and bridge setup. Plan it: full backup + export first, read the v7 migration notes, ideally dry-run on a spare board. Not tonight's job, but on the list.
+  </div>
+</section>
+
+<!-- landfill -->
+<section id="landfill" data-num="10">
+  <h2>The <em class="or">Landfill</em> Box, Annotated</h2>
+  <div class="section-bar"></div>
+  <p>Everything above, as it actually runs on our board. The full export lives at <code>~/my-laboratory/network/reference/mikrotik-landfill-export-<span class="acc3">DATE</span>.rsc</code>. The shape of it:</p>
+
+  <pre class="diagram"><span class="acc">IDENTITY</span>  landfill · RB2011UiAS-2HnD · RouterOS 6.43.4 · TZ America/New_York
+<span class="acc">WAN</span>       ether1 · DHCP client on the main net (.160) · use-peer-dns=no
+<span class="acc">BRIDGE</span>    bridgeLocal · ether2-10 + sfp1 + wlan1 · admin-mac DE:AD:BE:EF:00:03
+<span class="acc">SANDBOX</span>   10.13.0.1/24 · DHCP pool .10-.254 · DNS = self -&gt; 1.1.1.1 / 8.8.8.8
+<span class="acc">LEASES</span>    .254 junker-bastion (DE:AD:BE:EF:00:02) · .200 scrappi (DE:AD:BE:EF:00:01)
+<span class="acc">WIFI</span>      wlan1 · SSID trash · WPA2-PSK · 2.4GHz ch6 (2437)
+<span class="acc">FIREWALL</span>  input: accept est/rel, drop invalid, accept from bridge + icmp, drop rest
+          forward: accept est/rel, sandbox-&gt;WAN accept, new-from-WAN drop
+<span class="acc">NAT</span>       srcnat masquerade out ether1
+<span class="acc3">net effect: a blast-proof lab — reach OUT freely, nothing reaches IN except via junker</span></pre>
+
+  <ul class="step-list">
+    <li><strong>Manage it</strong> ersatz &rarr; <code>ssh phix@192.168.1.150</code> &rarr; <code>ssh admin@10.13.0.1</code> (legacy algos). Or WinBox from a laptop in a LAN port.</li>
+    <li><strong>Investigate a device</strong> plug it into ether4, mirror to scrappi (&sect;07), capture with <code>/opt/re-lab/port-mirror/</code>.</li>
+    <li><strong>Watch the edges</strong> add <code>log=yes</code> to the drop rules and tail <code>/log print follow</code>.</li>
+    <li><strong>Before you touch it</strong> <code>Ctrl-X</code> Safe Mode for anything firewall/interface, and <code>/export</code> first.</li>
+  </ul>
+</section>
+
+</div>
+
+<div class="footer">
+  <span>RouterOS Deep Dive // landfill sandbox</span>
+  <span>hed0rah // <a href="https://help.mikrotik.com/docs">MikroTik docs</a></span>
+</div>
+<div class="spine">// orientation · cli · interfaces · ip · firewall · wireless · switch · tools · backup · landfill //</div>
+
+<script>
+const LABELS = {
+  orient: 'Orientation',
+  cli: 'The CLI',
+  ifaces: 'Interfaces &amp; Bridges',
+  ipaddr: 'IP · DHCP · DNS',
+  firewall: 'Firewall &amp; NAT',
+  wireless: 'Wireless',
+  switch: 'Switch &amp; Port Mirror',
+  tools: 'Tools',
+  manage: 'Backup · Export · Upgrade',
+  landfill: 'The Landfill Box'
+};
+const sections = [...document.querySelectorAll('.container > section[id]')];
+const sideLinks = [...document.querySelectorAll('.side a')];
+const radial = document.getElementById('radial');
+const ring = document.getElementById('radialRing');
+const center = document.getElementById('radialCenter');
+const navNum = document.getElementById('navNum');
+const navLabel = document.getElementById('navLabel');
+
+const items = sections.map(s => {
+  const a = document.createElement('a');
+  a.href = '#' + s.id;
+  a.className = 'radial-item';
+  a.innerHTML = '<span>' + s.dataset.num + '</span>' + (LABELS[s.id] || s.id);
+  radial.appendChild(a);
+  const dot = document.createElement('span');
+  dot.className = 'radial-dot';
+  radial.appendChild(dot);
+  return { sec: s, a, dot };
+});
+
+function layout() {
+  const rx = Math.max(140, Math.min(innerWidth * 0.5 - 150, 330));
+  const ry = Math.max(150, Math.min(innerHeight * 0.5 - 100, 330));
+  ring.style.width = (rx - 26) * 2 + 'px';
+  ring.style.height = (ry - 26) * 2 + 'px';
+  items.forEach((it, i) => {
+    const ang = -Math.PI / 2 + i * 2 * Math.PI / items.length;
+    const x = Math.cos(ang), y = Math.sin(ang);
+    it.a.style.left = 'calc(50% + ' + (rx * x).toFixed(1) + 'px)';
+    it.a.style.top = 'calc(50% + ' + (ry * y).toFixed(1) + 'px)';
+    const tx = x > 0.35 ? '0%' : x < -0.35 ? '-100%' : '-50%';
+    const ty = y > 0.35 ? '0%' : y < -0.35 ? '-100%' : '-50%';
+    it.a.style.transform = 'translate(' + tx + ', ' + ty + ')';
+    it.dot.style.left = 'calc(50% + ' + ((rx - 26) * x).toFixed(1) + 'px)';
+    it.dot.style.top = 'calc(50% + ' + ((ry - 26) * y).toFixed(1) + 'px)';
+  });
+}
+function openDial() { layout(); radial.classList.add('open'); document.body.classList.add('dial-open'); }
+function closeDial() { radial.classList.remove('open'); document.body.classList.remove('dial-open'); }
+
+function activate(id) {
+  const el = document.getElementById(id);
+  const sec = el ? (el.closest('.container > section[id]') || sections[0]) : sections[0];
+  sections.forEach(s => s.classList.toggle('active', s === sec));
+  items.forEach(it => {
+    it.a.classList.toggle('active', it.sec === sec);
+    it.dot.classList.toggle('active', it.sec === sec);
+  });
+  sideLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + sec.id));
+  navNum.textContent = sec.dataset.num + ' //';
+  navLabel.textContent = LABELS[sec.id] || sec.id;
+  center.textContent = sec.dataset.num;
+  closeDial();
+  if (el && el !== sec) el.scrollIntoView();
+  else window.scrollTo(0, 0);
+}
+function go(id) { history.replaceState(null, '', '#' + id); activate(id); }
+
+document.getElementById('navCurrent').addEventListener('click', openDial);
+document.getElementById('sideDial').addEventListener('click', openDial);
+center.addEventListener('click', closeDial);
+radial.addEventListener('click', e => { if (e.target === radial) closeDial(); });
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  e.preventDefault();
+  go(a.getAttribute('href').slice(1));
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') return closeDial();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const cur = sections.findIndex(s => s.classList.contains('active'));
+    const next = (cur + (e.key === 'ArrowRight' ? 1 : sections.length - 1)) % sections.length;
+    go(sections[next].id);
+  }
+});
+window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
+window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
+activate(location.hash.slice(1));
+</script>
+</body>
+</html>
