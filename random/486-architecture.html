@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>486-class x86: architecture, silicon, and the clone wars</title>
+<meta name="description" content="Reference brief on 80486-class x86 architecture: pipeline, cache, MMU, clock multiplication, socket electrical evolution, the AMD/Intel/Cyrix/IBM/UMC clone landscape, and the OverDrive upgrade path." />
+<meta property="og:title" content="486-class x86: architecture, silicon, and the clone wars" />
+<meta property="og:type" content="article" />
+<style>
+:root{
+  --paper:#1a2838;
+  --ink:#e8f0f8;
+  --muted:#7a98b8;
+  --line:#2f4561;
+  --soft:rgba(255,255,255,0.015);
+  --accent-deep:#9fd4e8;
+  --accent-hot:#f0d878;
+  --accent-warm:#fae8a8;
+  --accent-warm-soft:rgba(250,232,168,0.10);
+  --accent-hot-soft:rgba(240,216,120,0.10);
+  --accent-deep-soft:rgba(159,212,232,0.08);
+  --code-bg:#0e1825;
+  --code-fg:#c8d8e8;
+  --ex-bg:#1f3045;
+  --pin-bg:rgba(240,216,120,0.16);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);background:var(--paper);font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;line-height:1.45}
+.page{max-width:1240px;margin:0 auto;padding:24px 16px 44px}
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:26px;align-items:start}
+.paper{min-width:0;border-top:2px solid var(--accent-deep);border-bottom:1px solid var(--line);padding:20px 0 24px}
+.eyebrow{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:var(--accent-hot);font-weight:600}
+h1,h2,h3{margin:0;font-weight:600;line-height:1.2}
+h1{font-size:clamp(1.55rem,2.1vw,1.9rem);letter-spacing:-0.02em;margin-bottom:6px;color:var(--accent-deep)}
+h2{font-size:0.92rem;margin-top:20px;margin-bottom:6px;padding-top:10px;border-top:1px solid var(--line);color:var(--accent-deep);text-transform:uppercase;letter-spacing:0.05em}
+h3{font-size:0.86rem;margin:8px 0 4px;color:var(--ink)}
+p{margin:0 0 6px;font-size:0.86rem}
+.lede{font-size:0.9rem;color:#c8d8e8;margin:6px 0 14px}
+code{font-family:"SFMono-Regular","SF Mono",Menlo,Consolas,monospace;font-size:0.85em;background:rgba(159,212,232,0.10);padding:0.04rem 0.22rem;border-radius:1px}
+.chip{display:inline-block;margin:0 3px 3px 0;padding:1px 6px;border:1px solid var(--line);border-radius:2px;font-size:0.69rem;letter-spacing:0.02em;color:var(--muted)}
+.chip.hot{border-color:var(--accent-hot);color:var(--accent-hot);background:var(--accent-hot-soft)}
+.spec-line{display:inline-block;padding:2px 8px;border:1px solid var(--accent-deep);background:var(--accent-deep-soft);font-family:"SFMono-Regular",monospace;font-size:0.74rem;color:var(--accent-deep);margin-right:6px;letter-spacing:0.03em}
+.term{cursor:pointer;border-bottom:1px dotted var(--accent-deep);color:var(--accent-deep);transition:.1s;padding:0 1px;font-weight:500}
+.term:hover,.term:focus-visible,.term.is-active{background:var(--accent-warm-soft);color:var(--accent-hot);border-bottom-color:var(--accent-hot);outline:none}
+.term.is-pinned{background:var(--pin-bg);color:var(--accent-hot);border-bottom-style:solid}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:6px;margin:10px 0 14px}
+.stat{padding:8px 10px;border:1px solid var(--line);background:var(--paper)}
+.stat .num{font-family:"Iowan Old Style",Georgia,serif;font-size:1.45rem;font-weight:600;color:var(--accent-deep);line-height:1.1}
+.stat .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px}
+.compare{width:100%;border-collapse:collapse;font-size:0.82rem;margin:6px 0 8px}
+.compare th,.compare td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top}
+.compare th{background:var(--accent-deep-soft);color:var(--accent-deep);font-weight:600;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em}
+.compare td.good{color:var(--accent-deep)}
+.compare td.bad{color:var(--accent-hot)}
+.compare td.note{color:var(--muted);font-style:italic;font-size:0.78rem}
+.compare td code{font-size:0.78em}
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:6px;margin:6px 0 10px}
+.comp{padding:7px 10px;border:1px solid var(--line);background:var(--paper);transition:.15s}
+.comp:hover{border-color:var(--accent-hot);background:var(--accent-hot-soft)}
+.comp .name{font-size:0.88rem;font-weight:600;color:var(--accent-deep);margin-bottom:1px}
+.comp .role{font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;font-family:"SFMono-Regular",monospace}
+.comp .desc{font-size:0.76rem;margin-top:3px;color:#c8d8e8;line-height:1.4}
+.bul{list-style:none;padding:0;margin:4px 0 8px}
+.bul li{padding:2px 0 2px 16px;font-size:0.84rem;position:relative;line-height:1.5;color:#dce6f0}
+.bul li::before{content:"\00b7";position:absolute;left:5px;color:var(--accent-hot);font-weight:700;font-size:1.1rem;line-height:1}
+.bul li strong{color:var(--accent-deep);font-weight:600}
+.bul li code{font-size:0.82em}
+.phase-list{margin:5px 0 10px;padding:0;list-style:none;counter-reset:phase}
+.phase-list li{counter-increment:phase;padding:5px 10px 5px 34px;border-left:1px solid var(--line);position:relative;margin-bottom:2px;background:rgba(255,255,255,0.02);font-size:0.84rem;line-height:1.5}
+.phase-list li::before{content:"P" counter(phase);position:absolute;left:5px;top:5px;font-family:"SFMono-Regular",monospace;font-size:0.70rem;color:var(--accent-hot);font-weight:700;letter-spacing:0.05em}
+.phase-list li strong{color:var(--accent-deep)}
+.phase-list li .meta{font-size:0.70rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-left:6px;font-style:italic}
+.wireblock{font-family:"SFMono-Regular",Menlo,Consolas,monospace;font-size:0.75rem;background:var(--code-bg);color:var(--code-fg);padding:10px 12px;margin:6px 0 10px;line-height:1.55;overflow-x:auto;white-space:pre;border-left:3px solid var(--accent-hot)}
+.figure{margin:8px 0 12px;border:1px solid var(--line);background:var(--ex-bg);padding:10px}
+.figure svg{display:block;max-width:100%;height:auto;margin:0 auto}
+.figure .cap{font-size:0.74rem;color:var(--muted);text-align:center;margin-top:6px;font-style:italic;letter-spacing:0.02em}
+.refs{font-size:0.78rem;line-height:1.55;margin:6px 0}
+.refs .ref-row{display:grid;grid-template-columns:130px 1fr;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line)}
+.refs .ref-row:last-child{border-bottom:none}
+.refs .ref-row .key{font-family:"SFMono-Regular",monospace;font-size:0.72rem;color:var(--accent-deep);font-weight:600;text-transform:uppercase;letter-spacing:0.03em}
+.refs .ref-row .val a{color:var(--accent-hot);text-decoration:none;border-bottom:1px dotted var(--accent-hot)}
+.refs .ref-row .val a:hover{background:var(--accent-hot-soft)}
+.refs .ref-row .val .desc{color:var(--muted);font-style:italic;font-size:0.74rem;margin-left:6px}
+.margin{position:sticky;top:18px;border-top:2px solid var(--accent-deep);padding-top:10px;font-size:0.82rem;color:var(--muted)}
+.margin-card{border:1px solid var(--line);border-left:3px solid var(--accent-hot);background:rgba(255,255,255,0.015);padding:12px 12px 10px;min-height:340px;transition:border-left-color .15s,background .15s}
+.margin-card.is-pinned{border-left-color:var(--accent-deep);background:var(--accent-deep-soft)}
+.margin h3{font-size:0.9rem;margin-bottom:6px;color:var(--accent-deep)}
+.margin p{margin-bottom:7px;font-size:0.8rem;color:#dce6f0}
+.margin-code{display:inline-block;margin-top:2px;margin-bottom:6px;color:var(--accent-hot)}
+.margin-meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin:7px 0 8px;padding:7px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:#dce6f0}
+.margin-meta strong{display:block;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.margin-meta span{font-size:0.8rem}
+.margin-section{margin-top:10px}
+.margin-section .label{font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:3px}
+.margin-section ul{margin:0;padding:0;list-style:none}
+.margin-section li{padding:2px 0;border-top:1px solid rgba(47,69,97,0.7);font-size:0.76rem;color:#c8d8e8;font-family:"SFMono-Regular",Menlo,Consolas,monospace}
+.margin-section li:first-child{border-top:none}
+.margin-section .more{color:var(--muted);font-style:italic;font-family:inherit}
+.margin-section a{color:var(--accent-hot);text-decoration:none;border-bottom:1px dotted var(--accent-hot);font-family:inherit;word-break:break-word}
+.margin-section a:hover{background:var(--accent-hot-soft);color:var(--accent-deep)}
+.margin-section li.link-item{white-space:normal;font-family:inherit;padding:4px 0}
+.margin-section li.link-item .src{display:block;font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:1px;font-family:"SFMono-Regular",monospace}
+.margin-pin-bar{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:7px;border-top:1px solid var(--line)}
+.margin-hint{font-size:0.72rem;color:var(--muted)}
+.margin-hint kbd{font-family:"SFMono-Regular",Menlo,Consolas,monospace;font-size:0.7rem;padding:0 4px;border:1px solid var(--line);border-radius:2px;background:var(--soft)}
+.margin-unpin{font-family:inherit;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;padding:2px 7px;border:1px solid var(--accent-hot);background:transparent;color:var(--accent-hot);cursor:pointer;border-radius:2px;display:none}
+.margin-card.is-pinned ~ .margin-pin-bar .margin-unpin{display:inline-block}
+.margin-card.is-pinned .margin-status{color:var(--accent-hot);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;font-size:9px}
+.footer{margin-top:20px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font-size:0.76rem}
+.footer .signoff{color:var(--accent-deep);font-weight:600;letter-spacing:0.05em}
+@media (max-width:980px){
+  .sheet{grid-template-columns:1fr}
+  .margin{position:static;order:2;border-top:1px solid var(--line)}
+  .comp-grid,.stat-grid{grid-template-columns:1fr}
+  .compare{font-size:0.76rem}
+  .refs .ref-row{grid-template-columns:100px 1fr}
+}
+@media print{
+  body{background:#fff}
+  .margin,.term{cursor:default}
+  .term{border-bottom:none;color:var(--accent-deep)!important;background:transparent!important}
+}
+</style>
+</head>
+<body>
+<div class="page"><div class="sheet">
+
+<article class="paper">
+  <p class="eyebrow">Hardware Reference &middot; x86 &middot; 1989&ndash;1999</p>
+  <h1>486-class x86: architecture, silicon, and the clone wars</h1>
+  <p class="lede">
+    <span class="spec-line">5-stage pipeline</span>
+    <span class="spec-line">8&ndash;16KB L1</span>
+    <span class="spec-line">socket 1/2/3</span>
+    Pipeline, cache, MMU, clock multiplication, the electrical evolution across sockets, the seven-manufacturer clone landscape, and the OverDrive upgrade path, anchored to a real chip: the AMD Am486DE2-66V8TGC.
+  </p>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="num">1.2M</div><div class="lbl">transistors, dx-25</div></div>
+    <div class="stat"><div class="num">168</div><div class="lbl">pin pga, standard socket</div></div>
+    <div class="stat"><div class="num">32</div><div class="lbl">entry tlb, 4-way</div></div>
+    <div class="stat"><div class="num">133</div><div class="lbl">mhz ceiling, am5x86</div></div>
+  </div>
+
+  <h2>Core pipeline</h2>
+  <p><strong>Five stages, one clock for the common case:</strong> the 486 was the first x86 core to pipeline instruction execution the way later RISC designs would &mdash; <span class="term" data-term="pipeline">fetch, decode1, decode2, execute, writeback</span> run as overlapping stages rather than one instruction finishing before the next starts. Combined with the on-die <span class="term" data-term="l1-cache">L1 cache</span>, this is why a 486 at a given clock ran roughly twice the throughput of a 386 at the same clock on integer code, despite a similar instruction set and few new opcodes.</p>
+  <p>Instructions arrive through a 32-byte prefetch queue holding roughly ten instructions ahead of execution. Register-to-register and simple ALU ops complete in one cycle once the pipeline is full; memory-referencing and multi-cycle instructions (multiply, string ops, far jumps) stall stages behind them, same as any classic pipeline hazard. There is no <span class="term" data-term="superscalar">superscalar</span> issue, that's the Pentium's contribution two generations later.</p>
+
+  <h2>Cache and memory management</h2>
+  <ul class="bul">
+    <li>Base parts shipped a <span class="term" data-term="l1-cache">unified 8KB L1</span>, code and data sharing one 4-way set-associative array running at core clock, not bus clock. Enhanced-family parts (AMD's later Am486DX/DX4 revisions, Am5x86) doubled this to 16KB.</li>
+    <li>Cache policy split the product line in two: <span class="term" data-term="write-through">write-through</span> on early/base parts, <span class="term" data-term="write-back">write-back</span> on Enhanced parts, selectable in some models via the WB/WT pin or a control bit. Write-back models use a <span class="term" data-term="mesi">MESI</span> coherency scheme on the cache line state.</li>
+    <li>There is no on-die L2. Motherboards carried external SRAM, commonly socketed as a <span class="term" data-term="coast">COAST module</span>, up to 256KB in practice. Skimping on L2 was a real-world differentiator: period benchmarks found a DX2 with a well-populated 128KB+ L2 landing within a few percent of a true 50MHz DX, while cache-starved boards lagged badly.</li>
+    <li>The on-chip MMU handles both segmentation and paging: two-level page tables, 4KB pages, and a <span class="term" data-term="tlb">32-entry 4-way TLB</span> with pseudo-LRU replacement sitting in front of the page walk.</li>
+    <li>Four operating modes: real mode (power-on default, 8086-compatible), protected mode, virtual-8086 mode (running real-mode code inside a protected-mode OS), and <span class="term" data-term="smm">System Management Mode</span> for power control, entered via a dedicated SMI# pin independent of the OS.</li>
+  </ul>
+
+  <h2>The FPU line: DX, SX, and the 487 fiction</h2>
+  <p><strong>DX parts</strong> carry a fully integrated <span class="term" data-term="fpu-x87">x87 FPU</span> on-die: eight 80-bit extended-precision registers, IEEE 754 single/double/extended formats, error signaling through the FERR and IGNNE pins. <strong>SX parts</strong> are the same die with the FPU disabled, sometimes because a defect landed there during test and the rest of the chip was still good, sometimes purely for market segmentation once yields improved.</p>
+  <p><strong>The 487SX upgrade fiction:</strong> Intel sold the i487SX as a "math coprocessor" for SX systems that came with a spare upgrade socket. It was not a coprocessor. It was a complete 486DX with a different pin key, and installing one shut the original SX off the bus entirely via an UP# signal. From a software standpoint a 487SX-equipped system simply is a 486DX. This pattern, selling a full CPU as an "upgrade part" that disables the resident chip, became the template for the entire <span class="term" data-term="overdrive">OverDrive</span> line that followed.</p>
+
+  <h2>Clock multiplication</h2>
+  <table class="compare">
+    <thead><tr><th>line</th><th>multiplier</th><th>typical range</th><th>note</th></tr></thead>
+    <tbody>
+      <tr><td><code>DX</code></td><td>1x</td><td>16&ndash;50MHz</td><td class="note">core clock = bus clock, no <span class="term" data-term="clkmul">CLKMUL</span> pin logic active</td></tr>
+      <tr><td><code>DX2</code></td><td>2x</td><td>40&ndash;100MHz core</td><td class="note">8KB cache masks bus latency, up to 100% gain for zero board changes</td></tr>
+      <tr><td><code>DX4</code></td><td>3x</td><td>75&ndash;120MHz core</td><td class="bad">the name lies &mdash; it is a tripler, not a quadrupler</td></tr>
+      <tr><td><code>Am5x86</code></td><td>4x</td><td>133&ndash;200MHz core</td><td class="note">AMD-only, 33MHz bus &times; 4, marketed as <code>P75</code> despite being a 4th-gen core</td></tr>
+    </tbody>
+  </table>
+  <p>The multiplier is a PLL fed by an external <span class="term" data-term="clkmul">CLKMUL</span> selection, generating an internal clock some ratio of the bus clock without touching bus timing or peripheral compatibility. This is the single fact that made the entire <span class="term" data-term="overdrive">OverDrive</span> retail upgrade market possible: a socket swap could double or triple compute throughput on a board that never changed.</p>
+
+  <h2>Socket and electrical evolution</h2>
+  <table class="compare">
+    <thead><tr><th>socket</th><th>pins</th><th>voltage</th><th>notable</th></tr></thead>
+    <tbody>
+      <tr><td><span class="term" data-term="socket-1">Socket 1</span></td><td>168, LIF</td><td>5V only</td><td class="note">original 486 socket, no ZIF, extraction tool required</td></tr>
+      <tr><td>Socket 2</td><td>238, ZIF</td><td>5V</td><td class="note">added the OverDrive upgrade socket spec</td></tr>
+      <tr><td><span class="term" data-term="socket-3">Socket 3</span></td><td>237, ZIF</td><td>5V and 3.3V</td><td class="good">the flexible one &mdash; DX4, Am5x86, and this DE2-66 all drop in</td></tr>
+    </tbody>
+  </table>
+  <p>Voltage is not optional to get right. Early/base parts want 5V; from the DX4 generation onward, 3.3V core with 5V-tolerant I/O became standard, cutting power roughly in half at a given clock. A Socket 3 board's voltage jumper or onboard VRM has to match the chip before power-on, mismatches destroy 3.3V-only silicon fast.</p>
+
+  <h2>AMD's die and package chronology</h2>
+  <p>AMD shipped four distinct Am486 dies over the product's life, each with several package revisions. This is the level of detail that actually identifies what's in your hand, since the visible part number alone (<code>V8T</code>, <code>V16B</code>, etc.) only tells you voltage, cache size, and write policy, not silicon generation.</p>
+  <ol class="phase-list">
+    <li><strong>700nm / 8KB</strong>, ~90mm&sup2;, write-through only. First package <span class="term" data-term="pkg-24361">24361</span> (Mar 1993&ndash;Nov 1994, steppings B/C/D/E, 5V), then <span class="term" data-term="pkg-25220">25220</span> as the 3.3V transition package. <span class="meta">DX through early DX2-80</span></li>
+    <li><strong>500nm / 8KB</strong>, ~52mm&sup2;, adds write-back support in later revisions. Package <span class="term" data-term="pkg-25253">25253</span> was the workhorse (DX2-66 through DX4-100/120); <span class="term" data-term="pkg-25498">25498</span> is the last-generation package, briefly used for DX4-100 and then kept in production for years specifically for the embedded <span class="term" data-term="am486de2">Am486DE2-66V8TGC</span>.</li>
+    <li><strong>500nm / 16KB</strong>, the rarest die. Poor yield on the full 16KB config meant most surviving chips shipped with half the cache fused off.</li>
+    <li><strong>350nm / 16KB</strong>, package <span class="term" data-term="pkg-25544">25544</span>. Write-back standard, PLL supports 2x/3x/4x depending on binning. This is the Am5x86 die.</li>
+  </ol>
+
+  <h2>The clone manufacturer landscape</h2>
+  <div class="comp-grid">
+    <div class="comp"><div class="name">Intel</div><div class="role">originator</div><div class="desc">Defined the DX/SX split and the OverDrive retail channel. Sole legal source until arbitration forced licensing.</div></div>
+    <div class="comp"><div class="name"><span class="term" data-term="amd-am486">AMD</span></div><div class="role">second source, then independent</div><div class="desc">Started on licensed Intel microcode, moved to its own after the 1994&ndash;95 litigation. Beat Intel's own DX4 top clock by 20MHz.</div></div>
+    <div class="comp"><div class="name"><span class="term" data-term="cyrix">Cyrix</span></div><div class="role">fabless challenger</div><div class="desc">No fabs of its own; built by SGS-Thomson, TI, and IBM under license. ~5&ndash;10% slower than genuine Intel per clock.</div></div>
+    <div class="comp"><div class="name"><span class="term" data-term="blue-lightning">IBM</span></div><div class="role">licensee, then Cyrix foundry</div><div class="desc">Manufactured Intel-licensed 486s, then Cyrix designs under the confusing "Blue Lightning" name for both.</div></div>
+    <div class="comp"><div class="name">ST Microelectronics</div><div class="role">Cyrix foundry licensee</div><div class="desc">Badged Cyrix Cx486 designs under its own name via a royalty-sharing license.</div></div>
+    <div class="comp"><div class="name">Texas Instruments</div><div class="role">Cyrix licensee + own design</div><div class="desc">Made Cyrix clones, but also shipped its own SXL/SXL2 core with an odd pinout and a secretly clock-doubling "non-doubled" part.</div></div>
+    <div class="comp"><div class="name"><span class="term" data-term="umc-green">UMC</span></div><div class="role">reverse-engineered, litigated out</div><div class="desc">"Green CPU" line actually beat genuine Intel at the same clock. Barred from US sale after Intel's 1994 patent suit.</div></div>
+  </div>
+
+  <h2>OverDrive: the upgrade-socket economy</h2>
+  <p><strong>Two physical formats:</strong> <span class="term" data-term="odp">ODP</span> parts carried an extra 169th key pin and an UP# signal, meant for the spare socket next to a soldered-down SX. <span class="term" data-term="odpr">ODPR</span> parts used the standard 168-pin interface and required pulling the existing CPU first, Intel shipped an extraction tool in the box for exactly this. Early naming was actively confusing: the entry <code>ODP486SX-25</code> was internally a DX2-50, named for what it replaced rather than what it was, a scheme Intel abandoned by 1994 in favor of straightforward frequency labels like <code>DX2ODPR66</code>.</p>
+  <p><strong>DX4 OverDrive</strong> added a real complication: standard DX4 silicon ran 3.3V-class (3.45V nominal), incompatible with older 5V-only boards. The DX4 OverDrive solved this with an onboard voltage regulator and a noticeably taller heatsink, letting a 5V-only Socket 1/2 board take a tripled-clock part it electrically couldn't otherwise run. <strong>Pentium OverDrive</strong> pushed this furthest: a genuine Pentium core, bus-narrowed from 64-bit to the 486's 32-bit interface and given double L1 to compensate, at 63MHz (Feb 1995) and later 83MHz, with its own onboard VRM and a heatsink fan powered straight from the CPU socket.</p>
+
+  <h2>The DX/50 cautionary tale</h2>
+  <p>Intel's 486DX-50 (1991) is the case study in why clock-doubling won over raising the bus clock directly. Running the external bus at a genuine 50MHz, rather than 25 or 33MHz multiplied up, meant every peripheral on the board, cache SRAM, chipset, the works, had to be rated for 50MHz too. 20ns cache SRAM was roughly 24&times; the price of contemporary DRAM per byte. The 50MHz emissions profile also pushed systems out of the FCC's Class B (residential) certification and into Class A (business-only), making it a de facto server part by regulation as much as by price.</p>
+  <p>Intel had to halt shipments in August 1991 after early units overheated badly enough to shut systems down, the first 486 that genuinely needed a heatsink. It stayed in production into late 1993, and period benchmarks show it holding its own against the DX2/66 that superseded it, sometimes winning on memory-bound workloads, but by the 1993 buyer's guides only 4 of 89 tested system lines still offered it against 83 offering the DX2/66. The market had already decided the multiplier trick was the better engineering answer.</p>
+
+  <h2>This chip: Am486DE2-66V8TGC</h2>
+  <table class="compare">
+    <thead><tr><th>field</th><th>value</th></tr></thead>
+    <tbody>
+      <tr><td>decode</td><td><code>DE2</code> embedded clock-doubled &middot; <code>66</code> 66MHz core / 33MHz bus &middot; <code>V</code> 3.3V &middot; <code>8</code> 8KB cache &middot; <code>T</code> write-through</td></tr>
+      <tr><td>functional identity</td><td class="good">electrically and functionally a standard Am486DX2-66 &mdash; embedded Am486 parts were not cut down from their desktop SX/DX counterparts</td></tr>
+      <tr><td>package</td><td><span class="term" data-term="pkg-25498">25498</span>, the last-generation Am486 package, in production for this specific part into 1999</td></tr>
+      <tr><td>socket</td><td>168-pin CPGA, drops into <span class="term" data-term="socket-3">Socket 3</span></td></tr>
+      <tr><td>TDP</td><td>~2.4W typical for the 66MHz/3.3V configuration</td></tr>
+    </tbody>
+  </table>
+  <p>The lifecycle is the interesting part: this exact package/part combination stayed in AMD's catalog years after the desktop DX2-66 had been obsoleted twice over by the DX4 and Am5x86 lines, purely because embedded and industrial customers needed a long, stable production run rather than the fastest available part. A date code reading week 21 of 1998 on a chip like this is exactly consistent with that extended tail.</p>
+
+  <h2>Where this still matters</h2>
+  <ul class="bul">
+    <li>Deterministic timing and a fully public, non-microcode-patched instruction set make the 486 a clean platform for teaching <span class="term" data-term="pipeline">pipelining</span>, cache hierarchy, and real-to-protected mode transitions with hardware you can actually put a scope on.</li>
+    <li>Embedded and industrial modules (PC/104 and similar form factors) kept 486-class cores in production well past 2000 for the same reason this DE2 part existed: certified, unchanging behavior matters more than speed in a controller that can't be casually revalidated.</li>
+    <li>Cycle-accurate emulation (PCem) and FPGA cores (MiSTer) now cover most of the same architecture faithfully enough for software archaeology, without the capacitor-aging and PSU risk of forty-year-old boards, real silicon still wins for hardware-level debugging and genuine BIOS/IRQ behavior.</li>
+  </ul>
+
+  <h2>References</h2>
+  <div class="refs">
+    <div class="ref-row"><span class="key">packaging</span><span class="val"><a href="https://x86.fr/the-ultimate-amd-486-die-packaging-guide/" target="_blank" rel="noopener">The Ultimate AMD 486 Die &amp; Packaging Guide</a><span class="desc">x86.fr, die/package/stepping teardown</span></span></div>
+    <div class="ref-row"><span class="key">overdrive</span><span class="val"><a href="https://www.os2museum.com/wp/486-overdrive/" target="_blank" rel="noopener">Intel OverDrive Part I: 486 OverDrive</a><span class="desc">OS/2 Museum, ODP/ODPR mechanics and pricing</span></span></div>
+    <div class="ref-row"><span class="key">dx/50</span><span class="val"><a href="https://brassicgamer.blogspot.com/2023/01/the-almost-definitive-486dx50-article.html" target="_blank" rel="noopener">The (Almost) Definitive 486DX/50 Article</a><span class="desc">The Brassic Gamer, primary-source press timeline</span></span></div>
+    <div class="ref-row"><span class="key">clone survey</span><span class="val"><a href="https://www.cpushack.com/2021/02/21/the-486-cpu-era-the-birth-of-overclocking-part-1/" target="_blank" rel="noopener">The 486 CPU Era: The Birth of Overclocking, Part 1</a><span class="desc">CPU Shack, seven-manufacturer landscape</span></span></div>
+    <div class="ref-row"><span class="key">family data</span><span class="val"><a href="https://grokipedia.com/page/Am486" target="_blank" rel="noopener">Am486</a><span class="desc">Grokipedia, AMD model/architecture summary</span></span></div>
+    <div class="ref-row"><span class="key">part record</span><span class="val"><a href="https://theretroweb.com/chips/7449" target="_blank" rel="noopener">AMD Am486 DE2 66 SQFP</a><span class="desc">TheRetroWeb chip database</span></span></div>
+  </div>
+
+  <div class="footer"><span class="signoff">HED0RAH.GITHUB.IO</span> &middot; hardware reference &middot; companion piece: phone line &amp; modem technology</div>
+</article>
+
+<aside class="margin">
+  <div class="margin-card" id="margin-card">
+    <p class="margin-code" style="display:block;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted)">
+      Reference Inspector <span class="margin-status"></span>
+    </p>
+    <h3 id="m-title">Hover any underlined term</h3>
+    <code class="margin-code" id="m-code">&middot;</code>
+    <p id="m-body">Move the cursor over any dotted-underline term to load details. Click a term to pin the card so it persists while you read elsewhere.</p>
+    <div class="margin-meta" id="m-meta"></div>
+    <div class="margin-section" id="m-rel"><div class="label">Related</div><ul><li class="more">&middot;</li></ul></div>
+    <div class="margin-section" id="m-notes"><div class="label">Notes</div><ul><li class="more">&middot;</li></ul></div>
+    <div class="margin-section" id="m-links"><div class="label">Sources</div><ul><li class="more">&middot;</li></ul></div>
+  </div>
+  <div class="margin-pin-bar">
+    <span class="margin-hint">hover &middot; click to pin &middot; <kbd>esc</kbd> unpin</span>
+    <button class="margin-unpin" id="margin-unpin" aria-label="Unpin reference card">unpin</button>
+  </div>
+</aside>
+
+</div></div>
+
+<script id="reference-data" type="application/json">
+{
+  "pipeline": {
+    "title": "5-stage instruction pipeline",
+    "code": "fetch \u2192 decode1 \u2192 decode2 \u2192 execute \u2192 writeback",
+    "body": "Overlapping stages let a new instruction begin before the prior one finishes. Simple ALU and register ops retire in one clock once the pipe is full; the RISC-inspired trick that made a 486 roughly 2x a 386 per clock.",
+    "meta": {"stages": "5", "prefetch queue": "32 bytes"},
+    "rel": ["l1-cache", "superscalar"],
+    "notes": ["Memory and multi-cycle ops (multiply, string, far jumps) stall the pipe behind them.", "No superscalar issue \u2014 one instruction retires per clock at best."]
+  },
+  "superscalar": {
+    "title": "Superscalar execution",
+    "code": "Pentium, not 486",
+    "body": "Issuing more than one instruction per clock across parallel execution pipes. The 486 pipelines but does not issue superscalar; that arrived with the Pentium's dual U/V pipe design.",
+    "rel": ["pipeline"]
+  },
+  "l1-cache": {
+    "title": "Unified L1 cache",
+    "code": "8KB base \u2192 16KB Enhanced",
+    "body": "4-way set-associative, holds both code and data, runs at core clock rather than bus clock. This is what let clock-doubled parts mask the bus-speed gap and deliver near-linear scaling from the multiplier.",
+    "meta": {"base size": "8KB", "enhanced size": "16KB", "associativity": "4-way"},
+    "rel": ["write-through", "write-back", "coast"],
+    "notes": ["No on-die L2 on any 486 \u2014 that arrived with the Pentium Pro."]
+  },
+  "write-through": {
+    "title": "Write-through cache policy",
+    "code": "every write hits RAM",
+    "body": "Writes update the cache line and main memory simultaneously, every time, even on a cache hit. Simpler and safer for bus snooping, but burns bus bandwidth on write-heavy code.",
+    "rel": ["write-back", "l1-cache"]
+  },
+  "write-back": {
+    "title": "Write-back cache policy",
+    "code": "Enhanced Am486 / late Intel DX4",
+    "body": "Writes land only in the cache line until it's evicted or explicitly flushed; main memory gets updated lazily. Cuts bus traffic substantially for write-heavy workloads, at the cost of needing real coherency logic.",
+    "meta": {"coherency": "MESI"},
+    "rel": ["mesi", "write-through"]
+  },
+  "mesi": {
+    "title": "MESI protocol",
+    "code": "Modified / Exclusive / Shared / Invalid",
+    "body": "Four-state cache line coherency scheme used on write-back 486 variants to keep the cache consistent with memory and, on multiprocessor boards, with other caches.",
+    "rel": ["write-back"]
+  },
+  "coast": {
+    "title": "COAST module",
+    "code": "Cache On A STick",
+    "body": "A small daughtercard socket for external L2 SRAM, letting a motherboard's cache size be upgraded without resoldering. Populated boards commonly ran 128\u2013256KB.",
+    "rel": ["l1-cache"]
+  },
+  "tlb": {
+    "title": "Translation Lookaside Buffer",
+    "code": "32-entry, 4-way, pseudo-LRU",
+    "body": "Caches recent virtual-to-physical page translations so the MMU doesn't walk the two-level page table on every access. Sits between the pipeline and the page directory/page table structures.",
+    "meta": {"entries": "32", "page size": "4KB"},
+    "rel": ["smm"]
+  },
+  "smm": {
+    "title": "System Management Mode",
+    "code": "SMI# pin",
+    "body": "A fourth CPU mode, alongside real, protected, and virtual-8086, entered via a dedicated interrupt pin independent of the running OS. Used for power management, later became the basis of a huge amount of BIOS-level firmware trickery on later x86.",
+    "rel": ["tlb"]
+  },
+  "fpu-x87": {
+    "title": "Integrated x87 FPU",
+    "code": "DX variants only",
+    "body": "Eight 80-bit extended-precision registers, IEEE 754 single/double/extended formats. Error signaling runs through dedicated FERR (unmasked exception) and IGNNE (ignore numeric error) pins rather than a shared interrupt.",
+    "rel": ["overdrive"]
+  },
+  "clkmul": {
+    "title": "CLKMUL pin",
+    "code": "PLL multiplier select",
+    "body": "External pin strapping that sets the on-chip PLL's multiplication ratio (1x/2x/3x/4x depending on part), generating the internal core clock from the external bus clock without touching bus timing.",
+    "rel": ["overdrive"]
+  },
+  "overdrive": {
+    "title": "Intel OverDrive",
+    "code": "1992\u20131997 retail upgrade line",
+    "body": "Retail CPUs sold specifically as drop-in upgrades. Traces back to the i487SX trick of a 'coprocessor' that was actually a full CPU disabling the resident one. ODP parts (169-pin, keyed) targeted spare upgrade sockets; ODPR parts (168-pin) replaced an existing CPU outright.",
+    "meta": {"odp pins": "169", "odpr pins": "168", "dx4 odpr": "onboard VRM"},
+    "rel": ["clkmul", "fpu-x87", "socket-3"],
+    "notes": ["Pentium OverDrive (63/83MHz) was a genuine Pentium core narrowed to the 486's 32-bit bus, with doubled L1 to compensate."]
+  },
+  "socket-1": {
+    "title": "Socket 1",
+    "code": "168-pin LIF",
+    "body": "The original 486 socket. Low insertion force, not zero, meaning CPU swaps needed an extraction tool rather than a lever. 5V only.",
+    "rel": ["socket-3"]
+  },
+  "socket-3": {
+    "title": "Socket 3",
+    "code": "237-pin ZIF",
+    "body": "The flexible late-486 socket: zero insertion force, supports both 5V and 3.3V parts via a jumper or onboard regulator. Everything from the original DX through Am5x86 and this DE2-66 fits here.",
+    "meta": {"pins": "237", "voltage": "5V + 3.3V", "type": "ZIF"},
+    "rel": ["socket-1", "am486de2"]
+  },
+  "odp": {
+    "title": "ODP (OverDrive Processor)",
+    "code": "169-pin, keyed",
+    "body": "Meant for the spare upgrade socket next to a soldered SX/487 pair. The extra 169th pin has no electrical function, it's purely a keying pin so the part can't be inserted backwards, plus an UP# (upgrade present) signal that takes the resident CPU off the bus.",
+    "rel": ["odpr", "overdrive"]
+  },
+  "odpr": {
+    "title": "ODPR (OverDrive Processor Replacement)",
+    "code": "168-pin, standard",
+    "body": "For systems with no spare socket. The existing CPU has to come out first, trivial on ZIF sockets, not on the older LIF ones, so Intel shipped an extraction tool in the retail box.",
+    "rel": ["odp", "overdrive"]
+  },
+  "amd-am486": {
+    "title": "AMD Am486",
+    "code": "launched April 1993",
+    "body": "AMD's second-source 486 clone, initially built on Intel-derived microcode under a 386-era licensing arbitration. Intel sued over microcode copyright in 1993; a 1994 jury ruled for AMD, and a 1995 settlement gave AMD a perpetual royalty-free license to 386/486 microcode, explicitly excluding future Intel architectures.",
+    "meta": {"launch": "Apr 1993", "settlement": "Jan 1995"},
+    "rel": ["am486de2", "cyrix"]
+  },
+  "am486de2": {
+    "title": "Am486DE2",
+    "code": "embedded clock-doubled line",
+    "body": "AMD's embedded-market Am486 branding. Unlike AMD's earlier Am386 embedded parts, the Am486 embedded models are electrically and functionally identical to the equivalent desktop SX/DX/DX2, not a cut-down variant.",
+    "rel": ["amd-am486", "pkg-25498"]
+  },
+  "cyrix": {
+    "title": "Cyrix",
+    "code": "fabless, M5/M6/M1sc cores",
+    "body": "No fabs of its own; manufactured under license by SGS-Thomson, TI, and IBM. Cx486S (M5) skipped the FPU but added a small write-back cache; Cx486DX (M6) added the FPU. The later Cx5x86 (M1sc) borrowed Pentium-era tricks like branch prediction on a 486-class core.",
+    "rel": ["blue-lightning", "amd-am486"]
+  },
+  "blue-lightning": {
+    "title": "IBM Blue Lightning",
+    "code": "reused branding, two unrelated products",
+    "body": "IBM manufactured Intel-licensed 486s, then later Cyrix designs, both under the same 'Blue Lightning' marketing name, confusingly reused from an earlier, unrelated in-house IBM QFP-package 486 design.",
+    "rel": ["cyrix"]
+  },
+  "umc-green": {
+    "title": "UMC \"Green CPU\"",
+    "code": "1993, reverse-engineered",
+    "body": "Taiwanese fab UMC revised Intel's own microcode and shipped a 486 clone that ran faster than genuine Intel silicon at the same clock. No FPU ever reached volume production. Intel's 1994 patent suit barred US sale; surviving chips are marked 'Not for U.S. sale or import.'",
+    "rel": ["cyrix"]
+  },
+  "pkg-24361": {
+    "title": "Package 24361",
+    "code": "700nm/8KB die, first package",
+    "body": "The original Am486 package, in production March 1993 through November 1994, covering steppings B through E at 5V.",
+    "rel": ["pkg-25220"]
+  },
+  "pkg-25220": {
+    "title": "Package 25220",
+    "code": "700nm/8KB die, 3.3V transition",
+    "body": "Second-generation package on the original die, carrying both the last 5V stepping and the first 3.3V stepping, produced into late 1995 for DX2-50/66/80.",
+    "rel": ["pkg-24361", "pkg-25253"]
+  },
+  "pkg-25253": {
+    "title": "Package 25253",
+    "code": "500nm/8KB die, main package",
+    "body": "The workhorse Am486 package, covering DX2-66 through DX4-100/120 across two steppings, November 1994 to February 1996.",
+    "rel": ["pkg-25498"]
+  },
+  "pkg-25498": {
+    "title": "Package 25498",
+    "code": "500nm/8KB die, final revision",
+    "body": "Briefly used for C-stepping DX4-100 in mid-1996, then kept in production for years specifically for the embedded Am486DE2-66V8TGC, into 1999, long after the equivalent desktop part was obsolete.",
+    "meta": {"desktop run": "May\u2013Oct 1996", "embedded run": "through 1999"},
+    "rel": ["am486de2", "pkg-25253"]
+  },
+  "pkg-25544": {
+    "title": "Package 25544",
+    "code": "350nm/16KB die, Am5x86",
+    "body": "The final and most advanced Am486 package, write-back standard, PLL selectable across 2x/3x/4x depending on the specific model. This is the Am5x86 silicon.",
+    "rel": ["am5x86"]
+  },
+  "am5x86": {
+    "title": "Am5x86",
+    "code": "AMD Am486DX5-133ADW/Y/Z",
+    "body": "133MHz via a 33MHz bus and 4x multiplier, 16KB write-back L1, marketed as 'P75' for rough Pentium-75 performance despite being a 4th-generation core. Popular overclocking target: 160MHz (40\u00d74) common, 200MHz (50\u00d74) on good silicon, with the 'Z' thermal grade (85\u00b0C rated) generally considered the best overclocker.",
+    "rel": ["pkg-25544", "overdrive"]
+  }
+}
+</script>
+
+<script>
+(()=>{
+  const D = JSON.parse(document.getElementById('reference-data').textContent);
+  const card = document.getElementById('margin-card');
+  const els = {
+    t: document.getElementById('m-title'),
+    c: document.getElementById('m-code'),
+    b: document.getElementById('m-body'),
+    m: document.getElementById('m-meta'),
+    r: document.getElementById('m-rel'),
+    n: document.getElementById('m-notes'),
+    l: document.getElementById('m-links'),
+    s: card.querySelector('.margin-status')
+  };
+  const unpinBtn = document.getElementById('margin-unpin');
+  let pinnedKey = null;
+  function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+  function host(u){try{return new URL(u).hostname.replace(/^www\./,'');}catch(e){return '';}}
+  function paint(k){
+    const x = D[k];
+    if(!x) return;
+    els.t.textContent = x.title;
+    els.c.textContent = x.code || '\u00b7';
+    els.b.textContent = x.body || '';
+    els.m.innerHTML = Object.entries(x.meta||{}).map(([k,v])=>`<div><strong>${esc(k)}</strong><span>${esc(v)}</span></div>`).join('');
+    els.r.querySelector('ul').innerHTML = (x.rel||[]).map(r=>{const o=D[r];return o?`<li>&rsaquo; ${esc(o.title)}</li>`:'';}).join('') || '<li class="more">&middot;</li>';
+    els.n.querySelector('ul').innerHTML = (x.notes||[]).map(n=>`<li style="white-space:normal;font-family:inherit;font-size:0.76rem">&middot; ${esc(n)}</li>`).join('') || '<li class="more">&middot;</li>';
+    els.l.querySelector('ul').innerHTML = (x.links||[]).map(L=>`<li class="link-item"><a href="${esc(L.url)}" target="_blank" rel="noopener noreferrer">${esc(L.label)}</a><span class="src">${esc(host(L.url))}</span></li>`).join('') || '<li class="more">&middot;</li>';
+  }
+  function setActive(el){
+    document.querySelectorAll('.term.is-active').forEach(x=>{if(x!==el)x.classList.remove('is-active');});
+    if(el) el.classList.add('is-active');
+  }
+  function pin(key, el){
+    pinnedKey = key;
+    paint(key);
+    card.classList.add('is-pinned');
+    els.s.textContent = 'pinned';
+    unpinBtn.style.display = 'inline-block';
+    document.querySelectorAll('.term.is-pinned').forEach(x=>x.classList.remove('is-pinned'));
+    if(el) el.classList.add('is-pinned');
+  }
+  function unpin(){
+    pinnedKey = null;
+    card.classList.remove('is-pinned');
+    els.s.textContent = '';
+    unpinBtn.style.display = 'none';
+    document.querySelectorAll('.term.is-pinned').forEach(x=>x.classList.remove('is-pinned'));
+  }
+  document.addEventListener('mouseover', e => {
+    if(pinnedKey) return;
+    const t = e.target.closest('.term');
+    if(!t) return;
+    const key = t.getAttribute('data-term');
+    paint(key);
+    setActive(t);
+  });
+  document.querySelectorAll('.term').forEach(el => {
+    el.setAttribute('tabindex', '0');
+    el.addEventListener('click', e => {
+      e.preventDefault();
+      const key = el.getAttribute('data-term');
+      if(pinnedKey === key) { unpin(); return; }
+      pin(key, el);
+    });
+    el.addEventListener('keydown', e => {
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        const key = el.getAttribute('data-term');
+        if(pinnedKey === key) { unpin(); return; }
+        pin(key, el);
+      }
+    });
+    el.addEventListener('focus', () => { if(!pinnedKey) paint(el.getAttribute('data-term')); });
+  });
+  unpinBtn.addEventListener('click', unpin);
+  document.addEventListener('keydown', e => { if(e.key === 'Escape' && pinnedKey) unpin(); });
+})();
+</script>
+</body>
+</html>

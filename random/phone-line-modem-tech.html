@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Phone lines and modems: from copper to VoIP</title>
+<meta name="description" content="Reference brief on POTS fundamentals, RS-232/UART, the Hayes AT command set, modem modulation standard evolution, the 56k asymmetric trick, FOSSIL drivers, and why VoIP and fiber ONTs break analog modem connections." />
+<meta property="og:title" content="Phone lines and modems: from copper to VoIP" />
+<meta property="og:type" content="article" />
+<style>
+:root{
+  --paper:#1a2838;
+  --ink:#e8f0f8;
+  --muted:#7a98b8;
+  --line:#2f4561;
+  --soft:rgba(255,255,255,0.015);
+  --accent-deep:#9fd4e8;
+  --accent-hot:#f0d878;
+  --accent-warm:#fae8a8;
+  --accent-warm-soft:rgba(250,232,168,0.10);
+  --accent-hot-soft:rgba(240,216,120,0.10);
+  --accent-deep-soft:rgba(159,212,232,0.08);
+  --code-bg:#0e1825;
+  --code-fg:#c8d8e8;
+  --ex-bg:#1f3045;
+  --pin-bg:rgba(240,216,120,0.16);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);background:var(--paper);font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;line-height:1.45}
+.page{max-width:1240px;margin:0 auto;padding:24px 16px 44px}
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:26px;align-items:start}
+.paper{min-width:0;border-top:2px solid var(--accent-deep);border-bottom:1px solid var(--line);padding:20px 0 24px}
+.eyebrow{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:var(--accent-hot);font-weight:600}
+h1,h2,h3{margin:0;font-weight:600;line-height:1.2}
+h1{font-size:clamp(1.55rem,2.1vw,1.9rem);letter-spacing:-0.02em;margin-bottom:6px;color:var(--accent-deep)}
+h2{font-size:0.92rem;margin-top:20px;margin-bottom:6px;padding-top:10px;border-top:1px solid var(--line);color:var(--accent-deep);text-transform:uppercase;letter-spacing:0.05em}
+h3{font-size:0.86rem;margin:8px 0 4px;color:var(--ink)}
+p{margin:0 0 6px;font-size:0.86rem}
+.lede{font-size:0.9rem;color:#c8d8e8;margin:6px 0 14px}
+code{font-family:"SFMono-Regular","SF Mono",Menlo,Consolas,monospace;font-size:0.85em;background:rgba(159,212,232,0.10);padding:0.04rem 0.22rem;border-radius:1px}
+.chip{display:inline-block;margin:0 3px 3px 0;padding:1px 6px;border:1px solid var(--line);border-radius:2px;font-size:0.69rem;letter-spacing:0.02em;color:var(--muted)}
+.chip.hot{border-color:var(--accent-hot);color:var(--accent-hot);background:var(--accent-hot-soft)}
+.spec-line{display:inline-block;padding:2px 8px;border:1px solid var(--accent-deep);background:var(--accent-deep-soft);font-family:"SFMono-Regular",monospace;font-size:0.74rem;color:var(--accent-deep);margin-right:6px;letter-spacing:0.03em}
+.term{cursor:pointer;border-bottom:1px dotted var(--accent-deep);color:var(--accent-deep);transition:.1s;padding:0 1px;font-weight:500}
+.term:hover,.term:focus-visible,.term.is-active{background:var(--accent-warm-soft);color:var(--accent-hot);border-bottom-color:var(--accent-hot);outline:none}
+.term.is-pinned{background:var(--pin-bg);color:var(--accent-hot);border-bottom-style:solid}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:6px;margin:10px 0 14px}
+.stat{padding:8px 10px;border:1px solid var(--line);background:var(--paper)}
+.stat .num{font-family:"Iowan Old Style",Georgia,serif;font-size:1.45rem;font-weight:600;color:var(--accent-deep);line-height:1.1}
+.stat .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px}
+.compare{width:100%;border-collapse:collapse;font-size:0.82rem;margin:6px 0 8px}
+.compare th,.compare td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top}
+.compare th{background:var(--accent-deep-soft);color:var(--accent-deep);font-weight:600;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em}
+.compare td.good{color:var(--accent-deep)}
+.compare td.bad{color:var(--accent-hot)}
+.compare td.note{color:var(--muted);font-style:italic;font-size:0.78rem}
+.compare td code{font-size:0.78em}
+.bul{list-style:none;padding:0;margin:4px 0 8px}
+.bul li{padding:2px 0 2px 16px;font-size:0.84rem;position:relative;line-height:1.5;color:#dce6f0}
+.bul li::before{content:"\00b7";position:absolute;left:5px;color:var(--accent-hot);font-weight:700;font-size:1.1rem;line-height:1}
+.bul li strong{color:var(--accent-deep);font-weight:600}
+.bul li code{font-size:0.82em}
+.figure{margin:8px 0 12px;border:1px solid var(--line);background:var(--ex-bg);padding:10px}
+.figure svg{display:block;max-width:100%;height:auto;margin:0 auto}
+.figure .cap{font-size:0.74rem;color:var(--muted);text-align:center;margin-top:6px;font-style:italic;letter-spacing:0.02em}
+.refs{font-size:0.78rem;line-height:1.55;margin:6px 0}
+.refs .ref-row{display:grid;grid-template-columns:130px 1fr;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line)}
+.refs .ref-row:last-child{border-bottom:none}
+.refs .ref-row .key{font-family:"SFMono-Regular",monospace;font-size:0.72rem;color:var(--accent-deep);font-weight:600;text-transform:uppercase;letter-spacing:0.03em}
+.refs .ref-row .val a{color:var(--accent-hot);text-decoration:none;border-bottom:1px dotted var(--accent-hot)}
+.refs .ref-row .val a:hover{background:var(--accent-hot-soft)}
+.refs .ref-row .val .desc{color:var(--muted);font-style:italic;font-size:0.74rem;margin-left:6px}
+.margin{position:sticky;top:18px;border-top:2px solid var(--accent-deep);padding-top:10px;font-size:0.82rem;color:var(--muted)}
+.margin-card{border:1px solid var(--line);border-left:3px solid var(--accent-hot);background:rgba(255,255,255,0.015);padding:12px 12px 10px;min-height:340px;transition:border-left-color .15s,background .15s}
+.margin-card.is-pinned{border-left-color:var(--accent-deep);background:var(--accent-deep-soft)}
+.margin h3{font-size:0.9rem;margin-bottom:6px;color:var(--accent-deep)}
+.margin p{margin-bottom:7px;font-size:0.8rem;color:#dce6f0}
+.margin-code{display:inline-block;margin-top:2px;margin-bottom:6px;color:var(--accent-hot)}
+.margin-meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin:7px 0 8px;padding:7px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:#dce6f0}
+.margin-meta strong{display:block;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.margin-meta span{font-size:0.8rem}
+.margin-section{margin-top:10px}
+.margin-section .label{font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:3px}
+.margin-section ul{margin:0;padding:0;list-style:none}
+.margin-section li{padding:2px 0;border-top:1px solid rgba(47,69,97,0.7);font-size:0.76rem;color:#c8d8e8;font-family:"SFMono-Regular",Menlo,Consolas,monospace}
+.margin-section li:first-child{border-top:none}
+.margin-section .more{color:var(--muted);font-style:italic;font-family:inherit}
+.margin-section a{color:var(--accent-hot);text-decoration:none;border-bottom:1px dotted var(--accent-hot);font-family:inherit;word-break:break-word}
+.margin-section a:hover{background:var(--accent-hot-soft);color:var(--accent-deep)}
+.margin-section li.link-item{white-space:normal;font-family:inherit;padding:4px 0}
+.margin-section li.link-item .src{display:block;font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:1px;font-family:"SFMono-Regular",monospace}
+.margin-pin-bar{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:7px;border-top:1px solid var(--line)}
+.margin-hint{font-size:0.72rem;color:var(--muted)}
+.margin-hint kbd{font-family:"SFMono-Regular",Menlo,Consolas,monospace;font-size:0.7rem;padding:0 4px;border:1px solid var(--line);border-radius:2px;background:var(--soft)}
+.margin-unpin{font-family:inherit;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;padding:2px 7px;border:1px solid var(--accent-hot);background:transparent;color:var(--accent-hot);cursor:pointer;border-radius:2px;display:none}
+.margin-card.is-pinned ~ .margin-pin-bar .margin-unpin{display:inline-block}
+.margin-card.is-pinned .margin-status{color:var(--accent-hot);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;font-size:9px}
+.footer{margin-top:20px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font-size:0.76rem}
+.footer .signoff{color:var(--accent-deep);font-weight:600;letter-spacing:0.05em}
+@media (max-width:980px){
+  .sheet{grid-template-columns:1fr}
+  .margin{position:static;order:2;border-top:1px solid var(--line)}
+  .stat-grid{grid-template-columns:1fr}
+  .compare{font-size:0.76rem}
+  .refs .ref-row{grid-template-columns:100px 1fr}
+}
+@media print{
+  body{background:#fff}
+  .margin,.term{cursor:default}
+  .term{border-bottom:none;color:var(--accent-deep)!important;background:transparent!important}
+}
+</style>
+</head>
+<body>
+<div class="page"><div class="sheet">
+
+<article class="paper">
+  <p class="eyebrow">Hardware Reference &middot; Telephony &middot; POTS to SIP</p>
+  <h1>Phone lines and modems: from copper to VoIP</h1>
+  <p class="lede">
+    <span class="spec-line">RS-232 / UART</span>
+    <span class="spec-line">Hayes AT</span>
+    <span class="spec-line">V.34 &rarr; V.90</span>
+    The local loop, the serial stack between computer and modem, the modulation standards that got from 300bps to 56k, and why a modern fiber "landline" quietly breaks all of it.
+  </p>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="num">1981</div><div class="lbl">hayes smartmodem, at cmd set</div></div>
+    <div class="stat"><div class="num">33.6k</div><div class="lbl">v.34 symmetric ceiling</div></div>
+    <div class="stat"><div class="num">56k</div><div class="lbl">v.90, downstream only</div></div>
+    <div class="stat"><div class="num">16</div><div class="lbl">byte fifo, 16550 uart</div></div>
+  </div>
+
+  <h2>The local loop</h2>
+  <p><strong>What a "phone line" physically is:</strong> a twisted copper pair running from a demarcation point at the building back to a <span class="term" data-term="central-office">central office</span>, carrying a nominal -48V DC feed for on-hook power and a ringing voltage around 90V AC when a call comes in. Everything about how a modem behaves, the tones it can produce, the impedance it expects to see, was engineered against that specific electrical environment: a real, continuous, circuit-switched analog path with no packets, no jitter, and one predictable source of noise, the line itself.</p>
+  <p>Inside every analog modem sits a <span class="term" data-term="daa">DAA</span>, the circuit that isolates the modem's low-voltage logic from the phone line's much higher voltages, detects ring signals, and goes off-hook. This is the part a fiber ONT's voice port replaces with something electrically similar but architecturally very different, more on that below.</p>
+
+  <h2>RS-232 and the UART</h2>
+  <ul class="bul">
+    <li>The computer talks to the modem over <span class="term" data-term="rs232">RS-232</span>, a point-to-point serial link with the computer as <span class="term" data-term="dte-dce">DTE</span> and the modem as <span class="term" data-term="dte-dce">DCE</span>. This distinction is why a straight-through cable, not a null-modem cable, connects a PC to a real modem.</li>
+    <li>On the PC side, a <span class="term" data-term="uart">UART</span> chip handles the actual bit-level serial framing. The original IBM PC/XT shipped the 8250; the AT moved to the pin-compatible, faster 16450. Both share one fatal flaw for high-speed use: a single-byte buffer, meaning the CPU takes an interrupt for every single character.</li>
+    <li>The <span class="term" data-term="16550">16550</span>, introduced by National Semiconductor in 1987, added 16-byte FIFO buffers on both transmit and receive with a programmable interrupt trigger (1/4/8/14 bytes). Above roughly 9600 baud, a 1-byte UART reliably drops characters under any real multitasking load; the 16550's buffer is what makes higher speeds and BBS-era multitasking (DESQview, FOSSIL drivers servicing multiple things at once) actually reliable.</li>
+    <li><span class="term" data-term="flow-control">Hardware flow control</span> (RTS/CTS) matters specifically because the DTE-DCE serial link runs faster than the modem's actual over-the-wire rate, to leave headroom for the modem's own data compression. Without RTS/CTS, that gap silently drops bytes.</li>
+  </ul>
+
+  <h2>The Hayes AT command set</h2>
+  <p>Dale Heatherington and Dennis Hayes wrote the original command language for the 1981 Hayes Smartmodem, and it became the de facto universal modem control protocol simply because everyone else copied it wholesale, registers and all. It splits into three tiers by prefix: <span class="term" data-term="at-basic">basic commands</span> (a letter straight after <code>AT</code>, like <code>ATD</code> to dial or <code>ATA</code> to answer), <span class="term" data-term="at-extended">extended commands</span> (an ampersand prefix, <code>AT&amp;K3</code> for flow control), and vendor-proprietary commands using whatever prefix character a manufacturer picked, backslash for Microcom, percent for others.</p>
+  <p>Settings live in <span class="term" data-term="s-registers">S-registers</span>, roughly two dozen numbered memory slots (<code>S0</code> through <code>S27</code> in practice) queried with <code>ATSn?</code> and set with <code>ATSn=value</code>, covering things like rings-before-auto-answer (<code>S0</code>) and various timers. Hayes patented the "guard time" behind the <code>+++</code> escape sequence and enforced it commercially in the late 1980s. The ITU eventually standardized the core of all this as V.25ter in 1995, renamed V.250 in 1998, formally requiring specific commands and specific S-register semantics for compliance.</p>
+
+  <h2>Modulation standards: 300bps to 56k</h2>
+  <table class="compare">
+    <thead><tr><th>standard</th><th>speed</th><th>note</th></tr></thead>
+    <tbody>
+      <tr><td>Bell 103</td><td>300 bps</td><td class="note">the original US standard, FSK</td></tr>
+      <tr><td>Bell 212A / <span class="term" data-term="v22">V.22</span></td><td>1200 bps</td><td class="note">first widely deployed PSK modem speed</td></tr>
+      <tr><td>V.22bis</td><td>2400 bps</td><td class="note">QAM, doubled throughput in the same bandwidth</td></tr>
+      <tr><td>V.32</td><td>9600 bps</td><td class="note">trellis-coded modulation, needs echo cancellation for full duplex on one frequency band</td></tr>
+      <tr><td>V.32bis</td><td>14400 bps</td><td class="note">the fax-modem workhorse of the early-mid 90s</td></tr>
+      <tr><td><span class="term" data-term="v34">V.34</span></td><td>28800&ndash;33600 bps</td><td class="note">the practical ceiling for a fully analog, symmetric connection</td></tr>
+      <tr><td><span class="term" data-term="v90">V.90</span></td><td>56000/33600 bps</td><td class="bad">asymmetric &mdash; downstream only, requires a digitally-attached far end</td></tr>
+      <tr><td>V.92</td><td>56000/48000 bps</td><td class="note">improved upstream via PCM, plus modem-on-hold for call waiting</td></tr>
+    </tbody>
+  </table>
+  <p>V.32 and later full-duplex standards need real echo cancellation because both modems transmit in the same frequency band simultaneously, each has to null out its own reflected signal to hear the other side. This is exactly the function that a VoIP ATA's speech-tuned echo canceller gets wrong for modem tones, see below.</p>
+
+  <h2>The 56k trick, and why it rarely delivers 56k</h2>
+  <p><strong>The core rule:</strong> <span class="term" data-term="v90">V.90</span>/X2/K56flex only work with a single analog-to-digital conversion between the two ends. Downstream data is encoded directly as PCM samples on a digital trunk from the ISP straight to the phone company's line card, hitting only one D/A conversion, the one at your local loop, so it avoids the quantization noise that otherwise caps a connection near 33.6k. Upstream still has to cross an A/D conversion at your end, so it stays capped at V.34 rates regardless.</p>
+  <p>The practical consequence for a residential caller-to-caller connection, like a dial-up BBS: since <strong>both</strong> ends are ordinary analog lines, there's no digital backhaul on either side, so the call negotiates down to <span class="term" data-term="v34">V.34</span>, around 33.6k, not 56k. This isn't a fault condition, it's the standard behaving exactly as specified. 56k was always an ISP-and-you technology, not a you-and-your-friend technology. USRobotics (X2) and Rockwell/Lucent (K56flex) fought a standards war over the asymmetric trick before the ITU unified both into V.90 in 1998.</p>
+
+  <h2>FOSSIL drivers and the BBS comms stack</h2>
+  <ul class="bul">
+    <li><span class="term" data-term="fossil">FOSSIL</span> (Fido/Opus/SEAdog Standard Interface Layer) is the DOS-era abstraction between BBS software and the raw UART, since DOS's own BIOS serial support was too primitive for anything beyond trivial use.</li>
+    <li><span class="term" data-term="x00-bnu">X00 and BNU</span> were the two dominant real-hardware DOS FOSSIL drivers, talking directly to a physical UART on a physical COM port.</li>
+    <li><span class="term" data-term="rlfossil">RLFOSSIL</span> is the one that matters for getting a genuine DOS BBS onto the modern internet: a FOSSIL driver plus a Hayes modem emulator built on a packet driver, presenting incoming Telnet/rlogin connections as virtual "calls" complete with AT-command handshaking, explicitly designed to run alongside X00/BNU so a real modem and a telnet line can coexist as separate nodes on the same box.</li>
+    <li><span class="term" data-term="netfoss">NetFoss</span> does the same job but for Windows-hosted DOS BBS setups (NTVDM), not real-mode DOS on bare hardware.</li>
+  </ul>
+
+  <h2>Modern nuance: what VoIP does to a modem tone</h2>
+  <p>A modem signal is not speech. It's a precisely shaped, phase- and amplitude-modulated carrier that both ends demodulate assuming a continuous, low-noise analog path. VoIP breaks every one of those assumptions in a different way:</p>
+  <p><strong>Codec compression:</strong> speech codecs like <span class="term" data-term="g729">G.729</span> and G.723 are lossy, and they're lossy specifically in ways tuned to how the human ear parses vowels and consonants, not how a modem's constellation encodes bits. Running modem tones through one is not "lower quality," it's actively destructive, the compressed signal often can't be demodulated at all. Even an uncompressed <span class="term" data-term="g711">G.711</span> codec doesn't fully solve this.</p>
+  <p><strong>Packet behavior:</strong> loss, jitter, and reordering are invisible to a phone call (the ear tolerates tiny gaps) and catastrophic to a modem, which needs a continuous, precisely timed sample stream to hold its carrier lock. <span class="term" data-term="clock-skew">Clock skew</span> between the two ends' independent sample clocks compounds this over the length of a call.</p>
+  <p><strong>Echo cancellation:</strong> full-duplex modem standards from V.32 onward rely on precise self-echo cancellation to separate their own transmission from the far end's. A VoIP ATA's echo canceller is tuned for speech and will actively distort or cancel legitimate modem signal, mistaking it for echo.</p>
+  <p>The purpose-built fix is <span class="term" data-term="t38">T.38</span> for fax and the much less commonly implemented <span class="term" data-term="v150">V.150.1</span> for general modem relay, both of which demodulate at the VoIP edge and carry the data as data, not as compressed audio. Most consumer VoIP equipment supports neither by default.</p>
+
+  <div class="figure">
+    <svg viewBox="0 0 620 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Comparison of a genuine POTS analog local loop versus a fiber ONT VoIP voice path">
+      <style>
+        .b{fill:#1a2838;stroke:#9fd4e8;stroke-width:1.2}
+        .bc{fill:#2a2015;stroke:#f0d878;stroke-width:1.2}
+        .lbl{font-family:Iowan Old Style,Georgia,serif;font-size:11px;fill:#e8f0f8}
+        .mono{font-family:SFMono-Regular,Menlo,monospace;font-size:10px;fill:#c8d8e8}
+        .muted{font-family:SFMono-Regular,monospace;font-size:9px;fill:#7a98b8}
+        .ln{stroke:#7a98b8;stroke-width:1;fill:none}
+        .arr{stroke:#f0d878;stroke-width:1.4;fill:none;marker-end:url(#ar2)}
+      </style>
+      <defs>
+        <marker id="ar2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 z" fill="#f0d878"/>
+        </marker>
+      </defs>
+      <text class="lbl" x="20" y="24">POTS: one continuous analog path</text>
+      <rect class="b" x="20" y="36" width="110" height="50"/>
+      <text class="mono" x="30" y="56">modem +</text>
+      <text class="mono" x="30" y="70">DAA</text>
+      <path class="arr" d="M130 61 L 240 61"/>
+      <text class="muted" x="185" y="52" text-anchor="middle">copper pair</text>
+      <rect class="b" x="240" y="36" width="110" height="50"/>
+      <text class="mono" x="250" y="56">central</text>
+      <text class="mono" x="250" y="70">office</text>
+      <path class="arr" d="M350 61 L 460 61"/>
+      <text class="muted" x="405" y="52" text-anchor="middle">copper pair</text>
+      <rect class="b" x="460" y="36" width="130" height="50"/>
+      <text class="mono" x="470" y="56">far modem +</text>
+      <text class="mono" x="470" y="70">DAA</text>
+      <text class="muted" x="20" y="104">no A/D conversion between the two DAAs \u2014 the whole path is analog</text>
+
+      <text class="lbl" x="20" y="144">Fiber "landline": VoIP under the hood</text>
+      <rect class="bc" x="20" y="156" width="110" height="50"/>
+      <text class="mono" x="30" y="176">modem</text>
+      <path class="arr" d="M130 181 L 200 181"/>
+      <rect class="bc" x="200" y="156" width="110" height="50"/>
+      <text class="mono" x="210" y="176">ONT / ATA</text>
+      <text class="muted" x="210" y="190">A/D + codec</text>
+      <path class="arr" d="M310 181 L 400 181"/>
+      <text class="muted" x="355" y="172" text-anchor="middle">RTP / SIP</text>
+      <rect class="bc" x="400" y="156" width="110" height="50"/>
+      <text class="mono" x="410" y="176">ISP</text>
+      <text class="mono" x="410" y="190">softswitch</text>
+      <path class="arr" d="M510 181 L 590 181"/>
+      <text class="muted" x="20" y="224">A/D conversion + lossy codec + packet jitter, all inside the "phone line" now</text>
+    </svg>
+    <div class="cap">Same jack on the wall, two structurally different paths behind it. The ONT/ATA box is the DAA replacement that changes everything.</div>
+  </div>
+
+  <h2>Diagnostic quick reference</h2>
+  <table class="compare">
+    <thead><tr><th>symptom</th><th>likely cause</th></tr></thead>
+    <tbody>
+      <tr><td>connects only at 14.4&ndash;28.8k, or fails to connect at all</td><td class="bad">compressed VoIP codec (G.729/G.723) somewhere in the path</td></tr>
+      <tr><td>connects, then random garbage / frequent retrains</td><td class="bad">packet loss or jitter on the VoIP leg, or clock skew between ATAs</td></tr>
+      <tr><td>connects fine but caps around 33.6k both directions</td><td class="good">expected &mdash; both ends are analog, this is V.34, not a fault</td></tr>
+      <tr><td>characters dropped during file transfer at high baud</td><td class="note">no hardware flow control, or a non-16550 UART</td></tr>
+      <tr><td>works but zmodem/file transfer stalls at 0%</td><td class="note">telnet-bridge escape sequence handling, common on early Zimodem/ESP-based bridges</td></tr>
+    </tbody>
+  </table>
+
+  <h2>References</h2>
+  <div class="refs">
+    <div class="ref-row"><span class="key">v.90</span><span class="val"><a href="https://www.eetimes.com/an-introduction-to-the-v-90-56k-modem/" target="_blank" rel="noopener">An Introduction to the V.90 (56K) Modem</a><span class="desc">EE Times, single-conversion rule and PCM downstream mechanics</span></span></div>
+    <div class="ref-row"><span class="key">voip modems</span><span class="val"><a href="https://vocal.com/voip/why-modems-fail-with-traditional-analog-telephone-adapters/" target="_blank" rel="noopener">Why Modems Fail With Traditional ATAs</a><span class="desc">Vocal Technologies, codec/jitter/echo-cancellation failure modes</span></span></div>
+    <div class="ref-row"><span class="key">16550</span><span class="val"><a href="https://en.wikipedia.org/wiki/16550_UART" target="_blank" rel="noopener">16550 UART</a><span class="desc">Wikipedia, FIFO buffer history and predecessors</span></span></div>
+    <div class="ref-row"><span class="key">hayes at</span><span class="val"><a href="https://en.wikipedia.org/wiki/Hayes_AT_command_set" target="_blank" rel="noopener">Hayes AT Command Set</a><span class="desc">Wikipedia, command tiers and ITU standardization</span></span></div>
+    <div class="ref-row"><span class="key">rlfossil</span><span class="val"><a href="https://virtuallyfun.com/2011/07/01/bbsing-with-windows386-windows-3-0-under-qemu-or-how-i-learned-to-love-rlfossil/" target="_blank" rel="noopener">BBSing with rlfossil</a><span class="desc">Virtually Fun, real-world multiline DOS BBS over telnet</span></span></div>
+  </div>
+
+  <div class="footer"><span class="signoff">HED0RAH.GITHUB.IO</span> &middot; hardware reference &middot; companion piece: 486-class x86 architecture</div>
+</article>
+
+<aside class="margin">
+  <div class="margin-card" id="margin-card">
+    <p class="margin-code" style="display:block;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted)">
+      Reference Inspector <span class="margin-status"></span>
+    </p>
+    <h3 id="m-title">Hover any underlined term</h3>
+    <code class="margin-code" id="m-code">&middot;</code>
+    <p id="m-body">Move the cursor over any dotted-underline term to load details. Click a term to pin the card so it persists while you read elsewhere.</p>
+    <div class="margin-meta" id="m-meta"></div>
+    <div class="margin-section" id="m-rel"><div class="label">Related</div><ul><li class="more">&middot;</li></ul></div>
+    <div class="margin-section" id="m-notes"><div class="label">Notes</div><ul><li class="more">&middot;</li></ul></div>
+    <div class="margin-section" id="m-links"><div class="label">Sources</div><ul><li class="more">&middot;</li></ul></div>
+  </div>
+  <div class="margin-pin-bar">
+    <span class="margin-hint">hover &middot; click to pin &middot; <kbd>esc</kbd> unpin</span>
+    <button class="margin-unpin" id="margin-unpin" aria-label="Unpin reference card">unpin</button>
+  </div>
+</aside>
+
+</div></div>
+
+<script id="reference-data" type="application/json">
+{
+  "central-office": {
+    "title": "Central office (CO)",
+    "code": "the telco's local switch",
+    "body": "The building housing the switch that terminates local loops from a neighborhood. In a genuine POTS setup this is where a physical line card converts your copper pair's analog signal onto the phone company's own network.",
+    "rel": ["daa"]
+  },
+  "daa": {
+    "title": "Data Access Arrangement (DAA)",
+    "code": "the modem's interface to the line",
+    "body": "The circuit inside every analog modem that isolates its low-voltage logic from the phone line's ring voltage and DC feed, detects incoming rings, and controls going off-hook. Functionally, a fiber ONT's voice port replaces this whole arrangement with a digitized equivalent.",
+    "rel": ["central-office"]
+  },
+  "rs232": {
+    "title": "RS-232",
+    "code": "EIA/TIA-232",
+    "body": "The point-to-point serial standard connecting a computer to a modem. Defines voltage levels, handshake lines (RTS/CTS, DTR/DSR, DCD), and the DTE/DCE role split.",
+    "rel": ["dte-dce", "uart", "flow-control"]
+  },
+  "dte-dce": {
+    "title": "DTE / DCE",
+    "code": "Data Terminal vs Data Circuit-terminating Equipment",
+    "body": "The computer is DTE, the modem is DCE. This asymmetry is exactly why a straight-through cable connects a PC to a modem, while two DTEs (two computers) need a null-modem cable to cross the transmit/receive pairs.",
+    "rel": ["rs232"]
+  },
+  "uart": {
+    "title": "UART",
+    "code": "8250 \u2192 16450 \u2192 16550",
+    "body": "The chip converting between the CPU's parallel data and the serial line's bit stream. The 8250 (PC/XT) and 16450 (AT) share a fatal one-byte buffer, meaning one interrupt per character.",
+    "rel": ["16550", "flow-control"]
+  },
+  "16550": {
+    "title": "16550 UART",
+    "code": "National Semiconductor, 1987",
+    "body": "Added 16-byte FIFO buffers for transmit and receive, with a programmable interrupt trigger at 1/4/8/14 bytes. This is the part that made high-baud, multitasking-era serial communication (DESQview BBS nodes, real modem speeds) reliable instead of lossy.",
+    "meta": {"fifo depth": "16 bytes", "trigger levels": "1/4/8/14"},
+    "rel": ["uart"]
+  },
+  "flow-control": {
+    "title": "Hardware flow control (RTS/CTS)",
+    "code": "AT&K3 on most modems",
+    "body": "The DTE-DCE serial link deliberately runs faster than the modem's actual line rate, to leave headroom for the modem's own on-the-fly compression. RTS/CTS is what stops that speed mismatch from silently overflowing the UART buffer.",
+    "rel": ["uart", "16550"]
+  },
+  "at-basic": {
+    "title": "Basic AT commands",
+    "code": "letter directly after AT",
+    "body": "The original 1981 Hayes Smartmodem command tier: ATD (dial), ATA (answer), ATH (hang up), ATZ (reset). Universally supported by anything calling itself Hayes-compatible.",
+    "rel": ["at-extended", "s-registers"]
+  },
+  "at-extended": {
+    "title": "Extended AT commands",
+    "code": "ampersand prefix",
+    "body": "Added for functionality beyond the original 300bps Smartmodem: AT&K (flow control), AT&D (DTR handling), AT&C (carrier detect behavior), AT&W (save profile to NVRAM).",
+    "rel": ["at-basic"]
+  },
+  "s-registers": {
+    "title": "S-registers",
+    "code": "ATSn=value / ATSn?",
+    "body": "Roughly two dozen numbered memory locations inside the modem holding settings like rings-before-answer (S0) and various timing parameters. A Hayes-era holdover that every compatible modem still implements.",
+    "rel": ["at-basic"]
+  },
+  "v22": {
+    "title": "V.22 / Bell 212A",
+    "code": "1200 bps",
+    "body": "First widely deployed phase-shift-keyed standard, doubling Bell 103's 300 bps floor. V.22bis followed with QAM to reach 2400 bps in the same channel bandwidth.",
+    "rel": ["v34"]
+  },
+  "v34": {
+    "title": "V.34",
+    "code": "28800\u201333600 bps",
+    "body": "The practical ceiling for a connection that stays fully analog on both ends, symmetric in both directions. This is what two ordinary residential modems calling each other actually negotiate, 56k or not.",
+    "rel": ["v90"]
+  },
+  "v90": {
+    "title": "V.90",
+    "code": "56000/33600 bps, asymmetric",
+    "body": "Requires exactly one analog-to-digital conversion in the path. The ISP side connects digitally straight into the phone network and encodes downstream data as PCM samples; upstream still crosses an A/D conversion at the caller's end and stays V.34-limited. Unified the earlier competing X2 (USRobotics) and K56flex (Rockwell/Lucent) standards in 1998.",
+    "meta": {"downstream": "up to 56k", "upstream": "up to 33.6k"},
+    "rel": ["v34"],
+    "notes": ["Two residential analog lines calling each other cannot reach V.90 rates \u2014 neither side has the required digital backhaul."]
+  },
+  "fossil": {
+    "title": "FOSSIL",
+    "code": "Fido/Opus/SEAdog Standard Interface Layer",
+    "body": "The DOS-era device driver abstraction between BBS software and the serial port, needed because DOS's own BIOS serial support was too primitive for real communications work.",
+    "rel": ["x00-bnu", "rlfossil"]
+  },
+  "x00-bnu": {
+    "title": "X00 / BNU",
+    "code": "the two classic real-hardware FOSSIL drivers",
+    "body": "Direct UART-facing FOSSIL drivers for real DOS on real serial hardware. Still the drivers you'd load for an actual modem-equipped COM port today.",
+    "rel": ["fossil", "rlfossil"]
+  },
+  "rlfossil": {
+    "title": "RLFOSSIL",
+    "code": "telnet-native FOSSIL + Hayes emulator",
+    "body": "A FOSSIL driver built on a packet driver (same family mTCP uses) that presents incoming Telnet/rlogin connections to DOS BBS software as modem calls, complete with AT-command handshaking. Explicitly designed to coexist with X00/BNU, so a real modem node and a telnet node can run on the same box.",
+    "rel": ["fossil", "netfoss"]
+  },
+  "netfoss": {
+    "title": "NetFoss",
+    "code": "Windows TCP/IP FOSSIL driver",
+    "body": "Does the same telnet-as-modem job as RLFOSSIL, but targets Windows-hosted DOS BBS setups running under NTVDM, not real-mode DOS on bare metal.",
+    "rel": ["rlfossil"]
+  },
+  "g711": {
+    "title": "G.711",
+    "code": "uncompressed PCM voice codec",
+    "body": "The 'safe' VoIP codec for anything that isn't pure speech, fax, or modem traffic, since it doesn't apply lossy speech-specific compression. Still not a guarantee of clean modem transport by itself, packet loss and echo cancellation remain separate problems.",
+    "rel": ["g729"]
+  },
+  "g729": {
+    "title": "G.729 / G.723",
+    "code": "compressed speech codecs",
+    "body": "Lossy codecs tuned to the acoustic properties of human speech. Running modem tones through one doesn't just lower quality, it actively destroys the signal's ability to be demodulated.",
+    "rel": ["g711", "t38"]
+  },
+  "clock-skew": {
+    "title": "Clock skew",
+    "code": "independent sample clocks drifting apart",
+    "body": "Each VoIP endpoint runs its own sample clock; over the length of a call these drift relative to each other. Modems, which need continuous precisely-timed samples to hold carrier lock, are far more sensitive to this than a human ear is.",
+    "rel": ["g729"]
+  },
+  "t38": {
+    "title": "T.38",
+    "code": "fax-over-IP relay",
+    "body": "Demodulates fax tones at the VoIP edge and carries the result as structured data rather than compressed audio, sidestepping the codec and jitter problems entirely. Widely supported for fax; its modem-general cousin V.150.1 is not.",
+    "rel": ["v150", "g729"]
+  },
+  "v150": {
+    "title": "V.150.1",
+    "code": "modem-over-IP relay, ITU 2003",
+    "body": "The general-purpose equivalent of T.38 for arbitrary modem traffic, not just fax. Rarely implemented in consumer VoIP/ONT equipment, which is the practical reason a modem calling over a fiber 'landline' is a coin flip rather than a guarantee.",
+    "rel": ["t38"]
+  }
+}
+</script>
+
+<script>
+(()=>{
+  const D = JSON.parse(document.getElementById('reference-data').textContent);
+  const card = document.getElementById('margin-card');
+  const els = {
+    t: document.getElementById('m-title'),
+    c: document.getElementById('m-code'),
+    b: document.getElementById('m-body'),
+    m: document.getElementById('m-meta'),
+    r: document.getElementById('m-rel'),
+    n: document.getElementById('m-notes'),
+    l: document.getElementById('m-links'),
+    s: card.querySelector('.margin-status')
+  };
+  const unpinBtn = document.getElementById('margin-unpin');
+  let pinnedKey = null;
+  function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+  function host(u){try{return new URL(u).hostname.replace(/^www\./,'');}catch(e){return '';}}
+  function paint(k){
+    const x = D[k];
+    if(!x) return;
+    els.t.textContent = x.title;
+    els.c.textContent = x.code || '\u00b7';
+    els.b.textContent = x.body || '';
+    els.m.innerHTML = Object.entries(x.meta||{}).map(([k,v])=>`<div><strong>${esc(k)}</strong><span>${esc(v)}</span></div>`).join('');
+    els.r.querySelector('ul').innerHTML = (x.rel||[]).map(r=>{const o=D[r];return o?`<li>&rsaquo; ${esc(o.title)}</li>`:'';}).join('') || '<li class="more">&middot;</li>';
+    els.n.querySelector('ul').innerHTML = (x.notes||[]).map(n=>`<li style="white-space:normal;font-family:inherit;font-size:0.76rem">&middot; ${esc(n)}</li>`).join('') || '<li class="more">&middot;</li>';
+    els.l.querySelector('ul').innerHTML = (x.links||[]).map(L=>`<li class="link-item"><a href="${esc(L.url)}" target="_blank" rel="noopener noreferrer">${esc(L.label)}</a><span class="src">${esc(host(L.url))}</span></li>`).join('') || '<li class="more">&middot;</li>';
+  }
+  function setActive(el){
+    document.querySelectorAll('.term.is-active').forEach(x=>{if(x!==el)x.classList.remove('is-active');});
+    if(el) el.classList.add('is-active');
+  }
+  function pin(key, el){
+    pinnedKey = key;
+    paint(key);
+    card.classList.add('is-pinned');
+    els.s.textContent = 'pinned';
+    unpinBtn.style.display = 'inline-block';
+    document.querySelectorAll('.term.is-pinned').forEach(x=>x.classList.remove('is-pinned'));
+    if(el) el.classList.add('is-pinned');
+  }
+  function unpin(){
+    pinnedKey = null;
+    card.classList.remove('is-pinned');
+    els.s.textContent = '';
+    unpinBtn.style.display = 'none';
+    document.querySelectorAll('.term.is-pinned').forEach(x=>x.classList.remove('is-pinned'));
+  }
+  document.addEventListener('mouseover', e => {
+    if(pinnedKey) return;
+    const t = e.target.closest('.term');
+    if(!t) return;
+    const key = t.getAttribute('data-term');
+    paint(key);
+    setActive(t);
+  });
+  document.querySelectorAll('.term').forEach(el => {
+    el.setAttribute('tabindex', '0');
+    el.addEventListener('click', e => {
+      e.preventDefault();
+      const key = el.getAttribute('data-term');
+      if(pinnedKey === key) { unpin(); return; }
+      pin(key, el);
+    });
+    el.addEventListener('keydown', e => {
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        const key = el.getAttribute('data-term');
+        if(pinnedKey === key) { unpin(); return; }
+        pin(key, el);
+      }
+    });
+    el.addEventListener('focus', () => { if(!pinnedKey) paint(el.getAttribute('data-term')); });
+  });
+  unpinBtn.addEventListener('click', unpin);
+  document.addEventListener('keydown', e => { if(e.key === 'Escape' && pinnedKey) unpin(); });
+})();
+</script>
+</body>
+</html>
