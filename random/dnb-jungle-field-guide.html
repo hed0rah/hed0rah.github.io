@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Drum &amp; Bass, Jungle &amp; Halftime Bass: A Field Guide</title>
+<meta name="description" content="Subgenre map, artist directory, labels and listening resources for drum and bass, jungle and adjacent bass music." />
+<meta property="og:title" content="Drum & Bass, Jungle & Halftime Bass: A Field Guide" />
+<meta property="og:type" content="article" />
+<style>
+:root{
+  --paper:#16181c;
+  --ink:#e4e1d4;
+  --muted:#7d7f87;
+  --line:#2e323a;
+  --soft:rgba(255,255,255,0.02);
+  --accent-deep:#6db4d4;
+  --accent-hot:#ff8a5c;
+  --accent-warm:#ffb38a;
+  --accent-warm-soft:rgba(255,179,138,0.10);
+  --accent-hot-soft:rgba(255,138,92,0.10);
+  --accent-deep-soft:rgba(109,180,212,0.08);
+  --code-bg:#0c0e12;
+  --code-fg:#a8b3c0;
+  --ex-bg:#1c1f25;
+  --pin-bg:rgba(255,138,92,0.18);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);background:var(--paper);font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;line-height:1.45}
+.page{max-width:1240px;margin:0 auto;padding:24px 16px 44px}
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:26px;align-items:start}
+.paper{min-width:0;border-top:2px solid var(--accent-deep);border-bottom:1px solid var(--line);padding:20px 0 24px}
+
+.eyebrow{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:var(--accent-hot);font-weight:600}
+h1,h2,h3{margin:0;font-weight:600;line-height:1.2}
+h1{font-size:clamp(1.55rem,2.1vw,1.9rem);letter-spacing:-0.02em;margin-bottom:6px;color:var(--accent-deep)}
+h2{font-size:0.92rem;margin-top:24px;margin-bottom:6px;padding-top:10px;border-top:1px solid var(--line);color:var(--accent-deep);text-transform:uppercase;letter-spacing:0.05em}
+h3{font-size:0.86rem;margin:12px 0 4px;color:var(--ink)}
+p{margin:0 0 6px;font-size:0.86rem}
+.lede{font-size:0.9rem;color:var(--ink);margin:6px 0 14px}
+.note-line{font-size:0.8rem;color:var(--muted);margin:2px 0 6px;font-style:italic}
+
+code{font-family:"SFMono-Regular","SF Mono",Menlo,Consolas,monospace;font-size:0.85em;background:rgba(255,255,255,0.06);padding:0.04rem 0.22rem;border-radius:1px}
+.chip{display:inline-block;margin:0 3px 3px 0;padding:1px 6px;border:1px solid var(--line);border-radius:2px;font-size:0.69rem;letter-spacing:0.02em;color:var(--muted)}
+.chip.hot{border-color:var(--accent-hot);color:var(--accent-hot);background:var(--accent-hot-soft)}
+.spec-line{display:inline-block;padding:2px 8px;border:1px solid var(--accent-deep);background:var(--accent-deep-soft);font-family:"SFMono-Regular",monospace;font-size:0.74rem;color:var(--accent-deep);margin-right:6px;letter-spacing:0.03em}
+
+.term{cursor:pointer;border-bottom:1px dotted var(--accent-deep);color:var(--accent-deep);transition:.1s;padding:0 1px;font-weight:500}
+.term:hover,.term:focus-visible,.term.is-active{background:var(--accent-warm-soft);color:var(--accent-hot);border-bottom-color:var(--accent-hot);outline:none}
+.term.is-pinned{background:var(--pin-bg);color:var(--accent-hot);border-bottom-style:solid}
+
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:6px;margin:10px 0 14px}
+.stat{padding:8px 10px;border:1px solid var(--line);background:var(--paper)}
+.stat .num{font-family:"Iowan Old Style",Georgia,serif;font-size:1.45rem;font-weight:600;color:var(--accent-deep);line-height:1.1}
+.stat .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px}
+
+.bul{list-style:none;padding:0;margin:4px 0 8px}
+.bul li{padding:2px 0 2px 16px;font-size:0.84rem;position:relative;line-height:1.5;color:var(--ink)}
+.bul li::before{content:"\00b7";position:absolute;left:5px;color:var(--accent-hot);font-weight:700;font-size:1.1rem;line-height:1}
+.bul li strong{color:var(--accent-deep);font-weight:600}
+
+/* dense multi-column roster lists */
+.roster{list-style:none;margin:6px 0 16px;padding:0;columns:3 190px;column-gap:18px}
+.roster li{font-size:0.79rem;padding:2px 0;line-height:1.6;color:var(--ink);break-inside:avoid}
+@media (max-width:980px){.roster{columns:2 160px}}
+@media (max-width:560px){.roster{columns:1}}
+
+.repo-link{display:inline-block;margin-top:4px;padding:3px 8px;border:1px solid var(--accent-deep);background:var(--paper);color:var(--accent-deep);text-decoration:none;font-size:0.72rem;letter-spacing:0.04em;font-family:"SFMono-Regular",monospace}
+.repo-link:hover{background:var(--accent-deep);color:var(--paper)}
+
+.refs{font-size:0.78rem;line-height:1.55;margin:6px 0}
+.refs .ref-row{display:grid;grid-template-columns:150px 1fr;gap:10px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.refs .ref-row:last-child{border-bottom:none}
+.refs .ref-row .key{font-family:"SFMono-Regular",monospace;font-size:0.72rem;color:var(--accent-deep);font-weight:600}
+.refs .ref-row .val a{color:var(--accent-hot);text-decoration:none;border-bottom:1px dotted var(--accent-hot)}
+.refs .ref-row .val a:hover{background:var(--accent-hot-soft)}
+.refs .ref-row .val .desc{color:var(--muted);font-style:italic;font-size:0.74rem;margin-left:6px}
+.refs .ref-row .val .plain{color:var(--ink)}
+
+.margin{position:sticky;top:18px;border-top:2px solid var(--accent-deep);padding-top:10px;font-size:0.82rem;color:var(--muted)}
+.margin-card{border:1px solid var(--line);border-left:3px solid var(--accent-hot);background:rgba(255,255,255,0.015);padding:12px 12px 10px;min-height:340px;transition:border-left-color .15s,background .15s}
+.margin-card.is-pinned{border-left-color:var(--accent-deep);background:var(--accent-deep-soft)}
+.margin h3{font-size:0.9rem;margin-bottom:6px;color:var(--accent-deep)}
+.margin p{margin-bottom:7px;font-size:0.8rem}
+.margin-code{display:inline-block;margin-top:2px;margin-bottom:6px;color:var(--accent-hot)}
+.margin-meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin:7px 0 8px;padding:7px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:var(--ink)}
+.margin-meta strong{display:block;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.margin-meta span{font-size:0.8rem}
+.margin-section{margin-top:10px}
+.margin-section .label{font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:3px}
+.margin-section ul{margin:0;padding:0;list-style:none}
+.margin-section li{padding:2px 0;border-top:1px solid rgba(255,255,255,0.06);font-size:0.76rem;color:var(--ink);font-family:"SFMono-Regular",Menlo,Consolas,monospace}
+.margin-section li:first-child{border-top:none}
+.margin-section .more{color:var(--muted);font-style:italic;font-family:inherit}
+.margin-section a{color:var(--accent-hot);text-decoration:none;border-bottom:1px dotted var(--accent-hot);font-family:inherit;word-break:break-word}
+.margin-section a:hover{background:var(--accent-hot-soft);color:var(--accent-deep)}
+.margin-pin-bar{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:7px;border-top:1px solid var(--line)}
+.margin-hint{font-size:0.72rem;color:var(--muted)}
+.margin-hint kbd{font-family:"SFMono-Regular",Menlo,Consolas,monospace;font-size:0.7rem;padding:0 4px;border:1px solid var(--line);border-radius:2px;background:var(--soft)}
+.margin-unpin{font-family:inherit;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;padding:2px 7px;border:1px solid var(--accent-hot);background:transparent;color:var(--accent-hot);cursor:pointer;border-radius:2px;display:none}
+.margin-card.is-pinned ~ .margin-pin-bar .margin-unpin{display:inline-block}
+.margin-card.is-pinned .margin-status{color:var(--accent-hot);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;font-size:9px}
+
+.footer{margin-top:20px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font-size:0.76rem}
+.footer .signoff{color:var(--accent-deep);font-weight:600;letter-spacing:0.05em}
+
+@media (max-width:980px){
+  .sheet{grid-template-columns:1fr}
+  .margin{position:static;order:2;border-top:1px solid var(--line)}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .refs .ref-row{grid-template-columns:110px 1fr}
+}
+@media print{
+  body{background:#fff;color:#111}
+  .margin,.term{cursor:default}
+  .term{border-bottom:none;color:var(--accent-deep)!important;background:transparent!important}
+}
+</style>
+</head>
+<body>
+<div class="page"><div class="sheet">
+
+<article class="paper">
+  <p class="eyebrow">genre reference &middot; scene map &middot; compiled jul 2026</p>
+  <h1>Drum &amp; Bass, Jungle &amp; Halftime Bass: A Field Guide</h1>
+  <p class="lede">
+    <span class="spec-line">360+ ARTISTS</span>
+    <span class="spec-line">26 LABELS</span>
+    Consolidated from a run of scene recommendation threads into one reference. Nine subgenres get real definitions in the margin card, everything else is roster: who is making it, who is pressing it, where to keep listening.
+  </p>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="num">360+</div><div class="lbl">Artists Cataloged</div></div>
+    <div class="stat"><div class="num">26</div><div class="lbl">Labels</div></div>
+    <div class="stat"><div class="num">9</div><div class="lbl">Subgenres Mapped</div></div>
+    <div class="stat"><div class="num">6</div><div class="lbl">Source Threads Merged</div></div>
+  </div>
+
+  <h2>Subgenre Map</h2>
+  <p class="note-line">Nine load-bearing terms. Hover or tap one for tempo range, key labels and a short-list of who to start with.</p>
+  <ul class="bul">
+    <li><span class="term" data-term="jungle">Jungle</span> is the root of the tree: chopped breakbeats over reggae and dancehall bass, 1991 to 1995.</li>
+    <li><span class="term" data-term="liquid">Liquid Funk</span> smoothed it out in the mid-2000s with soul and jazz influence.</li>
+    <li><span class="term" data-term="techstep">Techstep</span> stripped the soul back out in favor of metallic, mechanical drum programming.</li>
+    <li><span class="term" data-term="neurofunk">Neurofunk</span> is the modern festival-stage default: distorted, triplet-heavy, relentless.</li>
+    <li><span class="term" data-term="autonomic">Autonomic</span> reacted against all that density with space and minimalism.</li>
+    <li><span class="term" data-term="drumfunk">Drumfunk</span> keeps the drum editing technical and dry, bass mostly out of the way.</li>
+    <li><span class="term" data-term="jumpup">Jump-Up</span> keeps it simple and built for a crowd reaction over technical depth.</li>
+    <li><span class="term" data-term="halftime">Halftime</span> borrows footwork and trap drum feel underneath a full-tempo bassline.</li>
+    <li><span class="term" data-term="leftfield">Leftfield / Bass-Adjacent</span> is not drum and bass at all, but the same ears keep ending up here.</li>
+  </ul>
+
+  <h2>Artist Directory</h2>
+
+  <h3>Halftime, Neuro-Bass &amp; Wonky</h3>
+  <p class="note-line">US-leaning bass scene. Drums sit at half the felt tempo of the bassline. Overlaps directly with the halftime entry above.</p>
+  <ul class="roster">
+    <li>Buku</li><li>Ivy Lab</li><li>Eprom</li><li>Shades (Eprom &amp; Alix Perez)</li><li>Mad Zach</li><li>Chee</li><li>It Hz (Chee &amp; Jon Casey)</li><li>Ordure</li><li>Subp Yao</li><li>Former</li><li>Posij</li><li>Dirt Monkey</li><li>Yunis</li><li>Mark Instinct</li><li>Holly</li><li>RefraQ</li><li>Audeka</li><li>Rawtekk</li><li>Vorso</li><li>Crimes!</li><li>Copycatt</li><li>Tsuruda</li><li>Huxley Anne</li><li>Paint (Tsuruda &amp; Huxley Anne)</li><li>Pulseye</li><li>Greazus</li><li>Frequent</li><li>Clockvice</li><li>Signs</li><li>LEViT&Delta;TE</li><li>Boreta</li><li>edIT</li><li>Ooah</li><li>The Glitch Mob (Boreta, edIT &amp; Ooah)</li><li>Martyparty</li><li>Pantyraid (Ooah &amp; Martyparty)</li><li>Phonat</li><li>Babokon</li><li>Emperor</li><li>Monuman</li><li>Tipper</li><li>Kursa</li><li>Seppa</li><li>Reso</li><li>Noclu</li><li>Dead Battery</li><li>Krayysh</li><li>NastyNasty</li><li>Pensive</li><li>Flukeluke</li><li>Joe Ford</li><li>Synergy</li><li>Skope</li><li>13</li><li>ARKTKT</li><li>Kortex</li><li>Moniker</li><li>Canopy</li><li>Next To Blue</li><li>The Outsiders</li><li>False Noise</li><li>Koarse</li><li>Broken Note</li><li>ZEKE Beats</li><li>Shlump</li><li>Dimond Saints</li><li>Mr. Carmack</li><li>Luzcid</li><li>Jantsen</li><li>Freddy Todd</li><li>Razat</li><li>DMVU</li><li>Truth</li><li>Liquid Stranger</li><li>Amon Tobin</li><li>Imanu</li><li>Flume</li>
+  </ul>
+
+  <h3>D&amp;B / Jungle Crossover</h3>
+  <p class="note-line">Straddles halftime and proper drum and bass, mostly on the autonomic / neurofunk axis.</p>
+  <ul class="roster">
+    <li>dBridge</li><li>Current Value</li><li>Richie Brains</li><li>Skeptical</li><li>Amon Tobin (Two Fingers)</li><li>Hybris</li><li>Buunshin</li><li>Misanthrop</li><li>Sully</li><li>Instra:mental</li><li>The Caracal Project</li><li>Former</li><li>Forest Drive West</li><li>Ivy Lab</li><li>Lone</li><li>Sleepnet</li><li>Phace</li><li>Reso</li><li>Culprate</li><li>Machinedrum</li><li>Fracture</li><li>Ital Tek</li><li>Kabuki</li><li>Gyrofield</li><li>DJRUM</li><li>Komx-Om-Pax</li><li>Visages</li><li>Noisia</li><li>Om Unit</li><li>Moresounds</li><li>Iglooghost</li><li>Grey Code</li><li>Itoa</li><li>Sun People</li><li>Jon1st &amp; Shield</li><li>Sinistarr</li><li>Mat Zo</li><li>A.Fruit</li><li>Kumarachi</li>
+  </ul>
+
+  <h3>Leftfield &amp; Bass-Adjacent Electronic</h3>
+  <p class="note-line">Not drum and bass. The wider gravity well: footwork, deconstructed club, ambient techno, UK bass. Filed here because the same recommendation threads keep pulling them in.</p>
+  <ul class="roster">
+    <li>Laurel Halo</li><li>Ikonika</li><li>Oneohtrix Point Never</li><li>Steffi</li><li>Vegyn</li><li>Little Snake</li><li>Arca</li><li>Deft</li><li>Bicep</li><li>Blawan</li><li>Floating Points</li><li>Commodo</li><li>Koreless</li><li>Jimmy Edgar</li><li>DJ Paypal</li><li>Lil Texas</li><li>Jlin</li><li>BOP</li><li>Andy Stott</li><li>Ancestral Voices</li><li>Braille</li><li>Murlo</li><li>Kuedo</li><li>Dorian Concept</li><li>Synkro</li><li>Fatima Al Qadiri</li><li>Lorn</li><li>Gila</li><li>Batu</li><li>Lucy</li><li>Mura Masa</li><li>Martyn</li><li>Mesck</li><li>Moderat</li><li>Noer the Boy</li><li>Mt Kimbie</li><li>Nosaj Thing</li><li>Zora Jones</li><li>Objekt</li><li>Oxossi</li><li>Pearson Sound</li><li>Pinch</li><li>Proc Fiskal</li><li>Plastikman</li><li>Rian Treanor</li><li>Sayer</li><li>Scuba</li><li>Shackleton</li><li>Supertask</li><li>Throwing Snow</li><li>Thys</li><li>Woulg</li><li>G Jones</li><li>Rival Consoles</li><li>Herbert</li><li>Dean Blunt</li><li>Actress</li><li>Fuck Buttons</li><li>Matmos</li><li>Future Sound of London</li>
+  </ul>
+
+  <h3>Oldschool Jungle Foundations</h3>
+  <p class="note-line">The originators. Everything above owes a chord change to this list somewhere.</p>
+  <ul class="roster">
+    <li>Peshay</li><li>LTJ Bukem</li><li>Pascal</li><li>Source Direct</li><li>DJ Hype</li><li>Aphrodite</li><li>Mulder</li><li>Mickey Finn</li><li>Goldie</li><li>Omni Trio</li><li>Photek</li><li>Alex Reece</li><li>Shy FX</li><li>Ray Keith</li><li>Congo Natty</li><li>4hero</li><li>Dillinja</li><li>DJ Zinc</li><li>Roni Size</li><li>DJ Krust</li><li>DJ Marky &amp; XRS</li><li>Paradox</li><li>Adam F</li><li>Grooverider</li><li>Nicky Blackmarket</li><li>Kenny Ken</li><li>Andy C</li><li>Brockie &amp; Det</li><li>Bad Company</li><li>Ed Rush &amp; Optical</li><li>ak1200</li>
+  </ul>
+
+  <h3>Full Modern Roster</h3>
+  <p class="note-line">One comprehensive alphabetized list from a single source thread. Expect real overlap with the buckets above; kept intact rather than re-sorted into genre buckets I cannot verify artist by artist.</p>
+  <ul class="roster">
+    <li>4am Kru</li><li>Access Denied</li><li>AceMoMa</li><li>Acid Lab</li><li>Alix Perez</li><li>Andrey HoT</li><li>Annix (Konichi &amp; Decimal Bass)</li><li>Antakto</li><li>ATLiens</li><li>Audio</li><li>baithead</li><li>Benny Page</li><li>Best Interest</li><li>Billain</li><li>Birds of Paradise</li><li>Bizzy B</li><li>Black Sun Empire</li><li>Bleach</li><li>Buunshin</li><li>Cacola</li><li>Calibre</li><li>Camo &amp; Krooked</li><li>Cesco</li><li>Champagne Drip (SPL)</li><li>Cheetah</li><li>Christoph de Babalon</li><li>Coco Bryce</li><li>Conrad Subs</li><li>Cosmilk</li><li>Crossy</li><li>Cutty Ranks (Original Ranks)</li><li>Cynthoni</li><li>Damiens Ghost</li><li>Dead Man's Chest</li><li>Deekline</li><li>Delta Heavy</li><li>Dev Null</li><li>Diagnostix</li><li>DJ GOODSPORT</li><li>DJ Harmony</li><li>DJ Hybrid</li><li>DJ Jubilee 1997</li><li>DJ RAW</li><li>dj saviola</li><li>Djx2c</li><li>Doktor</li><li>Dom &amp; Roland</li><li>Donny</li><li>Drinks On Me</li><li>Dwarde</li><li>Ed Solo</li><li>Ekcle (Tutara Peak &amp; David Gotham)</li><li>el tunchi</li><li>elitimesfour</li><li>Eluun</li><li>Enei</li><li>Equinox</li><li>Eusebeia</li><li>Evil e</li><li>Evol Intent</li><li>Ewol</li><li>Ewun</li><li>Fatloaf</li><li>Feel It</li><li>FFF</li><li>finneasuk</li><li>Forbidden Society</li><li>Foreign Beggars</li><li>Fragz</li><li>GR</li><li>Gridlok</li><li>H8P8GE</li><li>Halogenix</li><li>Heaven Pierce Her</li><li>Homemade Weapons</li><li>I Am Legion (Noisia &amp; Foreign Beggars)</li><li>IMANU</li><li>Infiltrata</li><li>InsideInfo</li><li>Insomniast</li><li>J Majik</li><li>Jammin Ninjah</li><li>JDizz</li><li>K+Lab</li><li>Kasra</li><li>Kessler</li><li>Kid Lib</li><li>KOAN Sound</li><li>Laurence Guy</li><li>Limewax</li><li>Liraxity</li><li>Loprofile</li><li>LSDREAM</li><li>Machinedrum &amp; Holly</li><li>Malux</li><li>Maysev</li><li>Maztek</li><li>MC GQ</li><li>Mefjus</li><li>Midnight Conspiracy</li><li>Miya Lowe</li><li>Mizo</li><li>Monty</li><li>Muadeep</li><li>Nais</li><li>Nami</li><li>Narna</li><li>Need For Mirrors</li><li>Neonlight</li><li>Nia Archives</li><li>Nitepunk</li><li>Nuage</li><li>Oak</li><li>Omen Breaks</li><li>Omnirythm</li><li>Oram</li><li>Perkulat0r</li><li>Phineus II</li><li>Prieste5s</li><li>Proxy</li><li>Pythius</li><li>QZB</li><li>REAPER</li><li>Result</li><li>Rohaan</li><li>Sabre</li><li>Scatterbrainmane</li><li>Sequend</li><li>Sewerslvt</li><li>Sorza</li><li>Splash</li><li>Spor (Feed Me)</li><li>Stray</li><li>Supa Ape</li><li>T Break</li><li>Technical Itch</li><li>Teddy Killerz</li><li>Teknizm</li><li>The Clamps</li><li>The Upbeats</li><li>Thelem</li><li>Tim Reaper</li><li>Toby Ross</li><li>Tom &amp; Jerry</li><li>Tom Finster</li><li>Tommy the Cat</li><li>UNGLUED</li><li>Unknown Error</li><li>Walking Def</li><li>Wingz</li>
+  </ul>
+
+  <h3>Handpicked, Slept-On</h3>
+  <p class="note-line">Individual call-outs from the source thread with direct listening links attached.</p>
+  <div class="refs">
+    <div class="ref-row"><span class="key">Ives</span><span class="val"><a href="https://m.youtube.com/watch?v=1hXyXdJPy78" target="_blank" rel="noopener">listen</a><span class="desc">"can't believe this guy isn't famous yet"</span></span></div>
+    <div class="ref-row"><span class="key">Sayer</span><span class="val"><a href="https://m.youtube.com/watch?v=aUSfUvASf_k" target="_blank" rel="noopener">listen</a><span class="desc">has collabed with Bleep Bloop</span></span></div>
+    <div class="ref-row"><span class="key">ill Gates</span><span class="val"><a href="https://m.youtube.com/watch?v=moYAocDns5Y" target="_blank" rel="noopener">listen</a><span class="desc">Bassnectar's homie</span></span></div>
+    <div class="ref-row"><span class="key">Doshy</span><span class="val"><a href="https://m.youtube.com/watch?v=hzPoIFUNpkc" target="_blank" rel="noopener">listen</a><span class="desc">has collabed with G Jones</span></span></div>
+    <div class="ref-row"><span class="key">6blocc</span><span class="val"><a href="https://m.youtube.com/watch?v=xfi8VZmZl4E" target="_blank" rel="noopener">listen</a><span class="desc">heavy shit</span></span></div>
+    <div class="ref-row"><span class="key">Minnesota</span><span class="val"><a href="https://m.youtube.com/watch?v=Y0lin8peqUU" target="_blank" rel="noopener">listen</a><span class="desc">more melodic, many collabs with G Jones</span></span></div>
+    <div class="ref-row"><span class="key">Goopsteppa</span><span class="val"><a href="https://m.youtube.com/watch?v=yNwVgjRUs7o" target="_blank" rel="noopener">listen</a><span class="desc">more downtempo</span></span></div>
+    <div class="ref-row"><span class="key">Barclay Crenshaw</span><span class="val"><a href="https://m.youtube.com/watch?v=jf4NR3d2dj0" target="_blank" rel="noopener">listen</a><span class="desc">has collabed with Bleep Bloop</span></span></div>
+    <div class="ref-row"><span class="key">Mad Zach</span><span class="val"><a href="https://m.youtube.com/watch?v=ir5f-nCP9Y4" target="_blank" rel="noopener">listen</a><span class="desc">tipped to blow up like G Jones and Eprom</span></span></div>
+  </div>
+
+  <h2>Labels</h2>
+
+  <h3>Foundational / Classic</h3>
+  <ul class="roster">
+    <li>Metalheadz</li><li>Ram Records</li><li>Renegade Recordings</li><li>Renegade Hardware</li><li>V Recordings</li><li>Reinforced</li><li>Moving Shadow</li><li>Good Looking Records</li><li>31 Recordings</li><li>SOUR</li><li>Paradox Music</li><li>Nucleus (Paradox Music sub-label)</li>
+  </ul>
+
+  <h3>Modern / Current</h3>
+  <ul class="roster">
+    <li>Alpha Cuts</li><li>Green Bay Wax</li><li>117</li><li>Inperspective</li><li>Pinecone Moonshine</li><li>Subtle</li><li>Offshore Recordings</li><li>Droppin' Science</li><li>Astrophonica</li><li>Digital Soundboy</li><li>Repertoire</li><li>Scientific Wax</li>
+  </ul>
+
+  <h3>Also Mentioned</h3>
+  <ul class="roster">
+    <li>Vision Recordings</li><li>Pseudoscience Recordings (Hybris's label)</li>
+  </ul>
+
+  <h2>Crate-Digging: Discogs Pulls</h2>
+  <p class="note-line">Two batches straight from the source thread: old jungle rarities, then newer pressings working the same lineage.</p>
+
+  <h3>Classic / Rare</h3>
+  <div class="refs">
+    <div class="ref-row"><span class="key">Cutty Ranks</span><span class="val"><a href="https://www.discogs.com/Cutty-Ranks-Limb-By-Limb/release/26953" target="_blank" rel="noopener">Limb By Limb</a></span></div>
+    <div class="ref-row"><span class="key">Blackman Bastards</span><span class="val"><a href="https://www.discogs.com/Blackman-Bastards-Coca-Cola-Remixes/release/190024" target="_blank" rel="noopener">Coca Cola Remixes</a></span></div>
+    <div class="ref-row"><span class="key">Lewie Fusion</span><span class="val"><a href="https://www.discogs.com/Lewie-Fusion-Jungle-Love-Part-2-Feelings/master/19967" target="_blank" rel="noopener">Jungle Love Part 2 / Feelings</a></span></div>
+    <div class="ref-row"><span class="key">Tango</span><span class="val"><a href="https://www.discogs.com/Tango-War-For-94/release/257463" target="_blank" rel="noopener">War For 94</a></span></div>
+    <div class="ref-row"><span class="key">Top Cat</span><span class="val"><a href="https://www.discogs.com/Top-Cat-Tribe-Of-Issachar-Original-Ses-Police-In-Helicopter-Yes-Selectah/release/291764" target="_blank" rel="noopener">Tribe Of Issachar / Police In Helicopter / Yes Selectah</a></span></div>
+    <div class="ref-row"><span class="key">DRS ft. Kenny Ken</span><span class="val"><a href="https://www.discogs.com/DRS-Feat-Kenny-Ken-Everyman/release/1092752" target="_blank" rel="noopener">Everyman</a></span></div>
+  </div>
+
+  <h3>Newer Pressings</h3>
+  <div class="refs">
+    <div class="ref-row"><span class="key">FFF &amp; Coco Bryce</span><span class="val"><a href="https://www.discogs.com/FFF-Coco-Bryce-Massiv-01/release/7272598" target="_blank" rel="noopener">Massiv 01</a></span></div>
+    <div class="ref-row"><span class="key">Various</span><span class="val"><a href="https://www.discogs.com/Various-Where-It-All-Began/release/7483396" target="_blank" rel="noopener">Where It All Began</a></span></div>
+    <div class="ref-row"><span class="key">Darkman</span><span class="val"><a href="https://www.discogs.com/Darkman-The-Real-Life-EP/release/7180171" target="_blank" rel="noopener">The Real Life EP</a></span></div>
+    <div class="ref-row"><span class="key">Equinox</span><span class="val"><a href="https://www.discogs.com/Equinox-Hard-Meditation-Hold-Jah-Hand/release/7017758" target="_blank" rel="noopener">Hard Meditation / Hold Jah Hand</a></span></div>
+  </div>
+
+  <h2>Links &amp; Resources</h2>
+  <div class="refs">
+    <div class="ref-row"><span class="key">playlist</span><span class="val"><a href="https://open.spotify.com/playlist/3xRC7V0Qh87QxA3UpZqdXS" target="_blank" rel="noopener">Spotify playlist</a><span class="desc">from the source thread</span></span></div>
+    <div class="ref-row"><span class="key">source thread</span><span class="val"><a href="https://www.reddit.com/r/DnB/comments/1kq9yva/fresh_music_camo_krooked_and_mefjus_pola_bryson/" target="_blank" rel="noopener">r/DnB fresh music thread</a></span></div>
+    <div class="ref-row"><span class="key">prior week</span><span class="val"><a href="https://redd.it/1kkpmaj" target="_blank" rel="noopener">last week's list</a></span></div>
+    <div class="ref-row"><span class="key">H2L series</span><span class="val"><span class="plain">"H2L: New Drum &amp; Bass" weekly roundup, plus a "Retroactive" archive edition</span><span class="desc">named playlists on Spotify, Soundcloud, YouTube, YT Music and Apple Music; no direct URLs came through in the source dump, search the platform for the title</span></span></div>
+    <div class="ref-row"><span class="key">instagram</span><span class="val"><span class="plain">Telm &amp; Wilson, lefuniname, voynich</span><span class="desc">handles as given, no links provided</span></span></div>
+  </div>
+
+  <div class="footer"><span class="signoff">compiled from scene recs</span> &middot; hed0rah &middot; jul 2026</div>
+</article>
+
+<aside class="margin">
+  <div class="margin-card" id="margin-card">
+    <p class="margin-code" style="display:block;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted)">
+      Reference Inspector <span class="margin-status"></span>
+    </p>
+    <h3 id="m-title">Hover any underlined term</h3>
+    <code class="margin-code" id="m-code">&middot;</code>
+    <p id="m-body">Move the cursor over any dotted-underline subgenre in the Subgenre Map to load its detail. Click to pin the card so it persists while you scroll the rosters.</p>
+    <div class="margin-meta" id="m-meta"></div>
+    <div class="margin-section" id="m-rel"><div class="label">Related</div><ul><li class="more">&middot;</li></ul></div>
+    <div class="margin-section" id="m-notes"><div class="label">Notes</div><ul><li class="more">&middot;</li></ul></div>
+    <div class="margin-section" id="m-links"><div class="label">Sources</div><ul><li class="more">&middot;</li></ul></div>
+  </div>
+  <div class="margin-pin-bar">
+    <span class="margin-hint">hover &middot; click to pin &middot; <kbd>esc</kbd> unpin</span>
+    <button class="margin-unpin" id="margin-unpin" aria-label="Unpin reference card">unpin</button>
+  </div>
+</aside>
+
+</div></div>
+
+<script id="reference-data" type="application/json">
+{
+  "jungle": {
+    "title": "Jungle",
+    "code": "breakbeat / ragga jungle",
+    "body": "UK breakbeat music built on chopped, pitched-up Amen and Think breaks layered with reggae and dancehall basslines and vocal samples. The root system for every branch on this page.",
+    "meta": {"tempo": "160-180bpm", "origin": "UK, 1991-1995", "key labels": "Metalheadz, Reinforced"},
+    "rel": ["liquid", "techstep", "drumfunk"],
+    "notes": ["listen for: Goldie, Photek, Roni Size, Congo Natty, 4hero", "the chopped break edit is the whole craft"]
+  },
+  "liquid": {
+    "title": "Liquid Funk / Liquid D&B",
+    "code": "soulful, mid-2000s onward",
+    "body": "Smoother, more melodic branch pulling from soul, jazz and garage. Lighter drum programming, warmer bass, vocal-forward. Grew out of the atmospheric jungle lineage.",
+    "meta": {"tempo": "170-175bpm", "key labels": "Hospital, Good Looking"},
+    "rel": ["jungle", "autonomic"],
+    "notes": ["listen for: Calibre, LTJ Bukem, J Majik", "the easiest on-ramp for non-D&B listeners"]
+  },
+  "techstep": {
+    "title": "Techstep / Dark D&B",
+    "code": "industrial, mid-late 1990s",
+    "body": "Stripped the soul out of jungle in favor of metallic, mechanical drum programming and horror-film atmospheres. Direct ancestor of neurofunk.",
+    "meta": {"tempo": "170-176bpm", "era": "1996-2000"},
+    "rel": ["neurofunk", "jungle"],
+    "notes": ["listen for: Source Direct, early Photek, Dillinja"]
+  },
+  "neurofunk": {
+    "title": "Neurofunk",
+    "code": "technical, distorted, 2000s-present",
+    "body": "Highly engineered, distorted basslines and precise, often triplet-heavy drum programming. The dominant festival-stage D&B sound. Dutch and Eastern European scenes pushed it into its current form.",
+    "meta": {"tempo": "172-176bpm", "key labels": "Vision, Blackout, Eatbrain"},
+    "rel": ["techstep", "halftime"],
+    "notes": ["listen for: Noisia, Black Sun Empire, Mefjus, Phace & Misanthrop, Billain, Camo & Krooked"]
+  },
+  "autonomic": {
+    "title": "Autonomic / Atmospheric",
+    "code": "coined by dBridge & Instra:mental, c.2009",
+    "body": "Deep, spacious, minimal-drum sound that reacted against neurofunk's density. Named after dBridge and Instra:mental's Autonomic podcast series. Overlaps heavily with UK garage and dubstep sensibilities.",
+    "meta": {"key figures": "dBridge, Instra:mental", "key labels": "Exit Records"},
+    "rel": ["liquid", "drumfunk"],
+    "notes": ["listen for: dBridge, Instra:mental, Skeptical, Fracture, early Ivy Lab"]
+  },
+  "drumfunk": {
+    "title": "Drumfunk",
+    "code": "technical breaks, dry percussion",
+    "body": "Focuses on intricate, unswung breakbeat editing with dry, jazzy drum tones and bass kept mostly out of the way. A drummer's subgenre before it is anything else.",
+    "meta": {"tempo": "170-176bpm"},
+    "rel": ["jungle", "autonomic"],
+    "notes": ["listen for: Skeptical, Sabre, Fracture"]
+  },
+  "jumpup": {
+    "title": "Jump-Up",
+    "code": "bouncy, festival-oriented",
+    "body": "Simple, bouncy basslines and comedic or novelty vocal samples, built for a crowd reaction over technical depth. The most maligned and most purely fun branch of D&B.",
+    "meta": {"key labels": "Playaz"},
+    "rel": ["jungle"],
+    "notes": ["listen for: DJ Hype, Benny Page, Aphrodite, Deekline"]
+  },
+  "halftime": {
+    "title": "Halftime / Neuro-Bass",
+    "code": "US-scene crossover, felt ~140bpm",
+    "body": "Drums programmed at half the perceived tempo of the bassline, so a 172bpm track feels like it is running at 86. Borrowed from trap and footwork, grew out of the US west-coast bass scene.",
+    "meta": {"origin": "US/UK crossover, early 2010s"},
+    "rel": ["neurofunk", "leftfield"],
+    "notes": ["listen for: Ivy Lab, Eprom, Kursa, Mad Zach, Buku, DMVU"]
+  },
+  "leftfield": {
+    "title": "Leftfield / IDM-adjacent Bass",
+    "code": "not D&B, scene-adjacent",
+    "body": "Not drum and bass at all, but the surrounding constellation of bass-weight leftfield electronic music the same listeners tend to drift toward: footwork, deconstructed club, ambient techno, UK bass.",
+    "meta": {"key labels": "Hyperdub, Planet Mu"},
+    "rel": ["halftime"],
+    "notes": ["listen for: Arca, Batu, Objekt, Laurel Halo, Jlin"]
+  }
+}
+</script>
+
+<script>
+(()=>{
+  const D = JSON.parse(document.getElementById('reference-data').textContent);
+  const card = document.getElementById('margin-card');
+  const els = {
+    t: document.getElementById('m-title'),
+    c: document.getElementById('m-code'),
+    b: document.getElementById('m-body'),
+    m: document.getElementById('m-meta'),
+    r: document.getElementById('m-rel'),
+    n: document.getElementById('m-notes'),
+    l: document.getElementById('m-links'),
+    s: card.querySelector('.margin-status')
+  };
+  const unpinBtn = document.getElementById('margin-unpin');
+  let pinnedKey = null;
+
+  function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+  function host(u){try{return new URL(u).hostname.replace(/^www\./,'');}catch(e){return '';}}
+
+  function paint(k){
+    const x = D[k];
+    if(!x) return;
+    els.t.textContent = x.title;
+    els.c.textContent = x.code || '\u00b7';
+    els.b.textContent = x.body || '';
+    els.m.innerHTML = Object.entries(x.meta||{}).map(([k,v])=>`<div><strong>${esc(k)}</strong><span>${esc(v)}</span></div>`).join('');
+    els.r.querySelector('ul').innerHTML = (x.rel||[]).map(r=>{const o=D[r];return o?`<li>&rsaquo; ${esc(o.title)}</li>`:'';}).join('') || '<li class="more">&middot;</li>';
+    els.n.querySelector('ul').innerHTML = (x.notes||[]).map(n=>`<li style="white-space:normal;font-family:inherit;font-size:0.76rem">&middot; ${esc(n)}</li>`).join('') || '<li class="more">&middot;</li>';
+    els.l.querySelector('ul').innerHTML = (x.links||[]).map(L=>`<li class="link-item"><a href="${esc(L.url)}" target="_blank" rel="noopener noreferrer">${esc(L.label)}</a></li>`).join('') || '<li class="more">&middot;</li>';
+  }
+
+  function setActive(el){
+    document.querySelectorAll('.term.is-active').forEach(x=>{if(x!==el)x.classList.remove('is-active');});
+    if(el) el.classList.add('is-active');
+  }
+
+  function pin(key, el){
+    pinnedKey = key;
+    paint(key);
+    card.classList.add('is-pinned');
+    els.s.textContent = 'pinned';
+    unpinBtn.style.display = 'inline-block';
+    document.querySelectorAll('.term.is-pinned').forEach(x=>x.classList.remove('is-pinned'));
+    if(el) el.classList.add('is-pinned');
+  }
+
+  function unpin(){
+    pinnedKey = null;
+    card.classList.remove('is-pinned');
+    els.s.textContent = '';
+    unpinBtn.style.display = 'none';
+    document.querySelectorAll('.term.is-pinned').forEach(x=>x.classList.remove('is-pinned'));
+  }
+
+  document.addEventListener('mouseover', e => {
+    if(pinnedKey) return;
+    const t = e.target.closest('.term');
+    if(!t) return;
+    paint(t.getAttribute('data-term'));
+    setActive(t);
+  });
+
+  document.querySelectorAll('.term').forEach(el => {
+    el.setAttribute('tabindex', '0');
+    el.addEventListener('click', e => {
+      e.preventDefault();
+      const key = el.getAttribute('data-term');
+      if(pinnedKey === key){ unpin(); return; }
+      pin(key, el);
+    });
+    el.addEventListener('keydown', e => {
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        const key = el.getAttribute('data-term');
+        if(pinnedKey === key){ unpin(); return; }
+        pin(key, el);
+      }
+    });
+    el.addEventListener('focus', () => { if(!pinnedKey) paint(el.getAttribute('data-term')); });
+  });
+
+  unpinBtn.addEventListener('click', unpin);
+  document.addEventListener('keydown', e => { if(e.key === 'Escape' && pinnedKey) unpin(); });
+})();
+</script>
+</body>
+</html>
