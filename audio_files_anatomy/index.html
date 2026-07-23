@@ -88,6 +88,13 @@ a{color:inherit;text-decoration:none}
 .tracker .tab{background:#9E3A5E} .tracker .name{color:#83304E}
 .rf64 .tab{background:#34687A} .rf64 .name{color:#2C5666}
 .emu  .tab{background:#1C6E8E} .emu  .name{color:#185A74}
+.gf1pat .tab{background:#2E6E66} .gf1pat .name{color:#285f58}
+.serum  .tab{background:#6A4F9E} .serum  .name{color:#5a4285}
+.bfdlac .tab{background:#9C4A3C} .bfdlac .name{color:#833e33}
+.akai   .tab{background:#A85A2A} .akai   .name{color:#8c4b23}
+.amiga  .tab{background:#2F5EA8} .amiga  .name{color:#284f8c}
+.labx   .tab{background:#7A4A78} .labx   .name{color:#663e64}
+.sigmf  .tab{background:#3B7A4A} .sigmf  .name{color:#33673f}
 
 footer{margin-top:3rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent);border-color:var(--accent)}
@@ -253,7 +260,7 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
     <a class="row tracker" href="tracker-anatomy.html">
       <span class="tab"></span>
       <div><div class="name">Tracker Modules</div>
-        <div class="d">The MOD / XM / IT module family: a header, a pattern order, and sample descriptors whose PCM lives elsewhere in the file, each a carveable byte region.</div></div>
+        <div class="d">The MOD / XM / S3M / IT module family: a header, a pattern order, and sample descriptors whose PCM lives elsewhere in the file, each a carveable byte region. S3M's SCRM magic hides 44 bytes in.</div></div>
       <span class="t">byte map</span>
     </a>
     <a class="row rf64" href="rf64-anatomy.html">
@@ -261,6 +268,48 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
       <div><div class="name">RF64 / BW64</div>
         <div class="d">RIFF's 64-bit successor. When a size overflows 32 bits it becomes 0xFFFFFFFF and the true 64-bit sizes live in a ds64 chunk, so a WAV can exceed 4 GB.</div></div>
       <span class="t">byte map</span>
+    </a>
+    <a class="row gf1pat" href="gf1pat-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">Gravis UltraSound</div>
+        <div class="d">The .PAT patch: a four-level nest of fixed-size headers (patch / instrument / layer / sample), each followed by its raw PCM. MilliHertz frequency fields, the eight-flag modes byte, little-endian. In GUS teal.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row akai" href="akai-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">Akai S5000 / S6000</div>
+        <div class="d">The .akp keygroup program: a RIFF/APRG of nested IFF -- prg, then a kgrp per keygroup holding kloc, envelopes, and up to four velocity zones. The zero RIFF-size quirk; zones name external .wav samples. In Akai orange.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row bfdlac" href="bfdlac-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">FXpansion BFD</div>
+        <div class="d">The .bfdlac drum hit: a big-endian IFF container (BFDC) of fmt / BFDi / Indx / data -- uniform 24-bit/44100/stereo, an Indx block seek table for random access, and the undocumented lossless lac codec. In BFD brick.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row amiga" href="amiga-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">Amiga Music</div>
+        <div class="d">Four big-endian 68k formats in one sheet: SMUS (Sonix IFF score), OKT (Oktalyzer's four-to-eight channel split), MED / OctaMED, and Future Composer. IFF is the ancestor of RIFF/WAV. In Amiga cobalt.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row serum" href="serum-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">Xfer Serum</div>
+        <div class="d">The .SerumPreset: an XferJson magic, a UTF-8 JSON metadata block, then the wavetable / modulation blob -- zstd-compressed in Serum 2, whose Zstandard magic gives the generation away. In Serum violet.</div></div>
+      <span class="t">byte + json</span>
+    </a>
+    <a class="row labx" href="labx-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">Arturia Analog Lab</div>
+        <div class="d">The .labx bank: a STORED zip of presets, each path spelling engine / bank / name, each entry a Boost text-serialization archive of length-prefixed metadata strings. In Analog Lab plum.</div></div>
+      <span class="t">zip + text</span>
+    </a>
+    <a class="row sigmf" href="sigmf-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">SigMF</div>
+        <div class="d">The raw-PCM-plus-header idea applied to radio: a headerless IQ stream (.sigmf-data) beside a JSON sidecar (.sigmf-meta) of global geometry, frequency-tagged captures, and the composable datatype grammar. In phosphor green.</div></div>
+      <span class="t">byte + json</span>
     </a>
   </div>
 
