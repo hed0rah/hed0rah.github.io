@@ -210,7 +210,7 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
         <div><span class="y">now</span><span><b>a marketplace format.</b> Producers sell Analog Lab banks; acidcat reads the census (engines, banks, preset count) and each preset's name / author / tags / save-time to catalogue what a bank contains.</span></div>
       </div>
 
-      <div class="callout"><b>the path is half the metadata.</b> Before reading a single byte of an entry, its zip path already gives engine, factory-vs-user, bank and preset name: <code>Pigments/User/'Solstice'/90s - Solstice</code>. acidcat parses the path for identity and the archive body for the rest &mdash; two sources that cross-check each other.</div>
+      <div class="callout"><b>the path is half the metadata.</b> Before reading a single byte of an entry, its zip path already gives engine, factory-vs-user, bank and preset name: <code>Pigments/User/'Solstice'/90s - Solstice</code>. acidcat parses the path for identity and the archive body for the rest &mdash; two sources that cross-check each other. The preset name ends the path with no file extension, so acidcat keys off the path <i>shape</i>: any entry three or more levels deep is a preset, the shallower ones (the cover) are assets.</div>
       <div class="callout"><b>STORED means carveable.</b> Because entries are uncompressed, a <code>carve</code> of a preset's byte region is the <i>literal</i> Boost archive &mdash; drop it back into Analog Lab and it replays. acidcat records each preset's real offset and size, so the bank doubles as a directory of extractable presets.</div>
       <div class="callout"><b>a cover ships with the bank.</b> Commercial banks include a top-level <code>.png</code>/<code>.jpg</code> cover (the artwork you see in a store listing). acidcat surfaces it as the bank's cover image, distinct from the preset entries.</div>
     </div>
@@ -357,7 +357,7 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
         {label:"len_prefix",k:"enum",r:[0,1],val:"22",body:"The length prefix of the first string: 22 bytes. Boost text serialization writes every string as its byte count, a space, then the bytes.",note:"22 = length of \"serialization::archive\"."},
         {label:"sp",k:"rsv",r:[2,2],val:"space",body:"The separator space between a length prefix and its string."},
         {label:"class_name",k:"sync",r:[3,24],val:"serialization::archive",body:"The Boost archive's class-name token -- the signature that identifies a text serialization archive. acidcat checks for it in the first 64 bytes to confirm the entry is a real preset archive.",note:"22 ASCII bytes."},
-        {label:"version_sig",k:"flag",r:[25,36],val:"10 0 7 0 7",body:"The Boost library and class version integers, space-separated. After them come the preset's own fields -- name, bank, author, tags -- each a length-prefixed string.",note:"e.g. the next token is the preset name, written as its length then its bytes."}
+        {label:"version_sig",k:"flag",r:[25,36],val:"10 0 7 0 7",body:"The Boost library and class version integers, space-separated. The leading one is the archive library version; libboost refuses an archive whose version it does not recognise, which is why acidcat scrapes the tokens directly instead of deserializing. After them come the preset's own fields -- name, bank, author, tags -- each a length-prefixed string.",note:"e.g. the next token is the preset name, written as its length then its bytes."}
       ]]
   };
 

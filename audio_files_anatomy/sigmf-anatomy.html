@@ -229,11 +229,11 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
     <!-- ===================== DATATYPE ===================== -->
     <div class="panel" data-panel="dtype">
       <div class="pfacts"><span>grammar<b>(c/r)(i/u/f)(bits)(_endian)</b></span><span>one string<b>full geometry</b></span><span>example<b>ci16_le</b></span></div>
-      <p class="plede">The <code>core:datatype</code> is a tiny grammar that packs a full sample description into one token: an optional <b>c</b> (complex) or <b>r</b> (real), then <b>i</b>/<b>u</b>/<b>f</b> (signed int, unsigned int, or float), then the <b>bit width</b>, then an <b>endian</b> suffix for anything wider than a byte. The map breaks down <code>ci16_le</code> &mdash; complex, signed 16-bit, little-endian, so <b>4 bytes per sample</b> (two int16 components).</p>
+      <p class="plede">The <code>core:datatype</code> is a tiny grammar that packs a full sample description into one token: a required <b>c</b> (complex) or <b>r</b> (real), then <b>i</b>/<b>u</b>/<b>f</b> (signed int, unsigned int, or float), then the <b>bit width</b>, then an <b>endian</b> suffix for anything wider than a byte. The map breaks down <code>ci16_le</code> &mdash; complex, signed 16-bit, little-endian, so <b>4 bytes per sample</b> (two int16 components).</p>
       <div class="sec">datatype string "ci16_le" (7 bytes)</div>
       <p class="note">Hover each letter &mdash; every character is one decision in the grammar.</p>
       <div id="sigmf-dtype" data-build></div>
-      <div class="callout"><b>parametric, not a lookup table.</b> WAV enumerates format tags (1 = PCM, 3 = float, ...); SigMF <i>composes</i> the type from parts. <code>cu8</code> is complex unsigned 8-bit (2 B/sample, no endian needed); <code>rf32_le</code> is real float32; <code>ci16_be</code> is big-endian complex int16. acidcat parses the grammar with a single regex and rejects a multibyte type that omits its endian suffix &mdash; the spec requires it.</div>
+      <div class="callout"><b>parametric, not a lookup table.</b> WAV enumerates format tags (1 = PCM, 3 = float, ...); SigMF <i>composes</i> the type from parts. <code>cu8</code> is complex unsigned 8-bit (2 B/sample, no endian needed); <code>rf32_le</code> is real float32; <code>ru8</code> and <code>ri16_le</code> are the real counterparts; <code>ci16_be</code> is big-endian complex int16. Real and complex both take a leading letter &mdash; there is no bare form, and acidcat parses the grammar with a single regex that rejects a type missing its <code>c</code>/<code>r</code> prefix, or a multibyte type that omits its endian suffix.</div>
       <div class="callout"><b>complex means interleaved.</b> The leading <code>c</code> is why the data stream reads <code>I Q I Q ...</code> &mdash; each sample is two components, in-phase then quadrature. That is identical to how a stereo WAV interleaves left and right; here the two channels are the real and imaginary parts of one complex signal.</div>
     </div>
 
@@ -245,7 +245,7 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
       <p class="note">Hover a pair &mdash; I then Q, each a little-endian int16. Sample 0 = (&minus;4, 2).</p>
       <div id="sigmf-data" data-build></div>
       <div class="callout"><b>meaningless without the meta.</b> These eight bytes could be four int16s, two float16s, or one part of a wider type &mdash; only <code>core:datatype</code> resolves it. That is the whole trade SigMF makes: keep the data plane utterly plain, and put every interpretation decision in the sidecar. Lose the meta and you are back to guessing geometry, exactly the problem acidcat's <code>locate --analyze</code> solves for headerless PCM.</div>
-      <div class="callout"><b>the same audio statistics apply.</b> DC offset (a non-zero mean on I or Q) and clipping (components pinned at the type's limit) are the identical health checks acidcat runs on PCM audio &mdash; the deep-gated stats sample the first 8 MB and report them per component. IQ is complex audio, so the audio toolbox transfers wholesale; only <code>core:frequency</code> has no PCM analogue.</div>
+      <div class="callout"><b>the same audio statistics apply.</b> DC offset (a non-zero mean on I or Q) and clipping (components pinned at the type's limit) are the identical health checks acidcat runs on PCM audio &mdash; the deep-gated stats sample the first 8 MB and report them per component. IQ is complex audio, so the audio toolbox transfers wholesale; only <code>core:frequency</code> has no PCM analogue. One wrinkle: an unsigned datatype is offset-binary, so its zero sits at half-scale &mdash; <code>cu8</code> (the RTL-SDR native format) reads silence as <b>0x80</b>, not 0x00.</div>
     </div>
 
   </div>
@@ -362,7 +362,7 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
       [
         {label:"complexity",k:"enum",r:[0,0],val:"c = complex",sel:0,branch:[["c","complex (I/Q pairs)"],["r","real"]],
           body:"The first letter: c = complex (each sample is an interleaved I/Q pair), r = real (one component). c here, so the stream reads I Q I Q ...",
-          note:"a leading r or c; omitted historically defaulted to real."},
+          note:"required: exactly one of c or r begins every datatype."},
         {label:"numeric",k:"enum",r:[1,1],val:"i = signed int",sel:0,branch:[["i","signed integer"],["u","unsigned integer"],["f","float"]],
           body:"The numeric type: i = signed int, u = unsigned int, f = IEEE float. i here.",
           note:"determines how a component's bits are interpreted."},
