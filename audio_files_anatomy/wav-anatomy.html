@@ -222,7 +222,7 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
         <div><span class="y">1999</span><span><b>Wave64</b> (Sonic Foundry) finalized &mdash; 128-bit GUID chunk ids, 64-bit sizes, to break 4&nbsp;GB (its container GUIDs date to 1996, the audio-chunk GUIDs to 1999).</span></div>
         <div><span class="y">2004</span><span><b>DSDIFF</b> (Philips) &mdash; the IFF side's 64-bit answer: <b>FRM8</b> replaces FORM, sizes widen to 64-bit big-endian, the pad byte stays. DSD/SACD masters.</span></div>
         <div><span class="y">2007</span><span><b>RF64</b> (EBU Tech 3306) &mdash; the ds64 chunk carries 64-bit sizes; magic flips to RF64 only when needed.</span></div>
-        <div><span class="y">2019</span><span><b>BW64</b> (ITU-R BS.2088) &mdash; RF64 generalized, tied to the Audio Definition Model (chna/axml).</span></div>
+        <div><span class="y">2015</span><span><b>BW64</b> (ITU-R BS.2088-0) &mdash; RF64 generalized, tied to the Audio Definition Model (chna/axml).</span></div>
       </div>
       <div class="callout"><b>the shared grammar.</b> Every format on these tabs is the same atom: a <b>4-byte id</b>, a <b>size</b>, a <b>payload</b>, and a <b>pad byte</b> when the size is odd &mdash; excluded from the size that owns it, but counted inside the parent that contains it, the asymmetry (inherited from IFF) behind most off-by-one bugs in the family. Only three things vary across the family &mdash; the byte order (IFF/AIFF big-endian, RIFF little-endian), the width of the size field (32-bit, or 64-bit in RF64/Wave64/DSDIFF), and whether the id is a 4-character code or a 16-byte GUID (Wave64). Learn the atom once and every dialect reads the same.</div>
       <div class="callout"><b>the three normative WAVE rules.</b> Of everything a writer can do, only these are guaranteed: the file opens with <b>RIFF</b> (or RF64); the form type is <b>WAVE</b>; and <b>fmt precedes data</b>. Chunk order is otherwise free, the declared RIFF size is often stale, and acidcat lints every claim against the bytes that are actually present rather than trusting the header.</div>
@@ -306,7 +306,7 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
       <div class="pfacts"><span>magic<b>"RIFF" / "RIFX"</b></span><span>size<b>u32, 4 GB cap</b></span><span>1991<b>MS + IBM</b></span></div>
       <p class="plede">The container itself: 12 bytes that every WAV opens with. <b>"RIFF"</b>, a 32-bit little-endian size, and a form type <b>"RIFF"</b> wraps IFF's grammar with the byte order flipped for the Intel PC &mdash; the little-endian concession that gave it the name <b>Reverse IFF</b>. A rare big-endian variant, <b>RIFX</b>, keeps everything else the same and flips only the number encoding. The riff_size field claims the file length minus 8, but writers routinely leave it stale, so acidcat lints it rather than trusting it.</p>
       <div class="sec">RIFF header (12 bytes)</div>
-      <p class="note">Example: a small WAVE file, 2,084 bytes total.</p>
+      <p class="note">Example: a small WAVE file, 2,092 bytes total.</p>
       <div id="riff-hdr" data-build></div>
       <div class="callout"><b>RIFX &mdash; big-endian RIFF.</b> Identical layout, but the size fields and all multi-byte values are big-endian, and the magic is <b>"RIFX"</b>. Microsoft defined it; almost nothing writes it. Macromedia Director used big-endian RIFF internally &mdash; whether that was registered RIFX or an independent reinvention is unrecorded.</div>
       <div class="callout"><b>other RIFF forms.</b> WAVE is one of many form types after the size field: <b>AVI</b> (video), <b>RMID</b> (RIFF-wrapped MIDI), <b>RDIB</b> (bitmap), <b>PAL</b> (palette), <b>RMMP</b> (Director), <b>sfbk</b> (SoundFont), <b>DLS</b> (Downloadable Sounds). The form type at 0x08 is what a reader branches on.</div>
@@ -324,7 +324,7 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
     <!-- ===================== RF64 / ds64 ===================== -->
     <div class="panel" data-panel="rf64">
       <div class="pfacts"><span>magic<b>"RF64"</b></span><span>sizes<b>u64 in ds64</b></span><span>2007<b>EBU Tech 3306</b></span></div>
-      <p class="plede">The large-file answer that stays RIFF. A file over 4&nbsp;GB flips its magic from <b>RIFF</b> to <b>RF64</b>, writes <b>0xFFFFFFFF</b> as a sentinel in the 32-bit size fields, and adds a <b>ds64</b> chunk as the first chunk carrying the real 64-bit sizes. A clever writer reserves a <b>JUNK</b> chunk of exactly the ds64 size up front while the file is small, then overwrites it in place with ds64 if the recording crosses 4&nbsp;GB &mdash; so the file never has to be rewritten. (That 28-byte JUNK-to-ds64 reservation sits where ds64 must &mdash; the first chunk after the 12-byte header, before fmt &mdash; and is itself an ffmpeg fingerprint acidcat reads.)</p>
+      <p class="plede">The large-file answer that stays RIFF. A file over 4&nbsp;GB flips its magic from <b>RIFF</b> to <b>RF64</b>, writes <b>0xFFFFFFFF</b> as a sentinel in the 32-bit size fields, and adds a <b>ds64</b> chunk as the first chunk carrying the real 64-bit sizes. A clever writer reserves a <b>JUNK</b> chunk of exactly the ds64 size up front while the file is small, then overwrites it in place with ds64 if the recording crosses 4&nbsp;GB &mdash; so the file never has to be rewritten. (ffmpeg goes one further: it reserves a 28-byte JUNK placeholder right after <b>fmt</b> &mdash; not the ds64 spec slot, which is the first chunk before fmt &mdash; then overwrites it with ds64 in place if the file crosses 4&nbsp;GB. A 28-byte JUNK right after fmt is itself an ffmpeg fingerprint acidcat reads.)</p>
       <div class="sec">ds64 fixed area (28 bytes)</div>
       <p class="note">Example: a 4.3 GB recording &mdash; just past the u32 ceiling, which is the whole point.</p>
       <div id="ds64-map" data-build></div>
@@ -522,14 +522,14 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
           ["0x1","FL front left"],["0x2","FR front right"],["0x4","FC center"],["0x8","LFE"],["0x10","BL back left"],["0x20","BR back right"]],
           body:"Speaker bitmask, low bit first: FL FR FC LFE BL BR FLC FRC BC SL SR ... 0x3 = front L + R (plain stereo).",
           note:"the order of the samples follows the mask bit order, not the channel index."},
-        {label:"sub_format",k:"sync",r:[24,39],val:"PCM GUID",body:"16-byte GUID: the leading 2 bytes are the real format tag (0x0001 = PCM) and the fixed 14-byte tail 00 00 10 00 80 00 00 AA 00 38 9B 71 marks it a standard KSDATAFORMAT_SUBTYPE.",note:"a non-standard tail (an unofficial codec GUID) is warned by acidcat."}
+        {label:"sub_format",k:"sync",r:[24,39],val:"PCM GUID",body:"16-byte GUID: the leading 2 bytes are the real format tag (0x0001 = PCM) and the fixed 14-byte tail 00 00 00 00 10 00 80 00 00 AA 00 38 9B 71 marks it a standard KSDATAFORMAT_SUBTYPE.",note:"a non-standard tail (an unofficial codec GUID) is warned by acidcat."}
       ]],
     "ds64-map":["byte",
-      [0xA0,0x4B,0x4C,0x00,0x01,0x00,0x00,0x00, 0x40,0x4B,0x4C,0x00,0x01,0x00,0x00,0x00, 0x80,0x18,0x16,0x40,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00],
+      [0xA0,0xCB,0x4C,0x00,0x01,0x00,0x00,0x00, 0x00,0xCB,0x4C,0x00,0x01,0x00,0x00,0x00, 0xC0,0x32,0x13,0x40,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00],
       [
-        {label:"riff_size",k:"sync",r:[0,7],val:"4,300,000,160",body:"The true size of the whole RF64 chunk as a u64 LE, standing in for the 32-bit RIFF size field which now holds the 0xFFFFFFFF sentinel.",note:"0x1004C4BA0 = 4,300,000,160 bytes."},
-        {label:"data_size",k:"enum",r:[8,15],val:"4,300,000,000",body:"The true size of the data chunk, u64 LE -- 4.3 GB, past the 4 GB (0xFFFFFFFF) u32 ceiling. This is the whole reason RF64 exists.",note:"0x1004C4B40 = 4,300,000,000."},
-        {label:"sample_count",k:"enum",r:[16,23],val:"1,075,000,000",body:"Samples per channel, u64 LE -- the fact-chunk value at 64-bit. 4,300,000,000 bytes / 4 bytes-per-frame.",note:"0x40161880 = 1,075,000,000."},
+        {label:"riff_size",k:"sync",r:[0,7],val:"4,300,000,160",body:"The true size of the whole RF64 chunk as a u64 LE, standing in for the 32-bit RIFF size field which now holds the 0xFFFFFFFF sentinel.",note:"0x1004CCBA0 = 4,300,000,160 bytes."},
+        {label:"data_size",k:"enum",r:[8,15],val:"4,300,000,000",body:"The true size of the data chunk, u64 LE -- 4.3 GB, past the 4 GB (0xFFFFFFFF) u32 ceiling. This is the whole reason RF64 exists.",note:"0x1004CCB00 = 4,300,000,000."},
+        {label:"sample_count",k:"enum",r:[16,23],val:"1,075,000,000",body:"Samples per channel, u64 LE -- the fact-chunk value at 64-bit. 4,300,000,000 bytes / 4 bytes-per-frame.",note:"0x401332C0 = 1,075,000,000."},
         {label:"table_length",k:"enum",r:[24,27],val:"0",body:"Number of chunk-size override records that follow (each a 4-byte id + u64 size), for any OTHER chunk also over 4 GB. 0 here -- only data is large."}
       ]],
     "wave64-map":["byte",

@@ -168,7 +168,7 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
     <details class="region"><summary><span class="chev">&#9656;</span><span class="rname">VLQ delta time</span><span class="rspan">the variable encoding</span></summary>
       <div class="rbody"><p class="note">Seven payload bits per byte; the high bit set means another byte follows. A VLQ is capped at 4 bytes (28 payload bits), so the largest delta is 0x0FFFFFFF. A parser that loses sync here misreads everything after it. acidcat's running-status bookkeeping is exactly where a one-byte desync once corrupted note counts.</p></div></details>
     <details class="region"><summary><span class="chev">&#9656;</span><span class="rname">running status</span><span class="rspan">the omitted byte</span></summary>
-      <div class="rbody"><p class="note">Consecutive channel events with the same status may drop the repeated status byte; the parser must remember the last one. Every mainstream DAW exports this way.</p></div></details>
+      <div class="rbody"><p class="note">Consecutive channel events with the same status may drop the repeated status byte; the parser must remember the last one. Most exporters use it.</p></div></details>
     <details class="region"><summary><span class="chev">&#9656;</span><span class="rname">channel voice messages</span><span class="rspan">status 0x80-0xEF . SSSS CCCC</span></summary>
       <div class="rbody"><p class="note">High nibble is the message type, low nibble the channel (0-15). Types 8n-Bn and En carry two data bytes, Cn and Dn one. Note On with velocity 0 means Note Off.</p><div class="kv">
         <div><span class="k">8n</span><span class="v">note off: key, velocity</span></div>
