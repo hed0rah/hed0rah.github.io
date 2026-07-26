@@ -20,7 +20,8 @@
   --sync:#565A62;  --sync-soft:#DBDCDF;
   --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
 }
-:root[data-theme="dark"]{--paper:#181a18;--panel:#20221f;--ink:#e6e6e1;--soft:#abaca1;--faint:#7c7d72;--line:#363a34;--hair:#292d27;--enum:#84a6da;--enum-soft:#161d2a;--flag:#d1897e;--flag-soft:#291a17;--rsv:#bcbaae;--rsv-soft:rgba(230,230,225,0.04);--sync:#a4a6ac;--sync-soft:#222329;}.theme-toggle{position:fixed;bottom:0.9rem;right:0.9rem;z-index:50;font-family:var(--ff);font-size:0.56rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--soft);background:var(--panel);border:1px solid var(--line);padding:0.45rem 0.7rem;cursor:pointer;font-weight:400;transition:color .15s,border-color .15s}.theme-toggle:hover{color:var(--enum);border-color:var(--enum)}*{box-sizing:border-box;margin:0;padding:0}
+:root[data-theme="dark"]{--paper:#181a18;--panel:#20221f;--ink:#e6e6e1;--soft:#abaca1;--faint:#7c7d72;--line:#363a34;--hair:#292d27;--enum:#84a6da;--enum-soft:#161d2a;--flag:#d1897e;--flag-soft:#291a17;--rsv:#bcbaae;--rsv-soft:rgba(230,230,225,0.04);--sync:#a4a6ac;--sync-soft:#222329;}
+:root[data-theme="acid"]{--paper:#0b0912;--panel:#161022;--ink:#f4ecff;--soft:#ccb9f2;--faint:#8f7ec6;--line:#3b2c5c;--hair:#241a3a;--enum:#3fd0ff;--enum-soft:#0f2942;--flag:#ff45a8;--flag-soft:#3a1030;--rsv:#bb8cff;--rsv-soft:rgba(244,236,255,0.05);--sync:#f2e400;--sync-soft:#33300a;}.theme-toggle{position:fixed;bottom:0.9rem;right:0.9rem;z-index:50;font-family:var(--ff);font-size:0.56rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--soft);background:var(--panel);border:1px solid var(--line);padding:0.45rem 0.7rem;cursor:pointer;font-weight:400;transition:color .15s,border-color .15s}.theme-toggle:hover{color:var(--enum);border-color:var(--enum)}*{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
@@ -29,6 +30,8 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem}
 .head .title acidcat-toggle{--acidcat-size:64px;color:var(--soft);flex:0 0 auto;transition:color .15s}
 .head .title acidcat-toggle:hover{color:var(--enum)}
+:root[data-theme="acid"] .head .title acidcat-toggle{color:var(--sync)}
+:root[data-theme="acid"] .head .title acidcat-toggle:hover{color:var(--flag)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.5rem,4vw,2rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
 .head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
@@ -159,7 +162,7 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
 
   <div class="head">
     <div class="row">
-      <div class="title"><div class="tt"><div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div><h1>Amiga Music Anatomy</h1></div><acidcat-toggle aria-label="Toggle light and dark theme"></acidcat-toggle></div>
+      <div class="title"><div class="tt"><div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div><h1>Amiga Music Anatomy</h1></div><acidcat-toggle aria-label="Cycle theme: light, dark, acid"></acidcat-toggle></div>
       <div class="stamp"><b>SMUS / OKT / MED / FC</b>IFF-family . big-endian<br>rev 2026.07</div>
     </div>
     <div class="strip">
@@ -473,6 +476,11 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
     <ellipse class="eye" cx="1394" cy="975" rx="78" ry="140" fill="currentColor"/>
     <path class="swirl" d="${spiral(772, 975)}"/>
     <path class="swirl" d="${spiral(1394, 975)}"/>
+    <path class="eye-shut" d="M688,966 q84,90 168,0"/>
+    <path class="eye-shut" d="M1310,966 q84,90 168,0"/>
+    <text class="zzz z1" x="1712" y="612">z</text>
+    <text class="zzz z2" x="1846" y="452">z</text>
+    <text class="zzz z3" x="1992" y="286">Z</text>
     <path class="tongue" d="M1004,1735 h150 v215 a75,75 0 0 1 -150,0 z" fill="currentColor"/>
     <path d="${MOUTH}" style="${stroke(28.33)}"/>
     <path d="${CURLR}" style="${stroke(25.96)}"/>
@@ -487,42 +495,63 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
     }
     button:focus-visible{outline:2px solid currentColor;outline-offset:3px}
     .box{width:var(--acidcat-size,40px);height:var(--acidcat-size,40px)}
+    /* cat holds still: the eyes, Zzz, swirl and tongue carry the three moods */
     .eye{transition:opacity .28s ease}
+    .eye-shut{fill:none;stroke:currentColor;stroke-width:52;stroke-linecap:round;opacity:0;transition:opacity .28s ease}
+    .zzz{fill:currentColor;font-family:var(--ff,monospace);font-weight:600;opacity:0}
+    .zzz.z1{font-size:150px}.zzz.z2{font-size:205px}.zzz.z3{font-size:270px}
     .swirl{fill:none;stroke:currentColor;stroke-width:70;stroke-linecap:round;opacity:0;transition:opacity .32s ease;transform-box:fill-box;transform-origin:center}
     .tongue{transform-box:fill-box;transform-origin:center top;transform:scaleY(0);transition:transform .4s cubic-bezier(.34,1.45,.5,1) .05s}
-    :host([data-on]) .eye{opacity:0}
-    :host([data-on]) .swirl{opacity:1;animation:acid-spin 2.6s linear infinite}
-    :host([data-on]) .swirl:last-of-type{animation-direction:reverse}
-    :host([data-on]) .tongue{transform:scaleY(1)}
+    /* dark = asleep: eyes shut, Zzz drifting up */
+    :host([data-state="dark"]) .eye{opacity:0}
+    :host([data-state="dark"]) .eye-shut{opacity:1}
+    :host([data-state="dark"]) .zzz{animation:zfloat 3.2s ease-in-out infinite}
+    :host([data-state="dark"]) .zzz.z2{animation-delay:.5s}
+    :host([data-state="dark"]) .zzz.z3{animation-delay:1s}
+    /* acid = rave: spiral eyes in neon, tongue out */
+    :host([data-state="acid"]) .eye{opacity:0}
+    :host([data-state="acid"]) .swirl{opacity:1;animation:acid-spin 2.6s linear infinite}
+    :host([data-state="acid"]) .swirl:first-of-type{stroke:var(--enum)}
+    :host([data-state="acid"]) .swirl:last-of-type{stroke:var(--flag);animation-direction:reverse}
+    :host([data-state="acid"]) .tongue{transform:scaleY(1)}
     @keyframes acid-spin{to{transform:rotate(1turn)}}
-    @media (prefers-reduced-motion:reduce){.eye,.tongue,.swirl{transition:none}.swirl{animation:none}}
+    @keyframes zfloat{0%{opacity:0;transform:translateY(40px)}25%{opacity:.9}60%{opacity:.9}100%{opacity:0;transform:translateY(-90px)}}
+    @media (prefers-reduced-motion:reduce){
+      .eye,.tongue,.swirl,.eye-shut{transition:none}.swirl{animation:none}
+      :host([data-state="dark"]) .zzz{animation:none;opacity:.85}
+    }
   `;
 
+  const STATES = ['light', 'dark', 'acid'];
   class AcidcatToggle extends HTMLElement {
     connectedCallback() {
       const root = this.attachShadow({ mode: 'open' });
-      root.innerHTML = `<style>${css}</style><button type="button" aria-label="Toggle dark mode" title="Toggle dark mode"><span class="box">${svg}</span></button>`;
+      root.innerHTML = `<style>${css}</style><button type="button" aria-label="Cycle theme: light, dark, acid" title="Theme (click to cycle)"><span class="box">${svg}</span></button>`;
       this._btn = root.querySelector('button');
-      this._btn.addEventListener('click', () => this.toggle());
-      this._sync = (e) => { if (e.target !== this && e.detail) this.toggleAttribute('data-on', e.detail.dark); };
+      this._btn.addEventListener('click', () => this.cycle());
+      // keep multiple toggles on one page visually in sync
+      this._sync = (e) => { if (e.target !== this && e.detail && e.detail.state) this.apply(e.detail.state, false, false); };
       document.addEventListener('acidcat-theme', this._sync);
 
       let saved = null;
       try { saved = localStorage.getItem('acidcat-theme'); } catch (e) {}
-      const dark = saved ? saved === 'dark'
-        : (this.hasAttribute('default-dark') || window.matchMedia('(prefers-color-scheme: dark)').matches);
-      this.apply(dark, false);
+      const initial = STATES.indexOf(saved) >= 0 ? saved
+        : (this.hasAttribute('default-dark') || window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      this.apply(initial, false, true);
     }
     disconnectedCallback() { if (this._sync) document.removeEventListener('acidcat-theme', this._sync); }
-    get isDark() { return this.hasAttribute('data-on'); }
-    toggle() { this.apply(!this.isDark, true); }
-    apply(dark, persist) {
-      this.toggleAttribute('data-on', dark);
-      const theme = dark ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', theme);
-      if (this._btn) this._btn.setAttribute('aria-pressed', String(dark));
-      if (persist) { try { localStorage.setItem('acidcat-theme', theme); } catch (e) {} }
-      this.dispatchEvent(new CustomEvent('acidcat-theme', { bubbles: true, composed: true, detail: { theme, dark } }));
+    get state() { return this.getAttribute('data-state') || 'light'; }
+    cycle() { this.apply(STATES[(STATES.indexOf(this.state) + 1) % STATES.length], true, true); }
+    apply(state, persist, emit) {
+      if (STATES.indexOf(state) < 0) state = 'light';
+      this.setAttribute('data-state', state);
+      document.documentElement.setAttribute('data-theme', state);
+      if (this._btn) {
+        this._btn.setAttribute('aria-pressed', String(state !== 'light'));
+        this._btn.title = 'Theme: ' + state + ' (click to cycle)';
+      }
+      if (persist) { try { localStorage.setItem('acidcat-theme', state); } catch (e) {} }
+      if (emit !== false) this.dispatchEvent(new CustomEvent('acidcat-theme', { bubbles: true, composed: true, detail: { state } }));
     }
   }
   customElements.define('acidcat-toggle', AcidcatToggle);
