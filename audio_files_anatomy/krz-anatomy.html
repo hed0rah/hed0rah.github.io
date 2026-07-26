@@ -279,7 +279,7 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
       <p class="note">Example: Program #200. Hover <span class="k-en">pgm_tag</span> / <span class="k-en">fx_tag</span> to see the two segment boundaries.</p>
       <div id="program-seg" data-build></div>
       <div class="callout"><b>segment lengths (data bytes after the tag).</b> <code>0x08</code> PGM / <code>0x09</code> LYR = 15; <code>0x0F</code> FX = 7 (the exact-tag exception &mdash; it lives in the 0x08 family but is short); <code>0x18</code> FUN = 3; <code>0x10</code> ASR / <code>0x14</code> LFO / <code>0x68</code> KDFX = 7; <code>0x20</code> ENC / <code>0x50</code> HOB = 15; <code>0x40</code> CAL / <code>0x78</code> KB3 = 31. acidcat counts <b>LYR (0x09)</b> tags for the layer count; the per-parameter VAST decode (filter, envelopes, LFO) is a deferred follow-up.</div>
-      <div class="callout"><b>CAL holds the keymap link.</b> Each layer's <b>CAL</b> (0x40, 31 bytes) references its Keymap id in bytes <code>[11,12]</code> only &mdash; a second keymap slot at <code>[7,8]</code> must stay zero, or the K2000 claims two keymaps per layer and goes silent past four layers (HW-confirmed). This is the Program &rarr; Keymap edge of the reference graph.</div>
+      <div class="callout"><b>CAL holds the keymap link.</b> Each layer's <b>CAL</b> (0x40, 31 bytes) references its Keymap id in bytes <code>[11,12]</code> only &mdash; a second keymap slot at <code>[7,8]</code> must stay zero, or the K2000 claims two keymaps per layer and goes silent past four layers (acidcat does not yet decode this offset). This is the Program &rarr; Keymap edge of the reference graph.</div>
     </div>
 
     <!-- ===================== SROM ===================== -->

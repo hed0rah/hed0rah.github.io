@@ -397,7 +397,7 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
           body:"The MED/OctaMED signature. The last digit steps with the software generation, which acidcat maps straight to the variant name.",note:"MMD0 = the original MED."},
         {label:"modlen",k:"enum",r:[4,7],val:"116,090",body:"BIG-endian u32: the declared module length. acidcat checks it against the real file size and warns on a mismatch -- a truncation tell.",note:"0x0001C57A = 116090, matching the file."},
         {label:"song_ptr",k:"flag",r:[8,11],val:"52",body:"BIG-endian u32: an absolute file offset to the song structure -- the first of the pointer table that makes MED pointer-based rather than chunked.",note:"0x00000034 = 52."},
-        {label:"reserved",k:"rsv",r:[12,15],val:"0",body:"The next header word, 0 here. The full pointer table (patterns, samples, expansion) continues; acidcat summarises at the header."}
+        {label:"psecnum / pseq",k:"rsv",r:[12,15],val:"0",body:"Two UWORDs (play section, sequence) used only by MMD2; 0 in this MMD0. The full pointer table (patterns, samples, expansion) continues; acidcat summarises at the header."}
       ]],
     "fc-hdr":["byte",
       [0x46,0x43,0x31,0x34, 0x00,0x00,0x03,0xDC, 0x00,0x00,0x04,0x90, 0x00,0x00,0x04,0xC0],

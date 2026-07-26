@@ -216,7 +216,7 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
       </div>
 
       <div class="callout"><b>nested IFF, not flat.</b> Most RIFF files are one level deep. An Akai program is two: a <code>kgrp</code> chunk's payload is <i>itself</i> a stream of IFF chunks (<code>kloc</code>, <code>env</code>, <code>filt</code>, <code>zone</code>). acidcat walks the outer chunks, then re-enters each <code>kgrp</code> to walk its inner ones &mdash; the same IFF reader, recursed one level.</div>
-      <div class="callout"><b>RIFF size is zero.</b> Akai writes <code>0x00000000</code> for the RIFF size field rather than the real body length &mdash; a firmware quirk. A strict RIFF reader that trusts the size reads nothing; acidcat falls back to the actual file length and walks the chunks regardless. It is one of those places a real specimen corrects a spec.</div>
+      <div class="callout"><b>RIFF size is unreliable.</b> Akai typically writes <code>0x00000000</code> for the RIFF size field rather than the real body length &mdash; a firmware quirk. A strict RIFF reader that trusts the size reads nothing; acidcat falls back to the actual file length and walks the chunks regardless. It is one of those places a real specimen corrects a spec.</div>
       <div class="callout"><b>the samples are elsewhere.</b> A <code>zone</code> stores a sample <i>name</i>, not audio &mdash; the S6000 loads the matching <code>.wav</code> from the same volume. So acidcat treats the zones as references: it lists which samples a program needs (here <code>"12 STRING G5"</code>), and a missing sibling <code>.wav</code> is a broken program, not a broken file.</div>
     </div>
 
