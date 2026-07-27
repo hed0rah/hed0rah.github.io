@@ -67,6 +67,18 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 .sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:2.6rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
 .sec::after{content:"";flex:1;height:1px;background:var(--line)}
 .note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:72ch}
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none;margin:2rem 0 0}
+.tab{padding:0.55rem 0.9rem;font-size:0.64rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.08em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none}
+.panel.on{display:block}
+.plede{color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
+.plede b{color:var(--ink);font-weight:500}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin:0.4rem 0 1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 .region{border:1px solid var(--line);border-bottom:none;background:var(--panel)}
 .region:last-child{border-bottom:1px solid var(--line)}
 .region>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:1.2rem 1fr auto;gap:0.8rem;align-items:center;padding:0.7rem 1rem;font-size:0.82rem}
@@ -155,6 +167,12 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
   </aside>
   </div>
 
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="smf">MIDI 1.0<small>Standard MIDI File</small></button>
+    <button class="tab" data-p="ump">MIDI 2.0<small>UMP / .midi2</small></button>
+  </div>
+  <div class="panelwrap">
+  <div class="panel on" data-panel="smf">
   <div class="sec">file regions</div>
   <p class="note">One header, then the tracks. Events use compact encodings (VLQ deltas, running status) that a parser must track byte by byte.</p>
   <div>
@@ -202,6 +220,36 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
   <div class="sec">division field</div>
   <p class="note">The 16-bit timing field, expanded. Top bit chooses the scheme; here it is 0, so the rest is ticks per quarter note.</p>
   <div id="block-div"></div>
+
+  </div>
+
+  <div class="panel" data-panel="ump">
+    <div class="pfacts"><span>magic<b>"SMF2CLIP"</b></span><span>packet<b>UMP . 1-4 x 32b words</b></span><span>endian<b>big (in files)</b></span><span>timing<b>Delta Clockstamp</b></span></div>
+    <p class="plede">MIDI 2.0 does not extend the <code>.mid</code> file &mdash; that format is frozen at 1.0. It replaces the wire and the file with the <b>Universal MIDI Packet</b>: 1 to 4 big-endian 32-bit words whose top nibble, the <b>Message Type</b>, alone fixes the packet size. That makes a UMP stream <b>self-delimiting</b> &mdash; no length prefixes &mdash; so the same bytes parse whether they arrive from a file or a pipe. A <b>MIDI Clip File</b> (<code>.midi2</code>) is just an 8-byte <b>SMF2CLIP</b> magic then one of those streams. <b>Hover</b> to light bytes, <b>click</b> a <span class="k-en">+</span> for its table.</p>
+    <p class="note">Scope note, honestly: real <code>.midi2</code> files are still rare (the spec is 2023, few producers). The format's home today is the live stream layer shipping in Windows MIDI Services, ALSA UMP and CoreMIDI &mdash; and because UMP is self-delimiting, acidcat decodes the same grammar off a file or a captured stream.</p>
+
+    <div class="sec">message types</div>
+    <p class="note">The top 4 bits of word 1. The MT alone fixes the packet size, so a reader stays synchronized even through message types it does not understand.</p>
+    <div class="rbody"><div class="kv">
+      <div><span class="k">0x0</span><span class="v">Utility &mdash; NOOP, JR clock/timestamp, DCTPQ, Delta Clockstamp (32b)</span></div>
+      <div><span class="k">0x1</span><span class="v">System real-time &amp; common (32b)</span></div>
+      <div><span class="k">0x2</span><span class="v">MIDI 1.0 channel voice &mdash; 7-bit, wrapped verbatim (32b)</span></div>
+      <div><span class="k">0x3</span><span class="v">Data / SysEx7 (64b)</span></div>
+      <div><span class="k">0x4</span><span class="v">MIDI 2.0 channel voice &mdash; 16-bit velocity, 32-bit controllers (64b)</span></div>
+      <div><span class="k">0x5</span><span class="v">Data / SysEx8, Mixed Data Set (128b)</span></div>
+      <div><span class="k">0xD</span><span class="v">Flex Data &mdash; Set Tempo, Time Signature, metadata text (128b)</span></div>
+      <div><span class="k">0xF</span><span class="v">UMP Stream &mdash; endpoint discovery, Start / End of Clip (128b)</span></div>
+    </div></div>
+
+    <div class="sec">MIDI 2.0 Note On</div>
+    <p class="note">Example: group 1, channel 1, note 60 (middle C), velocity 0x8000, no attribute. Two 32-bit words, big-endian (Message Type 0x4).</p>
+    <div id="block-ump-noteon"></div>
+
+    <div class="sec">MIDI Clip File (.midi2)</div>
+    <p class="note">No chunks. An 8-byte magic, then a big-endian UMP stream: a Configuration Header (mandatory DCTPQ, optional tempo / time signature / metadata) and the Clip Sequence, bracketed by Start and End of Clip. A Delta Clockstamp precedes essentially every message.</p>
+    <div id="block-clip"></div>
+  </div>
+  </div>
 
   <footer><span>acidcat / midi anatomy</span><span>smf format 1 . 3 tracks . 480 ticks/quarter</span><span><a href="https://hed0rah.github.io">hed0rah</a> &middot; <a href="https://x.com/r3l0z">r3l0z</a></span></footer>
 </div>
@@ -327,6 +375,54 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
       body:"Pulses per quarter note (PPQN): how many delta-time ticks make one beat. 480 is a common DAW resolution.",
       note:"seconds per tick = (60 / bpm) / division, using the first tempo event."}
   ]);
+
+  // ---- MIDI 2.0 / UMP maps (built lazily when the tab is first shown) ----
+  var umpBuilt=false;
+  function buildUMP(){
+    if(umpBuilt) return; umpBuilt=true;
+    build("block-ump-noteon","byte",
+      [0x40,0x90,0x3C,0x00, 0x80,0x00,0x00,0x00],
+      [
+        {label:"MT + group",k:"sync",r:[0,0],val:"0x4 . group 1",sel:0,branch:[
+          ["0x4","MIDI 2.0 channel voice (this packet is 2 words)"],
+          ["low nibble","group 0-15; 16 groups x 16 ch = 256 channels"]],
+          body:"High nibble is the Message Type (0x4 = MIDI 2.0 channel voice, so a 64-bit packet). Low nibble is the group."},
+        {label:"status + channel",k:"enum",r:[1,1],val:"0x9 Note On . ch 1",body:"High nibble is the opcode (0x9 = Note On, the same map as MIDI 1.0); low nibble is the channel 0-15."},
+        {label:"note",k:"enum",r:[2,2],val:"60 (middle C)",body:"7-bit note number in the low seven bits; the top bit is reserved (0)."},
+        {label:"attribute type",k:"flag",r:[3,3],val:"0 = none",sel:0,branch:[
+          ["0x00","none"],["0x01","manufacturer specific"],["0x02","profile specific"],["0x03","pitch 7.9"]],
+          body:"Optional per-note attribute; the paired 16-bit data sits in word 2. 0 here."},
+        {label:"velocity",k:"enum",r:[4,5],val:"0x8000 (mid)",
+          body:"16-bit velocity, 256x MIDI 1.0's 7 bits. A Note On with velocity 0 is a real zero here, NOT a Note Off (a 1.0 translator remaps 0 to 1).",
+          note:"the point of MIDI 2.0 channel voice: 16-bit velocity, 32-bit controllers, per-note pitch bend and controllers, and RPN/NRPN in a single message."},
+        {label:"attribute data",k:"enum",r:[6,7],val:"0",body:"16-bit data paired with the attribute type; 0 when there is no attribute."}
+      ]);
+    build("block-clip","byte",
+      [0x53,0x4D,0x46,0x32,0x43,0x4C,0x49,0x50, 0x00,0x40,0x00,0x00, 0x00,0x30,0x01,0xE0],
+      [
+        {label:"magic",k:"sync",r:[0,7],val:"\"SMF2CLIP\"",body:"The only non-UMP bytes in the file. Everything from byte 8 on is a big-endian UMP stream."},
+        {label:"Delta Clockstamp",k:"flag",r:[8,11],val:"0 ticks",
+          body:"A Utility message (MT 0x0, status 0x4): 20-bit ticks since the previous event. One precedes essentially every message; here it precedes the mandatory DCTPQ, so it is 0.",
+          note:"replaces SMF's variable-length delta-time. Range 0 to 1,048,575; on overflow the writer inserts a DCS + NOOP to restart the count."},
+        {label:"DCTPQ",k:"enum",r:[12,15],val:"480 ticks/quarter",sel:2,branch:[
+          ["00","MT 0x0 utility, groupless"],["30","status 0x3 = DCTPQ"],["01 E0","16-bit ticks per quarter = 480"]],
+          body:"Delta Clockstamp Ticks Per Quarter Note: sets the timing resolution once, mandatory and first. It is the SMF division field, moved into a message.",
+          note:"absolute time = sum of Delta Clockstamp ticks, scaled by tempo / DCTPQ."}
+      ]);
+  }
+  var tabs=[].slice.call(document.querySelectorAll(".tab"));
+  var panels=[].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    tabs.forEach(function(t){t.classList.toggle("on",t.dataset.p===name);});
+    panels.forEach(function(p){p.classList.toggle("on",p.dataset.panel===name);});
+    if(name==="ump") buildUMP();
+  }
+  tabs.forEach(function(t){t.addEventListener("click",function(){
+    activate(t.dataset.p);
+    if(history.replaceState) history.replaceState(null,"","#"+t.dataset.p);
+  });});
+  var initial=(location.hash||"").replace("#","");
+  if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
 })();
 </script>
 <script>
