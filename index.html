@@ -196,6 +196,20 @@ html,body{overflow-x:hidden;}
 .mast h1 a:hover{ background:var(--accent); color:#141414; transform:none; box-shadow:none; }
 .mast h1 a:hover b.zero{ background-image:none; -webkit-text-fill-color:#141414; color:#141414; animation:none; }
 .mast h1 a:hover::before, .mast h1 a:hover::after{ opacity:0; animation:none; }
+
+/* section focus: scroll sets the resting focus, hover overrides it */
+main section{transform-origin:left center}
+@media (prefers-reduced-motion: no-preference){
+  main section{transition:opacity .4s ease,transform .45s cubic-bezier(.22,1,.36,1)}
+}
+main.has-focus section:not(.focus){opacity:.86}
+main section.focus{transform:scale(1.008)}
+main section.focus .sec-head::after{border-top-color:var(--accent)}
+main:hover section:not(:hover){opacity:.86}
+main section:hover{opacity:1;transform:scale(1.008)}
+@media (prefers-reduced-motion: reduce){
+  main section.focus,main section:hover{transform:none}
+}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" media="print" onload="this.media='all'">
@@ -213,18 +227,18 @@ html,body{overflow-x:hidden;}
     <h1><a href="https://github.com/hed0rah" data-text="hedÖrah">hed<b class="zero" data-text="Ö">Ö</b>rah</a></h1>
     <div class="mast-sub">
       <span class="mast-tag">// experiments &amp; code</span>
-      <span class="mast-meta"><b>36</b> projects &middot; tools, technical references &amp; worldbuilding &middot; 2026</span>
+      <span class="mast-meta"><b>39</b> projects &middot; tools, technical references &amp; worldbuilding &middot; 2026</span>
     </div>
   </header>
 
   <div class="shell">
     <aside class="rail">
       <nav>
-      <a href="#showcase"><span class="r-n">01</span><span class="r-t">Showcase</span><span class="r-c">7</span></a>
-      <a href="#rpgs"><span class="r-n">02</span><span class="r-t">Tabletop RPGs</span><span class="r-c">2</span></a>
-      <a href="#tools"><span class="r-n">03</span><span class="r-t">Tools</span><span class="r-c">10</span></a>
-      <a href="#sims"><span class="r-n">04</span><span class="r-t">Simulations / Art</span><span class="r-c">4</span></a>
-      <a href="#references"><span class="r-n">05</span><span class="r-t">References</span><span class="r-c">12</span></a>
+      <a href="#audio"><span class="r-n">01</span><span class="r-t">Audio / Synthesis</span><span class="r-c">4</span></a>
+      <a href="#references"><span class="r-n">02</span><span class="r-t">References</span><span class="r-c">16</span></a>
+      <a href="#tools"><span class="r-n">03</span><span class="r-t">Tools</span><span class="r-c">12</span></a>
+      <a href="#sims"><span class="r-n">04</span><span class="r-t">Simulations / Art</span><span class="r-c">3</span></a>
+      <a href="#rpgs"><span class="r-n">05</span><span class="r-t">Tabletop RPGs</span><span class="r-c">3</span></a>
       <a href="#ongoing"><span class="r-n">06</span><span class="r-t">Ongoing</span><span class="r-c">1</span></a>
       </nav>
       <div class="rail-foot">
@@ -239,8 +253,8 @@ html,body{overflow-x:hidden;}
     </aside>
 
     <main>
-<section id="showcase">
-  <h2 class="sec-head"><span class="sec-num">01</span> Showcase</h2>
+<section id="audio">
+  <h2 class="sec-head"><span class="sec-num">01</span> Audio / Synthesis</h2>
   <ol>
     <li>
       <div>
@@ -252,24 +266,98 @@ html,body{overflow-x:hidden;}
     </li>
     <li>
       <div>
-        <a href="/os-tree/">OSFAMTRE.EXE</a>
-        <p class="d">Operating system family tree. Lineage, forks, descendants.</p>
+        <a href="/reverb/reverb_deep-dive.html">Reverb Deep Dive</a>
+        <p class="d">Springs, plates, Schroeder, FDNs, convolution. Wave equation to differentiable FDN, with working NumPy.</p>
+        <p class="lnk"><a href="https://github.com/hed0rah/reverb-fun">repo</a></p>
       </div>
-      <span class="t">web</span>
+      <span class="t">audio / dsp</span>
     </li>
     <li>
       <div>
-        <a href="https://hedorah.neocities.org/">GIF Archaeology &amp; Editor</a>
-        <p class="d">Browse, dissect, and re-encode GIFs. Frame-level inspection.</p>
+        <a href="/extra/levels-loudness.html">Levels &amp; Loudness</a>
+        <p class="d">Recording, sound design &amp; mastering reference. Waveform physics, dB scales, LUFS targets.</p>
       </div>
-      <span class="t">web</span>
+      <span class="t">audio</span>
     </li>
     <li>
       <div>
-        <a href="https://hed0rah.github.io/chromascope/">ChromaScope</a>
-        <p class="d">Art Analysis Laboratory. Extract palettes, analyze geometry, and more.</p>
+        <a href="https://github.com/hed0rah/Resonant-Averages">Spectral Audio Averaging</a>
+        <p class="d">Inspired by Jim Campbell's Illuminated Averages.</p>
       </div>
-      <span class="t">web</span>
+      <span class="t">audio</span>
+    </li>
+  </ol>
+</section>
+
+<section id="references">
+  <h2 class="sec-head"><span class="sec-num">02</span> References</h2>
+  <ol>
+    <li>
+      <div>
+        <a href="/esp32/esp32_deep-dive.html">ESP32 Deep Dive</a>
+        <p class="d">Boot modes, stub loader, flash geometry, eFuse, JTAG. Boot ROM to brick recovery.</p>
+      </div>
+      <span class="t">embedded</span>
+    </li>
+    <li>
+      <div>
+        <a href="/lora/lora_deep-dive.html">LoRa / LoRaWAN Deep Dive</a>
+        <p class="d">Chirp spread spectrum, SX127x/SX126x registers, LoRaWAN MAC. Register-level C.</p>
+      </div>
+      <span class="t">radio</span>
+    </li>
+    <li>
+      <div>
+        <a href="/canbus/canbus_deep-dive.html">CAN Bus / Car Hacking Deep Dive</a>
+        <p class="d">CAN frames, SocketCAN, UDS/OBD-II diagnostics, ECU firmware dumping.</p>
+      </div>
+      <span class="t">embedded</span>
+    </li>
+    <li>
+      <div>
+        <a href="/routeros/routeros_deep-dive.html">RouterOS / MikroTik Deep Dive</a>
+        <p class="d">CLI, bridges, firewall/NAT isolation, switch port-mirroring, tools. Orientation to passive device capture.</p>
+      </div>
+      <span class="t">networking</span>
+    </li>
+    <li>
+      <div>
+        <a href="/mcp/mcp-cheatsheet.html">MCP Cheatsheet</a>
+        <p class="d">Protocol spec quick reference. Primitives, transport, lifecycle, SDK patterns.</p>
+        <p class="lnk"><a href="/mcp/mcp_deep-dive.html">deep dive</a> <span style="color:var(--dim)">&#9642;</span> <a href="/mcp/mcp_security_map.html">attack surface</a> <span style="color:var(--dim)">&#9642;</span> <a href="/mcp/mcp_enterprise_brief.html">briefing</a> </p>
+      </div>
+      <span class="t">protocol</span>
+    </li>
+    <li>
+      <div>
+        <a href="/k8s/k8s-cheatsheet.html">Kubernetes Cheatsheet</a>
+        <p class="d">Interactive k8s reference with search.</p>
+        <p class="lnk"><a href="/k8s/k8s-101.html">yaml builder</a></p>
+      </div>
+      <span class="t">infra</span>
+    </li>
+    <li>
+      <div>
+        <a href="/linux/namespaces.html">Linux Namespaces</a>
+        <p class="d">Overview, cheatsheet + demos.</p>
+        <p class="lnk"><a href="https://github.com/hed0rah/namespaces-fun">repo</a></p>
+      </div>
+      <span class="t">linux</span>
+    </li>
+    <li>
+      <div>
+        <a href="/linux/ebpf-overview.html">eBPF Overview</a>
+        <p class="d">Overview, cheatsheet + BCC tools.</p>
+        <p class="lnk"><a href="https://github.com/hed0rah/bpf-fun">repo</a></p>
+      </div>
+      <span class="t">linux</span>
+    </li>
+    <li>
+      <div>
+        <a href="/linux/linux-memory.html">Linux Memory Management</a>
+        <p class="d">Virtual memory, page tables, allocators. C examples.</p>
+      </div>
+      <span class="t">linux</span>
     </li>
     <li>
       <div>
@@ -278,7 +366,28 @@ html,body{overflow-x:hidden;}
       </div>
       <span class="t">web</span>
     </li>
-    
+    <li>
+      <div>
+        <a href="/python/python_bugs_whitepaper.html">Python Bugs</a>
+        <p class="d">Bug families that hit production + tool coverage map.</p>
+        <p class="lnk"><a href="/python/python_bugs_teardown.html">teardown</a></p>
+      </div>
+      <span class="t">python</span>
+    </li>
+    <li>
+      <div>
+        <a href="/ai-visuals/index.html">AI / ML Infographic Series</a>
+        <p class="d">20 interactive explainers + cheatsheets.</p>
+      </div>
+      <span class="t">ml</span>
+    </li>
+    <li>
+      <div>
+        <a href="/os-tree/">OSFAMTRE.EXE</a>
+        <p class="d">Operating system family tree. Lineage, forks, descendants.</p>
+      </div>
+      <span class="t">web</span>
+    </li>
     <li>
     <div>
       <a href="/compression-formats/compression-formats.html">
@@ -292,47 +401,17 @@ html,body{overflow-x:hidden;}
   </li>
     <li>
       <div>
-        <a href="https://hed0rah.github.io/tunnelmap/">TunnelMap</a>
-        <p class="d">Subway Tunnel Mapping / Underground Cartography Tool.</p>
-        <p class="lnk"><a href="https://github.com/hed0rah/tunnelmap">repo</a></p>
+        <a href="/extra/disk-ref.html">Windows vs. Linux disk and filesystem commands reference</a>
+        <p class="d">Windows vs. Linux disk, partitions, and filesystems reference.</p>
       </div>
-      <span class="t">web</span>
+      <span class="t">sys</span>
     </li>
     <li>
       <div>
-        <a href="/extra/levels-loudness.html">Levels &amp; Loudness</a>
-        <p class="d">Recording, sound design &amp; mastering reference. Waveform physics, dB scales, LUFS targets.</p>
+        <a href="/extra/bookbinding-glossary.html">Bookbinding Glossary</a>
+        <p class="d">Structures, sewing, covering, adhesives, conservation. Hand binding to edition work.</p>
       </div>
-      <span class="t">audio</span>
-    </li>
-  </ol>
-</section>
-
-<section id="rpgs">
-  <h2 class="sec-head"><span class="sec-num">02</span> Tabletop RPGs</h2>
-  <ol>
-    <li>
-      <div>
-        <a href="https://labeldungeon.com">LABL-DNGN ( labeldungeon.com )</a>
-        <p class="d">Dungeon tile geomorphs for 4x6" &amp; 150x100mm shipping label printers.</p>
-      </div>
-      <span class="t">RPG</span>
-    </li>
-    <li>
-      <div>
-        <a href="https://killengn.com">Kill ENGN</a>
-        <p class="d">Modular mech and heavy-vehicle rules for CY_BORG.</p>
-        <p class="lnk"><a href="https://hed0rah.itch.io/kill-engn">itch</a></p>
-      </div>
-      <span class="t">RPG</span>
-    </li>
-    <li>
-      <div>
-        <a href="https://faterally.com">Fate Rally</a>
-        <p class="d">Simulated death-race league with pro-wrestling storylines and collaborative worldbuilding.</p>
-        <p class="lnk"><a href="https://fate-rally.fandom.com/wiki/Fate_Rally_Wiki">wiki</a></p>
-      </div>
-      <span class="t">RPG</span>
+      <span class="t">craft</span>
     </li>
   </ol>
 </section>
@@ -382,6 +461,28 @@ html,body{overflow-x:hidden;}
     </li>
     <li>
       <div>
+        <a href="https://hed0rah.github.io/tunnelmap/">TunnelMap</a>
+        <p class="d">Subway Tunnel Mapping / Underground Cartography Tool.</p>
+        <p class="lnk"><a href="https://github.com/hed0rah/tunnelmap">repo</a></p>
+      </div>
+      <span class="t">web</span>
+    </li>
+    <li>
+      <div>
+        <a href="https://hedorah.neocities.org/">GIF Archaeology &amp; Editor</a>
+        <p class="d">Browse, dissect, and re-encode GIFs. Frame-level inspection.</p>
+      </div>
+      <span class="t">web</span>
+    </li>
+    <li>
+      <div>
+        <a href="https://hed0rah.github.io/chromascope/">ChromaScope</a>
+        <p class="d">Art Analysis Laboratory. Extract palettes, analyze geometry, and more.</p>
+      </div>
+      <span class="t">web</span>
+    </li>
+    <li>
+      <div>
         <a href="/apps/moonboard.html">Moonboard</a>
         <p class="d">Lightweight moodboard for local use.</p>
       </div>
@@ -426,13 +527,6 @@ html,body{overflow-x:hidden;}
     </li>
     <li>
       <div>
-        <a href="https://github.com/hed0rah/Resonant-Averages">Spectral Audio Averaging</a>
-        <p class="d">Inspired by Jim Campbell's Illuminated Averages.</p>
-      </div>
-      <span class="t">audio</span>
-    </li>
-    <li>
-      <div>
         <a href="https://blackmath.grivtdynamics.com" target="_blank">BLACK MATH</a>
         <p class="d">&#8853; &#8854; &#8855; &#8856; &#8857; &#8858; &#8859; &#8860; &#8861; &#8862; &#8863; &#8864; &#8865; &#8866; &#8867; &#8868; &#8869; &#8870; &#8871; &#8872; &#8873; &#8874; &#8875; &#8876;</p>
       </div>
@@ -448,104 +542,31 @@ html,body{overflow-x:hidden;}
   </ol>
 </section>
 
-<section id="references">
-  <h2 class="sec-head"><span class="sec-num">05</span> References</h2>
+<section id="rpgs">
+  <h2 class="sec-head"><span class="sec-num">05</span> Tabletop RPGs</h2>
   <ol>
     <li>
       <div>
-        <a href="/k8s/k8s-cheatsheet.html">Kubernetes Cheatsheet</a>
-        <p class="d">Interactive k8s reference with search.</p>
-        <p class="lnk"><a href="/k8s/k8s-101.html">yaml builder</a></p>
+        <a href="https://labeldungeon.com">LABL-DNGN ( labeldungeon.com )</a>
+        <p class="d">Dungeon tile geomorphs for 4x6" &amp; 150x100mm shipping label printers.</p>
       </div>
-      <span class="t">infra</span>
+      <span class="t">RPG</span>
     </li>
     <li>
       <div>
-        <a href="/linux/namespaces.html">Linux Namespaces</a>
-        <p class="d">Overview, cheatsheet + demos.</p>
-        <p class="lnk"><a href="https://github.com/hed0rah/namespaces-fun">repo</a></p>
+        <a href="https://killengn.com">Kill ENGN</a>
+        <p class="d">Modular mech and heavy-vehicle rules for CY_BORG.</p>
+        <p class="lnk"><a href="https://hed0rah.itch.io/kill-engn">itch</a></p>
       </div>
-      <span class="t">linux</span>
+      <span class="t">RPG</span>
     </li>
     <li>
       <div>
-        <a href="/linux/ebpf-overview.html">eBPF Overview</a>
-        <p class="d">Overview, cheatsheet + BCC tools.</p>
-        <p class="lnk"><a href="https://github.com/hed0rah/bpf-fun">repo</a></p>
+        <a href="https://faterally.com">Fate Rally</a>
+        <p class="d">Simulated death-race league with pro-wrestling storylines and collaborative worldbuilding.</p>
+        <p class="lnk"><a href="https://fate-rally.fandom.com/wiki/Fate_Rally_Wiki">wiki</a></p>
       </div>
-      <span class="t">linux</span>
-    </li>
-    <li>
-      <div>
-        <a href="/linux/linux-memory.html">Linux Memory Management</a>
-        <p class="d">Virtual memory, page tables, allocators. C examples.</p>
-      </div>
-      <span class="t">linux</span>
-    </li>
-    <li>
-      <div>
-        <a href="/esp32/esp32_deep-dive.html">ESP32 Deep Dive</a>
-        <p class="d">Boot modes, stub loader, flash geometry, eFuse, JTAG. Boot ROM to brick recovery.</p>
-      </div>
-      <span class="t">embedded</span>
-    </li>
-    <li>
-      <div>
-        <a href="/lora/lora_deep-dive.html">LoRa / LoRaWAN Deep Dive</a>
-        <p class="d">Chirp spread spectrum, SX127x/SX126x registers, LoRaWAN MAC. Register-level C.</p>
-      </div>
-      <span class="t">radio</span>
-    </li>
-    <li>
-      <div>
-        <a href="/canbus/canbus_deep-dive.html">CAN Bus / Car Hacking Deep Dive</a>
-        <p class="d">CAN frames, SocketCAN, UDS/OBD-II diagnostics, ECU firmware dumping.</p>
-      </div>
-      <span class="t">embedded</span>
-    </li>
-    <li>
-      <div>
-        <a href="/routeros/routeros_deep-dive.html">RouterOS / MikroTik Deep Dive</a>
-        <p class="d">CLI, bridges, firewall/NAT isolation, switch port-mirroring, tools. Orientation to passive device capture.</p>
-      </div>
-      <span class="t">networking</span>
-    </li>
-    <li>
-      <div>
-        <a href="/python/python_bugs_whitepaper.html">Python Bugs</a>
-        <p class="d">Bug families that hit production + tool coverage map.</p>
-        <p class="lnk"><a href="/python/python_bugs_teardown.html">teardown</a></p>
-      </div>
-      <span class="t">python</span>
-    </li>
-    <li>
-      <div>
-        <a href="/mcp/mcp-cheatsheet.html">MCP Cheatsheet</a>
-        <p class="d">Protocol spec quick reference. Primitives, transport, lifecycle, SDK patterns.</p>
-        <p class="lnk"><a href="/mcp/mcp_deep-dive.html">deep dive</a> <span style="color:var(--dim)">&#9642;</span> <a href="/mcp/mcp_security_map.html">attack surface</a> <span style="color:var(--dim)">&#9642;</span> <a href="/mcp/mcp_enterprise_brief.html">briefing</a> </p>
-      </div>
-      <span class="t">protocol</span>
-    </li>
-    <li>
-      <div>
-        <a href="/ai-visuals/index.html">AI / ML Infographic Series</a>
-        <p class="d">20 interactive explainers + cheatsheets.</p>
-      </div>
-      <span class="t">ml</span>
-    </li>
-    <li>
-      <div>
-        <a href="/extra/bookbinding-glossary.html">Bookbinding Glossary</a>
-        <p class="d">Structures, sewing, covering, adhesives, conservation. Hand binding to edition work.</p>
-      </div>
-      <span class="t">craft</span>
-    </li>
-    <li>
-      <div>
-        <a href="/extra/disk-ref.html">Windows vs. Linux disk and filesystem commands reference</a>
-        <p class="d">Windows vs. Linux disk, partitions, and filesystems reference.</p>
-      </div>
-      <span class="t">sys</span>
+      <span class="t">RPG</span>
     </li>
   </ol>
 </section>
@@ -592,6 +613,28 @@ html,body{overflow-x:hidden;}
   if(tip)tip.addEventListener('toggle',function(){
     if(tip.open&&!tipped&&window.paypal){tipped=true;paypal.HostedButtons({hostedButtonId:"KWTGG239KHLFG"}).render("#paypal-container-KWTGG239KHLFG");}
   });
+})();
+
+// rail counts + project total derived from the DOM so they never go stale
+(function(){
+  document.querySelectorAll('.rail a[href^="#"]').forEach(function(a){
+    var s=document.querySelector(a.getAttribute('href'));
+    var c=a.querySelector('.r-c');
+    if(s&&c)c.textContent=s.querySelectorAll('ol>li').length;
+  });
+  var b=document.querySelector('.mast-meta b');
+  if(b)b.textContent=document.querySelectorAll('main ol>li').length;
+})();
+// section focus tracks the same scroll band as the rail highlight
+(function(){
+  var mainEl=document.querySelector('main');
+  if(!mainEl||!('IntersectionObserver' in window))return;
+  var obs=new IntersectionObserver(function(es){es.forEach(function(e){
+    if(!e.isIntersecting)return;
+    mainEl.classList.add('has-focus');
+    mainEl.querySelectorAll('section').forEach(function(s){s.classList.toggle('focus',s===e.target);});
+  });},{rootMargin:'-18% 0px -72% 0px',threshold:0});
+  mainEl.querySelectorAll('section[id]').forEach(function(s){obs.observe(s);});
 })();
 </script>
 </body>
