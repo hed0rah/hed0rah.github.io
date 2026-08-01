@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>protocols-fun / UDP anatomy</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E4E7EA; --panel:#ECEEF1; --ink:#181B1E; --soft:#565C63;
+  --faint:#868D93; --line:#C3C9CE; --hair:#D4D9DD;
+  --enum:#1E6E8C; --enum-soft:#D2E4EA;
+  --flag:#B23A2E; --flag-soft:#F0DAD6;
+  --sync:#6B4C9A; --sync-soft:#E3DAEF;
+  --rsv:#8A8D95;  --rsv-soft:rgba(24,27,30,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#12151A;--panel:#1A1E24;--ink:#E7E9EC;--soft:#A3A9AF;--faint:#72787E;--line:#2B3038;--hair:#22262C;--enum:#6EC6E8;--enum-soft:#1B2B33;--flag:#E08A7A;--flag-soft:#34211D;--sync:#B79FDB;--sync-soft:#29223A;--rsv:#B7B9B1;--rsv-soft:rgba(231,233,236,0.04);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+.theme-toggle{position:fixed;bottom:0.9rem;right:0.9rem;z-index:50;font-family:var(--ff);font-size:0.56rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--soft);background:var(--panel);border:1px solid var(--line);padding:0.45rem 0.7rem;cursor:pointer;font-weight:400;transition:color .15s,border-color .15s}
+.theme-toggle:hover{color:var(--enum);border-color:var(--enum)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr auto;align-items:stretch}
+.head .title{padding:0.9rem 1.1rem}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500}
+.lede a{color:var(--enum)}
+.intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
+.intro .lede{margin-bottom:0}
+.sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
+.sig .legrows{display:flex;flex-direction:column;gap:0.42rem}
+.sig .siglabel{writing-mode:vertical-rl;text-orientation:mixed;align-self:stretch;display:flex;align-items:center;justify-content:center;font-size:0.5rem;letter-spacing:0.34em;text-transform:uppercase;color:var(--faint);padding-left:0.9rem;border-left:1px solid var(--hair)}
+.sig .row{display:flex;align-items:center;gap:0.4rem;font-size:0.68rem;color:var(--soft);letter-spacing:0.02em;white-space:nowrap}
+.sig .swsep{color:var(--faint);font-size:0.62rem}
+.sig .sw{display:inline-flex;align-items:center;justify-content:center;width:6.1rem;height:1.45rem;padding:0;font-size:0.58rem;letter-spacing:0.1em;text-transform:lowercase;flex-shrink:0}
+.sig .sw.dark{color:var(--paper)}
+.sig .sw.light{color:var(--ink);border:1px solid var(--hair)}
+.sig .sw.dark.k-enum{background:var(--enum)} .sig .sw.light.k-enum{background:var(--enum-soft)}
+.sig .sw.dark.k-flag{background:var(--flag)} .sig .sw.light.k-flag{background:var(--flag-soft)}
+.sig .sw.dark.k-sync{background:var(--sync)} .sig .sw.light.k-sync{background:var(--sync-soft)}
+.sig .sw.dark.k-rsv{background:var(--faint)} .sig .sw.light.k-rsv{background:var(--rsv-soft)}
+@media(max-width:820px){.intro{display:block}.sig{display:none}}
+.k-en{color:var(--enum)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:2.4rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:74ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.2rem 0 0.4rem;max-width:76ch}
+.callout b{color:var(--ink);font-weight:500}
+
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none;margin-bottom:0}
+.tab{padding:0.55rem 0.9rem;font-size:0.64rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:last-child{border-right:none}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.08em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none}
+.panel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+
+.diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
+.bytegrp{border:1px solid var(--line);background:var(--panel)}
+.bytegrp .ticks{display:flex;border-bottom:1px solid var(--hair)}
+.bytegrp .ticks span{width:1.55rem;text-align:center;font-size:0.5rem;color:var(--faint);padding:2px 0}
+.bytegrp .brow{display:flex}
+.bit{width:1.55rem;height:1.85rem;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--soft);border-right:1px solid var(--hair);transition:background .12s,color .12s;cursor:pointer}
+.bit:last-child{border-right:none}
+.bytegrp .hex{text-align:center;font-size:0.6rem;letter-spacing:0.12em;color:var(--ink);padding:3px 0;border-top:1px solid var(--hair);font-weight:500}
+
+.dbytes{display:flex;flex-wrap:wrap;gap:4px;margin:0.6rem 0 1.4rem}
+.bcol{display:flex;flex-direction:column;align-items:center}
+.bcol .off{font-size:0.5rem;color:var(--faint);margin-bottom:2px;letter-spacing:0.02em}
+.bcell{width:2.5rem;height:1.9rem;display:flex;align-items:center;justify-content:center;font-size:0.78rem;border:1px solid var(--hair);color:var(--soft);transition:background .12s,color .12s;cursor:pointer}
+.bcell.k-sync{background:var(--sync-soft)} .bcell.k-enum{background:var(--enum-soft)}
+.bcell.k-flag{background:var(--flag-soft)} .bcell.k-rsv{background:var(--rsv-soft)}
+.bcell.fstart{border-left:2px solid var(--line)}
+.bcell.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+
+.block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
+.left{min-width:0}
+.detailcol{position:relative}
+@media(max-width:820px){.block{grid-template-columns:1fr}.detailcol{position:static}}
+.fields{border-top:1px solid var(--line)}
+.field{display:grid;grid-template-columns:5rem 1fr auto;gap:0.8rem;align-items:baseline;padding:0.46rem 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.field:hover,.field.active,.field.cued{background:var(--panel)}
+.field .fb{font-size:0.6rem;color:var(--faint)} .field .fn{font-size:0.82rem;color:var(--ink)}
+.field[data-branch] .fn::after{content:"+";margin-left:0.4rem;color:var(--enum);font-weight:500}
+.field.active[data-branch] .fn::after{content:"\2212"}
+.fv{font-size:0.76rem;text-align:right}
+.fv.k-sync{color:var(--sync)} .fv.k-enum{color:var(--enum)} .fv.k-flag{color:var(--flag)} .fv.k-rsv{color:var(--faint)}
+.branch{grid-column:1 / -1;display:none;padding:0.5rem 0 0.2rem 5.8rem}
+.field.active .branch{display:block}
+.branch table{border-collapse:collapse;font-size:0.7rem;width:100%;max-width:26rem}
+.branch td{padding:1px 10px 1px 0;color:var(--soft)} .branch td.k{color:var(--faint);width:3.4rem;text-align:right}
+.branch tr.sel td{color:var(--ink)} .branch tr.sel td.k{color:var(--enum);font-weight:500}
+.detail{position:absolute;inset:0;border:1px solid var(--line);background:var(--panel);padding:1rem 1.05rem;overflow-y:auto}
+@media(max-width:820px){.detail{position:static;height:15rem}}
+.detail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
+.detail .dl .kind{color:var(--soft)}
+.detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
+.detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
+.detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
+
+footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>UDP Anatomy</h1></div>
+      <div class="stamp"><b>RFC 768 (1980)</b>the shortest transport-layer spec that ever shipped<br>rev 2026.08</div>
+    </div>
+    <div class="strip">
+      <div>header <b>8 bytes, always</b></div><div>checksum <b>optional in v4, mandatory in v6</b></div>
+      <div>variant <b>UDP-Lite, RFC 3828</b></div><div>see also <b>../index.html</b></div>
+    </div>
+  </div>
+
+  <div class="intro">
+  <p class="lede"><a href="https://www.rfc-editor.org/rfc/rfc768">RFC 768</a> (August 1980, Jon Postel) is one of the shortest RFCs that anything on the internet still runs on - three pages, and it has never been revised or obsoleted the way TCP's spec was. The entire protocol is four 16-bit fields: source port, destination port, length, checksum. No connection state, no retransmission, no ordering - whatever reliability a UDP-based application wants, it builds itself on top. The one genuine wrinkle: <b>the checksum is optional over IPv4 and mandatory over IPv6</b> - same field, different rule, and it's easy to miss if you only ever tested on one address family. Every example on this page is a DNS query, 192.0.2.10:51234 (IPv4) / 2001:db8::1a2b:3c4d:5e6f (IPv6) &#8594; port 53 on 203.0.113.5 / 2001:db8::1, matching the addressing conventions already used on the TCP page and in <a href="https://github.com/hed0rah/ipv6-fun">ipv6-fun</a>. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
+  <aside class="sig" aria-label="color key">
+    <div class="legrows">
+    <div class="row"><span class="sw dark k-enum">blue</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
+    <div class="row"><span class="sw dark k-flag">red</span><span class="swsep">&#8594;</span><span class="sw light k-flag">flag</span></div>
+    <div class="row"><span class="sw dark k-sync">violet</span><span class="swsep">&#8594;</span><span class="sw light k-sync">structural</span></div>
+    <div class="row"><span class="sw dark k-rsv">faint</span><span class="swsep">&#8594;</span><span class="sw light k-rsv">reserved</span></div>
+    </div>
+    <div class="siglabel">color key</div>
+  </aside>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="overview">Overview<small>ports</small></button>
+    <button class="tab" data-p="ipv4">Header: IPv4<small>checksum optional</small></button>
+    <button class="tab" data-p="ipv6">Header: IPv6<small>checksum mandatory</small></button>
+    <button class="tab" data-p="lite">UDP-Lite<small>RFC 3828</small></button>
+  </div>
+  <div class="panelwrap">
+
+    <div class="panel on" data-panel="overview">
+      <div class="pfacts"><span>header<b>8 bytes, no exceptions</b></span><span>spec<b>RFC 768</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Same port-pair idea as TCP, same 16-bit fields - but that's where the resemblance ends. There's no flags byte, no window, no options, because there's no connection to manage.</p>
+      <div class="sec">source &amp; destination ports (4 bytes)</div>
+      <p class="note">A DNS query: client ephemeral port 51234 to server port 53.</p>
+      <div id="block-overview" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="ipv4">
+      <div class="pfacts"><span>size<b>8 bytes</b></span><span>checksum<b>optional (RFC 768)</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Over IPv4, a sender may set the checksum to all-zeros to mean "I didn't compute one" - the receiver then skips verification entirely. This was a real performance shortcut in 1980; almost nothing does it deliberately today, but it's still legal.</p>
+      <div class="sec">UDP header over IPv4 (8 bytes)</div>
+      <p class="note">Same DNS query, 4-byte placeholder payload. Checksum computed over a 12-byte IPv4 pseudo-header (source, destination, zero, protocol=17, UDP length) plus the full segment.</p>
+      <div id="block-ipv4" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="ipv6">
+      <div class="pfacts"><span>size<b>8 bytes, identical shape</b></span><span>checksum<b>mandatory (RFC 8200 §8.1)</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">RFC 8200 removes the option: over IPv6, a UDP sender must compute a real checksum. If the computed value happens to come out as exactly zero, it has to be transmitted as all-ones (0xFFFF) instead - zero is reserved to mean "not computed," a meaning IPv6 doesn't allow UDP to claim.</p>
+      <div class="sec">UDP header over IPv6 (8 bytes)</div>
+      <p class="note">Identical ports and payload to the IPv4 tab - the checksum comes out different purely because the pseudo-header is IPv6's (32-byte addresses, no protocol/zero bytes the same way) instead of IPv4's.</p>
+      <div id="block-ipv6" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="lite">
+      <div class="pfacts"><span>protocol number<b>136 (not 17)</b></span><span>spec<b>RFC 3828 (2004)</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A distinct sibling protocol, not a UDP option - it gets its own IP protocol number (136) specifically so routers and middleboxes never confuse it with ordinary UDP. Built for real-time media (VoIP, video) where a corrupted payload is still more useful than no payload at all: it lets a receiver accept a segment even if part of it fails the checksum, as long as the part it cares about didn't.</p>
+      <div class="sec">UDP-Lite header (8 bytes, same shape as UDP)</div>
+      <p class="note">Same ports and payload again - only the meaning of bytes 4-5 changes.</p>
+      <div id="block-lite" data-build></div>
+      <div class="callout"><b>the one field that changes.</b> UDP's Length field becomes UDP-Lite's Checksum Coverage Length: the number of bytes, starting from the UDP-Lite header itself, that the checksum actually protects. A value of 0 means "cover everything" (ordinary UDP behavior); any other value must be at least 8 - a receiver seeing 1 through 7 must discard the packet outright, since that would cover less than the header itself.</div>
+    </div>
+
+  </div>
+
+  <div class="callout"><b>documentation-safe example.</b> 192.0.2.10 / 203.0.113.5 (RFC 5737) and 2001:db8::1a2b:3c4d:5e6f / 2001:db8::1 (RFC 3849) are reserved documentation addresses, matching the convention already used on the TCP page and throughout ipv6-fun.</div>
+
+  <footer><span>protocols-fun / UDP anatomy</span><span>RFC 768 . RFC 3828 . RFC 8200 §8.1</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
+</div>
+
+<button class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark theme">theme</button>
+
+<script>
+(function(){
+  var KINDS={sync:"structural",enum:"value",flag:"flag",rsv:"reserved"};
+  function hx(b){return b.toString(16).toUpperCase().padStart(2,"0");}
+
+  function build(mountId, unit, bytes, fields){
+    var mount=document.getElementById(mountId);
+    var N = unit==="bit" ? bytes.length*8 : bytes.length;
+    var owner=new Array(N);
+    fields.forEach(function(f,fi){ for(var i=f.r[0];i<=f.r[1];i++) owner[i]=fi; });
+    var diagram=document.createElement("div");
+    if(unit==="bit"){
+      diagram.className="diagram";
+      for(var bi=0; bi<bytes.length; bi++){
+        var grp=document.createElement("div"); grp.className="bytegrp";
+        var ticks=document.createElement("div"); ticks.className="ticks";
+        var row=document.createElement("div"); row.className="brow";
+        for(var k=0;k<8;k++){
+          var idx=bi*8+k, f=fields[owner[idx]];
+          var t=document.createElement("span"); t.textContent=idx; ticks.appendChild(t);
+          var cell=document.createElement("span"); cell.className="bit k-"+f.k; cell.dataset.idx=idx;
+          if(idx===f.r[0]) cell.classList.add("fstart");
+          cell.textContent=(bytes[bi]>>(7-k))&1; row.appendChild(cell);
+        }
+        var hex=document.createElement("div"); hex.className="hex"; hex.textContent="0x"+hx(bytes[bi]);
+        grp.appendChild(ticks); grp.appendChild(row); grp.appendChild(hex); diagram.appendChild(grp);
+      }
+    } else {
+      diagram.className="dbytes";
+      bytes.forEach(function(b,i){
+        var f=fields[owner[i]];
+        var col=document.createElement("div"); col.className="bcol";
+        var off=document.createElement("div"); off.className="off"; off.textContent="0x"+hx(i); col.appendChild(off);
+        var cell=document.createElement("div"); cell.className="bcell k-"+f.k; cell.dataset.idx=i;
+        if(i===f.r[0]) cell.classList.add("fstart");
+        cell.textContent=hx(b); col.appendChild(cell); diagram.appendChild(col);
+      });
+    }
+    var list=document.createElement("div"); list.className="fields";
+    var aside=document.createElement("aside"); aside.className="detail";
+    aside.innerHTML="<div class='dl'><span>field detail</span><span class='kind'></span></div>"+
+      "<h3>Hover a field or byte</h3><div class='dc'>"+(unit==="bit"?N+" bits":bytes.length+" bytes")+"</div>"+
+      "<p>Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.</p><div class='dn'></div>";
+    var det={t:aside.querySelector("h3"),c:aside.querySelector(".dc"),b:aside.querySelector("p"),n:aside.querySelector(".dn"),kind:aside.querySelector(".kind")};
+    var cells=[].slice.call(diagram.querySelectorAll("[data-idx]"));
+    var rows=[];
+    function light(a,b){cells.forEach(function(c){var i=+c.dataset.idx;c.classList.toggle("hi",i>=a&&i<=b);});}
+    function clearHi(){cells.forEach(function(c){c.classList.remove("hi");});}
+    function rl(f){ return unit==="bit"
+      ? "bits "+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")
+      : "bytes 0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-0x"+hx(f.r[1]):""); }
+    function show(f){det.t.textContent=f.label;det.c.textContent=rl(f)+"  =  "+f.val;
+      det.b.textContent=f.body;det.n.textContent=f.note||"";det.kind.textContent=KINDS[f.k];}
+    function activeRow(){return list.querySelector(".field.active");}
+    function cue(fi){rows.forEach(function(r){r.classList.remove("cued");});rows[fi].classList.add("cued");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    function restore(){rows.forEach(function(r){r.classList.remove("cued");});var a=activeRow();if(a){var fi=+a.dataset.fi;light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}else clearHi();}
+    function pin(fi){var was=rows[fi].classList.contains("active");rows.forEach(function(r){r.classList.remove("active");});if(was){clearHi();return;}rows[fi].classList.add("active");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    fields.forEach(function(f,fi){
+      var row=document.createElement("div"); row.className="field"; row.dataset.fi=fi; if(f.branch) row.dataset.branch="1";
+      var lab = unit==="bit" ? ("b"+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")) : ("0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-"+hx(f.r[1]):""));
+      row.innerHTML="<span class='fb'>"+lab+"</span><span class='fn'>"+f.label+"</span><span class='fv k-"+f.k+"'>"+f.val+"</span>";
+      if(f.branch){
+        var bw=document.createElement("div"); bw.className="branch";
+        bw.innerHTML="<table>"+f.branch.map(function(p,i){return "<tr class='"+(i===f.sel?"sel":"")+"'><td class='k'>"+p[0]+"</td><td>"+p[1]+"</td></tr>";}).join("")+"</table>";
+        row.appendChild(bw);
+      }
+      row.addEventListener("mouseenter",function(){cue(fi);});
+      row.addEventListener("click",function(){pin(fi);});
+      rows.push(row); list.appendChild(row);
+    });
+    cells.forEach(function(c){
+      var fi=owner[+c.dataset.idx];
+      c.addEventListener("mouseenter",function(){cue(fi);});
+      c.addEventListener("click",function(){pin(fi);});
+    });
+    var left=document.createElement("div"); left.className="left";
+    left.appendChild(diagram); left.appendChild(list);
+    var dcol=document.createElement("div"); dcol.className="detailcol"; dcol.appendChild(aside);
+    var block=document.createElement("div"); block.className="block";
+    block.appendChild(left); block.appendChild(dcol);
+    block.addEventListener("mouseleave",restore);
+    mount.appendChild(block);
+    var maxH=aside.scrollHeight;
+    fields.forEach(function(f){ show(f); if(aside.scrollHeight>maxH) maxH=aside.scrollHeight; });
+    det.t.textContent="Hover a field or byte";
+    det.c.textContent=(unit==="bit"?N+" bits":bytes.length+" bytes");
+    det.b.textContent="Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.";
+    det.n.textContent="";
+    dcol.style.minHeight=(maxH+6)+"px";
+  }
+
+  var COMMON_PORTS=[["53","DNS"],["67","DHCP server"],["68","DHCP client"],["123","NTP"],["161","SNMP"],["162","SNMP trap"],["500","IKE / IPsec"],["514","syslog"]];
+
+  var SPECS={
+    "block-overview":["byte",
+      [0xC8,0x22,0x00,0x35],
+      [
+        {label:"source port",k:"enum",r:[0,1],val:"51234 (ephemeral)"},
+        {label:"destination port",k:"enum",r:[2,3],val:"53 (DNS)",sel:0,branch:COMMON_PORTS,
+          body:"Identifies the service on the server. Unlike TCP, there's no per-connection state tied to this - a UDP \"session\" is just a convention both ends agree to keep using the same ports."}
+      ]],
+    "block-ipv4":["byte",
+      [0xC8,0x22,0x00,0x35,0x00,0x0C,0x9B,0xD0],
+      [
+        {label:"source port",k:"enum",r:[0,1],val:"51234"},
+        {label:"destination port",k:"enum",r:[2,3],val:"53 (DNS)",sel:0,branch:COMMON_PORTS},
+        {label:"length",k:"enum",r:[4,5],val:"12 (8-byte header + 4-byte payload)",
+          body:"Total length of the UDP header plus data, in bytes - unlike IPv4's Total Length, this never counts the IP header itself."},
+        {label:"checksum",k:"enum",r:[6,7],val:"0x9BD0",
+          body:"Computed over a 12-byte IPv4 pseudo-header (source, destination, zero, protocol=17, UDP length) plus the full 12-byte segment.",
+          note:"legal to send as 0x0000 over IPv4, meaning \"not computed\" - the receiver then skips verification entirely. See the IPv6 tab for why that option disappears there."}
+      ]],
+    "block-ipv6":["byte",
+      [0xC8,0x22,0x00,0x35,0x00,0x0C,0x89,0x86],
+      [
+        {label:"source port",k:"enum",r:[0,1],val:"51234"},
+        {label:"destination port",k:"enum",r:[2,3],val:"53 (DNS)",sel:0,branch:COMMON_PORTS},
+        {label:"length",k:"enum",r:[4,5],val:"12 (identical to the IPv4 example)"},
+        {label:"checksum",k:"enum",r:[6,7],val:"0x8986",
+          body:"Same ports, same payload as the IPv4 tab - different checksum, because IPv6's pseudo-header (RFC 8200 §8.1) uses 16-byte addresses and a different layout than IPv4's 12-byte one.",
+          note:"mandatory here - RFC 8200 does not permit an all-zero \"not computed\" checksum for UDP over IPv6. If the real computed value is exactly 0, it must be sent as 0xFFFF instead."}
+      ]],
+    "block-lite":["byte",
+      [0xC8,0x22,0x00,0x35,0x00,0x08,0x26,0xB1],
+      [
+        {label:"source port",k:"enum",r:[0,1],val:"51234"},
+        {label:"destination port",k:"enum",r:[2,3],val:"53",body:"Kept the same as the other tabs for direct comparison - a real UDP-Lite deployment would use a media port (RTP-style), not DNS."},
+        {label:"checksum coverage length",k:"flag",r:[4,5],val:"8 (header only - payload unprotected)",sel:0,branch:[
+          ["0","cover everything - ordinary UDP checksum behavior"],
+          ["8","cover only the 8-byte header itself"],
+          ["1-7","illegal - receiver MUST discard"]],
+          body:"Replaces UDP's Length field entirely. Names how many bytes, counting from the start of the UDP-Lite header, the checksum actually protects - everything past that point can be corrupted and the application still gets it.",
+          note:"protocol number 136 (RFC 3828), deliberately NOT 17 - so a router that doesn't understand UDP-Lite can't mistake it for ordinary UDP and mishandle the reinterpreted field."},
+        {label:"checksum",k:"enum",r:[6,7],val:"0x26B1",body:"Computed over only the first 8 bytes named by the coverage length above, not the full 12-byte segment - a different checksum than either UDP tab even though the underlying pseudo-header inputs are the IPv6 ones again."}
+      ]]
+  };
+
+  var built={};
+  function buildPanel(name){
+    var panel=document.querySelector('[data-panel="'+name+'"]'); if(!panel) return;
+    panel.querySelectorAll("[data-build]").forEach(function(m){
+      if(built[m.id]) return; built[m.id]=1;
+      var spec=SPECS[m.id]; if(spec) build(m.id, spec[0], spec[1], spec[2]);
+    });
+  }
+  var tabs=[].slice.call(document.querySelectorAll(".tab"));
+  var panels=[].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    tabs.forEach(function(t){t.classList.toggle("on",t.dataset.p===name);});
+    panels.forEach(function(p){p.classList.toggle("on",p.dataset.panel===name);});
+    buildPanel(name);
+  }
+  tabs.forEach(function(t){t.addEventListener("click",function(){
+    activate(t.dataset.p);
+    if(history.replaceState) history.replaceState(null,"","#"+t.dataset.p);
+  });});
+  var initial=(location.hash||"").replace("#","");
+  if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
+  else buildPanel("overview");
+
+  var tbtn=document.getElementById("theme-toggle");
+  function currentTheme(){return document.documentElement.getAttribute("data-theme")||"light";}
+  function paintToggle(){tbtn.textContent = currentTheme()==="dark" ? "◐ light" : "◑ dark";}
+  tbtn.addEventListener("click",function(){
+    var next = currentTheme()==="dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme",next);
+    try{localStorage.setItem("protofun-theme",next);}catch(e){}
+    paintToggle();
+  });
+  paintToggle();
+})();
+</script>
+</body>
+</html>
