@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>protocols-fun / BGP anatomy</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E4E7EA; --panel:#ECEEF1; --ink:#181B1E; --soft:#565C63;
+  --faint:#868D93; --line:#C3C9CE; --hair:#D4D9DD;
+  --enum:#1E6E8C; --enum-soft:#D2E4EA;
+  --flag:#B23A2E; --flag-soft:#F0DAD6;
+  --sync:#6B4C9A; --sync-soft:#E3DAEF;
+  --rsv:#8A8D95;  --rsv-soft:rgba(24,27,30,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#12151A;--panel:#1A1E24;--ink:#E7E9EC;--soft:#A3A9AF;--faint:#72787E;--line:#2B3038;--hair:#22262C;--enum:#6EC6E8;--enum-soft:#1B2B33;--flag:#E08A7A;--flag-soft:#34211D;--sync:#B79FDB;--sync-soft:#29223A;--rsv:#B7B9B1;--rsv-soft:rgba(231,233,236,0.04);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+.theme-toggle{position:fixed;bottom:0.9rem;right:0.9rem;z-index:50;font-family:var(--ff);font-size:0.56rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--soft);background:var(--panel);border:1px solid var(--line);padding:0.45rem 0.7rem;cursor:pointer;font-weight:400;transition:color .15s,border-color .15s}
+.theme-toggle:hover{color:var(--enum);border-color:var(--enum)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr auto;align-items:stretch}
+.head .title{padding:0.9rem 1.1rem}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500}
+.lede a{color:var(--enum)}
+.intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
+.intro .lede{margin-bottom:0}
+.sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
+.sig .legrows{display:flex;flex-direction:column;gap:0.42rem}
+.sig .siglabel{writing-mode:vertical-rl;text-orientation:mixed;align-self:stretch;display:flex;align-items:center;justify-content:center;font-size:0.5rem;letter-spacing:0.34em;text-transform:uppercase;color:var(--faint);padding-left:0.9rem;border-left:1px solid var(--hair)}
+.sig .row{display:flex;align-items:center;gap:0.4rem;font-size:0.68rem;color:var(--soft);letter-spacing:0.02em;white-space:nowrap}
+.sig .swsep{color:var(--faint);font-size:0.62rem}
+.sig .sw{display:inline-flex;align-items:center;justify-content:center;width:6.1rem;height:1.45rem;padding:0;font-size:0.58rem;letter-spacing:0.1em;text-transform:lowercase;flex-shrink:0}
+.sig .sw.dark{color:var(--paper)}
+.sig .sw.light{color:var(--ink);border:1px solid var(--hair)}
+.sig .sw.dark.k-enum{background:var(--enum)} .sig .sw.light.k-enum{background:var(--enum-soft)}
+.sig .sw.dark.k-flag{background:var(--flag)} .sig .sw.light.k-flag{background:var(--flag-soft)}
+.sig .sw.dark.k-sync{background:var(--sync)} .sig .sw.light.k-sync{background:var(--sync-soft)}
+.sig .sw.dark.k-rsv{background:var(--faint)} .sig .sw.light.k-rsv{background:var(--rsv-soft)}
+@media(max-width:820px){.intro{display:block}.sig{display:none}}
+.k-en{color:var(--enum)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:2.4rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:74ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.2rem 0 0.4rem;max-width:76ch}
+.callout b{color:var(--ink);font-weight:500}
+.compare{width:100%;border-collapse:collapse;font-size:0.78rem;margin:0.6rem 0 1.2rem;max-width:76ch}
+.compare th,.compare td{border:1px solid var(--hair);padding:0.4rem 0.7rem;text-align:left;vertical-align:top}
+.compare th{background:var(--panel);color:var(--ink);font-weight:500;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.06em}
+
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none;margin-bottom:0}
+.tab{padding:0.55rem 0.9rem;font-size:0.64rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:last-child{border-right:none}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.08em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none}
+.panel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+
+.diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
+.bytegrp{border:1px solid var(--line);background:var(--panel)}
+.bytegrp .ticks{display:flex;border-bottom:1px solid var(--hair)}
+.bytegrp .ticks span{width:1.55rem;text-align:center;font-size:0.5rem;color:var(--faint);padding:2px 0}
+.bytegrp .brow{display:flex}
+.bit{width:1.55rem;height:1.85rem;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--soft);border-right:1px solid var(--hair);transition:background .12s,color .12s;cursor:pointer}
+.bit:last-child{border-right:none}
+.bytegrp .hex{text-align:center;font-size:0.6rem;letter-spacing:0.12em;color:var(--ink);padding:3px 0;border-top:1px solid var(--hair);font-weight:500}
+
+.dbytes{display:flex;flex-wrap:wrap;gap:4px;margin:0.6rem 0 1.4rem}
+.bcol{display:flex;flex-direction:column;align-items:center}
+.bcol .off{font-size:0.5rem;color:var(--faint);margin-bottom:2px;letter-spacing:0.02em}
+.bcell{width:2.5rem;height:1.9rem;display:flex;align-items:center;justify-content:center;font-size:0.78rem;border:1px solid var(--hair);color:var(--soft);transition:background .12s,color .12s;cursor:pointer}
+.bcell.k-sync{background:var(--sync-soft)} .bcell.k-enum{background:var(--enum-soft)}
+.bcell.k-flag{background:var(--flag-soft)} .bcell.k-rsv{background:var(--rsv-soft)}
+.bcell.fstart{border-left:2px solid var(--line)}
+.bcell.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+
+.block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
+.left{min-width:0}
+.detailcol{position:relative}
+@media(max-width:820px){.block{grid-template-columns:1fr}.detailcol{position:static}}
+.fields{border-top:1px solid var(--line)}
+.field{display:grid;grid-template-columns:5rem 1fr auto;gap:0.8rem;align-items:baseline;padding:0.46rem 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.field:hover,.field.active,.field.cued{background:var(--panel)}
+.field .fb{font-size:0.6rem;color:var(--faint)} .field .fn{font-size:0.82rem;color:var(--ink)}
+.field[data-branch] .fn::after{content:"+";margin-left:0.4rem;color:var(--enum);font-weight:500}
+.field.active[data-branch] .fn::after{content:"\2212"}
+.fv{font-size:0.76rem;text-align:right}
+.fv.k-sync{color:var(--sync)} .fv.k-enum{color:var(--enum)} .fv.k-flag{color:var(--flag)} .fv.k-rsv{color:var(--faint)}
+.branch{grid-column:1 / -1;display:none;padding:0.5rem 0 0.2rem 5.8rem}
+.field.active .branch{display:block}
+.branch table{border-collapse:collapse;font-size:0.7rem;width:100%;max-width:26rem}
+.branch td{padding:1px 10px 1px 0;color:var(--soft)} .branch td.k{color:var(--faint);width:3.4rem;text-align:right}
+.branch tr.sel td{color:var(--ink)} .branch tr.sel td.k{color:var(--enum);font-weight:500}
+.detail{position:absolute;inset:0;border:1px solid var(--line);background:var(--panel);padding:1rem 1.05rem;overflow-y:auto}
+@media(max-width:820px){.detail{position:static;height:15rem}}
+.detail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
+.detail .dl .kind{color:var(--soft)}
+.detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
+.detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
+.detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
+
+footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>BGP Anatomy</h1></div>
+      <div class="stamp"><b>RFC 4271 (2006)</b>the protocol that actually routes the internet<br>rev 2026.08</div>
+    </div>
+    <div class="strip">
+      <div>runs over <b>TCP port 179</b></div><div>own version history <b>BGP-1 through BGP-4</b></div>
+      <div>wire format frozen <b>since 1994</b></div><div>see also <b>../index.html</b></div>
+    </div>
+  </div>
+
+  <div class="intro">
+  <p class="lede">Every other protocol on this site is a fixed header used by every host on the internet. BGP (<a href="https://www.rfc-editor.org/rfc/rfc4271">RFC 4271</a>, 2006) is used by only a few tens of thousands of routers - and it's the reason any two of those routers can find each other at all. It runs as a long-lived session over plain TCP port 179 (see the <a href="../tcp/tcp-anatomy.html">TCP anatomy page</a>), which means BGP itself never had to solve reliable delivery, retransmission, or ordering - just what to say once connected. Unlike TCP, BGP's own version number genuinely changed four times before freezing in 1994; unlike TCP, nobody has ever needed a wire-format-preserving rewrite like RFC 9293, because BGP-4's header hasn't needed one. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
+  <aside class="sig" aria-label="color key">
+    <div class="legrows">
+    <div class="row"><span class="sw dark k-enum">blue</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
+    <div class="row"><span class="sw dark k-flag">red</span><span class="swsep">&#8594;</span><span class="sw light k-flag">flag</span></div>
+    <div class="row"><span class="sw dark k-sync">violet</span><span class="swsep">&#8594;</span><span class="sw light k-sync">structural</span></div>
+    <div class="row"><span class="sw dark k-rsv">faint</span><span class="swsep">&#8594;</span><span class="sw light k-rsv">reserved</span></div>
+    </div>
+    <div class="siglabel">color key</div>
+  </aside>
+  </div>
+
+  <div class="sec">four version numbers, then a freeze</div>
+  <table class="compare">
+    <thead><tr><th>version</th><th>spec</th><th>year</th><th>what changed</th></tr></thead>
+    <tbody>
+      <tr><td>BGP-1</td><td>RFC 1105</td><td>1989</td><td>the original - path vector routing between autonomous systems, replacing EGP</td></tr>
+      <tr><td>BGP-2</td><td>RFC 1163</td><td>1990</td><td>refinements to the original exchange</td></tr>
+      <tr><td>BGP-3</td><td>RFC 1267</td><td>1991</td><td>further refinement - still classful, no prefix-length concept yet</td></tr>
+      <tr><td>BGP-4</td><td>RFC 1654 &#8594; <a href="https://www.rfc-editor.org/rfc/rfc1771">RFC 1771</a> (1995) &#8594; RFC 4271 (2006)</td><td>1994</td><td><b>classless interdomain routing (CIDR)</b> - NLRI became prefix + length instead of classful network numbers. The version number has not moved since.</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Everything since 1994 - route refresh (RFC 2918, 2000), multiprotocol/IPv6 support (RFC 2283 &#8594; RFC 2858 &#8594; RFC 4760, 1998-2007), 4-octet AS numbers (RFC 6793, 2012) - shipped as new capabilities and attributes layered on top of the same BGP-4 header, never a version bump. Same pattern as TCP's Options field absorbing 40 years of change without touching its fixed header.</p>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="overview">Overview<small>19-byte header</small></button>
+    <button class="tab" data-p="open">OPEN<small>type 1</small></button>
+    <button class="tab" data-p="asnum">AS Numbers<small>2-byte vs 4-byte</small></button>
+    <button class="tab" data-p="update">UPDATE<small>type 2, attributes</small></button>
+    <button class="tab" data-p="mp">Multiprotocol<small>how IPv6 rides BGP</small></button>
+    <button class="tab" data-p="control">Keepalive &amp; Notification<small>types 4, 3</small></button>
+  </div>
+  <div class="panelwrap">
+
+    <div class="panel on" data-panel="overview">
+      <div class="pfacts"><span>header<b>Marker + Length + Type, 19 bytes</b></span><span>spec<b>RFC 4271</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Every BGP message, regardless of type, opens with the same 19 bytes. The Marker is a holdover from an authentication scheme BGP-4 never actually specified in detail - in practice it's always all-ones today.</p>
+      <div class="sec">generic message header (19 bytes)</div>
+      <div id="block-overview" data-build></div>
+      <div class="callout"><b>why BGP has no inherent trust model.</b> Any TCP peer that completes an OPEN exchange can originate routes for any prefix, for any AS - BGP believes what its neighbors tell it. In April 1997, a misconfigured router belonging to a small ISP (AS 7007) re-originated a huge share of the internet's routing table as if it owned it, causing a widespread multi-hour outage - still one of the most-cited incidents in networking history. RPKI origin validation and BGPsec (RFC 8205, 2017) exist to add real cryptographic trust, decades later, and remain unevenly deployed.</div>
+    </div>
+
+    <div class="panel" data-panel="open">
+      <div class="pfacts"><span>type<b>1</b></span><span>size<b>43 bytes with 2 capabilities</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The first message on a new session - negotiates the AS numbers, hold timer, and (via Optional Parameters) every capability both sides support before a single route is exchanged. This example negotiates both a 4-octet AS number and IPv6 route support in one OPEN.</p>
+      <div class="sec">OPEN, with capabilities (43 bytes)</div>
+      <p class="note">My AS is 23456 (AS_TRANS) - a placeholder, because the real AS (400000) doesn't fit in the 2-byte field. See the AS Numbers tab.</p>
+      <div id="block-open" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="asnum">
+      <div class="pfacts"><span>capability code<b>65</b></span><span>spec<b>RFC 6793 (2012), obsoletes RFC 4893</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Original BGP-4 AS numbers are 16 bits - a 65,536-AS ceiling the internet was on track to hit. RFC 6793 widens the field to 32 bits, but only where both peers agree to it via the capability negotiated in OPEN; a peer that doesn't understand 4-octet AS numbers has to see something in the 2-byte AS_PATH field regardless, which is exactly what the reserved placeholder AS 23456 ("AS_TRANS") is for.</p>
+      <div class="sec">the same AS_SEQUENCE entry, two widths</div>
+      <p class="note">One AS (this page's example numbers: 64512 for the 2-byte case, 400000 for the 4-byte case) inside an AS_PATH segment.</p>
+      <div id="block-as2" data-build></div>
+      <div id="block-as4" data-build></div>
+      <div class="callout"><b>old attribute kept, new one added alongside.</b> Rather than redefining AS_PATH itself, RFC 6793 introduces two new optional transitive attributes - <b>AS4_PATH</b> (type 17) and <b>AS4_AGGREGATOR</b> (type 18) - that a 4-octet-capable router attaches alongside the classic ones. A router that doesn't understand 4-octet AS numbers just ignores these extra attributes and keeps working with AS_TRANS in the field it does understand - the same "old peer stays functional, new peer gets more" pattern as TCP Options or DHCP's magic cookie.</div>
+    </div>
+
+    <div class="panel" data-panel="update">
+      <div class="pfacts"><span>type<b>2</b></span><span>size<b>45 bytes, 1 route announced</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The message that actually carries routes - both withdrawals and announcements can appear in the same UPDATE, though this example has only an announcement. Path attributes are BGP's own TLV format, distinct from the option encodings on every other protocol on this site.</p>
+      <div class="sec">UPDATE announcing 203.0.113.0/24 (45 bytes)</div>
+      <p class="note">ORIGIN, AS_PATH, and NEXT_HOP are the three attributes every route announcement must carry.</p>
+      <div id="block-update" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="mp">
+      <div class="pfacts"><span>capability code<b>1</b></span><span>attribute<b>MP_REACH_NLRI, type 14</b></span><span>lineage<b>RFC 2283 &#8594; 2858 &#8594; 4760</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">BGP-4's original UPDATE format is IPv4-only - the withdrawn-routes and NLRI fields at the end assume 4-byte prefixes. Multiprotocol Extensions (<a href="https://www.rfc-editor.org/rfc/rfc4760">RFC 4760</a>) didn't redesign UPDATE to fix this - it added two new optional attributes, MP_REACH_NLRI and MP_UNREACH_NLRI, that carry routes for any address family (IPv6, VPNs, multicast) entirely alongside the untouched classic format. This is the actual mechanism that lets BGP route IPv6 at all.</p>
+      <div class="sec">capability negotiation: IPv6 unicast (4 bytes, from the OPEN tab)</div>
+      <div id="block-mpcap" data-build></div>
+      <div class="sec">MP_REACH_NLRI announcing an IPv6 route (31 bytes)</div>
+      <p class="note">2001:db8:1::/48, reachable via next-hop 2001:db8::1 - the same documentation prefix convention used throughout <a href="https://github.com/hed0rah/ipv6-fun">ipv6-fun</a>.</p>
+      <div id="block-mpreach" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="control">
+      <div class="pfacts"><span>keepalive<b>type 4, header only</b></span><span>notification<b>type 3, tears down the session</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">KEEPALIVE is the smallest possible BGP message - just the 19-byte header, sent periodically (a third of the Hold Time, by convention) to prove the session is still alive without waiting for an actual route change. NOTIFICATION is BGP's only error-signaling message, and sending or receiving one always closes the TCP connection - there's no "soft" BGP error.</p>
+      <div class="sec">KEEPALIVE (19 bytes - the header, and nothing else)</div>
+      <div id="block-keepalive" data-build></div>
+      <div class="sec">NOTIFICATION, Cease / Administrative Reset (21 bytes)</div>
+      <p class="note">RFC 4486 added the finer-grained Cease subcodes (like Administrative Reset) - the base NOTIFICATION format itself hasn't changed since BGP-4.</p>
+      <div id="block-notification" data-build></div>
+    </div>
+
+  </div>
+
+  <div class="callout"><b>documentation-safe example.</b> 192.0.2.1 and 203.0.113.0/24 (RFC 5737) and 2001:db8::/32 (RFC 3849) throughout - the same convention used on every other page in this repo and in ipv6-fun.</div>
+
+  <footer><span>protocols-fun / BGP anatomy</span><span>RFC 4271 . RFC 6793 . RFC 4760</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
+</div>
+
+<button class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark theme">theme</button>
+
+<script>
+(function(){
+  var KINDS={sync:"structural",enum:"value",flag:"flag",rsv:"reserved"};
+  function hx(b){return b.toString(16).toUpperCase().padStart(2,"0");}
+
+  function build(mountId, unit, bytes, fields){
+    var mount=document.getElementById(mountId);
+    var N = unit==="bit" ? bytes.length*8 : bytes.length;
+    var owner=new Array(N);
+    fields.forEach(function(f,fi){ for(var i=f.r[0];i<=f.r[1];i++) owner[i]=fi; });
+    var diagram=document.createElement("div");
+    if(unit==="bit"){
+      diagram.className="diagram";
+      for(var bi=0; bi<bytes.length; bi++){
+        var grp=document.createElement("div"); grp.className="bytegrp";
+        var ticks=document.createElement("div"); ticks.className="ticks";
+        var row=document.createElement("div"); row.className="brow";
+        for(var k=0;k<8;k++){
+          var idx=bi*8+k, f=fields[owner[idx]];
+          var t=document.createElement("span"); t.textContent=idx; ticks.appendChild(t);
+          var cell=document.createElement("span"); cell.className="bit k-"+f.k; cell.dataset.idx=idx;
+          if(idx===f.r[0]) cell.classList.add("fstart");
+          cell.textContent=(bytes[bi]>>(7-k))&1; row.appendChild(cell);
+        }
+        var hex=document.createElement("div"); hex.className="hex"; hex.textContent="0x"+hx(bytes[bi]);
+        grp.appendChild(ticks); grp.appendChild(row); grp.appendChild(hex); diagram.appendChild(grp);
+      }
+    } else {
+      diagram.className="dbytes";
+      bytes.forEach(function(b,i){
+        var f=fields[owner[i]];
+        var col=document.createElement("div"); col.className="bcol";
+        var off=document.createElement("div"); off.className="off"; off.textContent="0x"+hx(i); col.appendChild(off);
+        var cell=document.createElement("div"); cell.className="bcell k-"+f.k; cell.dataset.idx=i;
+        if(i===f.r[0]) cell.classList.add("fstart");
+        cell.textContent=hx(b); col.appendChild(cell); diagram.appendChild(col);
+      });
+    }
+    var list=document.createElement("div"); list.className="fields";
+    var aside=document.createElement("aside"); aside.className="detail";
+    aside.innerHTML="<div class='dl'><span>field detail</span><span class='kind'></span></div>"+
+      "<h3>Hover a field or byte</h3><div class='dc'>"+(unit==="bit"?N+" bits":bytes.length+" bytes")+"</div>"+
+      "<p>Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.</p><div class='dn'></div>";
+    var det={t:aside.querySelector("h3"),c:aside.querySelector(".dc"),b:aside.querySelector("p"),n:aside.querySelector(".dn"),kind:aside.querySelector(".kind")};
+    var cells=[].slice.call(diagram.querySelectorAll("[data-idx]"));
+    var rows=[];
+    function light(a,b){cells.forEach(function(c){var i=+c.dataset.idx;c.classList.toggle("hi",i>=a&&i<=b);});}
+    function clearHi(){cells.forEach(function(c){c.classList.remove("hi");});}
+    function rl(f){ return unit==="bit"
+      ? "bits "+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")
+      : "bytes 0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-0x"+hx(f.r[1]):""); }
+    function show(f){det.t.textContent=f.label;det.c.textContent=rl(f)+"  =  "+f.val;
+      det.b.textContent=f.body;det.n.textContent=f.note||"";det.kind.textContent=KINDS[f.k];}
+    function activeRow(){return list.querySelector(".field.active");}
+    function cue(fi){rows.forEach(function(r){r.classList.remove("cued");});rows[fi].classList.add("cued");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    function restore(){rows.forEach(function(r){r.classList.remove("cued");});var a=activeRow();if(a){var fi=+a.dataset.fi;light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}else clearHi();}
+    function pin(fi){var was=rows[fi].classList.contains("active");rows.forEach(function(r){r.classList.remove("active");});if(was){clearHi();return;}rows[fi].classList.add("active");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    fields.forEach(function(f,fi){
+      var row=document.createElement("div"); row.className="field"; row.dataset.fi=fi; if(f.branch) row.dataset.branch="1";
+      var lab = unit==="bit" ? ("b"+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")) : ("0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-"+hx(f.r[1]):""));
+      row.innerHTML="<span class='fb'>"+lab+"</span><span class='fn'>"+f.label+"</span><span class='fv k-"+f.k+"'>"+f.val+"</span>";
+      if(f.branch){
+        var bw=document.createElement("div"); bw.className="branch";
+        bw.innerHTML="<table>"+f.branch.map(function(p,i){return "<tr class='"+(i===f.sel?"sel":"")+"'><td class='k'>"+p[0]+"</td><td>"+p[1]+"</td></tr>";}).join("")+"</table>";
+        row.appendChild(bw);
+      }
+      row.addEventListener("mouseenter",function(){cue(fi);});
+      row.addEventListener("click",function(){pin(fi);});
+      rows.push(row); list.appendChild(row);
+    });
+    cells.forEach(function(c){
+      var fi=owner[+c.dataset.idx];
+      c.addEventListener("mouseenter",function(){cue(fi);});
+      c.addEventListener("click",function(){pin(fi);});
+    });
+    var left=document.createElement("div"); left.className="left";
+    left.appendChild(diagram); left.appendChild(list);
+    var dcol=document.createElement("div"); dcol.className="detailcol"; dcol.appendChild(aside);
+    var block=document.createElement("div"); block.className="block";
+    block.appendChild(left); block.appendChild(dcol);
+    block.addEventListener("mouseleave",restore);
+    mount.appendChild(block);
+    var maxH=aside.scrollHeight;
+    fields.forEach(function(f){ show(f); if(aside.scrollHeight>maxH) maxH=aside.scrollHeight; });
+    det.t.textContent="Hover a field or byte";
+    det.c.textContent=(unit==="bit"?N+" bits":bytes.length+" bytes");
+    det.b.textContent="Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.";
+    det.n.textContent="";
+    dcol.style.minHeight=(maxH+6)+"px";
+  }
+
+  var MSG_TYPES=[["1","OPEN"],["2","UPDATE"],["3","NOTIFICATION"],["4","KEEPALIVE"],["5","ROUTE-REFRESH (RFC 2918, 2000)"]];
+
+  var SPECS={
+    "block-overview":["byte",
+      [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x13,0x04],
+      [
+        {label:"marker",k:"rsv",r:[0,15],val:"all-ones",body:"Historically reserved for an authentication scheme BGP-4 never fully specified. In every real deployment today, this is just 16 bytes of 0xFF."},
+        {label:"length",k:"enum",r:[16,17],val:"19 (header only)",body:"Total message length including these 19 header bytes - this example has no body, so it's the minimum possible BGP message."},
+        {label:"type",k:"flag",r:[18,18],val:"KEEPALIVE (4)",sel:3,branch:MSG_TYPES,body:"One byte selects one of five message types. Type 5 (ROUTE-REFRESH) didn't exist in the original BGP-4 spec - it was added six years later, as a negotiated capability, without touching this header at all."}
+      ]],
+    "block-open":["byte",
+      [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+       0x00,0x2B,0x01,0x04,0x5B,0xA0,0x00,0xB4,0xC0,0x00,0x02,0x01,0x0E,
+       0x02,0x0C,0x41,0x04,0x00,0x06,0x1A,0x80,0x01,0x04,0x00,0x02,0x00,0x01],
+      [
+        {label:"marker",k:"rsv",r:[0,15],val:"all-ones"},
+        {label:"length",k:"enum",r:[16,17],val:"43"},
+        {label:"type",k:"flag",r:[18,18],val:"OPEN (1)",sel:0,branch:MSG_TYPES},
+        {label:"version",k:"enum",r:[19,19],val:"4",body:"Has been 4 since 1994 - see the version history table above the tabs."},
+        {label:"my AS",k:"flag",r:[20,21],val:"23456 (AS_TRANS)",body:"A placeholder value, not this router's real AS - see the AS Numbers tab for why."},
+        {label:"hold time",k:"enum",r:[22,23],val:"180 seconds",body:"If no KEEPALIVE or UPDATE arrives within this window, the peer is presumed dead and the session is torn down. By convention, KEEPALIVEs are sent at roughly a third of this value."},
+        {label:"BGP identifier",k:"sync",r:[24,27],val:"192.0.2.1",body:"A 32-bit value formatted like an IPv4 address, uniquely identifying this router - conventionally one of its own real interface addresses, but not required to be."},
+        {label:"opt parm len",k:"enum",r:[28,28],val:"14 bytes follow"},
+        {label:"parm type",k:"sync",r:[29,29],val:"Capabilities (2)",body:"RFC 3392/5492: wraps one or more Capability entries, each announcing an optional feature this speaker supports."},
+        {label:"parm length",k:"enum",r:[30,30],val:"12 bytes follow"},
+        {label:"cap code",k:"flag",r:[31,31],val:"4-octet AS number (65)",body:"See the AS Numbers tab - this is the capability that makes the 4-byte value below meaningful."},
+        {label:"cap length",k:"enum",r:[32,32],val:"4"},
+        {label:"cap value",k:"sync",r:[33,36],val:"400000",body:"This router's real AS number - too large for the 2-byte \"My AS\" field above, which is why that field carries AS_TRANS instead."},
+        {label:"cap code",k:"flag",r:[37,37],val:"Multiprotocol Extensions (1)",body:"See the Multiprotocol tab - announces which address families this speaker can exchange routes for, beyond classic IPv4 unicast."},
+        {label:"cap length",k:"enum",r:[38,38],val:"4"},
+        {label:"cap value (AFI)",k:"sync",r:[39,40],val:"2 (IPv6)"},
+        {label:"cap value (SAFI)",k:"sync",r:[41,42],val:"reserved(0) + 1 (unicast)"}
+      ]],
+    "block-as2":["byte",
+      [0x02,0x01,0xFC,0x00],
+      [
+        {label:"segment type",k:"enum",r:[0,0],val:"AS_SEQUENCE (2)",body:"The other segment type is AS_SET (1), used for aggregated routes where path order doesn't reflect a real traversal order."},
+        {label:"segment length",k:"enum",r:[1,1],val:"1 AS"},
+        {label:"AS (2 bytes)",k:"sync",r:[2,3],val:"64512",body:"A 2-byte AS number - the only width that existed before RFC 6793, and still what an old peer expects to see here regardless of what the 4-byte tab below shows."}
+      ]],
+    "block-as4":["byte",
+      [0x02,0x01,0x00,0x06,0x1A,0x80],
+      [
+        {label:"segment type",k:"enum",r:[0,0],val:"AS_SEQUENCE (2)"},
+        {label:"segment length",k:"enum",r:[1,1],val:"1 AS"},
+        {label:"AS (4 bytes)",k:"sync",r:[2,5],val:"400000",body:"Same segment shape, same segment-length semantics (still counts ASes, not bytes) - just twice the width per AS number, and only meaningful once both peers negotiated the capability in OPEN."}
+      ]],
+    "block-update":["byte",
+      [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+       0x00,0x2D,0x02,
+       0x00,0x00,
+       0x00,0x12,
+       0x40,0x01,0x01,0x00,
+       0x40,0x02,0x04,0x02,0x01,0xFC,0x00,
+       0x40,0x03,0x04,0xC0,0x00,0x02,0x01,
+       0x18,0xCB,0x00,0x71],
+      [
+        {label:"marker",k:"rsv",r:[0,15],val:"all-ones"},
+        {label:"length",k:"enum",r:[16,17],val:"45"},
+        {label:"type",k:"flag",r:[18,18],val:"UPDATE (2)",sel:1,branch:MSG_TYPES},
+        {label:"withdrawn len",k:"enum",r:[19,20],val:"0 (no withdrawals)",body:"When nonzero, this many bytes of withdrawn-route prefixes (same length+prefix encoding as NLRI) follow immediately - there are none in this announcement-only example."},
+        {label:"total path attr len",k:"enum",r:[21,22],val:"18 bytes follow"},
+        {label:"ORIGIN flags",k:"flag",r:[23,23],val:"0x40 (well-known, transitive)",sel:0,branch:[["0x40","well-known mandatory: Optional=0 Transitive=1 Partial=0 ExtLen=0"],["0x80","optional non-transitive"],["0xC0","optional transitive"]],
+          body:"Every path attribute starts with this flags byte. Well-known mandatory attributes (ORIGIN, AS_PATH, NEXT_HOP) always use 0x40."},
+        {label:"ORIGIN type",k:"sync",r:[24,24],val:"ORIGIN (1)"},
+        {label:"ORIGIN length",k:"enum",r:[25,25],val:"1"},
+        {label:"ORIGIN value",k:"enum",r:[26,26],val:"IGP (0)",sel:0,branch:[["0","IGP - originated from an interior gateway protocol"],["1","EGP - learned via the old EGP protocol (historical)"],["2","INCOMPLETE - learned some other way, e.g. static route"]]},
+        {label:"AS_PATH flags",k:"flag",r:[27,27],val:"0x40"},
+        {label:"AS_PATH type",k:"sync",r:[28,28],val:"AS_PATH (2)"},
+        {label:"AS_PATH length",k:"enum",r:[29,29],val:"4 bytes follow"},
+        {label:"segment type",k:"enum",r:[30,30],val:"AS_SEQUENCE (2)"},
+        {label:"segment length",k:"enum",r:[31,31],val:"1 AS"},
+        {label:"AS number",k:"sync",r:[32,33],val:"64512",body:"A private-use 2-byte AS number (RFC 6996 reserves 64512-65534 for exactly this kind of example/private use)."},
+        {label:"NEXT_HOP flags",k:"flag",r:[34,34],val:"0x40"},
+        {label:"NEXT_HOP type",k:"sync",r:[35,35],val:"NEXT_HOP (3)"},
+        {label:"NEXT_HOP length",k:"enum",r:[36,36],val:"4"},
+        {label:"NEXT_HOP value",k:"sync",r:[37,40],val:"192.0.2.1",body:"The IPv4 address traffic for this route should actually be sent to - not necessarily the BGP speaker that sent this UPDATE."},
+        {label:"NLRI prefix length",k:"enum",r:[41,41],val:"24 bits"},
+        {label:"NLRI prefix",k:"sync",r:[42,44],val:"203.0.113.0/24",body:"Only ceil(24/8)=3 bytes are sent, not a full 4-byte address - BGP never wastes bytes on the zero bits past the prefix length. This variable-width prefix encoding is exactly what CIDR added in BGP-4 (see the version table above)."}
+      ]],
+    "block-mpcap":["byte",
+      [0x01,0x04,0x00,0x02,0x00,0x01],
+      [
+        {label:"cap code",k:"flag",r:[0,0],val:"Multiprotocol Extensions (1)"},
+        {label:"cap length",k:"enum",r:[1,1],val:"4"},
+        {label:"AFI",k:"sync",r:[2,3],val:"2 (IPv6)",sel:0,branch:[["1","IPv4"],["2","IPv6"]]},
+        {label:"reserved",k:"rsv",r:[4,4],val:"0"},
+        {label:"SAFI",k:"sync",r:[5,5],val:"1 (unicast)",sel:0,branch:[["1","unicast"],["2","multicast"],["128","MPLS-labeled VPN unicast"]]}
+      ]],
+    "block-mpreach":["byte",
+      [0x80,0x0E,0x1C,
+       0x00,0x02,0x01,
+       0x10,
+       0x20,0x01,0x0D,0xB8,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01,
+       0x00,
+       0x30,0x20,0x01,0x0D,0xB8,0x00,0x01],
+      [
+        {label:"flags",k:"flag",r:[0,0],val:"0x80 (optional, non-transitive)",body:"Unlike ORIGIN/AS_PATH/NEXT_HOP, MP_REACH_NLRI is optional - a router that doesn't understand it can and should just ignore it, per BGP's standard unknown-attribute handling."},
+        {label:"type",k:"sync",r:[1,1],val:"MP_REACH_NLRI (14)"},
+        {label:"length",k:"enum",r:[2,2],val:"28 bytes follow"},
+        {label:"AFI",k:"sync",r:[3,4],val:"2 (IPv6)"},
+        {label:"SAFI",k:"sync",r:[5,5],val:"1 (unicast)"},
+        {label:"next hop length",k:"enum",r:[6,6],val:"16 bytes",body:"A length-prefixed sub-field inside an attribute value - unusual for BGP, necessary because a next hop can be a different size for every address family (4 bytes for IPv4, 16 for IPv6, sometimes two IPv6 addresses for link-local + global)."},
+        {label:"next hop",k:"sync",r:[7,22],val:"2001:db8::1"},
+        {label:"reserved",k:"rsv",r:[23,23],val:"0",body:"Historically a count of SNPAs (subnetwork points of attachment); always sent as 0 in modern practice."},
+        {label:"NLRI prefix length",k:"enum",r:[24,24],val:"48 bits"},
+        {label:"NLRI prefix",k:"sync",r:[25,30],val:"2001:db8:1::/48",body:"Same variable-width prefix encoding as classic IPv4 NLRI, just with up to 16 bytes of room instead of 4 - the format didn't need to change to accommodate a completely different address family."}
+      ]],
+    "block-keepalive":["byte",
+      [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x13,0x04],
+      [
+        {label:"marker",k:"rsv",r:[0,15],val:"all-ones"},
+        {label:"length",k:"enum",r:[16,17],val:"19"},
+        {label:"type",k:"flag",r:[18,18],val:"KEEPALIVE (4)",sel:3,branch:MSG_TYPES,body:"Nothing follows the header - the entire information content of this message is \"I'm still here,\" which the type byte alone already says."}
+      ]],
+    "block-notification":["byte",
+      [0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x15,0x03,0x06,0x04],
+      [
+        {label:"marker",k:"rsv",r:[0,15],val:"all-ones"},
+        {label:"length",k:"enum",r:[16,17],val:"21"},
+        {label:"type",k:"flag",r:[18,18],val:"NOTIFICATION (3)",sel:2,branch:MSG_TYPES},
+        {label:"error code",k:"enum",r:[19,19],val:"Cease (6)",sel:0,branch:[["1","Message Header Error"],["2","OPEN Message Error"],["3","UPDATE Message Error"],["4","Hold Timer Expired"],["5","Finite State Machine Error"],["6","Cease"]]},
+        {label:"error subcode",k:"flag",r:[20,20],val:"Administrative Reset (4)",body:"RFC 4486 added finer-grained Cease subcodes (Administrative Shutdown, Administrative Reset, Peer De-configured, and others) years after the base NOTIFICATION format shipped - another capability-shaped addition on an unchanged wire shape."}
+      ]]
+  };
+
+  var built={};
+  function buildPanel(name){
+    var panel=document.querySelector('[data-panel="'+name+'"]'); if(!panel) return;
+    panel.querySelectorAll("[data-build]").forEach(function(m){
+      if(built[m.id]) return; built[m.id]=1;
+      var spec=SPECS[m.id]; if(spec) build(m.id, spec[0], spec[1], spec[2]);
+    });
+  }
+  var tabs=[].slice.call(document.querySelectorAll(".tab"));
+  var panels=[].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    tabs.forEach(function(t){t.classList.toggle("on",t.dataset.p===name);});
+    panels.forEach(function(p){p.classList.toggle("on",p.dataset.panel===name);});
+    buildPanel(name);
+  }
+  tabs.forEach(function(t){t.addEventListener("click",function(){
+    activate(t.dataset.p);
+    if(history.replaceState) history.replaceState(null,"","#"+t.dataset.p);
+  });});
+  var initial=(location.hash||"").replace("#","");
+  if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
+  else buildPanel("overview");
+
+  var tbtn=document.getElementById("theme-toggle");
+  function currentTheme(){return document.documentElement.getAttribute("data-theme")||"light";}
+  function paintToggle(){tbtn.textContent = currentTheme()==="dark" ? "◐ light" : "◑ dark";}
+  tbtn.addEventListener("click",function(){
+    var next = currentTheme()==="dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme",next);
+    try{localStorage.setItem("protofun-theme",next);}catch(e){}
+    paintToggle();
+  });
+  paintToggle();
+})();
+</script>
+</body>
+</html>
