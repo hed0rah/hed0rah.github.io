@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>protocols-fun / ARP anatomy</title>
+<title>protocols-fun / Ethernet anatomy</title>
 <script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -119,6 +119,10 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
 .detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
 
+.compare{width:100%;border-collapse:collapse;font-size:0.78rem;margin:0.6rem 0 1.2rem;max-width:76ch}
+.compare th,.compare td{border:1px solid var(--hair);padding:0.4rem 0.7rem;text-align:left;vertical-align:top}
+.compare th{background:var(--panel);color:var(--ink);font-weight:500;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.06em}
+
 footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
 </style>
@@ -128,17 +132,17 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   <div class="head">
     <div class="row">
-      <div class="title"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>ARP Anatomy</h1></div>
-      <div class="stamp"><b>RFC 826 (1982)</b>"who has this IP?" - broadcast, no authentication<br>rev 2026.08</div>
+      <div class="title"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>Ethernet Anatomy</h1></div>
+      <div class="stamp"><b>DIX Ethernet II, 1980</b>standardized as IEEE 802.3 in 1983<br>rev 2026.08</div>
     </div>
     <div class="strip">
-      <div>header <b>28 bytes (Ethernet/IPv4)</b></div><div>auth <b>none</b></div>
-      <div>historical sibling <b>RARP, RFC 903</b></div><div>see also <b>../index.html</b></div>
+      <div>header <b>14 bytes fixed</b></div><div>payload <b>46-1500 bytes</b></div>
+      <div>trailer <b>4-byte FCS (CRC-32)</b></div><div>see also <b>../index.html</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede"><a href="https://www.rfc-editor.org/rfc/rfc826">RFC 826</a> (1982) - resolves an IPv4 address to a link-layer (MAC) address by broadcasting the question to the entire segment. The format is deliberately hardware/protocol-agnostic (that's what the length fields are for), but Ethernet+IPv4 is the pairing that ever mattered in practice, so that's the 28-byte layout every tab here uses. There's no authentication anywhere in this protocol - anyone on the segment can answer any question, which is the entire basis of ARP spoofing. IPv6 replaced this mechanism outright with multicast-based Neighbor Discovery rather than patching it; see <a href="https://github.com/hed0rah/ipv6-fun">ipv6-fun</a>'s coverage of NS/NA. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
+  <p class="lede">Ethernet II is the frame format almost everything above it - IPv4, ARP, IPv6 - actually rides on. Two 6-byte MAC addresses, a 2-byte field that tells the receiver what's inside, then payload. It's the field at byte 12 that has the messiest history: DIX Ethernet (1980) used it as an EtherType; the original IEEE 802.3 standard (1983) used the identical bit position as a Length field instead, and the two only stopped colliding because IEEE reserved every value large enough to be a valid EtherType. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">blue</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -151,46 +155,74 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   </div>
 
   <div class="tabs" id="tabs">
-    <button class="tab on" data-p="request">Request<small>oper 1</small></button>
-    <button class="tab" data-p="reply">Reply<small>oper 2</small></button>
-    <button class="tab" data-p="gratuitous">Gratuitous<small>spa = tpa</small></button>
-    <button class="tab" data-p="rarp">RARP<small>oper 3 - obsolete</small></button>
+    <button class="tab on" data-p="overview">Overview<small>dst/src/type</small></button>
+    <button class="tab" data-p="lineage">EtherType vs Length<small>1980 vs 1983</small></button>
+    <button class="tab" data-p="vlan">802.1Q VLAN Tag<small>PCP/DEI/VID</small></button>
+    <button class="tab" data-p="phy">Preamble, SFD &amp; FCS<small>real CRC-32</small></button>
+    <button class="tab" data-p="timeline">Timeline<small>10M &rarr; 400G</small></button>
   </div>
   <div class="panelwrap">
 
-    <div class="panel on" data-panel="request">
-      <div class="pfacts"><span>size<b>28 bytes</b></span><span>sent to<b>broadcast, ff:ff:ff:ff:ff:ff</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">"Who has 192.0.2.1? Tell 192.0.2.10." The target hardware address is unfilled - that's exactly what's being asked for.</p>
-      <div class="sec">ARP Request (28 bytes)</div>
-      <div id="block-request" data-build></div>
+    <div class="panel on" data-panel="overview">
+      <div class="pfacts"><span>frame<b>Ethernet II, EtherType IPv4</b></span><span>spec<b>IEEE 802.3-2022 &sect;3.2</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The fixed part of every Ethernet II frame: destination address, source address, then the field that decides what the payload is. Payload (46-1500 bytes) and the trailing FCS aren't diagrammed here - see the Preamble/FCS tab for the checksum.</p>
+      <div class="sec">destination, source, EtherType (14 bytes)</div>
+      <div id="block-overview" data-build></div>
     </div>
 
-    <div class="panel" data-panel="reply">
-      <div class="pfacts"><span>size<b>28 bytes</b></span><span>sent<b>unicast, straight back to the requester</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">"192.0.2.1 is at 00:aa:bb:cc:dd:ee." Sender and target fields swap roles compared to the request - the answerer's address is now the "sender," the original asker is now the "target."</p>
-      <div class="sec">ARP Reply (28 bytes)</div>
-      <div id="block-reply" data-build></div>
+    <div class="panel" data-panel="lineage">
+      <div class="pfacts"><span>1980<b>DIX Ethernet II, EtherType</b></span><span>1983<b>IEEE 802.3 original, Length</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Exact same 2-byte position, byte 12-13, two incompatible meanings. IEEE 802.3's original framing had no EtherType-equivalent at all - the payload itself had to start with an 802.2 LLC header to say what protocol it carried, an extra layer of indirection Ethernet II never needed.</p>
+      <div class="sec">bytes 12-13: DIX Ethernet II (EtherType)</div>
+      <div id="block-ethertype" data-build></div>
+      <div class="sec">bytes 12-13: IEEE 802.3 original (Length)</div>
+      <div id="block-length" data-build></div>
+      <div class="callout"><b>how a receiver tells them apart.</b> A real payload can be at most 1500 bytes, so IEEE reserved every value of this field from 1536 (0x0600) upward exclusively for EtherType use - a length can never legally reach that high. RFC 894 (1984) formally defines EtherType-framed IP; RFC 1042 (1988) defines the alternative for 802.3/LLC networks. EtherType framing won in practice - the length-framed/LLC path survives mainly for a handful of legacy protocols like Spanning Tree BPDUs.</div>
     </div>
 
-    <div class="panel" data-panel="gratuitous">
-      <div class="pfacts"><span>size<b>28 bytes</b></span><span>tell<b>sender protocol addr = target protocol addr</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A host announces its own mapping unprompted - nobody asked. Used to pre-populate everyone else's cache after booting or changing MAC (fewer stale-cache misses), or defensively to detect a duplicate address (if something else replies "that's mine," you have a conflict). The functional ancestor of gratuitous NDP Neighbor Advertisements - same idea, same lack of any authentication to stop someone else from doing it maliciously.</p>
-      <div class="sec">Gratuitous ARP (28 bytes)</div>
-      <p class="note">Structurally just an ARP Request where the sender already knows the answer.</p>
-      <div id="block-gratuitous" data-build></div>
+    <div class="panel" data-panel="vlan">
+      <div class="pfacts"><span>tag<b>IEEE 802.1Q, 1998</b></span><span>inserted<b>between source MAC and EtherType</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A VLAN-tagged frame gets 4 extra bytes spliced in right after the source MAC: a fixed TPID announcing "a tag follows," then a Tag Control Information field packing a priority, a drop-eligibility bit, and a 12-bit VLAN ID into 16 bits.</p>
+      <div class="sec">TPID (2 bytes)</div>
+      <div id="block-vlan-tpid" data-build></div>
+      <div class="sec">TCI: PCP, DEI, VID (16 bits)</div>
+      <div id="block-vlan-tci" data-build></div>
+      <div class="callout"><b>why TPID reuses the EtherType position.</b> TPID sits in exactly the byte-12 slot an untagged frame's EtherType would occupy, using the reserved value 0x8100 - so a switch that doesn't understand 802.1Q would misread it as "EtherType 0x8100," see an unrecognized value, and typically drop the frame rather than silently misparse it. The real EtherType (0x0800 for IPv4, etc.) is pushed 4 bytes later, right after the TCI.</div>
     </div>
 
-    <div class="panel" data-panel="rarp">
-      <div class="pfacts"><span>oper<b>3 (request) / 4 (reply)</b></span><span>status<b>obsolete - replaced by BOOTP/DHCP</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Reverse ARP (RFC 903, 1984): a diskless workstation that knows its own MAC but not its IP broadcasts to ask the reverse question ARP normally answers. Same 28-byte shape, same field meanings - the asker just repeats its own MAC in both the sender and target hardware fields, since it's asking about itself.</p>
-      <div class="sec">RARP Request, historical (28 bytes)</div>
-      <div id="block-rarp" data-build></div>
-      <div class="callout"><b>replaced, not patched.</b> RARP had real limits - no way to hand out anything besides an IP address, and it required a server on every physical segment since RARP requests don't route. BOOTP (RFC 951, 1985) replaced it, and DHCP (RFC 2131, see the DHCP anatomy page) then extended BOOTP rather than replacing it a second time.</div>
+    <div class="panel" data-panel="phy">
+      <div class="pfacts"><span>preamble<b>7 bytes, clock sync</b></span><span>fcs<b>CRC-32 over addresses+type+payload</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Neither of these is part of the "frame" an operating system ever sees - the NIC generates the preamble/SFD on transmit and strips them on receive, and generates/verifies the FCS the same way. They're shown here because they're genuinely part of what goes on the wire.</p>
+      <div class="sec">preamble + start frame delimiter (8 bytes)</div>
+      <div id="block-preamble" data-build></div>
+      <div class="sec">a small illustrative frame (18 bytes, below the 64-byte minimum)</div>
+      <div id="block-fcs-frame" data-build></div>
+      <div class="sec">its frame check sequence (4 bytes)</div>
+      <div id="block-fcs" data-build></div>
+      <div class="callout"><b>computed, not invented.</b> The FCS shown is a real CRC-32 (the same algorithm gzip, PNG, and PKZIP use) computed over the 18 bytes above, packed least-significant-byte first the way it's actually captured on the wire - which is also why it reads "backwards" compared to every other multi-byte field on this page: Ethernet transmits ordinary data least-significant-bit-first, but the FCS's most significant bit first, a quirk baked into IEEE 802.3 since 1983. A real frame pads its payload to 46 bytes minimum (64 bytes total before the FCS) - this example is intentionally short to keep the diagram readable.</div>
+    </div>
+
+    <div class="panel" data-panel="timeline">
+      <div class="pfacts"><span>1980<b>DIX Ethernet II, 10 Mbps</b></span><span>1998<b>802.1Q VLAN tagging</b></span><span>2017+<b>400G and climbing</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The 14-byte header diagrammed in the Overview tab has been untouched since 1980 - every revision below changed speed, medium, or added optional fields, never the core frame shape.</p>
+      <table class="compare">
+        <thead><tr><th>year</th><th>standard</th><th>what changed</th></tr></thead>
+        <tbody>
+          <tr><td>1980</td><td>DIX Ethernet II (DEC/Intel/Xerox), 10 Mbps</td><td>the frame format this whole page diagrams - dst/src/EtherType, coax/thick-Ethernet physical layer.</td></tr>
+          <tr><td>1983</td><td>IEEE 802.3, 10BASE5</td><td>standardized Ethernet under IEEE, but with Length framing instead of EtherType - see the EtherType vs Length tab.</td></tr>
+          <tr><td>1990</td><td>802.3i, 10BASE-T</td><td>twisted-pair cabling and hub-based star topology replace the original coax bus - no frame format change.</td></tr>
+          <tr><td>1995</td><td>802.3u, Fast Ethernet (100 Mbps)</td><td>10x the speed, same frame; auto-negotiation added at the physical layer.</td></tr>
+          <tr><td>1998</td><td>802.1Q, VLAN tagging</td><td>the optional 4-byte tag diagrammed in the VLAN tab - the first structural addition to the frame itself.</td></tr>
+          <tr><td>1998-99</td><td>802.3z/802.3ab, Gigabit Ethernet</td><td>fiber and then twisted-pair gigabit - same frame format again.</td></tr>
+          <tr><td>2006</td><td>802.1AE, MACsec</td><td>optional link-layer encryption/authentication, added as another tag-like insertion rather than a header rewrite.</td></tr>
+          <tr><td>2017+</td><td>802.3bs and successors, 200/400 GbE</td><td>current mainstream ceiling as of this writing; the 14-byte header and CRC-32 FCS from 1980 are still exactly what's on the wire.</td></tr>
+        </tbody>
+      </table>
     </div>
 
   </div>
 
-  <footer><span>protocols-fun / ARP anatomy</span><span>RFC 826 . RFC 903</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
+  <footer><span>protocols-fun / Ethernet anatomy</span><span>IEEE 802.3 . IEEE 802.1Q . RFC 894 . RFC 1042</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
 </div>
 
 <button class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark theme">theme</button>
@@ -286,61 +318,54 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     dcol.style.minHeight=(maxH+6)+"px";
   }
 
-  var OPER_TYPES=[["1","Request"],["2","Reply"],["3","RARP Request"],["4","RARP Reply"]];
+  var ETHERTYPES=[["0x0800","IPv4"],["0x0806","ARP"],["0x8100","802.1Q VLAN-tagged frame"],["0x86DD","IPv6"],["0x8847","MPLS unicast"]];
 
   var SPECS={
-    "block-request":["byte",
-      [0x00,0x01,0x08,0x00,0x06,0x04,0x00,0x01,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0xC0,0x00,0x02,0x0A,0x00,0x00,0x00,0x00,0x00,0x00,0xC0,0x00,0x02,0x01],
+    "block-overview":["byte",
+      [0x00,0x1A,0x2B,0x3C,0x4D,0x5E, 0x00,0x5E,0x4D,0x3C,0x2B,0x1A, 0x08,0x00],
       [
-        {label:"hardware type",k:"enum",r:[0,1],val:"Ethernet (1)",body:"Identifies the link-layer technology in use. Ethernet is 1; the field exists so ARP could in principle run over other link layers too."},
-        {label:"protocol type",k:"enum",r:[2,3],val:"IPv4 (0x0800)",body:"Same value space as Ethernet's EtherType field - 0x0800 for IPv4 here means \"the addresses below are IPv4 addresses.\""},
-        {label:"hw addr length",k:"enum",r:[4,4],val:"6",body:"Length in bytes of each hardware address below - 6 for a MAC."},
-        {label:"proto addr length",k:"enum",r:[5,5],val:"4",body:"Length in bytes of each protocol address below - 4 for IPv4."},
-        {label:"operation",k:"flag",r:[6,7],val:"Request (1)",sel:0,branch:OPER_TYPES},
-        {label:"sender hw addr",k:"sync",r:[8,13],val:"00:1a:2b:3c:4d:5e"},
-        {label:"sender proto addr",k:"sync",r:[14,17],val:"192.0.2.10"},
-        {label:"target hw addr",k:"rsv",r:[18,23],val:"00:00:00:00:00:00 (unknown - that's the question)"},
-        {label:"target proto addr",k:"sync",r:[24,27],val:"192.0.2.1"}
+        {label:"destination",k:"sync",r:[0,5],val:"00:1a:2b:3c:4d:5e",body:"The receiving NIC's MAC address, or a multicast/broadcast address. The lowest bit of the first byte is the individual/group bit - 0 here means unicast."},
+        {label:"source",k:"sync",r:[6,11],val:"00:5e:4d:3c:2b:1a",body:"Always a unicast address - a frame is never sourced from a multicast or broadcast address."},
+        {label:"EtherType",k:"enum",r:[12,13],val:"IPv4 (0x0800)",sel:0,branch:ETHERTYPES,
+          body:"Values 1536 (0x0600) and above are EtherTypes; values 1500 and below in this same position mean something entirely different - see the EtherType vs Length tab."}
       ]],
-    "block-reply":["byte",
-      [0x00,0x01,0x08,0x00,0x06,0x04,0x00,0x02,0x00,0xAA,0xBB,0xCC,0xDD,0xEE,0xC0,0x00,0x02,0x01,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0xC0,0x00,0x02,0x0A],
+    "block-ethertype":["byte",
+      [0x08,0x00],
+      [{label:"EtherType",k:"enum",r:[0,1],val:"IPv4 (0x0800)",body:"DIX Ethernet II (1980): this field always means EtherType, identifying the payload's protocol directly - no extra header needed inside the payload."}]
+      ],
+    "block-length":["byte",
+      [0x00,0x2E],
+      [{label:"Length",k:"rsv",r:[0,1],val:"46",body:"IEEE 802.3 original (1983): the identical bit position instead states the payload length in bytes. The payload itself must then start with an 802.2 LLC header (and optionally a SNAP header) to say what protocol it actually carries - RFC 1042 defines this path for IP."}]
+      ],
+    "block-vlan-tpid":["byte",
+      [0x81,0x00],
+      [{label:"TPID",k:"enum",r:[0,1],val:"0x8100 (802.1Q)",body:"Tag Protocol Identifier - a reserved value that could never be mistaken for a valid 802.3 Length (too large) and signals \"a 4-byte tag follows before the real EtherType.\""}]
+      ],
+    "block-vlan-tci":["bit",
+      [0xA0,0x64],
       [
-        {label:"hardware type",k:"enum",r:[0,1],val:"Ethernet (1)"},
-        {label:"protocol type",k:"enum",r:[2,3],val:"IPv4 (0x0800)"},
-        {label:"hw addr length",k:"enum",r:[4,4],val:"6"},
-        {label:"proto addr length",k:"enum",r:[5,5],val:"4"},
-        {label:"operation",k:"flag",r:[6,7],val:"Reply (2)",sel:1,branch:OPER_TYPES},
-        {label:"sender hw addr",k:"sync",r:[8,13],val:"00:aa:bb:cc:dd:ee (the answerer)"},
-        {label:"sender proto addr",k:"sync",r:[14,17],val:"192.0.2.1 (the answerer's own IP)"},
-        {label:"target hw addr",k:"sync",r:[18,23],val:"00:1a:2b:3c:4d:5e (the original requester)"},
-        {label:"target proto addr",k:"sync",r:[24,27],val:"192.0.2.10 (the original requester's IP)"}
+        {label:"PCP",k:"flag",r:[0,2],val:"5",body:"Priority Code Point - a 3-bit 802.1p traffic class (0-7) used for QoS scheduling decisions at each hop; higher isn't strictly \"more important,\" the mapping is locally configured."},
+        {label:"DEI",k:"flag",r:[3,3],val:"0",body:"Drop Eligible Indicator - marks a frame as a first candidate for discard under congestion. Originally called CFI (Canonical Format Indicator) before 802.1Q-2011 repurposed it for Ethernet."},
+        {label:"VID",k:"enum",r:[4,15],val:"100",body:"12-bit VLAN ID, giving 4094 usable VLANs (0 and 4095 are reserved). This is the field that actually segments the broadcast domain."}
       ]],
-    "block-gratuitous":["byte",
-      [0x00,0x01,0x08,0x00,0x06,0x04,0x00,0x01,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0xC0,0x00,0x02,0x0A,0x00,0x00,0x00,0x00,0x00,0x00,0xC0,0x00,0x02,0x0A],
+    "block-preamble":["byte",
+      [0xAA,0xAA,0xAA,0xAA,0xAA,0xAA,0xAA,0xAB],
       [
-        {label:"hardware type",k:"enum",r:[0,1],val:"Ethernet (1)"},
-        {label:"protocol type",k:"enum",r:[2,3],val:"IPv4 (0x0800)"},
-        {label:"hw addr length",k:"enum",r:[4,4],val:"6"},
-        {label:"proto addr length",k:"enum",r:[5,5],val:"4"},
-        {label:"operation",k:"flag",r:[6,7],val:"Request (1) - shaped like a request",sel:0,branch:OPER_TYPES},
-        {label:"sender hw addr",k:"sync",r:[8,13],val:"00:1a:2b:3c:4d:5e"},
-        {label:"sender proto addr",k:"sync",r:[14,17],val:"192.0.2.10"},
-        {label:"target hw addr",k:"rsv",r:[18,23],val:"00:00:00:00:00:00 (unused, as in any request)"},
-        {label:"target proto addr",k:"sync",r:[24,27],val:"192.0.2.10 (identical to sender protocol addr - the whole point)"}
+        {label:"preamble",k:"rsv",r:[0,6],val:"0xAA × 7",body:"Seven bytes of alternating 1/0 bits (10101010) - lets the receiver's clock-recovery circuitry lock onto the sender's bit rate before any real data arrives."},
+        {label:"SFD",k:"sync",r:[7,7],val:"0xAB (10101011)",body:"Start Frame Delimiter - breaks the alternating pattern with two 1-bits in a row, telling the receiver \"the next bit starts the actual frame.\""}
       ]],
-    "block-rarp":["byte",
-      [0x00,0x01,0x08,0x00,0x06,0x04,0x00,0x03,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0x00,0x00,0x00,0x00,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0x00,0x00,0x00,0x00],
+    "block-fcs-frame":["byte",
+      [0x00,0x1A,0x2B,0x3C,0x4D,0x5E, 0x00,0x5E,0x4D,0x3C,0x2B,0x1A, 0x08,0x00, 0x44,0x41,0x54,0x41],
       [
-        {label:"hardware type",k:"enum",r:[0,1],val:"Ethernet (1)"},
-        {label:"protocol type",k:"enum",r:[2,3],val:"IPv4 (0x0800)"},
-        {label:"hw addr length",k:"enum",r:[4,4],val:"6"},
-        {label:"proto addr length",k:"enum",r:[5,5],val:"4"},
-        {label:"operation",k:"flag",r:[6,7],val:"RARP Request (3)",sel:2,branch:OPER_TYPES},
-        {label:"sender hw addr",k:"sync",r:[8,13],val:"00:1a:2b:3c:4d:5e (the asker's own MAC)"},
-        {label:"sender proto addr",k:"sync",r:[14,17],val:"0.0.0.0 (unknown - that's the question)"},
-        {label:"target hw addr",k:"sync",r:[18,23],val:"00:1a:2b:3c:4d:5e (repeats the asker's own MAC)"},
-        {label:"target proto addr",k:"sync",r:[24,27],val:"0.0.0.0 (unknown until the server replies)"}
-      ]]
+        {label:"destination",k:"sync",r:[0,5],val:"00:1a:2b:3c:4d:5e"},
+        {label:"source",k:"sync",r:[6,11],val:"00:5e:4d:3c:2b:1a"},
+        {label:"EtherType",k:"enum",r:[12,13],val:"IPv4 (0x0800)"},
+        {label:"payload",k:"sync",r:[14,17],val:"\"DATA\" (illustrative)",body:"Only 4 bytes for this demonstration - a real frame pads to at least 46 bytes of payload so the whole frame reaches Ethernet's 64-byte minimum."}
+      ]],
+    "block-fcs":["byte",
+      [0x25,0xDA,0xB5,0x3B],
+      [{label:"FCS",k:"flag",r:[0,3],val:"0x25DAB53B (LE) = CRC-32 0x3BB5DA25",body:"CRC-32 computed over every byte of the frame above (destination through payload) - the same CRC-32 used by gzip/PNG/zlib. Stored least-significant-byte first, which is why the bytes here read in the opposite order from the 0x3BB5DA25 value they represent."}]
+      ]
   };
 
   var built={};
@@ -364,7 +389,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   });});
   var initial=(location.hash||"").replace("#","");
   if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
-  else buildPanel("request");
+  else buildPanel("overview");
 
   var tbtn=document.getElementById("theme-toggle");
   function currentTheme(){return document.documentElement.getAttribute("data-theme")||"light";}

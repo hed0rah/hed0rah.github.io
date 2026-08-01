@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>protocols-fun / ARP anatomy</title>
+<title>protocols-fun / HTTP anatomy</title>
 <script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -119,6 +119,10 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
 .detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
 
+.compare{width:100%;border-collapse:collapse;font-size:0.78rem;margin:0.6rem 0 1.2rem;max-width:76ch}
+.compare th,.compare td{border:1px solid var(--hair);padding:0.4rem 0.7rem;text-align:left;vertical-align:top}
+.compare th{background:var(--panel);color:var(--ink);font-weight:500;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.06em}
+
 footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
 </style>
@@ -128,17 +132,17 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   <div class="head">
     <div class="row">
-      <div class="title"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>ARP Anatomy</h1></div>
-      <div class="stamp"><b>RFC 826 (1982)</b>"who has this IP?" - broadcast, no authentication<br>rev 2026.08</div>
+      <div class="title"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>HTTP Anatomy</h1></div>
+      <div class="stamp"><b>RFC 9110-9114 (2022)</b>plain text until 2015, then a binary rewrite<br>rev 2026.08</div>
     </div>
     <div class="strip">
-      <div>header <b>28 bytes (Ethernet/IPv4)</b></div><div>auth <b>none</b></div>
-      <div>historical sibling <b>RARP, RFC 903</b></div><div>see also <b>../index.html</b></div>
+      <div>1.1 framing <b>CRLF-delimited text</b></div><div>2/3 framing <b>binary, length-prefixed</b></div>
+      <div>transport <b>TCP (1.x, 2), QUIC/UDP (3)</b></div><div>see also <b>../index.html</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede"><a href="https://www.rfc-editor.org/rfc/rfc826">RFC 826</a> (1982) - resolves an IPv4 address to a link-layer (MAC) address by broadcasting the question to the entire segment. The format is deliberately hardware/protocol-agnostic (that's what the length fields are for), but Ethernet+IPv4 is the pairing that ever mattered in practice, so that's the 28-byte layout every tab here uses. There's no authentication anywhere in this protocol - anyone on the segment can answer any question, which is the entire basis of ARP spoofing. IPv6 replaced this mechanism outright with multicast-based Neighbor Discovery rather than patching it; see <a href="https://github.com/hed0rah/ipv6-fun">ipv6-fun</a>'s coverage of NS/NA. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
+  <p class="lede">HTTP/1.1 (<a href="https://www.rfc-editor.org/rfc/rfc9112">RFC 9112</a>) is the rare protocol whose wire format you can read with your eyes - a request or response is just ASCII text, lines separated by CRLF, headers separated from the body by a blank line. HTTP/2 (<a href="https://www.rfc-editor.org/rfc/rfc9113">RFC 9113</a>) threw that out entirely for a binary, length-prefixed frame format built to multiplex many requests over one TCP connection. Both are diagrammed here byte by byte. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">blue</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -151,46 +155,67 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   </div>
 
   <div class="tabs" id="tabs">
-    <button class="tab on" data-p="request">Request<small>oper 1</small></button>
-    <button class="tab" data-p="reply">Reply<small>oper 2</small></button>
-    <button class="tab" data-p="gratuitous">Gratuitous<small>spa = tpa</small></button>
-    <button class="tab" data-p="rarp">RARP<small>oper 3 - obsolete</small></button>
+    <button class="tab on" data-p="overview">Request<small>1.1, plain text</small></button>
+    <button class="tab" data-p="response">Response<small>status line</small></button>
+    <button class="tab" data-p="chunked">Chunked<small>Transfer-Encoding</small></button>
+    <button class="tab" data-p="h2">HTTP/2 Frame<small>binary framing</small></button>
+    <button class="tab" data-p="timeline">Timeline<small>0.9 &rarr; 3</small></button>
   </div>
   <div class="panelwrap">
 
-    <div class="panel on" data-panel="request">
-      <div class="pfacts"><span>size<b>28 bytes</b></span><span>sent to<b>broadcast, ff:ff:ff:ff:ff:ff</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">"Who has 192.0.2.1? Tell 192.0.2.10." The target hardware address is unfilled - that's exactly what's being asked for.</p>
-      <div class="sec">ARP Request (28 bytes)</div>
+    <div class="panel on" data-panel="overview">
+      <div class="pfacts"><span>method<b>GET</b></span><span>spec<b>RFC 9112 &sect;3</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A minimal HTTP/1.1 GET request: a request line, one header, and the blank line that ends the header block. Every byte here is printable ASCII - there is no separate "header" structure at the wire level, just text with a rigid grammar.</p>
+      <div class="sec">request line + Host header (37 bytes)</div>
       <div id="block-request" data-build></div>
+      <div class="callout"><b>why Host became mandatory.</b> RFC 1945's HTTP/1.0 had no Host header at all - a request carried no way to say which site on a shared IP address it wanted, which is why name-based virtual hosting didn't exist yet. RFC 9112 makes Host mandatory on every HTTP/1.1 request; a server MUST reject a request that lacks one with 400 Bad Request.</div>
     </div>
 
-    <div class="panel" data-panel="reply">
-      <div class="pfacts"><span>size<b>28 bytes</b></span><span>sent<b>unicast, straight back to the requester</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">"192.0.2.1 is at 00:aa:bb:cc:dd:ee." Sender and target fields swap roles compared to the request - the answerer's address is now the "sender," the original asker is now the "target."</p>
-      <div class="sec">ARP Reply (28 bytes)</div>
-      <div id="block-reply" data-build></div>
+    <div class="panel" data-panel="response">
+      <div class="pfacts"><span>status<b>200 OK</b></span><span>spec<b>RFC 9112 &sect;4</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The status line mirrors the request line's shape: version, a space-delimited code, and a human-readable reason phrase that's purely cosmetic - clients are required to key behavior off the numeric code, never the phrase text.</p>
+      <div class="sec">status line + Content-Length header (39 bytes)</div>
+      <div id="block-response" data-build></div>
+      <div class="callout"><b>reason phrases are decoration.</b> RFC 9112 explicitly allows a server to send any reason phrase, or an empty one, without changing meaning - "200 OK" and "200 " are equally valid. Everything a client does with the response is driven by the 3-digit code alone.</div>
     </div>
 
-    <div class="panel" data-panel="gratuitous">
-      <div class="pfacts"><span>size<b>28 bytes</b></span><span>tell<b>sender protocol addr = target protocol addr</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A host announces its own mapping unprompted - nobody asked. Used to pre-populate everyone else's cache after booting or changing MAC (fewer stale-cache misses), or defensively to detect a duplicate address (if something else replies "that's mine," you have a conflict). The functional ancestor of gratuitous NDP Neighbor Advertisements - same idea, same lack of any authentication to stop someone else from doing it maliciously.</p>
-      <div class="sec">Gratuitous ARP (28 bytes)</div>
-      <p class="note">Structurally just an ARP Request where the sender already knows the answer.</p>
-      <div id="block-gratuitous" data-build></div>
+    <div class="panel" data-panel="chunked">
+      <div class="pfacts"><span>use case<b>body length unknown up front</b></span><span>spec<b>RFC 9112 &sect;7.1</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">When a server can't compute Content-Length ahead of time - a dynamically generated response, a live stream - it sends the body as a series of chunks, each prefixed by its own size in hex, ending with a zero-length chunk.</p>
+      <div class="sec">chunked body: "Hello" in one chunk, then terminator (15 bytes)</div>
+      <div id="block-chunked" data-build></div>
+      <div class="callout"><b>request smuggling lives here.</b> A message that somehow has both a Content-Length and a Transfer-Encoding header lets a front-end proxy and a back-end server disagree about where the body ends - each may trust a different header. RFC 9112 &sect;6.1 mandates rejecting or stripping such messages precisely because HTTP/1.1's text framing gives an attacker two competing ways to say "how long is this body."</div>
     </div>
 
-    <div class="panel" data-panel="rarp">
-      <div class="pfacts"><span>oper<b>3 (request) / 4 (reply)</b></span><span>status<b>obsolete - replaced by BOOTP/DHCP</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Reverse ARP (RFC 903, 1984): a diskless workstation that knows its own MAC but not its IP broadcasts to ask the reverse question ARP normally answers. Same 28-byte shape, same field meanings - the asker just repeats its own MAC in both the sender and target hardware fields, since it's asking about itself.</p>
-      <div class="sec">RARP Request, historical (28 bytes)</div>
-      <div id="block-rarp" data-build></div>
-      <div class="callout"><b>replaced, not patched.</b> RARP had real limits - no way to hand out anything besides an IP address, and it required a server on every physical segment since RARP requests don't route. BOOTP (RFC 951, 1985) replaced it, and DHCP (RFC 2131, see the DHCP anatomy page) then extended BOOTP rather than replacing it a second time.</div>
+    <div class="panel" data-panel="h2">
+      <div class="pfacts"><span>frame type<b>HEADERS (1)</b></span><span>spec<b>RFC 9113 &sect;4.1</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Every HTTP/2 frame opens with this same 9-byte header, no matter its type. There is no text left anywhere in the framing layer - length, type, and flags are raw binary, and headers themselves get compressed with HPACK before being carried as frame payload.</p>
+      <div class="sec">generic frame header, all types (9 bytes)</div>
+      <div id="block-h2hdr" data-build></div>
+      <div class="sec">flags byte, HEADERS frame type</div>
+      <div id="block-h2flags" data-build></div>
+      <div class="callout"><b>what multiplexing actually buys.</b> Every frame is tagged with a stream ID, so a client can have dozens of requests in flight on one TCP connection and the server can interleave DATA frames from all of them in any order - solving the head-of-line blocking that forced HTTP/1.1 clients to open six-plus parallel TCP connections per origin just to load a page in parallel.</div>
+    </div>
+
+    <div class="panel" data-panel="timeline">
+      <div class="pfacts"><span>1991<b>HTTP/0.9, one line, no headers</b></span><span>1997-2014<b>HTTP/1.x, text framing</b></span><span>2015-2022<b>HTTP/2 &amp; 3, binary framing</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The one true wire-format break in HTTP's history is 1.1 to 2 - everything before that added headers, methods, and caching semantics onto the same text grammar; HTTP/2 replaced the grammar itself.</p>
+      <table class="compare">
+        <thead><tr><th>version</th><th>spec</th><th>what changed on the wire</th></tr></thead>
+        <tbody>
+          <tr><td>0.9</td><td>1991, no RFC - described after the fact</td><td>a single line: "GET /path". No version token, no headers, no status line - the response was raw document bytes and the connection just closed.</td></tr>
+          <tr><td>1.0</td><td>RFC 1945 (1996)</td><td>added the version token, a status line, and headers - but no Host header, and one request per TCP connection by default.</td></tr>
+          <tr><td>1.1</td><td>RFC 2068/2616 (1997/1999), respecified as RFC 7230-7235 (2014) and RFC 9110-9112 (2022)</td><td>mandatory Host header, persistent connections by default, chunked transfer encoding, pipelining (rarely used in practice) - still the same CRLF text grammar throughout every respec.</td></tr>
+          <tr><td>2</td><td>RFC 7540 (2015), respecified as RFC 9113 (2022)</td><td>binary framing, one TCP connection multiplexing many streams, HPACK header compression - the format this page's HTTP/2 Frame tab diagrams.</td></tr>
+          <tr><td>3</td><td>RFC 9114 (2022)</td><td>keeps HTTP/2's framing concepts but moves transport from TCP to QUIC over UDP, eliminating TCP-level head-of-line blocking between streams.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>the pattern.</b> HTTP/0.9 through 1.1 is one 23-year lineage of the same text grammar getting more rules bolted onto it. HTTP/2 didn't extend that grammar - it replaced the framing layer outright and pushed HPACK compression underneath, while keeping the same methods, status codes, and header semantics a browser already understood.</div>
     </div>
 
   </div>
 
-  <footer><span>protocols-fun / ARP anatomy</span><span>RFC 826 . RFC 903</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
+  <footer><span>protocols-fun / HTTP anatomy</span><span>RFC 1945 . RFC 9112 . RFC 9113</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
 </div>
 
 <button class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark theme">theme</button>
@@ -286,60 +311,73 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     dcol.style.minHeight=(maxH+6)+"px";
   }
 
-  var OPER_TYPES=[["1","Request"],["2","Reply"],["3","RARP Request"],["4","RARP Reply"]];
+  var FRAME_TYPES=[["0x0","DATA"],["0x1","HEADERS"],["0x2","PRIORITY"],["0x3","RST_STREAM"],["0x4","SETTINGS"],["0x5","PUSH_PROMISE"],["0x6","PING"],["0x7","GOAWAY"],["0x8","WINDOW_UPDATE"],["0x9","CONTINUATION"]];
 
   var SPECS={
     "block-request":["byte",
-      [0x00,0x01,0x08,0x00,0x06,0x04,0x00,0x01,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0xC0,0x00,0x02,0x0A,0x00,0x00,0x00,0x00,0x00,0x00,0xC0,0x00,0x02,0x01],
+      [0x47,0x45,0x54,0x20,0x2F,0x20,0x48,0x54,0x54,0x50,0x2F,0x31,0x2E,0x31,0x0D,0x0A,
+       0x48,0x6F,0x73,0x74,0x3A,0x20,0x65,0x78,0x61,0x6D,0x70,0x6C,0x65,0x2E,0x63,0x6F,0x6D,0x0D,0x0A,0x0D,0x0A],
       [
-        {label:"hardware type",k:"enum",r:[0,1],val:"Ethernet (1)",body:"Identifies the link-layer technology in use. Ethernet is 1; the field exists so ARP could in principle run over other link layers too."},
-        {label:"protocol type",k:"enum",r:[2,3],val:"IPv4 (0x0800)",body:"Same value space as Ethernet's EtherType field - 0x0800 for IPv4 here means \"the addresses below are IPv4 addresses.\""},
-        {label:"hw addr length",k:"enum",r:[4,4],val:"6",body:"Length in bytes of each hardware address below - 6 for a MAC."},
-        {label:"proto addr length",k:"enum",r:[5,5],val:"4",body:"Length in bytes of each protocol address below - 4 for IPv4."},
-        {label:"operation",k:"flag",r:[6,7],val:"Request (1)",sel:0,branch:OPER_TYPES},
-        {label:"sender hw addr",k:"sync",r:[8,13],val:"00:1a:2b:3c:4d:5e"},
-        {label:"sender proto addr",k:"sync",r:[14,17],val:"192.0.2.10"},
-        {label:"target hw addr",k:"rsv",r:[18,23],val:"00:00:00:00:00:00 (unknown - that's the question)"},
-        {label:"target proto addr",k:"sync",r:[24,27],val:"192.0.2.1"}
+        {label:"method",k:"enum",r:[0,2],val:"GET",sel:0,branch:[["GET","retrieve a representation"],["POST","submit data"],["PUT","replace a resource"],["DELETE","remove a resource"],["HEAD","GET without a body"],["OPTIONS","query allowed methods"]]},
+        {label:"SP",k:"rsv",r:[3,3],val:"0x20",body:"A single space - the request line's three components are separated only by this, nothing more forgiving."},
+        {label:"request-target",k:"sync",r:[4,4],val:"/",body:"The path (plus optional query string) being requested. Here, just the root."},
+        {label:"SP",k:"rsv",r:[5,5],val:"0x20"},
+        {label:"HTTP-version",k:"enum",r:[6,13],val:"HTTP/1.1",body:"Literal ASCII text - not a binary version number. This exact 8-byte token is how a server tells 1.0 requests from 1.1 ones."},
+        {label:"CRLF",k:"rsv",r:[14,15],val:"\\r\\n",body:"Ends the request line. RFC 9112 requires CRLF specifically - a bare LF is tolerated by many servers in practice but not to spec."},
+        {label:"header name",k:"sync",r:[16,19],val:"Host",body:"Case-insensitive per spec, conventionally sent capitalized. Mandatory on every HTTP/1.1 request - see the callout below."},
+        {label:"colon",k:"rsv",r:[20,20],val:"0x3A"},
+        {label:"SP",k:"rsv",r:[21,21],val:"0x20",body:"Optional whitespace after the colon by spec, but universally sent by real clients."},
+        {label:"header value",k:"sync",r:[22,32],val:"example.com"},
+        {label:"CRLF",k:"rsv",r:[33,34],val:"\\r\\n"},
+        {label:"CRLF",k:"rsv",r:[35,36],val:"\\r\\n",body:"A blank line - header name of zero length - marks the end of the header block. A GET has no body, so the message ends here."}
       ]],
-    "block-reply":["byte",
-      [0x00,0x01,0x08,0x00,0x06,0x04,0x00,0x02,0x00,0xAA,0xBB,0xCC,0xDD,0xEE,0xC0,0x00,0x02,0x01,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0xC0,0x00,0x02,0x0A],
+    "block-response":["byte",
+      [0x48,0x54,0x54,0x50,0x2F,0x31,0x2E,0x31,0x20,0x32,0x30,0x30,0x20,0x4F,0x4B,0x0D,0x0A,
+       0x43,0x6F,0x6E,0x74,0x65,0x6E,0x74,0x2D,0x4C,0x65,0x6E,0x67,0x74,0x68,0x3A,0x20,0x31,0x32,0x0D,0x0A,0x0D,0x0A],
       [
-        {label:"hardware type",k:"enum",r:[0,1],val:"Ethernet (1)"},
-        {label:"protocol type",k:"enum",r:[2,3],val:"IPv4 (0x0800)"},
-        {label:"hw addr length",k:"enum",r:[4,4],val:"6"},
-        {label:"proto addr length",k:"enum",r:[5,5],val:"4"},
-        {label:"operation",k:"flag",r:[6,7],val:"Reply (2)",sel:1,branch:OPER_TYPES},
-        {label:"sender hw addr",k:"sync",r:[8,13],val:"00:aa:bb:cc:dd:ee (the answerer)"},
-        {label:"sender proto addr",k:"sync",r:[14,17],val:"192.0.2.1 (the answerer's own IP)"},
-        {label:"target hw addr",k:"sync",r:[18,23],val:"00:1a:2b:3c:4d:5e (the original requester)"},
-        {label:"target proto addr",k:"sync",r:[24,27],val:"192.0.2.10 (the original requester's IP)"}
+        {label:"HTTP-version",k:"enum",r:[0,7],val:"HTTP/1.1"},
+        {label:"SP",k:"rsv",r:[8,8],val:"0x20"},
+        {label:"status-code",k:"enum",r:[9,11],val:"200",sel:0,branch:[["200","OK"],["301","Moved Permanently"],["304","Not Modified"],["400","Bad Request"],["404","Not Found"],["500","Internal Server Error"]]},
+        {label:"SP",k:"rsv",r:[12,12],val:"0x20"},
+        {label:"reason-phrase",k:"sync",r:[13,14],val:"OK",body:"Human-readable only - see the callout below. A client must not branch on this text."},
+        {label:"CRLF",k:"rsv",r:[15,16],val:"\\r\\n"},
+        {label:"header name",k:"sync",r:[17,30],val:"Content-Length",body:"Tells the recipient exactly how many body bytes follow the header block - the alternative to chunked encoding when the length is known ahead of time."},
+        {label:"colon",k:"rsv",r:[31,31],val:"0x3A"},
+        {label:"SP",k:"rsv",r:[32,32],val:"0x20"},
+        {label:"header value",k:"enum",r:[33,34],val:"12"},
+        {label:"CRLF",k:"rsv",r:[35,36],val:"\\r\\n"},
+        {label:"CRLF",k:"rsv",r:[37,38],val:"\\r\\n",body:"End of headers - 12 bytes of body follow immediately after this."}
       ]],
-    "block-gratuitous":["byte",
-      [0x00,0x01,0x08,0x00,0x06,0x04,0x00,0x01,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0xC0,0x00,0x02,0x0A,0x00,0x00,0x00,0x00,0x00,0x00,0xC0,0x00,0x02,0x0A],
+    "block-chunked":["byte",
+      [0x35,0x0D,0x0A,0x48,0x65,0x6C,0x6C,0x6F,0x0D,0x0A,0x30,0x0D,0x0A,0x0D,0x0A],
       [
-        {label:"hardware type",k:"enum",r:[0,1],val:"Ethernet (1)"},
-        {label:"protocol type",k:"enum",r:[2,3],val:"IPv4 (0x0800)"},
-        {label:"hw addr length",k:"enum",r:[4,4],val:"6"},
-        {label:"proto addr length",k:"enum",r:[5,5],val:"4"},
-        {label:"operation",k:"flag",r:[6,7],val:"Request (1) - shaped like a request",sel:0,branch:OPER_TYPES},
-        {label:"sender hw addr",k:"sync",r:[8,13],val:"00:1a:2b:3c:4d:5e"},
-        {label:"sender proto addr",k:"sync",r:[14,17],val:"192.0.2.10"},
-        {label:"target hw addr",k:"rsv",r:[18,23],val:"00:00:00:00:00:00 (unused, as in any request)"},
-        {label:"target proto addr",k:"sync",r:[24,27],val:"192.0.2.10 (identical to sender protocol addr - the whole point)"}
+        {label:"chunk-size",k:"enum",r:[0,0],val:"5 (hex)",body:"The size of the chunk data that follows, in hexadecimal ASCII digits - not binary. \"5\" here means 5 bytes of data."},
+        {label:"CRLF",k:"rsv",r:[1,2],val:"\\r\\n"},
+        {label:"chunk-data",k:"sync",r:[3,7],val:"Hello",body:"Exactly chunk-size bytes - no more, no less."},
+        {label:"CRLF",k:"rsv",r:[8,9],val:"\\r\\n",body:"Every chunk's data is followed by CRLF, even though chunk-size already said how long it was - a built-in consistency check."},
+        {label:"chunk-size",k:"enum",r:[10,10],val:"0",body:"A zero-size chunk is the terminator - it signals end of body. No chunk-data follows a zero-size chunk."},
+        {label:"CRLF",k:"rsv",r:[11,12],val:"\\r\\n"},
+        {label:"trailer end",k:"rsv",r:[13,14],val:"\\r\\n",body:"A second, final CRLF - stands in for an (empty here) trailer section, where a few additional headers computed only after the body was generated are permitted."}
       ]],
-    "block-rarp":["byte",
-      [0x00,0x01,0x08,0x00,0x06,0x04,0x00,0x03,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0x00,0x00,0x00,0x00,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0x00,0x00,0x00,0x00],
+    "block-h2hdr":["byte",
+      [0x00,0x00,0x0C,0x01,0x05,0x00,0x00,0x00,0x01],
       [
-        {label:"hardware type",k:"enum",r:[0,1],val:"Ethernet (1)"},
-        {label:"protocol type",k:"enum",r:[2,3],val:"IPv4 (0x0800)"},
-        {label:"hw addr length",k:"enum",r:[4,4],val:"6"},
-        {label:"proto addr length",k:"enum",r:[5,5],val:"4"},
-        {label:"operation",k:"flag",r:[6,7],val:"RARP Request (3)",sel:2,branch:OPER_TYPES},
-        {label:"sender hw addr",k:"sync",r:[8,13],val:"00:1a:2b:3c:4d:5e (the asker's own MAC)"},
-        {label:"sender proto addr",k:"sync",r:[14,17],val:"0.0.0.0 (unknown - that's the question)"},
-        {label:"target hw addr",k:"sync",r:[18,23],val:"00:1a:2b:3c:4d:5e (repeats the asker's own MAC)"},
-        {label:"target proto addr",k:"sync",r:[24,27],val:"0.0.0.0 (unknown until the server replies)"}
+        {label:"length",k:"enum",r:[0,2],val:"12 bytes",body:"24-bit unsigned length of the frame payload, not counting this 9-byte header. Caps a single frame at 2^24-1 (~16.7 MB) bytes of payload."},
+        {label:"type",k:"enum",r:[3,3],val:"HEADERS (0x1)",sel:1,branch:FRAME_TYPES},
+        {label:"flags",k:"flag",r:[4,4],val:"0x05",body:"Meaning depends entirely on frame type - see the flags-byte block below for what 0x05 means on a HEADERS frame specifically."},
+        {label:"R + stream id",k:"sync",r:[5,8],val:"stream 1 (R=0)",body:"Top bit is reserved (must be 0 on send, ignored on receipt); the remaining 31 bits are the stream identifier. Stream 0 is reserved for connection-level frames like SETTINGS."}
+      ]],
+    "block-h2flags":["bit",
+      [0x05],
+      [
+        {label:"unused",k:"rsv",r:[0,0],val:"0",body:"HEADERS defines only 5 of its 8 flag bits; the rest, including this one, are unused and must be 0."},
+        {label:"PRIORITY",k:"flag",r:[1,1],val:"0",body:"When set, this frame carries priority/dependency data before the header block fragment."},
+        {label:"unused",k:"rsv",r:[2,2],val:"0"},
+        {label:"PADDED",k:"flag",r:[3,3],val:"0",body:"When set, this frame includes a Pad Length byte and trailing padding."},
+        {label:"unused",k:"rsv",r:[4,4],val:"0"},
+        {label:"END_HEADERS",k:"flag",r:[5,5],val:"1 (0x04)",body:"Set here - this frame carries the whole header block, so no CONTINUATION frames follow. A HEADERS frame without this bit must be followed by one or more CONTINUATION frames."},
+        {label:"unused",k:"rsv",r:[6,6],val:"0"},
+        {label:"END_STREAM",k:"flag",r:[7,7],val:"1 (0x01)",body:"Set here - there is no request body, so this HEADERS frame is also the last frame on the stream. Unset, DATA frames would follow."}
       ]]
   };
 
@@ -364,7 +402,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   });});
   var initial=(location.hash||"").replace("#","");
   if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
-  else buildPanel("request");
+  else buildPanel("overview");
 
   var tbtn=document.getElementById("theme-toggle");
   function currentTheme(){return document.documentElement.getAttribute("data-theme")||"light";}

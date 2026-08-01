@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>protocols-fun / ARP anatomy</title>
+<title>protocols-fun / DNS anatomy</title>
 <script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -119,6 +119,10 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
 .detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
 
+.compare{width:100%;border-collapse:collapse;font-size:0.78rem;margin:0.6rem 0 1.2rem;max-width:76ch}
+.compare th,.compare td{border:1px solid var(--hair);padding:0.4rem 0.7rem;text-align:left;vertical-align:top}
+.compare th{background:var(--panel);color:var(--ink);font-weight:500;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.06em}
+
 footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
 </style>
@@ -128,17 +132,17 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   <div class="head">
     <div class="row">
-      <div class="title"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>ARP Anatomy</h1></div>
-      <div class="stamp"><b>RFC 826 (1982)</b>"who has this IP?" - broadcast, no authentication<br>rev 2026.08</div>
+      <div class="title"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>DNS Anatomy</h1></div>
+      <div class="stamp"><b>RFC 1035 (1987)</b>a 12-byte header the whole internet still resolves through<br>rev 2026.08</div>
     </div>
     <div class="strip">
-      <div>header <b>28 bytes (Ethernet/IPv4)</b></div><div>auth <b>none</b></div>
-      <div>historical sibling <b>RARP, RFC 903</b></div><div>see also <b>../index.html</b></div>
+      <div>header <b>12 bytes, fixed</b></div><div>transport <b>UDP/53, TCP/53 fallback</b></div>
+      <div>extended by <b>RFC 6891, EDNS0</b></div><div>see also <b>../index.html</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede"><a href="https://www.rfc-editor.org/rfc/rfc826">RFC 826</a> (1982) - resolves an IPv4 address to a link-layer (MAC) address by broadcasting the question to the entire segment. The format is deliberately hardware/protocol-agnostic (that's what the length fields are for), but Ethernet+IPv4 is the pairing that ever mattered in practice, so that's the 28-byte layout every tab here uses. There's no authentication anywhere in this protocol - anyone on the segment can answer any question, which is the entire basis of ARP spoofing. IPv6 replaced this mechanism outright with multicast-based Neighbor Discovery rather than patching it; see <a href="https://github.com/hed0rah/ipv6-fun">ipv6-fun</a>'s coverage of NS/NA. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
+  <p class="lede">DNS (<a href="https://www.rfc-editor.org/rfc/rfc1035">RFC 1035</a>, 1987) opens every message with the same fixed 12-byte header regardless of whether it's a query or a response - one ID field and two packed flag bytes tell a resolver everything it needs before it even looks at the question. Everything after the header - questions, answers, authority, additional records - is built from one repeating record shape, with a compression scheme to keep repeated names from bloating a message that, for decades, had to fit in a single 512-byte UDP datagram. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">blue</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -151,46 +155,78 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   </div>
 
   <div class="tabs" id="tabs">
-    <button class="tab on" data-p="request">Request<small>oper 1</small></button>
-    <button class="tab" data-p="reply">Reply<small>oper 2</small></button>
-    <button class="tab" data-p="gratuitous">Gratuitous<small>spa = tpa</small></button>
-    <button class="tab" data-p="rarp">RARP<small>oper 3 - obsolete</small></button>
+    <button class="tab on" data-p="overview">Overview<small>query header</small></button>
+    <button class="tab" data-p="flags">Header Flags<small>1987 vs 1999</small></button>
+    <button class="tab" data-p="question">Question<small>QNAME encoding</small></button>
+    <button class="tab" data-p="answer">Answer<small>compression pointer</small></button>
+    <button class="tab" data-p="edns">EDNS0<small>RFC 6891</small></button>
+    <button class="tab" data-p="timeline">Timeline<small>DNSSEC, DoT, DoH</small></button>
   </div>
   <div class="panelwrap">
 
-    <div class="panel on" data-panel="request">
-      <div class="pfacts"><span>size<b>28 bytes</b></span><span>sent to<b>broadcast, ff:ff:ff:ff:ff:ff</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">"Who has 192.0.2.1? Tell 192.0.2.10." The target hardware address is unfilled - that's exactly what's being asked for.</p>
-      <div class="sec">ARP Request (28 bytes)</div>
-      <div id="block-request" data-build></div>
+    <div class="panel on" data-panel="overview">
+      <div class="pfacts"><span>message<b>standard query, A record</b></span><span>spec<b>RFC 1035 &sect;4.1.1</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A resolver asking for example.com's A record, recursion desired. Every DNS message - query or response, over UDP or TCP - opens with exactly this 12-byte shape.</p>
+      <div class="sec">header, ID through ARCOUNT (12 bytes)</div>
+      <div id="block-overview" data-build></div>
     </div>
 
-    <div class="panel" data-panel="reply">
-      <div class="pfacts"><span>size<b>28 bytes</b></span><span>sent<b>unicast, straight back to the requester</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">"192.0.2.1 is at 00:aa:bb:cc:dd:ee." Sender and target fields swap roles compared to the request - the answerer's address is now the "sender," the original asker is now the "target."</p>
-      <div class="sec">ARP Reply (28 bytes)</div>
-      <div id="block-reply" data-build></div>
+    <div class="panel" data-panel="flags">
+      <div class="pfacts"><span>byte 2<b>QR/Opcode/AA/TC/RD - unchanged since 1987</b></span><span>byte 3<b>RA/Z/RCODE, reallocated in 1999</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The first flags byte hasn't moved in almost 40 years. The second byte's 3-bit "must be zero" reserved field is where DNSSEC later carved out two new bits without touching the wire format at all.</p>
+      <div class="sec">byte 2: QR, Opcode, AA, TC, RD</div>
+      <div id="block-flags-b1" data-build></div>
+      <div class="sec">byte 3 (RFC 1035, 1987): RA, Z, RCODE</div>
+      <div id="block-flags-1987" data-build></div>
+      <div class="sec">byte 3 (RFC 2535, 1999): RA, Z, AD, CD, RCODE</div>
+      <div id="block-flags-1999" data-build></div>
+      <div class="callout"><b>same bits, new meaning.</b> RFC 2535 (1999) took two of the three reserved "Z" bits from RFC 1035 and assigned them to AD (Authentic Data - the resolver validated DNSSEC signatures on this answer) and CD (Checking Disabled - please skip validation). No message got longer; a "must be zero, ignored" field just stopped being ignorable, the same way TCP's reserved bits later became ECN's CWR/ECE.</div>
     </div>
 
-    <div class="panel" data-panel="gratuitous">
-      <div class="pfacts"><span>size<b>28 bytes</b></span><span>tell<b>sender protocol addr = target protocol addr</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A host announces its own mapping unprompted - nobody asked. Used to pre-populate everyone else's cache after booting or changing MAC (fewer stale-cache misses), or defensively to detect a duplicate address (if something else replies "that's mine," you have a conflict). The functional ancestor of gratuitous NDP Neighbor Advertisements - same idea, same lack of any authentication to stop someone else from doing it maliciously.</p>
-      <div class="sec">Gratuitous ARP (28 bytes)</div>
-      <p class="note">Structurally just an ARP Request where the sender already knows the answer.</p>
-      <div id="block-gratuitous" data-build></div>
+    <div class="panel" data-panel="question">
+      <div class="pfacts"><span>qname<b>example.com, length-prefixed labels</b></span><span>size<b>17 bytes</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">No length field for the whole name and no separator bytes - each label is prefixed by its own length, and the name ends at a zero-length label (the DNS root). "example.com" is really two labels: 7-byte "example", then 3-byte "com".</p>
+      <div class="sec">QNAME + QTYPE + QCLASS (17 bytes)</div>
+      <div id="block-question" data-build></div>
+      <div class="callout"><b>why length-prefixed instead of null-terminated.</b> A length byte can never be confused with a delimiter, which matters because DNS labels aren't restricted to printable ASCII - RFC 1035 only requires a label to be 1-63 bytes. The top two bits of that length byte are also how the compression scheme in the Answer tab tells "this is a label" (00) apart from "this is a pointer" (11), so no ordinary label can ever be misread as one.</div>
     </div>
 
-    <div class="panel" data-panel="rarp">
-      <div class="pfacts"><span>oper<b>3 (request) / 4 (reply)</b></span><span>status<b>obsolete - replaced by BOOTP/DHCP</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Reverse ARP (RFC 903, 1984): a diskless workstation that knows its own MAC but not its IP broadcasts to ask the reverse question ARP normally answers. Same 28-byte shape, same field meanings - the asker just repeats its own MAC in both the sender and target hardware fields, since it's asking about itself.</p>
-      <div class="sec">RARP Request, historical (28 bytes)</div>
-      <div id="block-rarp" data-build></div>
-      <div class="callout"><b>replaced, not patched.</b> RARP had real limits - no way to hand out anything besides an IP address, and it required a server on every physical segment since RARP requests don't route. BOOTP (RFC 951, 1985) replaced it, and DHCP (RFC 2131, see the DHCP anatomy page) then extended BOOTP rather than replacing it a second time.</div>
+    <div class="panel" data-panel="answer">
+      <div class="pfacts"><span>name<b>0xC00C, a compression pointer</b></span><span>size<b>16 bytes</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Instead of repeating "example.com" again, this answer's NAME field points back at byte offset 12 - exactly where the QNAME started in the Question tab - and reuses it verbatim.</p>
+      <div class="sec">answer resource record for example.com A (16 bytes)</div>
+      <div id="block-answer" data-build></div>
+      <div class="callout"><b>how the pointer is spotted.</b> A 2-byte field whose top two bits are both 1 is a pointer, not a label length - RFC 1035 caps ordinary label lengths at 63 (0b00111111), so a length byte can never legally set both top bits. The remaining 14 bits (0x000C = 12) are a byte offset from the start of the DNS message, which is also why compression can only point backward, never forward, into a message.</div>
+    </div>
+
+    <div class="panel" data-panel="edns">
+      <div class="pfacts"><span>added<b>1999, RFC 2671 &rarr; RFC 6891</b></span><span>size<b>11 bytes</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">EDNS0 doesn't change the 12-byte header at all - it's a pseudo resource record dropped into the additional section, repurposing an RR's CLASS and TTL fields to carry a larger UDP payload size and extra header bits instead of the class/lifetime they'd normally mean.</p>
+      <div class="sec">OPT pseudo-RR in the additional section (11 bytes)</div>
+      <div id="block-edns" data-build></div>
+      <div class="callout"><b>why this exists.</b> RFC 1035 UDP responses were capped at 512 bytes, forcing a retry over TCP for anything bigger - increasingly common once DNSSEC signatures started riding in responses. EDNS0's CLASS field advertises how large a UDP response the sender can actually receive (4096 bytes here), and its repurposed TTL field carries the DO bit that says "please include DNSSEC signatures."</div>
+    </div>
+
+    <div class="panel" data-panel="timeline">
+      <div class="pfacts"><span>1987<b>RFC 1035, base protocol</b></span><span>1999<b>RFC 2535/2671, DNSSEC + EDNS0</b></span><span>2016-18<b>RFC 7858/8484, encrypted transports</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The 12-byte header and the label/RR shapes above have outlived every one of these revisions - each addition either reused reserved bits or rode along as an additional pseudo-record, never forcing a wire-format break.</p>
+      <table class="compare">
+        <thead><tr><th>era</th><th>addition</th><th>how it fit without breaking the header</th></tr></thead>
+        <tbody>
+          <tr><td>1987</td><td>RFC 1035 - names, header, resource records</td><td>the baseline this whole page diagrams</td></tr>
+          <tr><td>1996</td><td>RFC 1996 - NOTIFY, for zone-transfer triggering</td><td>new opcode value (4) in the existing 4-bit Opcode field</td></tr>
+          <tr><td>1999</td><td>RFC 2535 - DNSSEC signatures; RFC 2671 - EDNS0</td><td>AD/CD claimed from the reserved Z bits; EDNS0 added as an OPT pseudo-RR, see the EDNS0 tab</td></tr>
+          <tr><td>2005</td><td>RFC 4033-4035 - DNSSEC redesigned (NSEC, RRSIG, DNSKEY)</td><td>new RR types only - no header or flag changes needed</td></tr>
+          <tr><td>2016</td><td>RFC 7858 - DNS over TLS (DoT), port 853</td><td>same message format, just a TLS-wrapped TCP socket instead of plain UDP/TCP 53</td></tr>
+          <tr><td>2018</td><td>RFC 8484 - DNS over HTTPS (DoH)</td><td>same message format again, carried as the body of an HTTP request/response</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>the pattern.</b> Almost forty years in, nobody has ever had to add a 13th byte to the header or change what QR/Opcode/RD mean. Transport got wrapped (DoT, DoH), the message got bigger records bolted on (DNSSEC, EDNS0), but RFC 1035's core shape is still exactly what's on the wire.</div>
     </div>
 
   </div>
 
-  <footer><span>protocols-fun / ARP anatomy</span><span>RFC 826 . RFC 903</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
+  <footer><span>protocols-fun / DNS anatomy</span><span>RFC 1035 . RFC 2535 . RFC 6891</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
 </div>
 
 <button class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark theme">theme</button>
@@ -286,60 +322,78 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     dcol.style.minHeight=(maxH+6)+"px";
   }
 
-  var OPER_TYPES=[["1","Request"],["2","Reply"],["3","RARP Request"],["4","RARP Reply"]];
+  var OPCODES=[["0","QUERY - standard query"],["1","IQUERY - inverse query, obsoleted by RFC 3425"],["2","STATUS - server status request"],["4","NOTIFY - RFC 1996, zone-transfer trigger"],["5","UPDATE - RFC 2136, dynamic update"]];
+  var RCODES=[["0","NOERROR"],["1","FORMERR - malformed query"],["2","SERVFAIL"],["3","NXDOMAIN - name does not exist"],["4","NOTIMP"],["5","REFUSED"]];
 
   var SPECS={
-    "block-request":["byte",
-      [0x00,0x01,0x08,0x00,0x06,0x04,0x00,0x01,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0xC0,0x00,0x02,0x0A,0x00,0x00,0x00,0x00,0x00,0x00,0xC0,0x00,0x02,0x01],
+    "block-overview":["byte",
+      [0x1A,0x2B,0x01,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x00],
       [
-        {label:"hardware type",k:"enum",r:[0,1],val:"Ethernet (1)",body:"Identifies the link-layer technology in use. Ethernet is 1; the field exists so ARP could in principle run over other link layers too."},
-        {label:"protocol type",k:"enum",r:[2,3],val:"IPv4 (0x0800)",body:"Same value space as Ethernet's EtherType field - 0x0800 for IPv4 here means \"the addresses below are IPv4 addresses.\""},
-        {label:"hw addr length",k:"enum",r:[4,4],val:"6",body:"Length in bytes of each hardware address below - 6 for a MAC."},
-        {label:"proto addr length",k:"enum",r:[5,5],val:"4",body:"Length in bytes of each protocol address below - 4 for IPv4."},
-        {label:"operation",k:"flag",r:[6,7],val:"Request (1)",sel:0,branch:OPER_TYPES},
-        {label:"sender hw addr",k:"sync",r:[8,13],val:"00:1a:2b:3c:4d:5e"},
-        {label:"sender proto addr",k:"sync",r:[14,17],val:"192.0.2.10"},
-        {label:"target hw addr",k:"rsv",r:[18,23],val:"00:00:00:00:00:00 (unknown - that's the question)"},
-        {label:"target proto addr",k:"sync",r:[24,27],val:"192.0.2.1"}
+        {label:"ID",k:"sync",r:[0,1],val:"0x1A2B",body:"Chosen by the querier and echoed back unchanged in the response - the only thing tying a UDP reply to the query that caused it, since UDP itself has no concept of a session."},
+        {label:"flags",k:"flag",r:[2,3],val:"0x0100 (QR=0, RD=1)",body:"Packed bit flags - see the Header Flags tab for the full bit-by-bit breakdown of both bytes."},
+        {label:"QDCOUNT",k:"enum",r:[4,5],val:"1",body:"Number of entries in the Question section. Almost always 1 in practice, though the format allows more."},
+        {label:"ANCOUNT",k:"enum",r:[6,7],val:"0",body:"Number of resource records in the Answer section. Zero here - this is a query, not a response."},
+        {label:"NSCOUNT",k:"enum",r:[8,9],val:"0",body:"Number of records in the Authority section (nameserver records)."},
+        {label:"ARCOUNT",k:"enum",r:[10,11],val:"0",body:"Number of records in the Additional section - this is also where an EDNS0 OPT pseudo-record would be counted, see the EDNS0 tab."}
       ]],
-    "block-reply":["byte",
-      [0x00,0x01,0x08,0x00,0x06,0x04,0x00,0x02,0x00,0xAA,0xBB,0xCC,0xDD,0xEE,0xC0,0x00,0x02,0x01,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0xC0,0x00,0x02,0x0A],
+    "block-flags-b1":["bit",
+      [0x01],
       [
-        {label:"hardware type",k:"enum",r:[0,1],val:"Ethernet (1)"},
-        {label:"protocol type",k:"enum",r:[2,3],val:"IPv4 (0x0800)"},
-        {label:"hw addr length",k:"enum",r:[4,4],val:"6"},
-        {label:"proto addr length",k:"enum",r:[5,5],val:"4"},
-        {label:"operation",k:"flag",r:[6,7],val:"Reply (2)",sel:1,branch:OPER_TYPES},
-        {label:"sender hw addr",k:"sync",r:[8,13],val:"00:aa:bb:cc:dd:ee (the answerer)"},
-        {label:"sender proto addr",k:"sync",r:[14,17],val:"192.0.2.1 (the answerer's own IP)"},
-        {label:"target hw addr",k:"sync",r:[18,23],val:"00:1a:2b:3c:4d:5e (the original requester)"},
-        {label:"target proto addr",k:"sync",r:[24,27],val:"192.0.2.10 (the original requester's IP)"}
+        {label:"QR",k:"flag",r:[0,0],val:"0 (query)",sel:0,branch:[["0","query"],["1","response"]]},
+        {label:"Opcode",k:"enum",r:[1,4],val:"0000 (QUERY)",sel:0,branch:OPCODES,
+          body:"4 bits, unchanged in width since 1987 - new values have been added over the decades (NOTIFY, UPDATE) but the field itself never grew."},
+        {label:"AA",k:"flag",r:[5,5],val:"0",body:"Authoritative Answer - meaningless on a query, only set by a server answering from a zone it's authoritative for."},
+        {label:"TC",k:"flag",r:[6,6],val:"0",body:"TrunCated - set when a UDP response didn't fit and got cut off, telling the resolver to retry over TCP."},
+        {label:"RD",k:"flag",r:[7,7],val:"1 (recursion desired)",body:"Asks the server to chase the answer itself (through other nameservers) instead of just returning what it already knows."}
       ]],
-    "block-gratuitous":["byte",
-      [0x00,0x01,0x08,0x00,0x06,0x04,0x00,0x01,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0xC0,0x00,0x02,0x0A,0x00,0x00,0x00,0x00,0x00,0x00,0xC0,0x00,0x02,0x0A],
+    "block-flags-1987":["bit",
+      [0x00],
       [
-        {label:"hardware type",k:"enum",r:[0,1],val:"Ethernet (1)"},
-        {label:"protocol type",k:"enum",r:[2,3],val:"IPv4 (0x0800)"},
-        {label:"hw addr length",k:"enum",r:[4,4],val:"6"},
-        {label:"proto addr length",k:"enum",r:[5,5],val:"4"},
-        {label:"operation",k:"flag",r:[6,7],val:"Request (1) - shaped like a request",sel:0,branch:OPER_TYPES},
-        {label:"sender hw addr",k:"sync",r:[8,13],val:"00:1a:2b:3c:4d:5e"},
-        {label:"sender proto addr",k:"sync",r:[14,17],val:"192.0.2.10"},
-        {label:"target hw addr",k:"rsv",r:[18,23],val:"00:00:00:00:00:00 (unused, as in any request)"},
-        {label:"target proto addr",k:"sync",r:[24,27],val:"192.0.2.10 (identical to sender protocol addr - the whole point)"}
+        {label:"RA",k:"flag",r:[0,0],val:"0",body:"Recursion Available - set by the server in its response to say whether it's willing to do recursive resolution at all."},
+        {label:"Z",k:"rsv",r:[1,3],val:"000",body:"RFC 1035: \"Reserved for future use. Must be zero in all queries and responses.\" All three bits, unallocated."},
+        {label:"RCODE",k:"enum",r:[4,7],val:"0000 (NOERROR)",sel:0,branch:RCODES}
       ]],
-    "block-rarp":["byte",
-      [0x00,0x01,0x08,0x00,0x06,0x04,0x00,0x03,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0x00,0x00,0x00,0x00,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0x00,0x00,0x00,0x00],
+    "block-flags-1999":["bit",
+      [0x00],
       [
-        {label:"hardware type",k:"enum",r:[0,1],val:"Ethernet (1)"},
-        {label:"protocol type",k:"enum",r:[2,3],val:"IPv4 (0x0800)"},
-        {label:"hw addr length",k:"enum",r:[4,4],val:"6"},
-        {label:"proto addr length",k:"enum",r:[5,5],val:"4"},
-        {label:"operation",k:"flag",r:[6,7],val:"RARP Request (3)",sel:2,branch:OPER_TYPES},
-        {label:"sender hw addr",k:"sync",r:[8,13],val:"00:1a:2b:3c:4d:5e (the asker's own MAC)"},
-        {label:"sender proto addr",k:"sync",r:[14,17],val:"0.0.0.0 (unknown - that's the question)"},
-        {label:"target hw addr",k:"sync",r:[18,23],val:"00:1a:2b:3c:4d:5e (repeats the asker's own MAC)"},
-        {label:"target proto addr",k:"sync",r:[24,27],val:"0.0.0.0 (unknown until the server replies)"}
+        {label:"RA",k:"flag",r:[0,0],val:"0",body:"Unchanged from RFC 1035 - same bit, same meaning."},
+        {label:"Z",k:"rsv",r:[1,1],val:"0",body:"One bit of the original three-bit reserved field is still reserved after RFC 2535 - it stays must-be-zero to this day."},
+        {label:"AD",k:"flag",r:[2,2],val:"0",body:"Authentic Data (RFC 2535, later clarified by RFC 4035) - set by a validating resolver to mean \"I checked the DNSSEC signatures on this answer myself.\""},
+        {label:"CD",k:"flag",r:[3,3],val:"0",body:"Checking Disabled - a resolver asking not to have DNSSEC validation performed on its behalf, e.g. a debugging tool that wants the raw, unvalidated answer."},
+        {label:"RCODE",k:"enum",r:[4,7],val:"0000 (NOERROR)",sel:0,branch:RCODES}
+      ]],
+    "block-question":["byte",
+      [0x07,0x65,0x78,0x61,0x6D,0x70,0x6C,0x65,0x03,0x63,0x6F,0x6D,0x00,0x00,0x01,0x00,0x01],
+      [
+        {label:"length",k:"enum",r:[0,0],val:"7",body:"Length of the next label in bytes. Top two bits are 00, distinguishing this from a compression pointer - see the Answer tab."},
+        {label:"\"example\"",k:"sync",r:[1,7],val:"example",body:"The label's raw bytes - just ASCII here, though DNS labels are technically an opaque byte string, not restricted to hostname-safe characters."},
+        {label:"length",k:"enum",r:[8,8],val:"3",body:"Length of the next (and final) label."},
+        {label:"\"com\"",k:"sync",r:[9,11],val:"com"},
+        {label:"root",k:"rsv",r:[12,12],val:"0x00",body:"A zero-length label - the DNS root. Every fully-qualified name ends here, whether or not it's written with a trailing dot."},
+        {label:"QTYPE",k:"enum",r:[13,14],val:"A (1)",sel:0,branch:[["1","A - IPv4 address"],["2","NS - nameserver"],["5","CNAME - alias"],["15","MX - mail exchange"],["28","AAAA - IPv6 address"],["41","OPT - EDNS0 pseudo-record, see EDNS0 tab"]]},
+        {label:"QCLASS",k:"enum",r:[15,16],val:"IN (1)",body:"Almost always IN (Internet) - CH (Chaos) and HS (Hesiod) exist in the registry but see essentially no modern use outside niche server-status queries."}
+      ]],
+    "block-answer":["byte",
+      [0xC0,0x0C,0x00,0x01,0x00,0x01,0x00,0x00,0x01,0x2C,0x00,0x04,0xC0,0x00,0x02,0x0A],
+      [
+        {label:"NAME",k:"sync",r:[0,1],val:"0xC00C → offset 12 (example.com)",body:"Top two bits (11) mark this as a compression pointer rather than a label length; the remaining 14 bits (0x000C = 12) are a byte offset from the start of the message - exactly where QNAME began in the Question tab."},
+        {label:"TYPE",k:"enum",r:[2,3],val:"A (1)"},
+        {label:"CLASS",k:"enum",r:[4,5],val:"IN (1)"},
+        {label:"TTL",k:"enum",r:[6,9],val:"300 seconds",body:"How long a resolver may cache this record before asking again. Signed 32-bit in the spec, though negative values are meaningless in practice."},
+        {label:"RDLENGTH",k:"enum",r:[10,11],val:"4",body:"Length in bytes of RDATA - lets a parser skip over record types it doesn't understand without knowing their internal structure."},
+        {label:"RDATA",k:"sync",r:[12,15],val:"192.0.2.10",body:"For an A record, exactly 4 bytes: a raw IPv4 address. Every RR type defines its own RDATA shape independently."}
+      ]],
+    "block-edns":["byte",
+      [0x00,0x00,0x29,0x10,0x00,0x00,0x00,0x80,0x00,0x00,0x00],
+      [
+        {label:"NAME",k:"rsv",r:[0,0],val:"0x00 (root)",body:"Must always be the root domain (a single zero byte) - this pseudo-RR isn't naming anything, it's a header extension riding in RR clothing."},
+        {label:"TYPE",k:"enum",r:[1,2],val:"OPT (41)",body:"The value that marks this record as an EDNS0 OPT pseudo-record rather than an ordinary answer."},
+        {label:"UDP payload size",k:"enum",r:[3,4],val:"4096 bytes",body:"Repurposes the CLASS field - not a record class at all here, but the largest UDP response the sender claims it can receive/reassemble, well past RFC 1035's original 512-byte ceiling."},
+        {label:"extended RCODE",k:"enum",r:[5,5],val:"0",body:"Upper 8 bits of a 12-bit RCODE - combines with the header's 4-bit RCODE to allow error codes above 15."},
+        {label:"version",k:"enum",r:[6,6],val:"0 (EDNS0)",body:"EDNS version number. Only version 0 has ever been defined; a server seeing a higher version it doesn't understand must respond with BADVERS."},
+        {label:"flags (DO bit)",k:"flag",r:[7,8],val:"0x8000 (DO=1)",sel:1,branch:[["0x0000","DNSSEC OK not set"],["0x8000","DO bit set - include RRSIG/DNSSEC records if available"]],
+          body:"Repurposes the RR's TTL field. The top bit is DO (DNSSEC OK, RFC 3225) - the rest are reserved and must be zero."},
+        {label:"RDLENGTH",k:"enum",r:[9,10],val:"0",body:"Zero here - no EDNS options (e.g. Client Subnet, Cookie) are attached in this minimal example."}
       ]]
   };
 
@@ -364,7 +418,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   });});
   var initial=(location.hash||"").replace("#","");
   if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
-  else buildPanel("request");
+  else buildPanel("overview");
 
   var tbtn=document.getElementById("theme-toggle");
   function currentTheme(){return document.documentElement.getAttribute("data-theme")||"light";}
