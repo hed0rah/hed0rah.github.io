@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>protocols-fun / TCP anatomy</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E4E7EA; --panel:#ECEEF1; --ink:#181B1E; --soft:#565C63;
+  --faint:#868D93; --line:#C3C9CE; --hair:#D4D9DD;
+  --enum:#1E6E8C; --enum-soft:#D2E4EA;
+  --flag:#B23A2E; --flag-soft:#F0DAD6;
+  --sync:#6B4C9A; --sync-soft:#E3DAEF;
+  --rsv:#8A8D95;  --rsv-soft:rgba(24,27,30,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#12151A;--panel:#1A1E24;--ink:#E7E9EC;--soft:#A3A9AF;--faint:#72787E;--line:#2B3038;--hair:#22262C;--enum:#6EC6E8;--enum-soft:#1B2B33;--flag:#E08A7A;--flag-soft:#34211D;--sync:#B79FDB;--sync-soft:#29223A;--rsv:#B7B9B1;--rsv-soft:rgba(231,233,236,0.04);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+.theme-toggle{position:fixed;bottom:0.9rem;right:0.9rem;z-index:50;font-family:var(--ff);font-size:0.56rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--soft);background:var(--panel);border:1px solid var(--line);padding:0.45rem 0.7rem;cursor:pointer;font-weight:400;transition:color .15s,border-color .15s}
+.theme-toggle:hover{color:var(--enum);border-color:var(--enum)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr auto;align-items:stretch}
+.head .title{padding:0.9rem 1.1rem}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500}
+.lede a{color:var(--enum)}
+.intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
+.intro .lede{margin-bottom:0}
+.sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
+.sig .legrows{display:flex;flex-direction:column;gap:0.42rem}
+.sig .siglabel{writing-mode:vertical-rl;text-orientation:mixed;align-self:stretch;display:flex;align-items:center;justify-content:center;font-size:0.5rem;letter-spacing:0.34em;text-transform:uppercase;color:var(--faint);padding-left:0.9rem;border-left:1px solid var(--hair)}
+.sig .row{display:flex;align-items:center;gap:0.4rem;font-size:0.68rem;color:var(--soft);letter-spacing:0.02em;white-space:nowrap}
+.sig .swsep{color:var(--faint);font-size:0.62rem}
+.sig .sw{display:inline-flex;align-items:center;justify-content:center;width:6.1rem;height:1.45rem;padding:0;font-size:0.58rem;letter-spacing:0.1em;text-transform:lowercase;flex-shrink:0}
+.sig .sw.dark{color:var(--paper)}
+.sig .sw.light{color:var(--ink);border:1px solid var(--hair)}
+.sig .sw.dark.k-enum{background:var(--enum)} .sig .sw.light.k-enum{background:var(--enum-soft)}
+.sig .sw.dark.k-flag{background:var(--flag)} .sig .sw.light.k-flag{background:var(--flag-soft)}
+.sig .sw.dark.k-sync{background:var(--sync)} .sig .sw.light.k-sync{background:var(--sync-soft)}
+.sig .sw.dark.k-rsv{background:var(--faint)} .sig .sw.light.k-rsv{background:var(--rsv-soft)}
+@media(max-width:820px){.intro{display:block}.sig{display:none}}
+.k-en{color:var(--enum)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:2.4rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:74ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.2rem 0 0.4rem;max-width:76ch}
+.callout b{color:var(--ink);font-weight:500}
+
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none;margin-bottom:0}
+.tab{padding:0.55rem 0.9rem;font-size:0.64rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:last-child{border-right:none}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.08em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none}
+.panel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+
+.diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
+.bytegrp{border:1px solid var(--line);background:var(--panel)}
+.bytegrp .ticks{display:flex;border-bottom:1px solid var(--hair)}
+.bytegrp .ticks span{width:1.55rem;text-align:center;font-size:0.5rem;color:var(--faint);padding:2px 0}
+.bytegrp .brow{display:flex}
+.bit{width:1.55rem;height:1.85rem;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--soft);border-right:1px solid var(--hair);transition:background .12s,color .12s;cursor:pointer}
+.bit:last-child{border-right:none}
+.bytegrp .hex{text-align:center;font-size:0.6rem;letter-spacing:0.12em;color:var(--ink);padding:3px 0;border-top:1px solid var(--hair);font-weight:500}
+
+.dbytes{display:flex;flex-wrap:wrap;gap:4px;margin:0.6rem 0 1.4rem}
+.bcol{display:flex;flex-direction:column;align-items:center}
+.bcol .off{font-size:0.5rem;color:var(--faint);margin-bottom:2px;letter-spacing:0.02em}
+.bcell{width:2.5rem;height:1.9rem;display:flex;align-items:center;justify-content:center;font-size:0.78rem;border:1px solid var(--hair);color:var(--soft);transition:background .12s,color .12s;cursor:pointer}
+.bcell.k-sync{background:var(--sync-soft)} .bcell.k-enum{background:var(--enum-soft)}
+.bcell.k-flag{background:var(--flag-soft)} .bcell.k-rsv{background:var(--rsv-soft)}
+.bcell.fstart{border-left:2px solid var(--line)}
+.bcell.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+.bit.k-sync{background:var(--sync-soft)} .bit.k-enum{background:var(--enum-soft)}
+.bit.k-flag{background:var(--flag-soft)} .bit.k-rsv{background:var(--rsv-soft)}
+.bit.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bit.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bit.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bit.hi.k-rsv{background:var(--faint);color:var(--paper)}
+
+.block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
+.left{min-width:0}
+.detailcol{position:relative}
+@media(max-width:820px){.block{grid-template-columns:1fr}.detailcol{position:static}}
+.fields{border-top:1px solid var(--line)}
+.field{display:grid;grid-template-columns:5rem 1fr auto;gap:0.8rem;align-items:baseline;padding:0.46rem 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.field:hover,.field.active,.field.cued{background:var(--panel)}
+.field .fb{font-size:0.6rem;color:var(--faint)} .field .fn{font-size:0.82rem;color:var(--ink)}
+.field[data-branch] .fn::after{content:"+";margin-left:0.4rem;color:var(--enum);font-weight:500}
+.field.active[data-branch] .fn::after{content:"\2212"}
+.fv{font-size:0.76rem;text-align:right}
+.fv.k-sync{color:var(--sync)} .fv.k-enum{color:var(--enum)} .fv.k-flag{color:var(--flag)} .fv.k-rsv{color:var(--faint)}
+.branch{grid-column:1 / -1;display:none;padding:0.5rem 0 0.2rem 5.8rem}
+.field.active .branch{display:block}
+.branch table{border-collapse:collapse;font-size:0.7rem;width:100%;max-width:26rem}
+.branch td{padding:1px 10px 1px 0;color:var(--soft)} .branch td.k{color:var(--faint);width:3.4rem;text-align:right}
+.branch tr.sel td{color:var(--ink)} .branch tr.sel td.k{color:var(--enum);font-weight:500}
+.detail{position:absolute;inset:0;border:1px solid var(--line);background:var(--panel);padding:1rem 1.05rem;overflow-y:auto}
+@media(max-width:820px){.detail{position:static;height:15rem}}
+.detail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
+.detail .dl .kind{color:var(--soft)}
+.detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
+.detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
+.detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
+
+footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>TCP Anatomy</h1></div>
+      <div class="stamp"><b>RFC 9293 (STD 7)</b>the header that hasn't changed since 1981<br>rev 2026.08</div>
+    </div>
+    <div class="strip">
+      <div>header <b>20 bytes fixed</b></div><div>with options <b>up to 60 bytes</b></div>
+      <div>checksum <b>pseudo-header</b></div><div>see also <b>../index.html</b></div>
+    </div>
+  </div>
+
+  <div class="intro">
+  <p class="lede">TCP's 20-byte fixed header is the same shape it was in <a href="https://www.rfc-editor.org/rfc/rfc793">RFC 793</a> (1981). What's changed since is everything built on top of it: the flags byte gained two bits for congestion control in 2001, and the Options field picked up window scaling, selective ACKs, and timestamps - none of which required touching the fixed header at all. <a href="https://www.rfc-editor.org/rfc/rfc9293">RFC 9293</a> (2022) is a full rewrite of the spec, but explicitly changes no wire format - it exists to consolidate 40+ years of clarifications and errata into one document. Every example on this page is <code>192.0.2.10:51234</code> (client) opening a connection to <code>203.0.113.5:443</code> (server) - RFC 5737 documentation addresses. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
+  <aside class="sig" aria-label="color key">
+    <div class="legrows">
+    <div class="row"><span class="sw dark k-enum">blue</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
+    <div class="row"><span class="sw dark k-flag">red</span><span class="swsep">&#8594;</span><span class="sw light k-flag">flag</span></div>
+    <div class="row"><span class="sw dark k-sync">violet</span><span class="swsep">&#8594;</span><span class="sw light k-sync">structural</span></div>
+    <div class="row"><span class="sw dark k-rsv">faint</span><span class="swsep">&#8594;</span><span class="sw light k-rsv">reserved</span></div>
+    </div>
+    <div class="siglabel">color key</div>
+  </aside>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="overview">Overview<small>ports</small></button>
+    <button class="tab" data-p="fixed">Fixed Header<small>20 bytes</small></button>
+    <button class="tab" data-p="flags1981">Flags: 1981<small>RFC 793</small></button>
+    <button class="tab" data-p="flags2001">Flags: 2001+<small>ECN, RFC 3168</small></button>
+    <button class="tab" data-p="options">Options<small>MSS/WS/SACK/TS</small></button>
+  </div>
+  <div class="panelwrap">
+
+    <div class="panel on" data-panel="overview">
+      <div class="pfacts"><span>header<b>20-60 bytes</b></span><span>spec<b>RFC 9293 (STD 7)</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Every TCP segment opens with a 16-bit source port and a 16-bit destination port - that's the entire addressing TCP adds on top of whatever carries it (IPv4 or IPv6). Everything else in the header exists to make a reliable, ordered byte stream out of an unreliable, unordered network.</p>
+      <div class="sec">source &amp; destination ports (4 bytes)</div>
+      <p class="note">Client ephemeral port 51234 connecting to server port 443 (HTTPS).</p>
+      <div id="block-overview" data-build></div>
+      <div class="callout"><b>the header hasn't moved in 44 years.</b> RFC 9293 (2022) obsoletes RFC 793, 879, 2873, 6093, 6429, 6528, and 6691, and updates RFC 1011, 1122, and 5961 - but it's a specification consolidation, not a wire-format change. The 20-byte layout on the Fixed Header tab is byte-for-byte what RFC 793 defined in 1981.</div>
+    </div>
+
+    <div class="panel" data-panel="fixed">
+      <div class="pfacts"><span>size<b>20 bytes, no options</b></span><span>spec<b>RFC 9293 §3.1</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A SYN segment opening a connection - the simplest real TCP header, no options. The Flags tabs zoom into byte 13 across two eras; the Options tab shows what a real modern SYN adds on top of this.</p>
+      <div class="sec">fixed header, a bare SYN (20 bytes)</div>
+      <p class="note">Sequence number is the client's Initial Sequence Number (ISN) - historically meant to be hard to predict, since a guessable ISN is what off-path TCP hijacking attacks target.</p>
+      <div id="block-fixed" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="flags1981">
+      <div class="pfacts"><span>byte<b>13</b></span><span>spec<b>RFC 793 (1981)</b></span><span>bits used<b>6 of 8</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">In the original spec, the two high bits of this byte were just unused Reserved bits - part of a 6-bit reserved field that spanned the end of byte 12 and the start of byte 13. Only 6 control bits existed at all.</p>
+      <div class="sec">flags byte, 1981 (8 bits, 2 reserved)</div>
+      <p class="note">Example: ACK+SYN set (0x12) - a SYN-ACK, the second segment of the three-way handshake.</p>
+      <div id="block-flags1981" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="flags2001">
+      <div class="pfacts"><span>byte<b>13 (same byte)</b></span><span>spec<b>RFC 3168 (2001)</b></span><span>bits used<b>8 of 8</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Explicit Congestion Notification claimed the two previously-reserved bits for CWR and ECE, letting a router mark congestion instead of dropping a packet - if both endpoints negotiated ECN support during the handshake. Same byte, same bit positions, new meaning.</p>
+      <div class="sec">flags byte, 2001+ (8 bits, all assigned)</div>
+      <p class="note">Example: ECE+ACK set (0x50) - the sender is being told a router marked Congestion Experienced on the return path.</p>
+      <div id="block-flags2001" data-build></div>
+      <div class="callout"><b>a ninth flag that didn't stick.</b> <a href="https://www.rfc-editor.org/rfc/rfc3540">RFC 3540</a> (2003) proposed an experimental NS ("nonce sum") bit, carved from what remained of the reserved field, to help detect receivers that lie about ECN to get better throughput. It's now Historic status - never widely deployed, and this page doesn't draw it since sources disagree on its exact final bit position, which is itself a small lesson in how quickly an experimental RFC's details become hard to pin down once nobody implements it.</div>
+    </div>
+
+    <div class="panel" data-panel="options">
+      <div class="pfacts"><span>size<b>20 bytes here, up to 40 total</b></span><span>alignment<b>4-byte boundary</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Everything TCP has gained since 1981 lives here: Maximum Segment Size, Window Scale, SACK Permitted, and Timestamps - the four options a real modern SYN actually carries. Data Offset (in the Fixed Header tab) would read 10 (40 bytes total) with these attached.</p>
+      <div class="sec">a realistic modern SYN's options (20 bytes)</div>
+      <p class="note">MSS 1460 (Ethernet MTU minus IP+TCP headers), Window Scale shift 7 (RFC 7323, obsoletes RFC 1323), SACK Permitted (RFC 2018), and a Timestamps option padded to the 4-byte boundary with a NOP.</p>
+      <div id="block-options" data-build></div>
+    </div>
+
+  </div>
+
+  <div class="callout"><b>documentation-safe example.</b> 192.0.2.10 and 203.0.113.5 are RFC 5737 documentation addresses - the same convention <a href="https://github.com/hed0rah/ipv6-fun">ipv6-fun</a> uses for its IPv4 examples, so nothing on this page is a real routable host.</div>
+
+  <footer><span>protocols-fun / TCP anatomy</span><span>RFC 9293 (STD 7)</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
+</div>
+
+<button class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark theme">theme</button>
+
+<script>
+(function(){
+  var KINDS={sync:"structural",enum:"value",flag:"flag",rsv:"reserved"};
+  function hx(b){return b.toString(16).toUpperCase().padStart(2,"0");}
+
+  function build(mountId, unit, bytes, fields){
+    var mount=document.getElementById(mountId);
+    var N = unit==="bit" ? bytes.length*8 : bytes.length;
+    var owner=new Array(N);
+    fields.forEach(function(f,fi){ for(var i=f.r[0];i<=f.r[1];i++) owner[i]=fi; });
+    var diagram=document.createElement("div");
+    if(unit==="bit"){
+      diagram.className="diagram";
+      for(var bi=0; bi<bytes.length; bi++){
+        var grp=document.createElement("div"); grp.className="bytegrp";
+        var ticks=document.createElement("div"); ticks.className="ticks";
+        var row=document.createElement("div"); row.className="brow";
+        for(var k=0;k<8;k++){
+          var idx=bi*8+k, f=fields[owner[idx]];
+          var t=document.createElement("span"); t.textContent=idx; ticks.appendChild(t);
+          var cell=document.createElement("span"); cell.className="bit k-"+f.k; cell.dataset.idx=idx;
+          if(idx===f.r[0]) cell.classList.add("fstart");
+          cell.textContent=(bytes[bi]>>(7-k))&1; row.appendChild(cell);
+        }
+        var hex=document.createElement("div"); hex.className="hex"; hex.textContent="0x"+hx(bytes[bi]);
+        grp.appendChild(ticks); grp.appendChild(row); grp.appendChild(hex); diagram.appendChild(grp);
+      }
+    } else {
+      diagram.className="dbytes";
+      bytes.forEach(function(b,i){
+        var f=fields[owner[i]];
+        var col=document.createElement("div"); col.className="bcol";
+        var off=document.createElement("div"); off.className="off"; off.textContent="0x"+hx(i); col.appendChild(off);
+        var cell=document.createElement("div"); cell.className="bcell k-"+f.k; cell.dataset.idx=i;
+        if(i===f.r[0]) cell.classList.add("fstart");
+        cell.textContent=hx(b); col.appendChild(cell); diagram.appendChild(col);
+      });
+    }
+    var list=document.createElement("div"); list.className="fields";
+    var aside=document.createElement("aside"); aside.className="detail";
+    aside.innerHTML="<div class='dl'><span>field detail</span><span class='kind'></span></div>"+
+      "<h3>Hover a field or byte</h3><div class='dc'>"+(unit==="bit"?N+" bits":bytes.length+" bytes")+"</div>"+
+      "<p>Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.</p><div class='dn'></div>";
+    var det={t:aside.querySelector("h3"),c:aside.querySelector(".dc"),b:aside.querySelector("p"),n:aside.querySelector(".dn"),kind:aside.querySelector(".kind")};
+    var cells=[].slice.call(diagram.querySelectorAll("[data-idx]"));
+    var rows=[];
+    function light(a,b){cells.forEach(function(c){var i=+c.dataset.idx;c.classList.toggle("hi",i>=a&&i<=b);});}
+    function clearHi(){cells.forEach(function(c){c.classList.remove("hi");});}
+    function rl(f){ return unit==="bit"
+      ? "bits "+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")
+      : "bytes 0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-0x"+hx(f.r[1]):""); }
+    function show(f){det.t.textContent=f.label;det.c.textContent=rl(f)+"  =  "+f.val;
+      det.b.textContent=f.body;det.n.textContent=f.note||"";det.kind.textContent=KINDS[f.k];}
+    function activeRow(){return list.querySelector(".field.active");}
+    function cue(fi){rows.forEach(function(r){r.classList.remove("cued");});rows[fi].classList.add("cued");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    function restore(){rows.forEach(function(r){r.classList.remove("cued");});var a=activeRow();if(a){var fi=+a.dataset.fi;light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}else clearHi();}
+    function pin(fi){var was=rows[fi].classList.contains("active");rows.forEach(function(r){r.classList.remove("active");});if(was){clearHi();return;}rows[fi].classList.add("active");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    fields.forEach(function(f,fi){
+      var row=document.createElement("div"); row.className="field"; row.dataset.fi=fi; if(f.branch) row.dataset.branch="1";
+      var lab = unit==="bit" ? ("b"+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")) : ("0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-"+hx(f.r[1]):""));
+      row.innerHTML="<span class='fb'>"+lab+"</span><span class='fn'>"+f.label+"</span><span class='fv k-"+f.k+"'>"+f.val+"</span>";
+      if(f.branch){
+        var bw=document.createElement("div"); bw.className="branch";
+        bw.innerHTML="<table>"+f.branch.map(function(p,i){return "<tr class='"+(i===f.sel?"sel":"")+"'><td class='k'>"+p[0]+"</td><td>"+p[1]+"</td></tr>";}).join("")+"</table>";
+        row.appendChild(bw);
+      }
+      row.addEventListener("mouseenter",function(){cue(fi);});
+      row.addEventListener("click",function(){pin(fi);});
+      rows.push(row); list.appendChild(row);
+    });
+    cells.forEach(function(c){
+      var fi=owner[+c.dataset.idx];
+      c.addEventListener("mouseenter",function(){cue(fi);});
+      c.addEventListener("click",function(){pin(fi);});
+    });
+    var left=document.createElement("div"); left.className="left";
+    left.appendChild(diagram); left.appendChild(list);
+    var dcol=document.createElement("div"); dcol.className="detailcol"; dcol.appendChild(aside);
+    var block=document.createElement("div"); block.className="block";
+    block.appendChild(left); block.appendChild(dcol);
+    block.addEventListener("mouseleave",restore);
+    mount.appendChild(block);
+    var maxH=aside.scrollHeight;
+    fields.forEach(function(f){ show(f); if(aside.scrollHeight>maxH) maxH=aside.scrollHeight; });
+    det.t.textContent="Hover a field or byte";
+    det.c.textContent=(unit==="bit"?N+" bits":bytes.length+" bytes");
+    det.b.textContent="Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.";
+    det.n.textContent="";
+    dcol.style.minHeight=(maxH+6)+"px";
+  }
+
+  var COMMON_PORTS=[["22","SSH"],["25","SMTP"],["53","DNS"],["80","HTTP"],["179","BGP"],["443","HTTPS"]];
+
+  var SPECS={
+    "block-overview":["byte",
+      [0xC8,0x22,0x01,0xBB],
+      [
+        {label:"source port",k:"enum",r:[0,1],val:"51234 (ephemeral)",
+          body:"Client-chosen, typically from the ephemeral range (49152-65535 per IANA, though Linux defaults to 32768-60999)."},
+        {label:"destination port",k:"enum",r:[2,3],val:"443 (HTTPS)",sel:5,branch:COMMON_PORTS,
+          body:"The well-known port identifying which service on the server this segment is for."}
+      ]],
+    "block-fixed":["byte",
+      [0xC8,0x22,0x01,0xBB,0x12,0x34,0x56,0x78,0x00,0x00,0x00,0x00,0x50,0x02,0xFF,0xFF,0x7F,0x48,0x00,0x00],
+      [
+        {label:"source port",k:"enum",r:[0,1],val:"51234"},
+        {label:"destination port",k:"enum",r:[2,3],val:"443 (HTTPS)",sel:5,branch:COMMON_PORTS},
+        {label:"sequence number",k:"sync",r:[4,7],val:"0x12345678",
+          body:"Position of this segment's first data byte in the stream - here, the client's Initial Sequence Number (ISN) since this is a SYN. Historically meant to be hard to predict; a guessable ISN is what off-path TCP session hijacking targets."},
+        {label:"acknowledgment number",k:"rsv",r:[8,11],val:"0 (unused - no ACK flag set)",
+          body:"Meaningless when ACK isn't set. Once set, it names the next sequence number the sender expects to receive."},
+        {label:"data offset + reserved",k:"enum",r:[12,12],val:"5 (20 bytes, no options)",
+          body:"Top 4 bits: header length in 32-bit words - 5 means exactly 20 bytes, no options. Bottom 4 bits: reserved, must be zero.",
+          note:"0x50 = 0101 0000 -> offset=5, reserved=0000"},
+        {label:"flags",k:"flag",r:[13,13],val:"0x02 (SYN)",sel:0,branch:[
+          ["0x02","SYN - open a connection"],["0x12","SYN+ACK - accept it"],["0x10","ACK - acknowledge only"],
+          ["0x18","PSH+ACK - push data now"],["0x11","FIN+ACK - close, gracefully"],["0x04","RST - abort"]],
+          body:"See the Flags: 1981 and Flags: 2001+ tabs for the bit-by-bit breakdown of this exact byte across two eras."},
+        {label:"window",k:"enum",r:[14,15],val:"65535",body:"How many bytes beyond the acknowledgment number the sender is willing to receive right now - TCP's original flow-control mechanism, before Window Scale existed to go bigger."},
+        {label:"checksum",k:"enum",r:[16,17],val:"0x7F48",
+          body:"One's-complement checksum over a 12-byte IPv4 pseudo-header (src, dst, zero, protocol=6, TCP length) plus the entire segment - header and data both, unlike ICMPv6's checksum which only covers the payload."},
+        {label:"urgent pointer",k:"rsv",r:[18,19],val:"0 (URG not set)",body:"Meaningless when URG isn't set. When it is, points past the end of urgent data in the stream - a feature almost nothing uses today."}
+      ]],
+    "block-flags1981":["bit",
+      [0x12],
+      [
+        {label:"reserved",k:"rsv",r:[0,1],val:"00",body:"Unused in 1981. These exact two bits become CWR and ECE twenty years later - see the Flags: 2001+ tab."},
+        {label:"URG",k:"flag",r:[2,2],val:"0",body:"Urgent Pointer field is significant."},
+        {label:"ACK",k:"flag",r:[3,3],val:"1",body:"Acknowledgment field is significant. Set on every segment after the initial SYN."},
+        {label:"PSH",k:"flag",r:[4,4],val:"0",body:"Push the receive buffer to the application now, don't wait to fill it."},
+        {label:"RST",k:"flag",r:[5,5],val:"0",body:"Reset the connection - abort, not a graceful close."},
+        {label:"SYN",k:"flag",r:[6,6],val:"1",body:"Synchronize sequence numbers - opens a connection. Set on both the first and second segments of the handshake."},
+        {label:"FIN",k:"flag",r:[7,7],val:"0",body:"No more data from the sender - begins a graceful close."}
+      ]],
+    "block-flags2001":["bit",
+      [0x50],
+      [
+        {label:"CWR",k:"flag",r:[0,0],val:"0",sel:0,branch:[["0","no congestion response"],["1","Congestion Window Reduced - I responded to ECE"]],
+          body:"Sender confirming it reduced its congestion window in response to an earlier ECE. Claimed the bit that was Reserved in RFC 793."},
+        {label:"ECE",k:"flag",r:[1,1],val:"1",sel:1,branch:[["0","no congestion signal"],["1","ECN-Echo - a router marked Congestion Experienced"]],
+          body:"Receiver telling the sender that a router marked Congestion Experienced on a packet in this stream, instead of dropping it. The other bit claimed from Reserved."},
+        {label:"URG",k:"flag",r:[2,2],val:"0"},
+        {label:"ACK",k:"flag",r:[3,3],val:"1"},
+        {label:"PSH",k:"flag",r:[4,4],val:"0"},
+        {label:"RST",k:"flag",r:[5,5],val:"0"},
+        {label:"SYN",k:"flag",r:[6,6],val:"0"},
+        {label:"FIN",k:"flag",r:[7,7],val:"0"}
+      ]],
+    "block-options":["byte",
+      [0x02,0x04,0x05,0xB4,0x03,0x03,0x07,0x04,0x02,0x01,0x08,0x0A,0x0A,0x2B,0x3C,0x4D,0x00,0x00,0x00,0x00],
+      [
+        {label:"MSS kind",k:"enum",r:[0,0],val:"Maximum Segment Size (2)",sel:0,branch:[
+          ["1","NOP - alignment padding"],["2","Maximum Segment Size"],["3","Window Scale"],["4","SACK Permitted"],
+          ["5","SACK"],["8","Timestamps"]],
+          body:"TCP option kinds share one registry across every option a segment can carry."},
+        {label:"MSS length",k:"enum",r:[1,1],val:"4"},
+        {label:"MSS value",k:"enum",r:[2,3],val:"1460 bytes",body:"Largest segment this end will accept - 1500-byte Ethernet MTU minus 20 bytes IPv4 and 20 bytes TCP. Never negotiated up, only ever advertised down from this."},
+        {label:"Window Scale kind",k:"enum",r:[4,4],val:"Window Scale (3)"},
+        {label:"Window Scale length",k:"enum",r:[5,5],val:"3"},
+        {label:"Window Scale shift",k:"enum",r:[6,6],val:"7 (x128)",
+          body:"Multiplies the 16-bit Window field by 2^shift, letting a connection advertise up to ~1GB instead of 65535 bytes. RFC 7323 (2014) obsoletes the original RFC 1323 (1992) - only editorial/clarifying changes to the mechanism itself, similar to how RFC 9293 relates to RFC 793."},
+        {label:"SACK Permitted kind",k:"enum",r:[7,7],val:"SACK Permitted (4)"},
+        {label:"SACK Permitted length",k:"enum",r:[8,8],val:"2",body:"Just announces support - the actual SACK option (kind 5) only appears later, on ACKs reporting specific missing ranges after loss. RFC 2018 (1996)."},
+        {label:"NOP",k:"rsv",r:[9,9],val:"1 (padding)",body:"A single alignment byte - options that don't naturally land on a 4-byte boundary get padded with these."},
+        {label:"Timestamps kind",k:"enum",r:[10,10],val:"Timestamps (8)"},
+        {label:"Timestamps length",k:"enum",r:[11,11],val:"10"},
+        {label:"TSval",k:"sync",r:[12,15],val:"0x0A2B3C4D",body:"Sender's current timestamp value - used for round-trip time measurement and (via PAWS) rejecting old duplicate segments on high-speed connections."},
+        {label:"TSecr",k:"rsv",r:[16,19],val:"0 (nothing to echo yet)",body:"Echoes the last TSval received from the peer. Zero here because this is the first segment of the connection - nothing has been received yet."}
+      ]]
+  };
+
+  var built={};
+  function buildPanel(name){
+    var panel=document.querySelector('[data-panel="'+name+'"]'); if(!panel) return;
+    panel.querySelectorAll("[data-build]").forEach(function(m){
+      if(built[m.id]) return; built[m.id]=1;
+      var spec=SPECS[m.id]; if(spec) build(m.id, spec[0], spec[1], spec[2]);
+    });
+  }
+  var tabs=[].slice.call(document.querySelectorAll(".tab"));
+  var panels=[].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    tabs.forEach(function(t){t.classList.toggle("on",t.dataset.p===name);});
+    panels.forEach(function(p){p.classList.toggle("on",p.dataset.panel===name);});
+    buildPanel(name);
+  }
+  tabs.forEach(function(t){t.addEventListener("click",function(){
+    activate(t.dataset.p);
+    if(history.replaceState) history.replaceState(null,"","#"+t.dataset.p);
+  });});
+  var initial=(location.hash||"").replace("#","");
+  if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
+  else buildPanel("overview");
+
+  var tbtn=document.getElementById("theme-toggle");
+  function currentTheme(){return document.documentElement.getAttribute("data-theme")||"light";}
+  function paintToggle(){tbtn.textContent = currentTheme()==="dark" ? "◐ light" : "◑ dark";}
+  tbtn.addEventListener("click",function(){
+    var next = currentTheme()==="dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme",next);
+    try{localStorage.setItem("protofun-theme",next);}catch(e){}
+    paintToggle();
+  });
+  paintToggle();
+})();
+</script>
+</body>
+</html>
