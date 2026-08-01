@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>protocols-fun / ICMPv4 anatomy</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E4E7EA; --panel:#ECEEF1; --ink:#181B1E; --soft:#565C63;
+  --faint:#868D93; --line:#C3C9CE; --hair:#D4D9DD;
+  --enum:#1E6E8C; --enum-soft:#D2E4EA;
+  --flag:#B23A2E; --flag-soft:#F0DAD6;
+  --sync:#6B4C9A; --sync-soft:#E3DAEF;
+  --rsv:#8A8D95;  --rsv-soft:rgba(24,27,30,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#12151A;--panel:#1A1E24;--ink:#E7E9EC;--soft:#A3A9AF;--faint:#72787E;--line:#2B3038;--hair:#22262C;--enum:#6EC6E8;--enum-soft:#1B2B33;--flag:#E08A7A;--flag-soft:#34211D;--sync:#B79FDB;--sync-soft:#29223A;--rsv:#B7B9B1;--rsv-soft:rgba(231,233,236,0.04);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+.theme-toggle{position:fixed;bottom:0.9rem;right:0.9rem;z-index:50;font-family:var(--ff);font-size:0.56rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--soft);background:var(--panel);border:1px solid var(--line);padding:0.45rem 0.7rem;cursor:pointer;font-weight:400;transition:color .15s,border-color .15s}
+.theme-toggle:hover{color:var(--enum);border-color:var(--enum)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr auto;align-items:stretch}
+.head .title{padding:0.9rem 1.1rem}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500}
+.lede a{color:var(--enum)}
+.intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
+.intro .lede{margin-bottom:0}
+.sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
+.sig .legrows{display:flex;flex-direction:column;gap:0.42rem}
+.sig .siglabel{writing-mode:vertical-rl;text-orientation:mixed;align-self:stretch;display:flex;align-items:center;justify-content:center;font-size:0.5rem;letter-spacing:0.34em;text-transform:uppercase;color:var(--faint);padding-left:0.9rem;border-left:1px solid var(--hair)}
+.sig .row{display:flex;align-items:center;gap:0.4rem;font-size:0.68rem;color:var(--soft);letter-spacing:0.02em;white-space:nowrap}
+.sig .swsep{color:var(--faint);font-size:0.62rem}
+.sig .sw{display:inline-flex;align-items:center;justify-content:center;width:6.1rem;height:1.45rem;padding:0;font-size:0.58rem;letter-spacing:0.1em;text-transform:lowercase;flex-shrink:0}
+.sig .sw.dark{color:var(--paper)}
+.sig .sw.light{color:var(--ink);border:1px solid var(--hair)}
+.sig .sw.dark.k-enum{background:var(--enum)} .sig .sw.light.k-enum{background:var(--enum-soft)}
+.sig .sw.dark.k-flag{background:var(--flag)} .sig .sw.light.k-flag{background:var(--flag-soft)}
+.sig .sw.dark.k-sync{background:var(--sync)} .sig .sw.light.k-sync{background:var(--sync-soft)}
+.sig .sw.dark.k-rsv{background:var(--faint)} .sig .sw.light.k-rsv{background:var(--rsv-soft)}
+@media(max-width:820px){.intro{display:block}.sig{display:none}}
+.k-en{color:var(--enum)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:2.4rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:74ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.2rem 0 0.4rem;max-width:76ch}
+.callout b{color:var(--ink);font-weight:500}
+
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none;margin-bottom:0}
+.tab{padding:0.55rem 0.9rem;font-size:0.64rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:last-child{border-right:none}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.08em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none}
+.panel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+
+.diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
+.bytegrp{border:1px solid var(--line);background:var(--panel)}
+.bytegrp .ticks{display:flex;border-bottom:1px solid var(--hair)}
+.bytegrp .ticks span{width:1.55rem;text-align:center;font-size:0.5rem;color:var(--faint);padding:2px 0}
+.bytegrp .brow{display:flex}
+.bit{width:1.55rem;height:1.85rem;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--soft);border-right:1px solid var(--hair);transition:background .12s,color .12s;cursor:pointer}
+.bit:last-child{border-right:none}
+.bytegrp .hex{text-align:center;font-size:0.6rem;letter-spacing:0.12em;color:var(--ink);padding:3px 0;border-top:1px solid var(--hair);font-weight:500}
+
+.dbytes{display:flex;flex-wrap:wrap;gap:4px;margin:0.6rem 0 1.4rem}
+.bcol{display:flex;flex-direction:column;align-items:center}
+.bcol .off{font-size:0.5rem;color:var(--faint);margin-bottom:2px;letter-spacing:0.02em}
+.bcell{width:2.5rem;height:1.9rem;display:flex;align-items:center;justify-content:center;font-size:0.78rem;border:1px solid var(--hair);color:var(--soft);transition:background .12s,color .12s;cursor:pointer}
+.bcell.k-sync{background:var(--sync-soft)} .bcell.k-enum{background:var(--enum-soft)}
+.bcell.k-flag{background:var(--flag-soft)} .bcell.k-rsv{background:var(--rsv-soft)}
+.bcell.fstart{border-left:2px solid var(--line)}
+.bcell.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+
+.block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
+.left{min-width:0}
+.detailcol{position:relative}
+@media(max-width:820px){.block{grid-template-columns:1fr}.detailcol{position:static}}
+.fields{border-top:1px solid var(--line)}
+.field{display:grid;grid-template-columns:5rem 1fr auto;gap:0.8rem;align-items:baseline;padding:0.46rem 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.field:hover,.field.active,.field.cued{background:var(--panel)}
+.field .fb{font-size:0.6rem;color:var(--faint)} .field .fn{font-size:0.82rem;color:var(--ink)}
+.field[data-branch] .fn::after{content:"+";margin-left:0.4rem;color:var(--enum);font-weight:500}
+.field.active[data-branch] .fn::after{content:"\2212"}
+.fv{font-size:0.76rem;text-align:right}
+.fv.k-sync{color:var(--sync)} .fv.k-enum{color:var(--enum)} .fv.k-flag{color:var(--flag)} .fv.k-rsv{color:var(--faint)}
+.branch{grid-column:1 / -1;display:none;padding:0.5rem 0 0.2rem 5.8rem}
+.field.active .branch{display:block}
+.branch table{border-collapse:collapse;font-size:0.7rem;width:100%;max-width:26rem}
+.branch td{padding:1px 10px 1px 0;color:var(--soft)} .branch td.k{color:var(--faint);width:3.4rem;text-align:right}
+.branch tr.sel td{color:var(--ink)} .branch tr.sel td.k{color:var(--enum);font-weight:500}
+.detail{position:absolute;inset:0;border:1px solid var(--line);background:var(--panel);padding:1rem 1.05rem;overflow-y:auto}
+@media(max-width:820px){.detail{position:static;height:15rem}}
+.detail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
+.detail .dl .kind{color:var(--soft)}
+.detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
+.detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
+.detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
+
+footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>ICMPv4 Anatomy</h1></div>
+      <div class="stamp"><b>RFC 792 (1981)</b>errors and diagnostics, no pseudo-header<br>rev 2026.08</div>
+    </div>
+    <div class="strip">
+      <div>header <b>4 bytes + type-specific</b></div><div>checksum <b>message only, no pseudo-header</b></div>
+      <div>type 4 <b>deprecated 2012</b></div><div>see also <b>../index.html</b></div>
+    </div>
+  </div>
+
+  <div class="intro">
+  <p class="lede"><a href="https://www.rfc-editor.org/rfc/rfc792">RFC 792</a> (1981) - errors and diagnostics for IPv4: unreachable destinations, exceeded hop limits, and the Echo Request/Reply pair everyone calls ping. The checksum here is a genuine contrast with <a href="https://github.com/hed0rah/ipv6-fun">ipv6-fun</a>'s ICMPv6: <b>ICMPv4 has no pseudo-header at all</b> - the checksum covers only the ICMP message itself, never the source/destination IP addresses. ICMPv6 added the pseudo-header specifically to close a spoofing/misdelivery gap ICMPv4 never addressed. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
+  <aside class="sig" aria-label="color key">
+    <div class="legrows">
+    <div class="row"><span class="sw dark k-enum">blue</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
+    <div class="row"><span class="sw dark k-flag">red</span><span class="swsep">&#8594;</span><span class="sw light k-flag">flag</span></div>
+    <div class="row"><span class="sw dark k-sync">violet</span><span class="swsep">&#8594;</span><span class="sw light k-sync">structural</span></div>
+    <div class="row"><span class="sw dark k-rsv">faint</span><span class="swsep">&#8594;</span><span class="sw light k-rsv">reserved</span></div>
+    </div>
+    <div class="siglabel">color key</div>
+  </aside>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="overview">Overview<small>generic header</small></button>
+    <button class="tab" data-p="echo">Echo<small>type 8/0 - ping</small></button>
+    <button class="tab" data-p="unreach">Dest. Unreachable<small>type 3</small></button>
+    <button class="tab" data-p="timeexceeded">Time Exceeded<small>type 11</small></button>
+    <button class="tab" data-p="quench">Source Quench<small>type 4 - deprecated</small></button>
+  </div>
+  <div class="panelwrap">
+
+    <div class="panel on" data-panel="overview">
+      <div class="pfacts"><span>header<b>type+code+checksum, 4 bytes</b></span><span>spec<b>RFC 792</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Every ICMPv4 message opens with the same 4 bytes; the type field alone tells a receiver which of roughly a dozen message shapes follows.</p>
+      <div class="sec">generic header (4 bytes)</div>
+      <p class="note">Checksum shown as a placeholder here since a real one needs a full message body - see the other tabs for worked examples.</p>
+      <div id="block-overview" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="echo">
+      <div class="pfacts"><span>type<b>8 (request) / 0 (reply)</b></span><span>size<b>8 bytes + payload</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">What every <code>ping</code> command actually sends. Identifier and sequence let a sender match replies to requests when several pings are in flight at once; the payload is arbitrary and usually just a byte-counting pattern.</p>
+      <div class="sec">Echo Request (16 bytes: 8-byte header + 8-byte payload)</div>
+      <p class="note">A reply is byte-identical except type=0 and the checksum recomputed for that type change.</p>
+      <div id="block-echo" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="unreach">
+      <div class="pfacts"><span>type<b>3</b></span><span>codes<b>0-15</b></span><span>size<b>8 bytes fixed</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">One type, sixteen meanings via the code field. Code 4 is the one with real teeth: "fragmentation needed but the Don't Fragment bit was set" - the message that drives IPv4 Path MTU Discovery, carrying the next hop's MTU in what would otherwise be unused bytes (RFC 1191).</p>
+      <div class="sec">Destination Unreachable, code 4 (8 bytes)</div>
+      <p class="note">A router telling the sender: your packet needed fragmenting, DF was set, so I dropped it - retry at 1480 bytes instead.</p>
+      <div id="block-unreach" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="timeexceeded">
+      <div class="pfacts"><span>type<b>11</b></span><span>code<b>0 (TTL) or 1 (reassembly)</b></span><span>size<b>8 bytes fixed</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Sent when TTL hits zero in transit (code 0) or a fragment reassembly timer expires before all fragments arrive (code 1). Code 0 from every router along a path, one hop-count at a time, is literally what <code>traceroute</code> is built out of.</p>
+      <div class="sec">Time Exceeded, code 0 (8 bytes)</div>
+      <div id="block-timeexceeded" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="quench">
+      <div class="pfacts"><span>type<b>4</b></span><span>status<b>deprecated, RFC 6633 (2012)</b></span><span>size<b>8 bytes fixed</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">In 1981, this was IP's only congestion-control signal: a router sends Source Quench to tell a sender "slow down." Same byte shape as Time Exceeded - the interesting part is entirely what happened to it, not what's in it.</p>
+      <div class="sec">Source Quench, historical (8 bytes)</div>
+      <div id="block-quench" data-build></div>
+      <div class="callout"><b>deprecated, not just unused.</b> <a href="https://www.rfc-editor.org/rfc/rfc6633">RFC 6633</a> (2012) doesn't just note that Source Quench fell out of favor - it mandates active rejection: hosts "MUST NOT send" it, and TCP/UDP/SCTP/DCCP implementations "MUST silently discard" any they receive. Major stacks had already stopped honoring it years earlier; the RFC formalized what was already true in practice. Its replacement for congestion signaling isn't a new ICMP message at all - it's ECN, a couple of repurposed bits in the TCP/IP header itself. See the TCP anatomy page's <a href="../tcp/tcp-anatomy.html#flags2001">Flags: 2001+</a> tab.</div>
+    </div>
+
+  </div>
+
+  <footer><span>protocols-fun / ICMPv4 anatomy</span><span>RFC 792 . RFC 1191 . RFC 6633</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
+</div>
+
+<button class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark theme">theme</button>
+
+<script>
+(function(){
+  var KINDS={sync:"structural",enum:"value",flag:"flag",rsv:"reserved"};
+  function hx(b){return b.toString(16).toUpperCase().padStart(2,"0");}
+
+  function build(mountId, unit, bytes, fields){
+    var mount=document.getElementById(mountId);
+    var N = unit==="bit" ? bytes.length*8 : bytes.length;
+    var owner=new Array(N);
+    fields.forEach(function(f,fi){ for(var i=f.r[0];i<=f.r[1];i++) owner[i]=fi; });
+    var diagram=document.createElement("div");
+    if(unit==="bit"){
+      diagram.className="diagram";
+      for(var bi=0; bi<bytes.length; bi++){
+        var grp=document.createElement("div"); grp.className="bytegrp";
+        var ticks=document.createElement("div"); ticks.className="ticks";
+        var row=document.createElement("div"); row.className="brow";
+        for(var k=0;k<8;k++){
+          var idx=bi*8+k, f=fields[owner[idx]];
+          var t=document.createElement("span"); t.textContent=idx; ticks.appendChild(t);
+          var cell=document.createElement("span"); cell.className="bit k-"+f.k; cell.dataset.idx=idx;
+          if(idx===f.r[0]) cell.classList.add("fstart");
+          cell.textContent=(bytes[bi]>>(7-k))&1; row.appendChild(cell);
+        }
+        var hex=document.createElement("div"); hex.className="hex"; hex.textContent="0x"+hx(bytes[bi]);
+        grp.appendChild(ticks); grp.appendChild(row); grp.appendChild(hex); diagram.appendChild(grp);
+      }
+    } else {
+      diagram.className="dbytes";
+      bytes.forEach(function(b,i){
+        var f=fields[owner[i]];
+        var col=document.createElement("div"); col.className="bcol";
+        var off=document.createElement("div"); off.className="off"; off.textContent="0x"+hx(i); col.appendChild(off);
+        var cell=document.createElement("div"); cell.className="bcell k-"+f.k; cell.dataset.idx=i;
+        if(i===f.r[0]) cell.classList.add("fstart");
+        cell.textContent=hx(b); col.appendChild(cell); diagram.appendChild(col);
+      });
+    }
+    var list=document.createElement("div"); list.className="fields";
+    var aside=document.createElement("aside"); aside.className="detail";
+    aside.innerHTML="<div class='dl'><span>field detail</span><span class='kind'></span></div>"+
+      "<h3>Hover a field or byte</h3><div class='dc'>"+(unit==="bit"?N+" bits":bytes.length+" bytes")+"</div>"+
+      "<p>Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.</p><div class='dn'></div>";
+    var det={t:aside.querySelector("h3"),c:aside.querySelector(".dc"),b:aside.querySelector("p"),n:aside.querySelector(".dn"),kind:aside.querySelector(".kind")};
+    var cells=[].slice.call(diagram.querySelectorAll("[data-idx]"));
+    var rows=[];
+    function light(a,b){cells.forEach(function(c){var i=+c.dataset.idx;c.classList.toggle("hi",i>=a&&i<=b);});}
+    function clearHi(){cells.forEach(function(c){c.classList.remove("hi");});}
+    function rl(f){ return unit==="bit"
+      ? "bits "+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")
+      : "bytes 0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-0x"+hx(f.r[1]):""); }
+    function show(f){det.t.textContent=f.label;det.c.textContent=rl(f)+"  =  "+f.val;
+      det.b.textContent=f.body;det.n.textContent=f.note||"";det.kind.textContent=KINDS[f.k];}
+    function activeRow(){return list.querySelector(".field.active");}
+    function cue(fi){rows.forEach(function(r){r.classList.remove("cued");});rows[fi].classList.add("cued");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    function restore(){rows.forEach(function(r){r.classList.remove("cued");});var a=activeRow();if(a){var fi=+a.dataset.fi;light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}else clearHi();}
+    function pin(fi){var was=rows[fi].classList.contains("active");rows.forEach(function(r){r.classList.remove("active");});if(was){clearHi();return;}rows[fi].classList.add("active");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    fields.forEach(function(f,fi){
+      var row=document.createElement("div"); row.className="field"; row.dataset.fi=fi; if(f.branch) row.dataset.branch="1";
+      var lab = unit==="bit" ? ("b"+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")) : ("0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-"+hx(f.r[1]):""));
+      row.innerHTML="<span class='fb'>"+lab+"</span><span class='fn'>"+f.label+"</span><span class='fv k-"+f.k+"'>"+f.val+"</span>";
+      if(f.branch){
+        var bw=document.createElement("div"); bw.className="branch";
+        bw.innerHTML="<table>"+f.branch.map(function(p,i){return "<tr class='"+(i===f.sel?"sel":"")+"'><td class='k'>"+p[0]+"</td><td>"+p[1]+"</td></tr>";}).join("")+"</table>";
+        row.appendChild(bw);
+      }
+      row.addEventListener("mouseenter",function(){cue(fi);});
+      row.addEventListener("click",function(){pin(fi);});
+      rows.push(row); list.appendChild(row);
+    });
+    cells.forEach(function(c){
+      var fi=owner[+c.dataset.idx];
+      c.addEventListener("mouseenter",function(){cue(fi);});
+      c.addEventListener("click",function(){pin(fi);});
+    });
+    var left=document.createElement("div"); left.className="left";
+    left.appendChild(diagram); left.appendChild(list);
+    var dcol=document.createElement("div"); dcol.className="detailcol"; dcol.appendChild(aside);
+    var block=document.createElement("div"); block.className="block";
+    block.appendChild(left); block.appendChild(dcol);
+    block.addEventListener("mouseleave",restore);
+    mount.appendChild(block);
+    var maxH=aside.scrollHeight;
+    fields.forEach(function(f){ show(f); if(aside.scrollHeight>maxH) maxH=aside.scrollHeight; });
+    det.t.textContent="Hover a field or byte";
+    det.c.textContent=(unit==="bit"?N+" bits":bytes.length+" bytes");
+    det.b.textContent="Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.";
+    det.n.textContent="";
+    dcol.style.minHeight=(maxH+6)+"px";
+  }
+
+  var ICMP4_TYPES=[["0","Echo Reply"],["3","Destination Unreachable"],["4","Source Quench (deprecated 2012)"],
+    ["5","Redirect"],["8","Echo Request"],["11","Time Exceeded"],["12","Parameter Problem"],
+    ["13","Timestamp"],["14","Timestamp Reply"]];
+
+  var SPECS={
+    "block-overview":["byte",
+      [0x08,0x00,0x00,0x00],
+      [
+        {label:"type",k:"enum",r:[0,0],val:"Echo Request (8)",sel:4,branch:ICMP4_TYPES,
+          body:"Identifies the message shape that follows. Unlike ICMPv6, which folds NDP and MLD in here too, ICMPv4's type space is just errors, ping, and a couple of obsolete query types."},
+        {label:"code",k:"enum",r:[1,1],val:"0",body:"Meaning depends on type - 0 for most, but Destination Unreachable alone defines 16 distinct codes."},
+        {label:"checksum",k:"sync",r:[2,3],val:"placeholder",
+          body:"One's-complement checksum over the ICMP message ONLY - no pseudo-header, no source/destination address involved at all. Contrast with ICMPv6, which mandates one.",
+          note:"shown as 0x0000 here since this tab has no body to checksum."}
+      ]],
+    "block-echo":["byte",
+      [0x08,0x00,0xD9,0xBA,0x12,0x34,0x00,0x01,0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07],
+      [
+        {label:"type",k:"enum",r:[0,0],val:"Echo Request (8)",sel:4,branch:ICMP4_TYPES},
+        {label:"code",k:"enum",r:[1,1],val:"0"},
+        {label:"checksum",k:"enum",r:[2,3],val:"0xD9BA",body:"Computed over the full 16-byte message - header, identifier, sequence, and payload together."},
+        {label:"identifier",k:"sync",r:[4,5],val:"0x1234",body:"Chosen by the sender, usually the process ID - lets one host match replies to requests when multiple pings run at once."},
+        {label:"sequence",k:"enum",r:[6,7],val:"1",body:"Increments with each Echo Request from the same identifier, so out-of-order or dropped replies are detectable."},
+        {label:"payload",k:"rsv",r:[8,15],val:"00 01 02 03 04 05 06 07",body:"Arbitrary - most ping implementations send a byte-counting or timestamp pattern here purely to have something to echo back."}
+      ]],
+    "block-unreach":["byte",
+      [0x03,0x04,0xF7,0x33,0x00,0x00,0x05,0xC8],
+      [
+        {label:"type",k:"enum",r:[0,0],val:"Destination Unreachable (3)",sel:1,branch:ICMP4_TYPES},
+        {label:"code",k:"flag",r:[1,1],val:"4 (fragmentation needed, DF set)",sel:0,branch:[
+          ["0","network unreachable"],["1","host unreachable"],["2","protocol unreachable"],
+          ["3","port unreachable"],["4","fragmentation needed and DF set"],["5","source route failed"],
+          ["6-15","various administrative/other"]],
+          body:"Code 4 is the Path MTU Discovery trigger - a router refusing to fragment a DF packet that's too big for the next hop."},
+        {label:"checksum",k:"enum",r:[2,3],val:"0xF733"},
+        {label:"unused",k:"rsv",r:[4,5],val:"0x0000",body:"Zero for code 4 - the general Destination Unreachable format reserves these, but RFC 1191 repurposes them for the next field."},
+        {label:"next-hop MTU",k:"sync",r:[6,7],val:"1480 bytes",body:"RFC 1191: tells the sender exactly what MTU to retry at, instead of making it guess through repeated trial and error."}
+      ]],
+    "block-timeexceeded":["byte",
+      [0x0B,0x00,0xF4,0xFF,0x00,0x00,0x00,0x00],
+      [
+        {label:"type",k:"enum",r:[0,0],val:"Time Exceeded (11)",sel:5,branch:ICMP4_TYPES},
+        {label:"code",k:"flag",r:[1,1],val:"0 (TTL exceeded in transit)",sel:0,branch:[["0","TTL exceeded in transit"],["1","fragment reassembly time exceeded"]]},
+        {label:"checksum",k:"enum",r:[2,3],val:"0xF4FF"},
+        {label:"unused",k:"rsv",r:[4,7],val:"0x00000000"}
+      ]],
+    "block-quench":["byte",
+      [0x04,0x00,0xFB,0xFF,0x00,0x00,0x00,0x00],
+      [
+        {label:"type",k:"enum",r:[0,0],val:"Source Quench (4)",sel:2,branch:ICMP4_TYPES,
+          body:"Historical - RFC 6633 (2012) mandates that hosts MUST NOT send this and MUST silently discard any received. Kept here for what it represents, not because you should implement it."},
+        {label:"code",k:"enum",r:[1,1],val:"0"},
+        {label:"checksum",k:"enum",r:[2,3],val:"0xFBFF"},
+        {label:"unused",k:"rsv",r:[4,7],val:"0x00000000",body:"Always zero - Source Quench never carried more information than \"slow down,\" which is a large part of why it turned out to be useless: no way to say how much, or for how long."}
+      ]]
+  };
+
+  var built={};
+  function buildPanel(name){
+    var panel=document.querySelector('[data-panel="'+name+'"]'); if(!panel) return;
+    panel.querySelectorAll("[data-build]").forEach(function(m){
+      if(built[m.id]) return; built[m.id]=1;
+      var spec=SPECS[m.id]; if(spec) build(m.id, spec[0], spec[1], spec[2]);
+    });
+  }
+  var tabs=[].slice.call(document.querySelectorAll(".tab"));
+  var panels=[].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    tabs.forEach(function(t){t.classList.toggle("on",t.dataset.p===name);});
+    panels.forEach(function(p){p.classList.toggle("on",p.dataset.panel===name);});
+    buildPanel(name);
+  }
+  tabs.forEach(function(t){t.addEventListener("click",function(){
+    activate(t.dataset.p);
+    if(history.replaceState) history.replaceState(null,"","#"+t.dataset.p);
+  });});
+  var initial=(location.hash||"").replace("#","");
+  if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
+  else buildPanel("overview");
+
+  var tbtn=document.getElementById("theme-toggle");
+  function currentTheme(){return document.documentElement.getAttribute("data-theme")||"light";}
+  function paintToggle(){tbtn.textContent = currentTheme()==="dark" ? "◐ light" : "◑ dark";}
+  tbtn.addEventListener("click",function(){
+    var next = currentTheme()==="dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme",next);
+    try{localStorage.setItem("protofun-theme",next);}catch(e){}
+    paintToggle();
+  });
+  paintToggle();
+})();
+</script>
+</body>
+</html>

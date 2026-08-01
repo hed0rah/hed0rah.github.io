@@ -95,7 +95,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
     <div class="strip">
       <div>lines <b>5</b></div><div>stations <b>16</b></div>
-      <div>built <b>2 (TCP, UDP)</b></div><div>engine <b>same as ipv6-fun</b></div>
+      <div>built <b>6 of 16</b></div><div>engine <b>same as ipv6-fun</b></div>
     </div>
   </div>
 
@@ -138,8 +138,8 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
         <!-- stations: Application -->
         <g class="station" data-id="dns"><circle cx="110" cy="90" r="9" fill="var(--panel)" stroke="var(--l-app)" stroke-width="2.5"/><text x="110" y="118" text-anchor="middle" font-size="11" fill="var(--ink)">DNS</text></g>
         <g class="station" data-id="http"><circle cx="260" cy="90" r="9" fill="var(--panel)" stroke="var(--l-app)" stroke-width="2.5"/><text x="260" y="118" text-anchor="middle" font-size="11" fill="var(--ink)">HTTP</text></g>
-        <g class="station" data-id="dhcp"><circle cx="410" cy="90" r="9" fill="var(--panel)" stroke="var(--l-app)" stroke-width="2.5"/><text x="410" y="118" text-anchor="middle" font-size="11" fill="var(--ink)">DHCP</text></g>
-        <g class="station" data-id="snmp"><circle cx="560" cy="90" r="9" fill="var(--panel)" stroke="var(--l-app)" stroke-width="2.5"/><text x="560" y="118" text-anchor="middle" font-size="11" fill="var(--ink)">SNMP</text></g>
+        <g class="station" data-id="dhcp"><circle cx="410" cy="90" r="12" fill="var(--l-app)" stroke="var(--l-app)" stroke-width="2.5"/><text x="410" y="121" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">DHCP</text></g>
+        <g class="station" data-id="snmp"><circle cx="560" cy="90" r="12" fill="var(--l-app)" stroke="var(--l-app)" stroke-width="2.5"/><text x="560" y="121" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">SNMP</text></g>
         <g class="station" data-id="bgp"><circle cx="710" cy="90" r="9" fill="var(--panel)" stroke="var(--l-app)" stroke-width="2.5"/><text x="710" y="118" text-anchor="middle" font-size="11" fill="var(--ink)">BGP</text></g>
 
         <!-- stations: Transport -->
@@ -148,11 +148,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
         <!-- stations: Internet -->
         <g class="station" data-id="ipv4"><circle cx="410" cy="310" r="9" fill="var(--panel)" stroke="var(--l-internet)" stroke-width="2.5"/><text x="410" y="338" text-anchor="middle" font-size="11" fill="var(--ink)">IPv4</text></g>
-        <g class="station" data-id="icmp"><circle cx="560" cy="310" r="9" fill="var(--panel)" stroke="var(--l-internet)" stroke-width="2.5"/><text x="560" y="338" text-anchor="middle" font-size="11" fill="var(--ink)">ICMP</text></g>
+        <g class="station" data-id="icmp"><circle cx="560" cy="310" r="12" fill="var(--l-internet)" stroke="var(--l-internet)" stroke-width="2.5"/><text x="560" y="341" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">ICMP</text></g>
         <g class="station" data-id="ipv6"><circle cx="710" cy="310" r="9" fill="var(--panel)" stroke="var(--l-internet)" stroke-width="2.5" stroke-dasharray="2 3"/><text x="710" y="338" text-anchor="middle" font-size="11" fill="var(--ink)">IPv6</text></g>
 
         <!-- stations: Link -->
-        <g class="station" data-id="arp"><circle cx="410" cy="420" r="9" fill="var(--panel)" stroke="var(--l-link)" stroke-width="2.5"/><text x="410" y="448" text-anchor="middle" font-size="11" fill="var(--ink)">ARP</text></g>
+        <g class="station" data-id="arp"><circle cx="410" cy="420" r="12" fill="var(--l-link)" stroke="var(--l-link)" stroke-width="2.5"/><text x="410" y="451" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">ARP</text></g>
         <g class="station" data-id="ethernet"><circle cx="560" cy="420" r="9" fill="var(--panel)" stroke="var(--l-link)" stroke-width="2.5"/><text x="560" y="448" text-anchor="middle" font-size="11" fill="var(--ink)">Ethernet</text></g>
 
         <!-- stations: Legacy -->
@@ -196,9 +196,9 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       body:"Resolves names to addresses. Runs over UDP for ordinary lookups (fits one packet, no connection setup needed) and falls back to TCP for zone transfers or answers too large for one UDP datagram (RFC 1035, and EDNS0/RFC 6891 for larger UDP responses)."},
     http:  {title:"HTTP", layer:"Application (L7)", built:false, color:"var(--l-app)",
       body:"Runs over TCP (HTTP/1.1, HTTP/2) or over QUIC-over-UDP (HTTP/3, RFC 9114) - one of the few application protocols that has actually moved off TCP in the last few years."},
-    dhcp:  {title:"DHCP", layer:"Application (L7)", built:false, color:"var(--l-app)",
+    dhcp:  {title:"DHCP", layer:"Application (L7)", built:true, color:"var(--l-app)", page:"dhcp/dhcp-anatomy.html",
       body:"Hands out IPv4 addresses and config over UDP (client port 68, server port 67). Predecessor was BOOTP (RFC 951); DHCP (RFC 2131) extended it with leases and options while staying wire-compatible enough that DHCP servers can still answer BOOTP clients."},
-    snmp:  {title:"SNMP", layer:"Application (L7)", built:false, color:"var(--l-app)",
+    snmp:  {title:"SNMP", layer:"Application (L7)", built:true, color:"var(--l-app)", page:"snmp/snmp-anatomy.html",
       body:"Network device monitoring/management over UDP port 161 (traps on 162). Three incompatible major versions exist (v1, v2c, v3) - v3 added real authentication and encryption after v1/v2c's community-string \"security\" was recognized as basically none."},
     bgp:   {title:"BGP", layer:"Application (L7)", built:false, color:"var(--l-app)",
       body:"The protocol that actually routes the internet between autonomous systems. Unusually for a routing protocol, it runs over TCP port 179 (RFC 4271) rather than raw IP - so a BGP session is a long-lived TCP connection."},
@@ -208,11 +208,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       body:"Reliable, ordered, connection-oriented byte streams. The 20-byte fixed header hasn't changed since 1981 - what's evolved is everything built on top of it via Options: window scaling, SACK, timestamps, ECN."},
     ipv4:  {title:"IPv4", layer:"Internet (L3)", built:false, color:"var(--l-internet)",
       body:"32-bit addressing, variable-length header (20-60 bytes) with options, a header checksum recomputed at every hop. RFC 791 (1981) - the address exhaustion this eventually caused is the entire reason IPv6 exists."},
-    icmp:  {title:"ICMPv4", layer:"Internet (L3)", built:false, color:"var(--l-internet)",
+    icmp:  {title:"ICMPv4", layer:"Internet (L3)", built:true, color:"var(--l-internet)", page:"icmpv4/icmpv4-anatomy.html",
       body:"Errors and diagnostics for IPv4 - Destination Unreachable, Time Exceeded, Echo Request/Reply (ping), Redirect. RFC 792. Not the same protocol as ICMPv6, which folds in NDP and MLD too - see ipv6-fun for that one."},
     ipv6:  {title:"IPv6", layer:"Internet (L3)", built:false, color:"var(--l-internet)",
       body:"128-bit addressing, fixed 40-byte header, extension header chain instead of options. Covered in full byte-level depth in the sibling ipv6-fun repo, not duplicated here.", link:"https://github.com/hed0rah/ipv6-fun"},
-    arp:   {title:"ARP", layer:"Link (L2)", built:false, color:"var(--l-link)",
+    arp:   {title:"ARP", layer:"Link (L2)", built:true, color:"var(--l-link)", page:"arp/arp-anatomy.html",
       body:"Resolves an IPv4 address to a MAC address by broadcasting \"who has this IP?\" to the whole segment (RFC 826, 1982). IPv6 replaced this entirely with multicast-based Neighbor Discovery - see ipv6-fun's Neighbor Discovery coverage for the modern equivalent."},
     ethernet: {title:"Ethernet", layer:"Link (L2)", built:false, color:"var(--l-link)",
       body:"The frame format almost everything above it eventually rides on. EtherType (not a length field, since DIX Ethernet II) tells the receiver what's inside: 0x0800 IPv4, 0x0806 ARP, 0x86DD IPv6."},
