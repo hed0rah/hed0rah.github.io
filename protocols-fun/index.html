@@ -93,8 +93,8 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       <div class="stamp"><a href="https://x.com/r3l0z">r3l0z</a> &middot; <a href="https://hed0rah.github.io">hed0rah.github.io</a><br>rev 2026.08</div>
     </div>
     <div class="strip">
-      <div>lines <b>5</b></div><div>stations <b>16</b></div>
-      <div>built <b>15 of 16</b></div><div>engine <b>same as ipv6-fun</b></div>
+      <div>lines <b>5</b></div><div>stations <b>18</b></div>
+      <div>built <b>17 of 18</b></div><div>engine <b>same as ipv6-fun</b></div>
     </div>
   </div>
 
@@ -107,7 +107,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
         <path d="M110,90 L260,90 L410,90 L560,90 L710,90" fill="none" stroke="var(--l-app)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M260,200 L560,200" fill="none" stroke="var(--l-transport)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M410,310 L560,310 L710,310" fill="none" stroke="var(--l-internet)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M410,420 L560,420" fill="none" stroke="var(--l-link)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M410,420 L560,420 L710,420 L860,420" fill="none" stroke="var(--l-link)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M150,520 L320,520 L490,520 L700,520" fill="none" stroke="var(--l-legacy)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 8"/>
 
         <!-- interchange connectors -->
@@ -123,6 +123,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
           <path d="M410,310 L410,420" fill="none"/>
           <path d="M410,310 L560,420" fill="none"/>
           <path d="M710,310 L560,420" fill="none"/>
+          <path d="M710,310 L710,420" fill="none"/>
         </g>
 
         <!-- line labels -->
@@ -151,6 +152,8 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
         <!-- stations: Link -->
         <g class="station" data-id="arp"><circle cx="410" cy="420" r="12" fill="var(--l-link)" stroke="var(--l-link)" stroke-width="2.5"/><text x="410" y="451" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">ARP</text></g>
         <g class="station" data-id="ethernet"><circle cx="560" cy="420" r="12" fill="var(--l-link)" stroke="var(--l-link)" stroke-width="2.5"/><text x="560" y="451" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">Ethernet</text></g>
+        <g class="station" data-id="wifi"><circle cx="710" cy="420" r="12" fill="var(--l-link)" stroke="var(--l-link)" stroke-width="2.5"/><text x="710" y="451" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">Wi-Fi</text></g>
+        <g class="station" data-id="ppp"><circle cx="860" cy="420" r="12" fill="var(--l-link)" stroke="var(--l-link)" stroke-width="2.5"/><text x="860" y="451" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">PPP</text></g>
 
         <!-- stations: Legacy -->
         <g class="station" data-id="ipx"><circle cx="150" cy="520" r="10" fill="var(--l-legacy)" stroke="var(--l-legacy)" stroke-width="2"/><text x="150" y="548" text-anchor="middle" font-size="10" font-weight="600" fill="var(--ink)">IPX</text></g>
@@ -212,6 +215,10 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       body:"Resolves an IPv4 address to a MAC address by broadcasting \"who has this IP?\" to the whole segment (RFC 826, 1982). IPv6 replaced this entirely with multicast-based Neighbor Discovery - see ipv6-fun's Neighbor Discovery coverage for the modern equivalent."},
     ethernet: {title:"Ethernet", layer:"Link (L2)", built:true, color:"var(--l-link)", page:"ethernet/ethernet-anatomy.html",
       body:"The frame format almost everything above it eventually rides on. EtherType (not a length field, since DIX Ethernet II) tells the receiver what's inside: 0x0800 IPv4, 0x0806 ARP, 0x86DD IPv6."},
+    wifi: {title:"Wi-Fi (802.11)", layer:"Link (L2)", built:true, color:"var(--l-link)", page:"wireless/wifi-anatomy.html",
+      body:"Ethernet's wireless counterpart, and considerably messier: a generic MAC header whose Address1-4 meaning shifts depending on the ToDS/FromDS bits, plus decades of bolted-on security (WEP, WPA, WPA2, KRACK, WPA3/802.11w)."},
+    ppp: {title:"PPP", layer:"Link (L2)", built:true, color:"var(--l-link)", page:"wireless/ppp-anatomy.html",
+      body:"HDLC-derived point-to-point framing (RFC 1661/1662) - fixed Address/Control bytes, a Protocol field for multiplexing IP/IPX/its own control protocols, and a real computed CRC-16 FCS. Still what PPPoE tunnels inside Ethernet on most consumer DSL today."},
     ipx:   {title:"IPX", layer:"Legacy / Other", built:true, color:"var(--l-legacy)", page:"legacy/ipx-anatomy.html",
       body:"Novell NetWare's network-layer protocol, once a serious rival to IP on corporate LANs. Addressing embeds the network number and the interface's MAC address directly - no separate ARP needed."},
     pocsag: {title:"POCSAG", layer:"Legacy / Other", built:true, color:"var(--l-legacy)", page:"legacy/pocsag-anatomy.html",
@@ -263,7 +270,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   // build the station index list
   var plist = document.getElementById("plist");
-  var order = ["tcp","udp","ipv4","icmp","ipv6","arp","ethernet","dns","http","dhcp","snmp","bgp","ipx","pocsag","sitor","arpanet-imp"];
+  var order = ["tcp","udp","ipv4","icmp","ipv6","arp","ethernet","wifi","ppp","dns","http","dhcp","snmp","bgp","ipx","pocsag","sitor","arpanet-imp"];
   order.forEach(function(id){
     var s = STATIONS[id];
     var row = document.createElement("div"); row.className = "prow";
