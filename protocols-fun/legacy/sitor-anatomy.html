@@ -22,12 +22,12 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--enum);color:var(--paper)}
-protofun-toggle{position:fixed;bottom:0.7rem;right:0.7rem;z-index:50;display:inline-block;color:var(--soft);cursor:pointer;transition:color .15s}
-protofun-toggle:hover{color:var(--enum)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
 .head .row{display:grid;grid-template-columns:1fr auto;align-items:stretch}
-.head .title{padding:0.9rem 1.1rem}
+.head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem}
+.head .title protofun-toggle{--protofun-w:44px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
+.head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
 .head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
@@ -137,7 +137,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   <div class="head">
     <div class="row">
-      <div class="title"><div class="sysmark">PROTOCOLS-FUN . LEGACY</div><h1>SITOR Anatomy</h1></div>
+      <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . LEGACY</div><h1>SITOR Anatomy</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
       <div class="stamp"><b>CCIR 476, 1960s</b>a 7-bit code that can't fail silently<br>rev 2026.08</div>
     </div>
     <div class="strip">
@@ -206,7 +206,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <footer><span>protocols-fun / SITOR anatomy</span><span>CCIR 476</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
 </div>
 
-<protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle>
 
 <script>
 (function(){
@@ -340,7 +339,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     :host{display:inline-block;line-height:0}
     button{-webkit-appearance:none;appearance:none;background:none;border:0;padding:3px;margin:0;cursor:pointer;color:inherit;border-radius:6px;line-height:0;display:inline-flex}
     button:focus-visible{outline:2px solid currentColor;outline-offset:3px}
-    .box{width:30px;height:63px}
+    .box{width:var(--protofun-w,30px);height:var(--protofun-h,63px)}
     .eyes{transition:opacity .2s}
     .happy-eyes{opacity:0;transition:opacity .2s}
     :host([data-on]) .eyes{opacity:0}
