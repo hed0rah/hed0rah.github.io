@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>protocols-fun / IPX anatomy</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E6EBEE; --panel:#EFF3F5; --ink:#10171C; --soft:#46545E;
+  --faint:#7A8790; --line:#C1CDD3; --hair:#D6E0E4;
+  --enum:#0E7A8C; --enum-soft:#D1E7EA;
+  --flag:#C1501A; --flag-soft:#F0DACB;
+  --sync:#34507E; --sync-soft:#DCE3EE;
+  --rsv:#838E96;  --rsv-soft:rgba(16,23,28,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#0B0906;--panel:#171009;--ink:#FFC24D;--soft:#C98A3D;--faint:#7A5A32;--line:#4A3418;--hair:#2A1E0F;--enum:#FFB300;--enum-soft:#3A2408;--flag:#FF5E1A;--flag-soft:#3D1C0A;--sync:#D99A2E;--sync-soft:#33260C;--rsv:#6B5738;--rsv-soft:rgba(255,179,0,0.05);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+protofun-toggle{position:fixed;bottom:0.7rem;right:0.7rem;z-index:50;display:inline-block;color:var(--soft);cursor:pointer;transition:color .15s}
+protofun-toggle:hover{color:var(--enum)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr auto;align-items:stretch}
+.head .title{padding:0.9rem 1.1rem}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500}
+.intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
+.intro .lede{margin-bottom:0}
+.sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
+.sig .legrows{display:flex;flex-direction:column;gap:0.42rem}
+.sig .siglabel{writing-mode:vertical-rl;text-orientation:mixed;align-self:stretch;display:flex;align-items:center;justify-content:center;font-size:0.5rem;letter-spacing:0.34em;text-transform:uppercase;color:var(--faint);padding-left:0.9rem;border-left:1px solid var(--hair)}
+.sig .row{display:flex;align-items:center;gap:0.4rem;font-size:0.68rem;color:var(--soft);letter-spacing:0.02em;white-space:nowrap}
+.sig .swsep{color:var(--faint);font-size:0.62rem}
+.sig .sw{display:inline-flex;align-items:center;justify-content:center;width:6.1rem;height:1.45rem;padding:0;font-size:0.58rem;letter-spacing:0.1em;text-transform:lowercase;flex-shrink:0}
+.sig .sw.dark{color:var(--paper)}
+.sig .sw.light{color:var(--ink);border:1px solid var(--hair)}
+.sig .sw.dark.k-enum{background:var(--enum)} .sig .sw.light.k-enum{background:var(--enum-soft)}
+.sig .sw.dark.k-flag{background:var(--flag)} .sig .sw.light.k-flag{background:var(--flag-soft)}
+.sig .sw.dark.k-sync{background:var(--sync)} .sig .sw.light.k-sync{background:var(--sync-soft)}
+.sig .sw.dark.k-rsv{background:var(--faint)} .sig .sw.light.k-rsv{background:var(--rsv-soft)}
+@media(max-width:820px){.intro{display:block}.sig{display:none}}
+.k-en{color:var(--enum)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:2.4rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:74ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.2rem 0 0.4rem;max-width:76ch}
+.callout b{color:var(--ink);font-weight:500}
+
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none;margin-bottom:0}
+.tab{padding:0.55rem 0.9rem;font-size:0.64rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:last-child{border-right:none}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.08em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none}
+.panel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+
+.diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
+.bytegrp{border:1px solid var(--line);background:var(--panel)}
+.bytegrp .ticks{display:flex;border-bottom:1px solid var(--hair)}
+.bytegrp .ticks span{width:1.55rem;text-align:center;font-size:0.5rem;color:var(--faint);padding:2px 0}
+.bytegrp .brow{display:flex}
+.bit{width:1.55rem;height:1.85rem;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--soft);border-right:1px solid var(--hair);transition:background .12s,color .12s;cursor:pointer}
+.bit:last-child{border-right:none}
+.bytegrp .hex{text-align:center;font-size:0.6rem;letter-spacing:0.12em;color:var(--ink);padding:3px 0;border-top:1px solid var(--hair);font-weight:500}
+
+.dbytes{display:flex;flex-wrap:wrap;gap:4px;margin:0.6rem 0 1.4rem}
+.bcol{display:flex;flex-direction:column;align-items:center}
+.bcol .off{font-size:0.5rem;color:var(--faint);margin-bottom:2px;letter-spacing:0.02em}
+.bcell{width:2.5rem;height:1.9rem;display:flex;align-items:center;justify-content:center;font-size:0.78rem;border:1px solid var(--hair);color:var(--soft);transition:background .12s,color .12s;cursor:pointer}
+.bcell.k-sync{background:var(--sync-soft)} .bcell.k-enum{background:var(--enum-soft)}
+.bcell.k-flag{background:var(--flag-soft)} .bcell.k-rsv{background:var(--rsv-soft)}
+.bcell.fstart{border-left:2px solid var(--line)}
+.bcell.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+
+.block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
+.left{min-width:0}
+.detailcol{position:relative}
+@media(max-width:820px){.block{grid-template-columns:1fr}.detailcol{position:static}}
+.fields{border-top:1px solid var(--line)}
+.field{display:grid;grid-template-columns:5rem 1fr auto;gap:0.8rem;align-items:baseline;padding:0.46rem 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.field:hover,.field.active,.field.cued{background:var(--panel)}
+.field .fb{font-size:0.6rem;color:var(--faint)} .field .fn{font-size:0.82rem;color:var(--ink)}
+.field[data-branch] .fn::after{content:"+";margin-left:0.4rem;color:var(--enum);font-weight:500}
+.field.active[data-branch] .fn::after{content:"\2212"}
+.fv{font-size:0.76rem;text-align:right}
+.fv.k-sync{color:var(--sync)} .fv.k-enum{color:var(--enum)} .fv.k-flag{color:var(--flag)} .fv.k-rsv{color:var(--faint)}
+.branch{grid-column:1 / -1;display:none;padding:0.5rem 0 0.2rem 5.8rem}
+.field.active .branch{display:block}
+.branch table{border-collapse:collapse;font-size:0.7rem;width:100%;max-width:26rem}
+.branch td{padding:1px 10px 1px 0;color:var(--soft)} .branch td.k{color:var(--faint);width:3.4rem;text-align:right}
+.branch tr.sel td{color:var(--ink)} .branch tr.sel td.k{color:var(--enum);font-weight:500}
+.detail{position:absolute;inset:0;border:1px solid var(--line);background:var(--panel);padding:1rem 1.05rem;overflow-y:auto}
+@media(max-width:820px){.detail{position:static;height:15rem}}
+.detail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
+.detail .dl .kind{color:var(--soft)}
+.detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
+.detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
+.detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
+
+.compare{width:100%;border-collapse:collapse;font-size:0.78rem;margin:0.6rem 0 1.2rem;max-width:76ch}
+.compare th,.compare td{border:1px solid var(--hair);padding:0.4rem 0.7rem;text-align:left;vertical-align:top}
+.compare th{background:var(--panel);color:var(--ink);font-weight:500;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.06em}
+
+footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title"><div class="sysmark">PROTOCOLS-FUN . LEGACY</div><h1>IPX Anatomy</h1></div>
+      <div class="stamp"><b>Novell NetWare, 1983</b>XNS-derived, non-routable outside its own world<br>rev 2026.08</div>
+    </div>
+    <div class="strip">
+      <div>header <b>30 bytes, fixed</b></div><div>addressing <b>network+node+socket</b></div>
+      <div>checksum <b>always 0xFFFF - unused</b></div><div>see also <b>../index.html</b></div>
+    </div>
+  </div>
+
+  <div class="intro">
+  <p class="lede">IPX (Internetwork Packet Exchange) was Novell NetWare's network-layer protocol from 1983 until TCP/IP took over as NetWare's default in the late 1990s - a direct descendant of Xerox's XNS with the header format barely changed. Every address is 12 bytes: a 4-byte network number, a 6-byte node number (usually a MAC address), and a 2-byte socket - IPX had no separate ARP-equivalent because the node number already was the hardware address. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
+  <aside class="sig" aria-label="color key">
+    <div class="legrows">
+    <div class="row"><span class="sw dark k-enum">amber</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
+    <div class="row"><span class="sw dark k-flag">red-orange</span><span class="swsep">&#8594;</span><span class="sw light k-flag">flag</span></div>
+    <div class="row"><span class="sw dark k-sync">steel</span><span class="swsep">&#8594;</span><span class="sw light k-sync">structural</span></div>
+    <div class="row"><span class="sw dark k-rsv">faint</span><span class="swsep">&#8594;</span><span class="sw light k-rsv">reserved</span></div>
+    </div>
+    <div class="siglabel">color key</div>
+  </aside>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="overview">Overview<small>NCP request, 30 bytes</small></button>
+    <button class="tab" data-p="timeline">Timeline<small>1980 &rarr; decline</small></button>
+  </div>
+  <div class="panelwrap">
+
+    <div class="panel on" data-panel="overview">
+      <div class="pfacts"><span>packet type<b>NCP (17)</b></span><span>addressing<b>network.node.socket</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A workstation's NetWare Core Protocol request: fixed IPX header, client socket 0x4003 talking to the server's well-known NCP socket 0x0451, both nodes on the same IPX network number.</p>
+      <div class="sec">IPX header (30 bytes)</div>
+      <div id="block-overview" data-build></div>
+      <div class="callout"><b>no fragmentation, no checksum, no problem (mostly).</b> IPX simply never defines a checksum algorithm - every packet ships with this field hardcoded to 0xFFFF, and error detection is left entirely to the link layer (Ethernet's own FCS). On Ethernet II framing, IPX gets its own EtherType, 0x8137 - see the Ethernet anatomy page's EtherType tab for where that sits next to 0x0800 and 0x86DD.</div>
+    </div>
+
+    <div class="panel" data-panel="timeline">
+      <div class="pfacts"><span>1980<b>Xerox XNS, IPX's direct ancestor</b></span><span>1983<b>Novell NetWare adopts IPX</b></span><span>1998<b>NetWare 5, IP becomes native</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">IPX's header is almost a direct copy of Xerox's 1980 XNS Internet Datagram Protocol - Novell changed little beyond the name. Its decline tracks the internet's rise almost exactly.</p>
+      <table class="compare">
+        <thead><tr><th>era</th><th>event</th><th>why it mattered</th></tr></thead>
+        <tbody>
+          <tr><td>1980</td><td>Xerox Network Systems (XNS) defines the Internet Datagram Protocol</td><td>IPX's header - checksum, length, transport control, packet type, 12-byte addresses - is this format almost unchanged.</td></tr>
+          <tr><td>1983</td><td>Novell ships NetWare with IPX/SPX as its native stack</td><td>IPX became the dominant LAN protocol of the DOS/Windows-3.1 era, well before TCP/IP was common on desktops.</td></tr>
+          <tr><td>1990s</td><td>SAP and RIP broadcasts every 60 seconds, on every segment, by every server</td><td>IPX's chatty service-discovery model didn't scale past a campus network - one of the concrete reasons administrators pushed to replace it.</td></tr>
+          <tr><td>1998</td><td>NetWare 5.0 makes IP the native protocol, IPX optional</td><td>the same year Novell's own flagship OS stopped requiring IPX at all.</td></tr>
+          <tr><td>2000s</td><td>Windows Vista (2007) and NetWare 6.5's later service packs drop IPX support entirely</td><td>IPX support was removed from mainstream operating systems - functionally dead outside emulation and retrocomputing.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>why it lost.</b> IPX addresses aren't globally assigned or hierarchical the way IP addresses are - a network number is just whatever the local administrator picked, which works fine on one campus and not at all across the open internet. TCP/IP's global addressing and routing won by being the only stack built for a network of networks, not just a network.</div>
+    </div>
+
+  </div>
+
+  <footer><span>protocols-fun / IPX anatomy</span><span>Xerox XNS . Novell IPX/SPX</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
+</div>
+
+<protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle>
+
+<script>
+(function(){
+  var KINDS={sync:"structural",enum:"value",flag:"flag",rsv:"reserved"};
+  function hx(b){return b.toString(16).toUpperCase().padStart(2,"0");}
+
+  function build(mountId, unit, bytes, fields){
+    var mount=document.getElementById(mountId);
+    var N = unit==="bit" ? bytes.length*8 : bytes.length;
+    var owner=new Array(N);
+    fields.forEach(function(f,fi){ for(var i=f.r[0];i<=f.r[1];i++) owner[i]=fi; });
+    var diagram=document.createElement("div");
+    if(unit==="bit"){
+      diagram.className="diagram";
+      for(var bi=0; bi<bytes.length; bi++){
+        var grp=document.createElement("div"); grp.className="bytegrp";
+        var ticks=document.createElement("div"); ticks.className="ticks";
+        var row=document.createElement("div"); row.className="brow";
+        for(var k=0;k<8;k++){
+          var idx=bi*8+k, f=fields[owner[idx]];
+          var t=document.createElement("span"); t.textContent=idx; ticks.appendChild(t);
+          var cell=document.createElement("span"); cell.className="bit k-"+f.k; cell.dataset.idx=idx;
+          if(idx===f.r[0]) cell.classList.add("fstart");
+          cell.textContent=(bytes[bi]>>(7-k))&1; row.appendChild(cell);
+        }
+        var hex=document.createElement("div"); hex.className="hex"; hex.textContent="0x"+hx(bytes[bi]);
+        grp.appendChild(ticks); grp.appendChild(row); grp.appendChild(hex); diagram.appendChild(grp);
+      }
+    } else {
+      diagram.className="dbytes";
+      bytes.forEach(function(b,i){
+        var f=fields[owner[i]];
+        var col=document.createElement("div"); col.className="bcol";
+        var off=document.createElement("div"); off.className="off"; off.textContent="0x"+hx(i); col.appendChild(off);
+        var cell=document.createElement("div"); cell.className="bcell k-"+f.k; cell.dataset.idx=i;
+        if(i===f.r[0]) cell.classList.add("fstart");
+        cell.textContent=hx(b); col.appendChild(cell); diagram.appendChild(col);
+      });
+    }
+    var list=document.createElement("div"); list.className="fields";
+    var aside=document.createElement("aside"); aside.className="detail";
+    aside.innerHTML="<div class='dl'><span>field detail</span><span class='kind'></span></div>"+
+      "<h3>Hover a field or byte</h3><div class='dc'>"+(unit==="bit"?N+" bits":bytes.length+" bytes")+"</div>"+
+      "<p>Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.</p><div class='dn'></div>";
+    var det={t:aside.querySelector("h3"),c:aside.querySelector(".dc"),b:aside.querySelector("p"),n:aside.querySelector(".dn"),kind:aside.querySelector(".kind")};
+    var cells=[].slice.call(diagram.querySelectorAll("[data-idx]"));
+    var rows=[];
+    function light(a,b){cells.forEach(function(c){var i=+c.dataset.idx;c.classList.toggle("hi",i>=a&&i<=b);});}
+    function clearHi(){cells.forEach(function(c){c.classList.remove("hi");});}
+    function rl(f){ return unit==="bit"
+      ? "bits "+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")
+      : "bytes 0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-0x"+hx(f.r[1]):""); }
+    function show(f){det.t.textContent=f.label;det.c.textContent=rl(f)+"  =  "+f.val;
+      det.b.textContent=f.body;det.n.textContent=f.note||"";det.kind.textContent=KINDS[f.k];}
+    function activeRow(){return list.querySelector(".field.active");}
+    function cue(fi){rows.forEach(function(r){r.classList.remove("cued");});rows[fi].classList.add("cued");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    function restore(){rows.forEach(function(r){r.classList.remove("cued");});var a=activeRow();if(a){var fi=+a.dataset.fi;light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}else clearHi();}
+    function pin(fi){var was=rows[fi].classList.contains("active");rows.forEach(function(r){r.classList.remove("active");});if(was){clearHi();return;}rows[fi].classList.add("active");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    fields.forEach(function(f,fi){
+      var row=document.createElement("div"); row.className="field"; row.dataset.fi=fi; if(f.branch) row.dataset.branch="1";
+      var lab = unit==="bit" ? ("b"+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")) : ("0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-"+hx(f.r[1]):""));
+      row.innerHTML="<span class='fb'>"+lab+"</span><span class='fn'>"+f.label+"</span><span class='fv k-"+f.k+"'>"+f.val+"</span>";
+      if(f.branch){
+        var bw=document.createElement("div"); bw.className="branch";
+        bw.innerHTML="<table>"+f.branch.map(function(p,i){return "<tr class='"+(i===f.sel?"sel":"")+"'><td class='k'>"+p[0]+"</td><td>"+p[1]+"</td></tr>";}).join("")+"</table>";
+        row.appendChild(bw);
+      }
+      row.addEventListener("mouseenter",function(){cue(fi);});
+      row.addEventListener("click",function(){pin(fi);});
+      rows.push(row); list.appendChild(row);
+    });
+    cells.forEach(function(c){
+      var fi=owner[+c.dataset.idx];
+      c.addEventListener("mouseenter",function(){cue(fi);});
+      c.addEventListener("click",function(){pin(fi);});
+    });
+    var left=document.createElement("div"); left.className="left";
+    left.appendChild(diagram); left.appendChild(list);
+    var dcol=document.createElement("div"); dcol.className="detailcol"; dcol.appendChild(aside);
+    var block=document.createElement("div"); block.className="block";
+    block.appendChild(left); block.appendChild(dcol);
+    block.addEventListener("mouseleave",restore);
+    mount.appendChild(block);
+    var maxH=aside.scrollHeight;
+    fields.forEach(function(f){ show(f); if(aside.scrollHeight>maxH) maxH=aside.scrollHeight; });
+    det.t.textContent="Hover a field or byte";
+    det.c.textContent=(unit==="bit"?N+" bits":bytes.length+" bytes");
+    det.b.textContent="Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.";
+    det.n.textContent="";
+    dcol.style.minHeight=(maxH+6)+"px";
+  }
+
+  var PACKET_TYPES=[["1","RIP - Routing Information Protocol"],["4","SAP - Service Advertising Protocol"],["5","SPX - Sequenced Packet Exchange"],["17","NCP - NetWare Core Protocol"],["20","Broadcast"]];
+
+  var SPECS={
+    "block-overview":["byte",
+      [0xFF,0xFF, 0x00,0x20, 0x00, 0x11,
+       0x00,0x00,0x00,0x01, 0x00,0x1A,0x2B,0x3C,0x4D,0x5E, 0x04,0x51,
+       0x00,0x00,0x00,0x01, 0x00,0x5E,0x4D,0x3C,0x2B,0x1A, 0x40,0x03],
+      [
+        {label:"checksum",k:"rsv",r:[0,1],val:"0xFFFF (unused)",body:"IPX never defines a checksum algorithm at all - every packet hardcodes this field to all-ones. Integrity checking is left entirely to the link layer (e.g. Ethernet's own FCS)."},
+        {label:"packet length",k:"enum",r:[2,3],val:"32 bytes",body:"Total length including this 30-byte header - here, header plus a 2-byte illustrative payload."},
+        {label:"transport control",k:"enum",r:[4,4],val:"0 (hop count)",body:"Incremented by each router that forwards the packet; a packet is discarded once this passes 16 hops. Functionally IPX's answer to IP's TTL, just counting up instead of down."},
+        {label:"packet type",k:"enum",r:[5,5],val:"NCP (17)",sel:3,branch:PACKET_TYPES,
+          body:"Identifies the upper-layer protocol - NCP here, NetWare's file/print/directory service protocol."},
+        {label:"dest network",k:"sync",r:[6,9],val:"0x00000001",body:"4-byte network number, administratively assigned - no global registry the way IP's address blocks have one."},
+        {label:"dest node",k:"sync",r:[10,15],val:"00:1a:2b:3c:4d:5e",body:"6 bytes - almost always the destination's actual MAC address. IPX never needed an ARP-equivalent because the hardware address IS the node number."},
+        {label:"dest socket",k:"enum",r:[16,17],val:"0x0451 (NCP server)",body:"NetWare's well-known socket for NCP service requests - the IPX/SPX equivalent of a TCP/UDP port number."},
+        {label:"src network",k:"sync",r:[18,21],val:"0x00000001",body:"Same network number as the destination - client and server share a segment in this example."},
+        {label:"src node",k:"sync",r:[22,27],val:"00:5e:4d:3c:2b:1a",body:"The requesting workstation's MAC address."},
+        {label:"src socket",k:"enum",r:[28,29],val:"0x4003 (NCP client)",body:"The well-known socket NetWare client software uses on the workstation side of an NCP conversation."}
+      ]]
+  };
+
+  var built={};
+  function buildPanel(name){
+    var panel=document.querySelector('[data-panel="'+name+'"]'); if(!panel) return;
+    panel.querySelectorAll("[data-build]").forEach(function(m){
+      if(built[m.id]) return; built[m.id]=1;
+      var spec=SPECS[m.id]; if(spec) build(m.id, spec[0], spec[1], spec[2]);
+    });
+  }
+  var tabs=[].slice.call(document.querySelectorAll(".tab"));
+  var panels=[].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    tabs.forEach(function(t){t.classList.toggle("on",t.dataset.p===name);});
+    panels.forEach(function(p){p.classList.toggle("on",p.dataset.panel===name);});
+    buildPanel(name);
+  }
+  tabs.forEach(function(t){t.addEventListener("click",function(){
+    activate(t.dataset.p);
+    if(history.replaceState) history.replaceState(null,"","#"+t.dataset.p);
+  });});
+  var initial=(location.hash||"").replace("#","");
+  if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
+  else buildPanel("overview");
+})();
+</script>
+<script>
+(function(){
+  if(customElements.get('protofun-toggle')) return;
+  var svg = '<svg viewBox="0 0 200 420" style="display:block;width:100%;height:100%;overflow:visible">\n  <path class="body" d="M84,10 L116,10 L116,40 L175,40 L175,260 L140,290 L140,330 L120,350 L120,360 L80,360 L80,350 L60,330 L60,290 L25,260 L25,40 L84,40 Z" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/>\n  <line x1="84" y1="40" x2="116" y2="40" stroke="currentColor" stroke-width="4"/>\n  <line x1="30" y1="95" x2="170" y2="95" stroke="currentColor" stroke-width="4"/>\n  <g class="pins" stroke="currentColor" stroke-width="7" stroke-linecap="round">\n    <line x1="35" y1="50" x2="35" y2="76"/>\n    <line x1="53" y1="50" x2="53" y2="76"/>\n    <line x1="71" y1="50" x2="71" y2="76"/>\n    <line x1="89" y1="50" x2="89" y2="76"/>\n    <line x1="111" y1="50" x2="111" y2="76"/>\n    <line x1="129" y1="50" x2="129" y2="76"/>\n    <line x1="147" y1="50" x2="147" y2="76"/>\n    <line x1="165" y1="50" x2="165" y2="76"/>\n  </g>\n  <path class="brow brow-l" d="M52,120 Q68,109 84,118" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>\n  <path class="brow brow-r" d="M116,118 Q132,109 148,120" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>\n  <g class="eyes">\n    <circle cx="70" cy="148" r="16" fill="currentColor"/>\n    <circle cx="130" cy="148" r="16" fill="currentColor"/>\n    <circle cx="74" cy="143" r="5.5" fill="var(--paper)"/>\n    <circle cx="134" cy="143" r="5.5" fill="var(--paper)"/>\n  </g>\n  <g class="happy-eyes">\n    <path d="M55,149 Q70,133 85,149" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>\n    <path d="M115,149 Q130,133 145,149" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>\n  </g>\n  <path class="mouth" d="M78,192 Q100,208 122,192" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linecap="round"/>\n  <g class="grooves" stroke="currentColor" stroke-width="6" stroke-linecap="round">\n    <line x1="70" y1="298" x2="130" y2="298"/>\n    <line x1="70" y1="309" x2="130" y2="309"/>\n    <line x1="70" y1="320" x2="130" y2="320"/>\n  </g>\n  <path class="cable" d="M100,360 C100,375 68,378 63,396 C59,410 76,415 86,406" fill="none" stroke="currentColor" stroke-width="14" stroke-linecap="round"/>\n</svg>';
+  var css = `
+    :host{display:inline-block;line-height:0}
+    button{-webkit-appearance:none;appearance:none;background:none;border:0;padding:3px;margin:0;cursor:pointer;color:inherit;border-radius:6px;line-height:0;display:inline-flex}
+    button:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+    .box{width:30px;height:63px}
+    .eyes{transition:opacity .2s}
+    .happy-eyes{opacity:0;transition:opacity .2s}
+    :host([data-on]) .eyes{opacity:0}
+    :host([data-on]) .happy-eyes{opacity:1}
+    :host([data-on]) .pins line{animation:pin-chase 1.1s ease-in-out infinite}
+    :host([data-on]) .pins line:nth-child(1){animation-delay:0s}
+    :host([data-on]) .pins line:nth-child(2){animation-delay:.07s}
+    :host([data-on]) .pins line:nth-child(3){animation-delay:.14s}
+    :host([data-on]) .pins line:nth-child(4){animation-delay:.21s}
+    :host([data-on]) .pins line:nth-child(5){animation-delay:.28s}
+    :host([data-on]) .pins line:nth-child(6){animation-delay:.35s}
+    :host([data-on]) .pins line:nth-child(7){animation-delay:.42s}
+    :host([data-on]) .pins line:nth-child(8){animation-delay:.49s}
+    @keyframes pin-chase{0%,70%,100%{opacity:1}35%{opacity:.25}}
+    @media (prefers-reduced-motion:reduce){.pins line{animation:none}.eyes,.happy-eyes{transition:none}}
+  `;
+  class ProtofunToggle extends HTMLElement {
+    connectedCallback() {
+      var root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = '<style>' + css + '</style><button type="button" aria-label="Toggle dark mode" title="Toggle dark mode"><span class="box">' + svg + '</span></button>';
+      this._btn = root.querySelector('button');
+      this._btn.addEventListener('click', () => this.toggle());
+      this._sync = (e) => { if (e.target !== this && e.detail) this.toggleAttribute('data-on', e.detail.dark); };
+      document.addEventListener('protofun-theme', this._sync);
+      var saved = null;
+      try { saved = localStorage.getItem('protofun-theme'); } catch (e) {}
+      var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      this.apply(dark, false);
+    }
+    disconnectedCallback() { if (this._sync) document.removeEventListener('protofun-theme', this._sync); }
+    get isDark() { return this.hasAttribute('data-on'); }
+    toggle() { this.apply(!this.isDark, true); }
+    apply(dark, persist) {
+      this.toggleAttribute('data-on', dark);
+      var theme = dark ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+      if (this._btn) this._btn.setAttribute('aria-pressed', String(dark));
+      if (persist) { try { localStorage.setItem('protofun-theme', theme); } catch (e) {} }
+      this.dispatchEvent(new CustomEvent('protofun-theme', { bubbles: true, composed: true, detail: { theme: theme, dark: dark } }));
+    }
+  }
+  customElements.define('protofun-toggle', ProtofunToggle);
+})();
+</script>
+</body>
+</html>

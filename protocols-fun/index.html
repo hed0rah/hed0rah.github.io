@@ -94,7 +94,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
     <div class="strip">
       <div>lines <b>5</b></div><div>stations <b>16</b></div>
-      <div>built <b>11 of 16</b></div><div>engine <b>same as ipv6-fun</b></div>
+      <div>built <b>15 of 16</b></div><div>engine <b>same as ipv6-fun</b></div>
     </div>
   </div>
 
@@ -153,10 +153,10 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
         <g class="station" data-id="ethernet"><circle cx="560" cy="420" r="12" fill="var(--l-link)" stroke="var(--l-link)" stroke-width="2.5"/><text x="560" y="451" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">Ethernet</text></g>
 
         <!-- stations: Legacy -->
-        <g class="station" data-id="ipx"><circle cx="150" cy="520" r="7" fill="var(--panel)" stroke="var(--l-legacy)" stroke-width="2" stroke-dasharray="2 2"/><text x="150" y="546" text-anchor="middle" font-size="10" fill="var(--faint)">IPX</text></g>
-        <g class="station" data-id="pocsag"><circle cx="320" cy="520" r="7" fill="var(--panel)" stroke="var(--l-legacy)" stroke-width="2" stroke-dasharray="2 2"/><text x="320" y="546" text-anchor="middle" font-size="10" fill="var(--faint)">POCSAG</text></g>
-        <g class="station" data-id="sitor"><circle cx="490" cy="520" r="7" fill="var(--panel)" stroke="var(--l-legacy)" stroke-width="2" stroke-dasharray="2 2"/><text x="490" y="546" text-anchor="middle" font-size="10" fill="var(--faint)">SITOR</text></g>
-        <g class="station" data-id="arpanet-imp"><circle cx="700" cy="520" r="7" fill="var(--panel)" stroke="var(--l-legacy)" stroke-width="2" stroke-dasharray="2 2"/><text x="700" y="546" text-anchor="middle" font-size="10" fill="var(--faint)">IMP-IMP</text></g>
+        <g class="station" data-id="ipx"><circle cx="150" cy="520" r="10" fill="var(--l-legacy)" stroke="var(--l-legacy)" stroke-width="2"/><text x="150" y="548" text-anchor="middle" font-size="10" font-weight="600" fill="var(--ink)">IPX</text></g>
+        <g class="station" data-id="pocsag"><circle cx="320" cy="520" r="10" fill="var(--l-legacy)" stroke="var(--l-legacy)" stroke-width="2"/><text x="320" y="548" text-anchor="middle" font-size="10" font-weight="600" fill="var(--ink)">POCSAG</text></g>
+        <g class="station" data-id="sitor"><circle cx="490" cy="520" r="10" fill="var(--l-legacy)" stroke="var(--l-legacy)" stroke-width="2"/><text x="490" y="548" text-anchor="middle" font-size="10" font-weight="600" fill="var(--ink)">SITOR</text></g>
+        <g class="station" data-id="arpanet-imp"><circle cx="700" cy="520" r="10" fill="var(--l-legacy)" stroke="var(--l-legacy)" stroke-width="2"/><text x="700" y="548" text-anchor="middle" font-size="10" font-weight="600" fill="var(--ink)">IMP-IMP</text></g>
 
       </svg>
     </div>
@@ -175,7 +175,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     <div class="item"><span class="swatch" style="background:var(--l-transport)"></span>Transport</div>
     <div class="item"><span class="swatch" style="background:var(--l-internet)"></span>Internet</div>
     <div class="item"><span class="swatch" style="background:var(--l-link)"></span>Link</div>
-    <div class="item"><span class="swatch dash" style="color:var(--l-legacy)"></span>Legacy / Other (planned)</div>
+    <div class="item"><span class="swatch dash" style="color:var(--l-legacy)"></span>Legacy / Other</div>
   </div>
 
   <div class="sec">station index</div>
@@ -213,14 +213,14 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       body:"Resolves an IPv4 address to a MAC address by broadcasting \"who has this IP?\" to the whole segment (RFC 826, 1982). IPv6 replaced this entirely with multicast-based Neighbor Discovery - see ipv6-fun's Neighbor Discovery coverage for the modern equivalent."},
     ethernet: {title:"Ethernet", layer:"Link (L2)", built:true, color:"var(--l-link)", page:"ethernet/ethernet-anatomy.html",
       body:"The frame format almost everything above it eventually rides on. EtherType (not a length field, since DIX Ethernet II) tells the receiver what's inside: 0x0800 IPv4, 0x0806 ARP, 0x86DD IPv6."},
-    ipx:   {title:"IPX", layer:"Legacy / Other", built:false, color:"var(--l-legacy)",
-      body:"Novell NetWare's network-layer protocol, once a serious rival to IP on corporate LANs. Addressing embeds the network number and the interface's MAC address directly - planned bonus page."},
-    pocsag: {title:"POCSAG", layer:"Legacy / Other", built:false, color:"var(--l-legacy)",
-      body:"Post Office Code Standardisation Advisory Group paging protocol (1970s British GPO origin) - the wire format behind most pagers. Still transmitted in the clear on public frequencies today. Planned bonus page."},
-    sitor: {title:"SITOR", layer:"Legacy / Other", built:false, color:"var(--l-legacy)",
-      body:"Simplex Teletype Over Radio - a maritime/military error-correcting radioteletype mode, ancestor to amateur radio's AMTOR. Planned bonus page."},
-    "arpanet-imp": {title:"ARPANET IMP-IMP", layer:"Legacy / Other", built:false, color:"var(--l-legacy)",
-      body:"The protocol Interface Message Processors used to talk to each other on the original 1969 ARPANET - before TCP/IP existed at all. As legacy as this map gets. Planned bonus page."}
+    ipx:   {title:"IPX", layer:"Legacy / Other", built:true, color:"var(--l-legacy)", page:"legacy/ipx-anatomy.html",
+      body:"Novell NetWare's network-layer protocol, once a serious rival to IP on corporate LANs. Addressing embeds the network number and the interface's MAC address directly - no separate ARP needed."},
+    pocsag: {title:"POCSAG", layer:"Legacy / Other", built:true, color:"var(--l-legacy)", page:"legacy/pocsag-anatomy.html",
+      body:"Post Office Code Standardisation Advisory Group paging protocol (1970s British GPO origin) - a 32-bit constant-ratio codeword with BCH error correction. Still running hospital and public-safety paging today."},
+    sitor: {title:"SITOR", layer:"Legacy / Other", built:true, color:"var(--l-legacy)", page:"legacy/sitor-anatomy.html",
+      body:"Simplex Teletype Over Radio - a maritime/military error-correcting radioteletype mode built on a 7-bit constant-ratio code, ancestor to amateur radio's AMTOR."},
+    "arpanet-imp": {title:"ARPANET IMP-IMP", layer:"Legacy / Other", built:true, color:"var(--l-legacy)", page:"legacy/arpanet-imp-anatomy.html",
+      body:"The Interface Message Processor - the world's first packet-switching router, 1969. As legacy as this map gets, and honest about what's actually documented vs. lost to time."}
   };
 
   var card = {
