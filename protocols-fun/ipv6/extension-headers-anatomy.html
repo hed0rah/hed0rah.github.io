@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>protocols-fun / SNMP anatomy</title>
+<title>protocols-fun / extension headers anatomy</title>
 <script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,7 +38,6 @@ protofun-toggle:hover{color:var(--enum)}
 .head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
-.lede a{color:var(--enum)}
 .intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
 .intro .lede{margin-bottom:0}
 .sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
@@ -60,9 +59,9 @@ protofun-toggle:hover{color:var(--enum)}
 .note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:74ch}
 .callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.2rem 0 0.4rem;max-width:76ch}
 .callout b{color:var(--ink);font-weight:500}
-.compare{width:100%;border-collapse:collapse;font-size:0.78rem;margin:0.6rem 0 1.2rem;max-width:76ch}
-.compare th,.compare td{border:1px solid var(--hair);padding:0.4rem 0.7rem;text-align:left;vertical-align:top}
-.compare th{background:var(--panel);color:var(--ink);font-weight:500;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.06em}
+.chain{font-family:var(--ff);font-size:0.76rem;color:var(--soft);background:var(--panel);border:1px solid var(--line);padding:0.9rem 1.1rem;margin:0.6rem 0 1.4rem;line-height:1.9;overflow-x:auto;white-space:pre}
+.chain b{color:var(--ink);font-weight:500}
+.chain .n{color:var(--enum)}
 
 .tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none;margin-bottom:0}
 .tab{padding:0.55rem 0.9rem;font-size:0.64rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
@@ -96,6 +95,12 @@ protofun-toggle:hover{color:var(--enum)}
 .bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
 .bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
 .bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+.bit.k-sync{background:var(--sync-soft)} .bit.k-enum{background:var(--enum-soft)}
+.bit.k-flag{background:var(--flag-soft)} .bit.k-rsv{background:var(--rsv-soft)}
+.bit.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bit.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bit.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bit.hi.k-rsv{background:var(--faint);color:var(--paper)}
 
 .block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
 .left{min-width:0}
@@ -131,17 +136,17 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   <div class="head">
     <div class="row">
-      <div class="title"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>SNMP Anatomy</h1></div>
-      <div class="stamp"><b>RFC 1157 (1988)</b>ASN.1 BER, not a fixed C-struct header<br>rev 2026.08</div>
+      <div class="title"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>Extension Headers Anatomy</h1></div>
+      <div class="stamp"><b>RFC 8200 &sect;4</b>the chain between the header and the payload<br>rev 2026.08</div>
     </div>
     <div class="strip">
-      <div>encoding <b>ASN.1 BER, tag-length-value</b></div><div>v1/v2c auth <b>plaintext community string</b></div>
-      <div>v3 auth <b>HMAC + encryption, RFC 3414</b></div><div>see also <b>../index.html</b></div>
+      <div>generic shape <b>NH + HdrExtLen</b></div><div>fragment <b>fixed 8 bytes</b></div>
+      <div>order <b>mandated, RFC 8200</b></div><div>see also <b>ipv6-anatomy.html</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede">Every other protocol on this site is a fixed C-struct-shaped header. SNMP (<a href="https://www.rfc-editor.org/rfc/rfc1157">RFC 1157</a>, 1988) isn't - it's ASN.1 encoded using BER (Basic Encoding Rules), which means every field is self-describing: a one-byte <b>tag</b> says what it is, a length byte says how many bytes follow, then the <b>value</b> - and values can nest other tag-length-value groups arbitrarily deep. A SEQUENCE (tag 0x30) is BER's version of a struct; an INTEGER (0x02), OCTET STRING (0x04), and OBJECT IDENTIFIER (0x06) are its primitives. This page's SNMPv1 example has every length verified against its actual encoded content, not just asserted. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
+  <p class="lede">IPv6 moved everything optional out of the fixed header into a chain of extension headers, each pointed to by the previous header's <b>Next Header</b> field. Every one of them shares a generic <code>Next Header + Hdr Ext Len + data</code> shape - except Fragment, the one fixed-size exception. Manipulating this chain (reordering, splitting across fragments, repeating a type) is the main class of IPv6-specific firewall/IDS evasion. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -154,36 +159,70 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   </div>
 
   <div class="tabs" id="tabs">
-    <button class="tab on" data-p="getrequest">GetRequest<small>v1, BER byte-by-byte</small></button>
-    <button class="tab" data-p="versions">Versions<small>v1 -&gt; v2c -&gt; v3</small></button>
+    <button class="tab on" data-p="overview">Overview<small>the chain</small></button>
+    <button class="tab" data-p="hopbyhop">Hop-by-Hop<small>Next Header 0</small></button>
+    <button class="tab" data-p="routing">Routing<small>Next Header 43</small></button>
+    <button class="tab" data-p="fragment">Fragment<small>Next Header 44</small></button>
+    <button class="tab" data-p="destopts">Dest. Options<small>Next Header 60</small></button>
   </div>
   <div class="panelwrap">
 
-    <div class="panel on" data-panel="getrequest">
-      <div class="pfacts"><span>size<b>40 bytes</b></span><span>community<b>"public"</b></span><span>querying<b>sysDescr.0 (1.3.6.1.2.1.1.1.0)</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A manager asking a device "what's your sysDescr value?" - the single most common SNMP operation there is. Every SEQUENCE and length byte below is real: computed from the actual encoded content, the same way the checksums on the TCP/UDP/ICMPv4 pages were computed from real pseudo-headers rather than asserted.</p>
-      <div class="sec">SNMPv1 GetRequest, BER-encoded (40 bytes)</div>
-      <p class="note">community "public" is the textbook-insecure default that made v1/v2c infamous - see the Versions tab.</p>
-      <div id="block-getrequest" data-build></div>
+    <div class="panel on" data-panel="overview">
+      <div class="pfacts"><span>shape<b>Next Header(8) + Hdr Ext Len(8) + data</b></span><span>spec<b>RFC 8200 &sect;4</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">When more than one extension header is present, RFC 8200 mandates this order - a stateless filter that assumes the upper-layer protocol is always right after the fixed IPv6 header can be walked straight past it.</p>
+      <div class="sec">mandated chain order</div>
+      <div class="chain">IPv6 header
+ -&gt; <b class="n">Hop-by-Hop Options</b>       (Next Header <span class="n">0</span>)
+ -&gt; Destination Options      (Next Header <span class="n">60</span>, for intermediate routing)
+ -&gt; <b class="n">Routing</b>                  (Next Header <span class="n">43</span>)
+ -&gt; <b class="n">Fragment</b>                 (Next Header <span class="n">44</span>)
+ -&gt; Authentication (AH)      (Next Header <span class="n">51</span>)
+ -&gt; Encapsulating Security   (Next Header <span class="n">50</span>)
+ -&gt; <b class="n">Destination Options</b>      (Next Header <span class="n">60</span>, for the final destination)
+ -&gt; Upper-layer (TCP/UDP/ICMPv6)</div>
+      <div class="sec">the generic 2-byte prefix</div>
+      <p class="note">Shared by every extension header except Fragment. Hdr Ext Len is in 8-octet units, <b>not counting the first 8 octets</b> - so a value of 0 means "this whole header is 8 bytes."</p>
+      <div id="block-overview" data-build></div>
+      <div class="callout"><b>ESP breaks the pattern.</b> Encapsulating Security Payload puts its own Next Header field at the <i>end</i> of the header, after the payload and padding - not the beginning. Any code that walks this chain generically by reading Next Header first has to special-case it.</div>
     </div>
 
-    <div class="panel" data-panel="versions">
-      <div class="pfacts"><span>v1<b>1988, RFC 1157</b></span><span>v2c<b>1996, RFC 1901/3416</b></span><span>v3<b>2002, RFC 3414/3415</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The PDU shape barely changed across twenty years - v2c mostly just added GetBulkRequest and richer error codes on top of v1's format. Security is where the real revision happened, and it happened once, all at once, in v3.</p>
-      <table class="compare">
-        <thead><tr><th>version</th><th>authentication</th><th>message shape</th></tr></thead>
-        <tbody>
-          <tr><td>v1</td><td>a plaintext "community string" sent with every request - anyone who can sniff the wire has full read (or write) access</td><td>version + community + PDU, exactly like the GetRequest tab</td></tr>
-          <tr><td>v2c</td><td>same community-string model as v1 - the "c" stands for "community," not "secure"</td><td>same shape as v1, plus new PDU types (GetBulkRequest, InformRequest)</td></tr>
-          <tr><td>v3</td><td>real per-user authentication (HMAC-MD5/SHA) and optional encryption (DES/AES) via the User-based Security Model (USM)</td><td>a much larger msgGlobalData + msgSecurityParameters header wraps a scopedPDU - not just a bigger version number on the same envelope</td></tr>
-        </tbody>
-      </table>
-      <div class="callout"><b>why this page doesn't diagram v3 byte-by-byte.</b> SNMPv3's USM security header is a genuinely different, much larger structure (authoritative engine ID, engine boots/time, username, and authentication/privacy parameters, all before the actual PDU is even reachable) - accurately encoding one requires far more BER nesting than a GetRequest does. It's a real candidate for its own page later; for now, the honest summary above beats a rushed, unverified byte diagram.</div>
+    <div class="panel" data-panel="hopbyhop">
+      <div class="pfacts"><span>next header<b>0</b></span><span>processed by<b>every router on the path</b></span><span>size<b>8 bytes</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The one extension header every router must inspect - every other extension header is only processed by the final destination. Must come first in the chain if present.</p>
+      <div class="sec">Hop-by-Hop Options, carrying Router Alert (8 bytes)</div>
+      <p class="note">Router Alert (RFC 2711) tells routers "inspect this packet's contents even though you're just forwarding it" - exactly how MLD reports get routers to notice group-membership changes without every router running full multicast routing.</p>
+      <div id="block-hopbyhop" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="routing">
+      <div class="pfacts"><span>next header<b>43</b></span><span>type 0<b>deprecated, RFC 5095</b></span><span>size<b>24 bytes (1 hop)</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Source routing - lists intermediate hops a packet should visit. Type 0 (shown here) let a packet be routed through an arbitrary sequence of addresses; in 2007 Philippe Biondi and Arnaud Ebalard showed it could bounce a packet repeatedly between colluding routers for a large amplification factor. Deprecated within the year.</p>
+      <div class="sec">Routing header, Type 0, one intermediate hop (24 bytes)</div>
+      <p class="note">Historical structure, shown for what it was: Segments Left counts down as each listed address is visited.</p>
+      <div id="block-routing" data-build></div>
+      <div class="callout"><b>the modern successor.</b> Type 4, the Segment Routing Header (SRv6, RFC 8754), replaces RH0's arbitrary addressing with tightly-scoped, operator-controlled segment lists - used in real traffic-engineering deployments today.</div>
+    </div>
+
+    <div class="panel" data-panel="fragment">
+      <div class="pfacts"><span>next header<b>44</b></span><span>size<b>fixed 8 bytes, no Hdr Ext Len</b></span><span>offset unit<b>8 bytes</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The odd one out - always exactly 8 bytes, no Hdr Ext Len field at all. Drawn bit by bit here since Fragment Offset, Reserved, and M pack into one 16-bit field. Two fragments lying about their offsets is the classic firewall-evasion trick this header enables.</p>
+      <div class="sec">Fragment header - the last fragment of a 2-fragment message (8 bytes / 64 bits)</div>
+      <p class="note">Byte offset 8, M=0 (no more fragments follow), Identification 0x1337 ties it to its sibling fragment.</p>
+      <div id="block-fragment" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="destopts">
+      <div class="pfacts"><span>next header<b>60</b></span><span>processed by<b>final destination only</b></span><span>size<b>8 bytes</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Same TLV option encoding as Hop-by-Hop, but only the final destination ever looks inside it - intermediate routers skip straight past using Hdr Ext Len. Can appear twice in one chain: once for options meant for intermediate routing-header hops, once for the true final destination.</p>
+      <div class="sec">Destination Options, padding to the 8-byte boundary (8 bytes)</div>
+      <p class="note">A writer with nothing to say still has to pad to a multiple of 8 bytes - PadN is how.</p>
+      <div id="block-destopts" data-build></div>
+      <div class="callout"><b>same TLV shape, twice.</b> Hop-by-Hop and Destination Options share identical option encoding (Option Type, Opt Data Len, Opt Data) - the only difference is who's allowed to act on what's inside. The top 2 bits of Option Type tell an unrecognizing node what to do: skip it, discard the packet, or discard and send back an ICMPv6 Parameter Problem.</div>
     </div>
 
   </div>
 
-  <footer><span>protocols-fun / SNMP anatomy</span><span>RFC 1157 . RFC 3414</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
+  <footer><span>protocols-fun / extension headers anatomy</span><span><a href="ipv6-anatomy.html">IPv6 Anatomy</a> &middot; <a href="icmpv6-anatomy.html">ICMPv6 &amp; Neighbor Discovery</a></span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/ipv6-fun">ipv6-fun course</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
 </div>
 
 <protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle>
@@ -279,46 +318,68 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     dcol.style.minHeight=(maxH+6)+"px";
   }
 
-  var BER_TAGS=[["0x02","INTEGER"],["0x04","OCTET STRING"],["0x05","NULL"],["0x06","OBJECT IDENTIFIER"],
-    ["0x30","SEQUENCE"],["0xA0","GetRequest-PDU (context [0])"],["0xA1","GetNextRequest-PDU (context [1])"],
-    ["0xA2","GetResponse-PDU (context [2])"],["0xA3","SetRequest-PDU (context [3])"]];
+  var NH_TYPES=[["0","Hop-by-Hop Options"],["6","TCP"],["17","UDP"],["43","Routing"],["44","Fragment"],
+    ["50","ESP"],["51","AH"],["58","ICMPv6"],["59","No Next Header"],["60","Destination Options"]];
 
   var SPECS={
-    "block-getrequest":["byte",
-      [0x30,0x26,0x02,0x01,0x00,0x04,0x06,0x70,0x75,0x62,0x6C,0x69,0x63,0xA0,0x19,
-       0x02,0x01,0x01,0x02,0x01,0x00,0x02,0x01,0x00,0x30,0x0E,0x30,0x0C,
-       0x06,0x08,0x2B,0x06,0x01,0x02,0x01,0x01,0x01,0x00,0x05,0x00],
+    "block-overview":["byte",
+      [0x3A,0x00],
       [
-        {label:"tag",k:"sync",r:[0,0],val:"SEQUENCE (0x30)",sel:4,branch:BER_TAGS,body:"The whole SNMP message is one outer SEQUENCE - BER's struct equivalent."},
-        {label:"length",k:"enum",r:[1,1],val:"38 bytes follow",body:"Every length byte on this page is the actual byte count of its content, computed the same way a checksum would be - not just written down."},
-        {label:"tag",k:"sync",r:[2,2],val:"INTEGER (0x02)",sel:0,branch:BER_TAGS},
-        {label:"length",k:"enum",r:[3,3],val:"1"},
-        {label:"version",k:"enum",r:[4,4],val:"0 (SNMPv1)",body:"0=v1, 1=v2c, 3=v3 (2 was never assigned to anything shipped)."},
-        {label:"tag",k:"sync",r:[5,5],val:"OCTET STRING (0x04)",sel:1,branch:BER_TAGS},
-        {label:"length",k:"enum",r:[6,6],val:"6"},
-        {label:"community",k:"flag",r:[7,12],val:"\"public\"",body:"The entire v1/v2c security model. Sent in cleartext with every single request - anyone who can see this packet on the wire has whatever access this string grants."},
-        {label:"tag",k:"sync",r:[13,13],val:"GetRequest-PDU (0xA0)",sel:5,branch:BER_TAGS,body:"Context-specific constructed tag [0] - BER's way of saying \"this SEQUENCE means something PDU-type-specific, not just a generic struct.\""},
-        {label:"length",k:"enum",r:[14,14],val:"25 bytes follow"},
-        {label:"tag",k:"sync",r:[15,15],val:"INTEGER (0x02)",sel:0,branch:BER_TAGS},
-        {label:"length",k:"enum",r:[16,16],val:"1"},
-        {label:"request-id",k:"enum",r:[17,17],val:"1",body:"Chosen by the manager; the response echoes it back so an overlapping request can be matched to its reply."},
-        {label:"tag",k:"sync",r:[18,18],val:"INTEGER (0x02)",sel:0,branch:BER_TAGS},
-        {label:"length",k:"enum",r:[19,19],val:"1"},
-        {label:"error-status",k:"enum",r:[20,20],val:"0 (noError)",body:"Meaningless in a request - only the response fills this in with anything other than 0."},
-        {label:"tag",k:"sync",r:[21,21],val:"INTEGER (0x02)",sel:0,branch:BER_TAGS},
-        {label:"length",k:"enum",r:[22,22],val:"1"},
-        {label:"error-index",k:"enum",r:[23,23],val:"0",body:"Points at which variable binding caused an error, when error-status is nonzero."},
-        {label:"tag",k:"sync",r:[24,24],val:"SEQUENCE (0x30)",sel:4,branch:BER_TAGS,body:"variable-bindings: a SEQUENCE OF VarBind - here, just one."},
-        {label:"length",k:"enum",r:[25,25],val:"14 bytes follow"},
-        {label:"tag",k:"sync",r:[26,26],val:"SEQUENCE (0x30)",sel:4,branch:BER_TAGS,body:"One VarBind: a name/value pair."},
-        {label:"length",k:"enum",r:[27,27],val:"12 bytes follow"},
-        {label:"tag",k:"sync",r:[28,28],val:"OBJECT IDENTIFIER (0x06)",sel:3,branch:BER_TAGS},
-        {label:"length",k:"enum",r:[29,29],val:"8"},
-        {label:"OID",k:"sync",r:[30,37],val:"1.3.6.1.2.1.1.1.0 (sysDescr.0)",
-          body:"BER-encodes the first two arcs (1, 3) into one byte via 40*X+Y = 0x2B, then one byte per remaining arc since each is under 128.",
-          note:"0x2B, 06, 01, 02, 01, 01, 01, 00 -> 1.3 . 6 . 1 . 2 . 1 . 1 . 1 . 0"},
-        {label:"tag",k:"sync",r:[38,38],val:"NULL (0x05)",sel:2,branch:BER_TAGS,body:"The value half of this VarBind - empty, because a GetRequest is asking for a value, not supplying one."},
-        {label:"length",k:"enum",r:[39,39],val:"0"}
+        {label:"next header",k:"enum",r:[0,0],val:"ICMPv6 (58)",sel:7,branch:NH_TYPES,
+          body:"Points to whatever comes next - another extension header, or the upper-layer protocol. Same IANA registry as IPv4's Protocol field."},
+        {label:"hdr ext len",k:"enum",r:[1,1],val:"0 (8 bytes total)",
+          body:"In 8-octet units, NOT counting the first 8 octets. So 0 means the whole header (including these first 2 bytes) is exactly 8 bytes; 1 means 16 bytes, and so on.",
+          note:"Fragment doesn't have this field at all - it's always exactly 8 bytes, see its own tab."}
+      ]],
+    "block-hopbyhop":["byte",
+      [0x3A,0x00,0x05,0x02,0x00,0x00,0x01,0x00],
+      [
+        {label:"next header",k:"enum",r:[0,0],val:"ICMPv6 (58)",sel:7,branch:NH_TYPES},
+        {label:"hdr ext len",k:"enum",r:[1,1],val:"0 (8 bytes total)"},
+        {label:"opt type",k:"enum",r:[2,2],val:"Router Alert (0x05)",sel:0,branch:[
+          ["0x00","Pad1"],["0x01","PadN"],["0x05","Router Alert (RFC 2711)"],["0xC9","Home Address (Mobile IPv6)"]],
+          body:"Top 2 bits (00 here) tell a node that doesn't recognize this option type to just skip it and continue processing - not relevant for Router Alert since every router is expected to understand it."},
+        {label:"opt data len",k:"enum",r:[3,3],val:"2"},
+        {label:"opt value",k:"enum",r:[4,5],val:"0 (MLD)",sel:0,branch:[["0","MLD"],["1","RSVP"],["2","Active Networks"]],
+          body:"Which protocol wants this packet's contents inspected en route. MLD (0) is how multicast-aware routers notice group joins/leaves without running full multicast routing on every packet."},
+        {label:"PadN",k:"rsv",r:[6,7],val:"type=1, 0 data bytes",body:"Pads the header out to the required 8-byte multiple. Carries no information."}
+      ]],
+    "block-routing":["byte",
+      [0x3A,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0xFD,0x00,0x00,0x06,0xCA,0xFE,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01],
+      [
+        {label:"next header",k:"enum",r:[0,0],val:"ICMPv6 (58)",sel:7,branch:NH_TYPES},
+        {label:"hdr ext len",k:"enum",r:[1,1],val:"2 (24 bytes total)",body:"2 units of 8 bytes after the first 8 - exactly enough for one 16-byte address."},
+        {label:"routing type",k:"enum",r:[2,2],val:"Type 0 - deprecated",sel:0,branch:[
+          ["0","Type 0 - arbitrary source routing, deprecated 2007 (RFC 5095)"],
+          ["2","Type 2 - Mobile IPv6 Home Address"],
+          ["3","Type 3 - RPL Source Route (RFC 6554)"],
+          ["4","Type 4 - Segment Routing Header, SRv6 (RFC 8754)"]],
+          body:"Selects the format of everything after Segments Left. Type 0's own format (shown here) is just a flat list of 16-byte addresses."},
+        {label:"segments left",k:"enum",r:[3,3],val:"1",body:"Number of remaining route segments - decremented at each listed hop, packet forwarded to the next address until this hits 0."},
+        {label:"reserved",k:"rsv",r:[4,7],val:"0x00000000"},
+        {label:"address[0]",k:"sync",r:[8,23],val:"fd00:6:cafe::1",body:"The one intermediate hop this packet is source-routed through before reaching its real destination."}
+      ]],
+    "block-fragment":["bit",
+      [0x3A,0x00,0x00,0x08,0x00,0x00,0x13,0x37],
+      [
+        {label:"next header",k:"enum",r:[0,7],val:"ICMPv6 (58)",body:"The upper-layer protocol of the REASSEMBLED packet - same value on every fragment of the same original datagram."},
+        {label:"reserved",k:"rsv",r:[8,15],val:"0x00"},
+        {label:"fragment offset",k:"enum",r:[16,28],val:"1 (byte offset 8)",body:"In 8-byte units - so a raw value of 1 means this fragment's data starts at byte 8 of the reassembled payload."},
+        {label:"reserved 2",k:"rsv",r:[29,30],val:"00"},
+        {label:"M flag",k:"flag",r:[31,31],val:"0 (last fragment)",sel:0,branch:[["0","last fragment"],["1","more fragments follow"]],
+          body:"Set on every fragment except the last. A reassembler knows it has everything once offset 0 through an M=0 fragment has no gaps."},
+        {label:"identification",k:"sync",r:[32,63],val:"0x1337",body:"Ties every fragment of one original datagram together, combined with (source, destination). Must match exactly across all fragments of the same packet."}
+      ]],
+    "block-destopts":["byte",
+      [0x3B,0x00,0x01,0x04,0x00,0x00,0x00,0x00],
+      [
+        {label:"next header",k:"enum",r:[0,0],val:"No Next Header (59)",sel:8,branch:NH_TYPES,
+          body:"59 here means \"nothing follows this header\" - a legal, if unusual, way for a packet to end."},
+        {label:"hdr ext len",k:"enum",r:[1,1],val:"0 (8 bytes total)"},
+        {label:"opt type",k:"enum",r:[2,2],val:"PadN (1)",sel:1,branch:[["0","Pad1"],["1","PadN"],["0xC9","Home Address (Mobile IPv6)"]],
+          body:"Pad1 (a single 0x00 byte, no length field) and PadN (this one) are the only two options every implementation is guaranteed to understand - because padding has to work even when nothing else does."},
+        {label:"opt data len",k:"enum",r:[3,3],val:"4 (4 padding data bytes follow)"},
+        {label:"padding",k:"rsv",r:[4,7],val:"0x00000000",body:"Not interpreted - exists purely to round the header out to a multiple of 8 bytes."}
       ]]
   };
 
@@ -343,7 +404,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   });});
   var initial=(location.hash||"").replace("#","");
   if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
-  else buildPanel("getrequest");
+  else buildPanel("overview");
 
 })();
 </script>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>protocols-fun / SNMP anatomy</title>
+<title>protocols-fun / ICMPv6 &amp; Neighbor Discovery anatomy</title>
 <script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,7 +38,6 @@ protofun-toggle:hover{color:var(--enum)}
 .head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
-.lede a{color:var(--enum)}
 .intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
 .intro .lede{margin-bottom:0}
 .sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
@@ -60,9 +59,6 @@ protofun-toggle:hover{color:var(--enum)}
 .note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:74ch}
 .callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.2rem 0 0.4rem;max-width:76ch}
 .callout b{color:var(--ink);font-weight:500}
-.compare{width:100%;border-collapse:collapse;font-size:0.78rem;margin:0.6rem 0 1.2rem;max-width:76ch}
-.compare th,.compare td{border:1px solid var(--hair);padding:0.4rem 0.7rem;text-align:left;vertical-align:top}
-.compare th{background:var(--panel);color:var(--ink);font-weight:500;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.06em}
 
 .tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none;margin-bottom:0}
 .tab{padding:0.55rem 0.9rem;font-size:0.64rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
@@ -96,6 +92,12 @@ protofun-toggle:hover{color:var(--enum)}
 .bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
 .bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
 .bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+.bit.k-sync{background:var(--sync-soft)} .bit.k-enum{background:var(--enum-soft)}
+.bit.k-flag{background:var(--flag-soft)} .bit.k-rsv{background:var(--rsv-soft)}
+.bit.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bit.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bit.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bit.hi.k-rsv{background:var(--faint);color:var(--paper)}
 
 .block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
 .left{min-width:0}
@@ -131,17 +133,17 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   <div class="head">
     <div class="row">
-      <div class="title"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>SNMP Anatomy</h1></div>
-      <div class="stamp"><b>RFC 1157 (1988)</b>ASN.1 BER, not a fixed C-struct header<br>rev 2026.08</div>
+      <div class="title"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>ICMPv6 &amp; Neighbor Discovery Anatomy</h1></div>
+      <div class="stamp"><b>RFC 4443 + RFC 4861</b>every NDP message, byte by byte<br>rev 2026.08</div>
     </div>
     <div class="strip">
-      <div>encoding <b>ASN.1 BER, tag-length-value</b></div><div>v1/v2c auth <b>plaintext community string</b></div>
-      <div>v3 auth <b>HMAC + encryption, RFC 3414</b></div><div>see also <b>../index.html</b></div>
+      <div>header <b>4 bytes + body</b></div><div>ndp types <b>133-137</b></div>
+      <div>checksum <b>pseudo-header</b></div><div>see also <b>ipv6-anatomy.html</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede">Every other protocol on this site is a fixed C-struct-shaped header. SNMP (<a href="https://www.rfc-editor.org/rfc/rfc1157">RFC 1157</a>, 1988) isn't - it's ASN.1 encoded using BER (Basic Encoding Rules), which means every field is self-describing: a one-byte <b>tag</b> says what it is, a length byte says how many bytes follow, then the <b>value</b> - and values can nest other tag-length-value groups arbitrarily deep. A SEQUENCE (tag 0x30) is BER's version of a struct; an INTEGER (0x02), OCTET STRING (0x04), and OBJECT IDENTIFIER (0x06) are its primitives. This page's SNMPv1 example has every length verified against its actual encoded content, not just asserted. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
+  <p class="lede">IPv6 has no ARP, no broadcast, and no separate ping protocol - ICMPv6 (<a href="https://www.rfc-editor.org/rfc/rfc4443">RFC 4443</a>) carries all of it, and Neighbor Discovery (<a href="https://www.rfc-editor.org/rfc/rfc4861">RFC 4861</a>) is just five specific ICMPv6 message types. Every example on this page shares one running scenario: a host at <code>fe80::21a:2bff:fe3c:4d5e</code> (MAC <code>00:1a:2b:3c:4d:5e</code>) resolving and being resolved by <code>2001:db8::1a2b:3c4d:5e6f</code> - the same host used on the <a href="ipv6-anatomy.html">IPv6 Anatomy</a> page. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -154,36 +156,67 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   </div>
 
   <div class="tabs" id="tabs">
-    <button class="tab on" data-p="getrequest">GetRequest<small>v1, BER byte-by-byte</small></button>
-    <button class="tab" data-p="versions">Versions<small>v1 -&gt; v2c -&gt; v3</small></button>
+    <button class="tab on" data-p="overview">Overview<small>generic header</small></button>
+    <button class="tab" data-p="rs">RS<small>type 133</small></button>
+    <button class="tab" data-p="ra">RA<small>type 134</small></button>
+    <button class="tab" data-p="ns">NS<small>type 135</small></button>
+    <button class="tab" data-p="na">NA<small>type 136</small></button>
+    <button class="tab" data-p="redirect">Redirect<small>type 137</small></button>
   </div>
   <div class="panelwrap">
 
-    <div class="panel on" data-panel="getrequest">
-      <div class="pfacts"><span>size<b>40 bytes</b></span><span>community<b>"public"</b></span><span>querying<b>sysDescr.0 (1.3.6.1.2.1.1.1.0)</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A manager asking a device "what's your sysDescr value?" - the single most common SNMP operation there is. Every SEQUENCE and length byte below is real: computed from the actual encoded content, the same way the checksums on the TCP/UDP/ICMPv4 pages were computed from real pseudo-headers rather than asserted.</p>
-      <div class="sec">SNMPv1 GetRequest, BER-encoded (40 bytes)</div>
-      <p class="note">community "public" is the textbook-insecure default that made v1/v2c infamous - see the Versions tab.</p>
-      <div id="block-getrequest" data-build></div>
+    <div class="panel on" data-panel="overview">
+      <div class="pfacts"><span>header<b>type+code+checksum, 4 bytes</b></span><span>spec<b>RFC 4443</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Every ICMPv6 message opens with the same 4 bytes; everything after that is message-specific. The type field alone tells a receiver which of the five NDP messages (or which error/informational message) follows.</p>
+      <div class="sec">generic header (4 bytes)</div>
+      <p class="note">Example: Time Exceeded, hop limit reached in transit. Checksum shown as a placeholder here since a real one needs a full body - see the message-specific tabs for worked checksums over a complete message.</p>
+      <div id="block-overview" data-build></div>
+      <div class="callout"><b>same host, every tab.</b> fe80::21a:2bff:fe3c:4d5e / 00:1a:2b:3c:4d:5e is the same EUI-64 worked example used throughout; 2001:db8::1a2b:3c4d:5e6f is the same target used on the IPv6 Anatomy page. Every checksum on this page is computed for real, not illustrative placeholder math.</div>
     </div>
 
-    <div class="panel" data-panel="versions">
-      <div class="pfacts"><span>v1<b>1988, RFC 1157</b></span><span>v2c<b>1996, RFC 1901/3416</b></span><span>v3<b>2002, RFC 3414/3415</b></span></div>
-      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The PDU shape barely changed across twenty years - v2c mostly just added GetBulkRequest and richer error codes on top of v1's format. Security is where the real revision happened, and it happened once, all at once, in v3.</p>
-      <table class="compare">
-        <thead><tr><th>version</th><th>authentication</th><th>message shape</th></tr></thead>
-        <tbody>
-          <tr><td>v1</td><td>a plaintext "community string" sent with every request - anyone who can sniff the wire has full read (or write) access</td><td>version + community + PDU, exactly like the GetRequest tab</td></tr>
-          <tr><td>v2c</td><td>same community-string model as v1 - the "c" stands for "community," not "secure"</td><td>same shape as v1, plus new PDU types (GetBulkRequest, InformRequest)</td></tr>
-          <tr><td>v3</td><td>real per-user authentication (HMAC-MD5/SHA) and optional encryption (DES/AES) via the User-based Security Model (USM)</td><td>a much larger msgGlobalData + msgSecurityParameters header wraps a scopedPDU - not just a bigger version number on the same envelope</td></tr>
-        </tbody>
-      </table>
-      <div class="callout"><b>why this page doesn't diagram v3 byte-by-byte.</b> SNMPv3's USM security header is a genuinely different, much larger structure (authoritative engine ID, engine boots/time, username, and authentication/privacy parameters, all before the actual PDU is even reachable) - accurately encoding one requires far more BER nesting than a GetRequest does. It's a real candidate for its own page later; for now, the honest summary above beats a rushed, unverified byte diagram.</div>
+    <div class="panel" data-panel="rs">
+      <div class="pfacts"><span>type<b>133</b></span><span>sent to<b>ff02::2 (all-routers)</b></span><span>size<b>16 bytes</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">"Any routers out there?" - lets a host get an immediate RA on boot instead of waiting out the periodic interval, which can be minutes.</p>
+      <div class="sec">Router Solicitation (16 bytes)</div>
+      <p class="note">Sent from fe80::21a:2bff:fe3c:4d5e to ff02::2, with a Source Link-Layer Address option so the router doesn't need its own NS to reply.</p>
+      <div id="block-rs" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="ra">
+      <div class="pfacts"><span>type<b>134</b></span><span>sent to<b>ff02::1 or unicast</b></span><span>size<b>48 bytes</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Carries the prefix (via a Prefix Information Option), the M/O/H flags, a router preference, and lifetimes. This is what turns into a SLAAC address on the receiving host.</p>
+      <div class="sec">Router Advertisement + Prefix Information Option (48 bytes)</div>
+      <p class="note">Example: from fe80::1, advertising 2001:db8::/64, stateless-DHCPv6 (O=1), High preference, 30-minute router lifetime.</p>
+      <div id="block-ra" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="ns">
+      <div class="pfacts"><span>type<b>135</b></span><span>sent to<b>solicited-node multicast</b></span><span>size<b>32 bytes</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">"Who has this address?" - the direct ARP-replacement message. Sourced from :: instead of a real address, this exact same message doubles as the Duplicate Address Detection probe.</p>
+      <div class="sec">Neighbor Solicitation (32 bytes)</div>
+      <p class="note">Resolving 2001:db8::1a2b:3c4d:5e6f - sent to its solicited-node multicast ff02::1:ff4d:5e6f, derived from the target's low 24 bits.</p>
+      <div id="block-ns" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="na">
+      <div class="pfacts"><span>type<b>136</b></span><span>sent<b>unicast reply, or multicast gratuitous</b></span><span>size<b>32 bytes</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The reply to an NS - or, sent unsolicited ("gratuitous"), a way to update caches proactively. The Override flag is the exact primitive NDP spoofing abuses.</p>
+      <div class="sec">Neighbor Advertisement (32 bytes)</div>
+      <p class="note">2001:db8::1a2b:3c4d:5e6f answering the NS above, unicast back to the solicitor, Override set.</p>
+      <div id="block-na" data-build></div>
+    </div>
+
+    <div class="panel" data-panel="redirect">
+      <div class="pfacts"><span>type<b>137</b></span><span>sent<b>unicast, router to host</b></span><span>size<b>40 bytes</b></span></div>
+      <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">"Use this other router instead" - the current router telling a host that some other on-link router is a better next-hop for one specific destination.</p>
+      <div class="sec">Redirect (40 bytes, no options)</div>
+      <p class="note">The router at fe80::1 redirects our host toward fe80::99 for reaching 2001:db8::1a2b:3c4d:5e6f.</p>
+      <div id="block-redirect" data-build></div>
     </div>
 
   </div>
 
-  <footer><span>protocols-fun / SNMP anatomy</span><span>RFC 1157 . RFC 3414</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
+  <footer><span>protocols-fun / ICMPv6 anatomy</span><span><a href="ipv6-anatomy.html">IPv6 Anatomy</a> &middot; <a href="extension-headers-anatomy.html">Extension Headers</a></span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/ipv6-fun">ipv6-fun course</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
 </div>
 
 <protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle>
@@ -279,46 +312,112 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     dcol.style.minHeight=(maxH+6)+"px";
   }
 
-  var BER_TAGS=[["0x02","INTEGER"],["0x04","OCTET STRING"],["0x05","NULL"],["0x06","OBJECT IDENTIFIER"],
-    ["0x30","SEQUENCE"],["0xA0","GetRequest-PDU (context [0])"],["0xA1","GetNextRequest-PDU (context [1])"],
-    ["0xA2","GetResponse-PDU (context [2])"],["0xA3","SetRequest-PDU (context [3])"]];
+  var ICMP6_TYPES=[["1","Destination Unreachable"],["2","Packet Too Big"],["3","Time Exceeded"],["4","Parameter Problem"],
+    ["128","Echo Request"],["129","Echo Reply"],["130","MLD Query"],["131","MLD Report v1"],["132","MLD Done"],
+    ["133","Router Solicitation"],["134","Router Advertisement"],["135","Neighbor Solicitation"],
+    ["136","Neighbor Advertisement"],["137","Redirect"],["143","MLD Report v2"]];
 
   var SPECS={
-    "block-getrequest":["byte",
-      [0x30,0x26,0x02,0x01,0x00,0x04,0x06,0x70,0x75,0x62,0x6C,0x69,0x63,0xA0,0x19,
-       0x02,0x01,0x01,0x02,0x01,0x00,0x02,0x01,0x00,0x30,0x0E,0x30,0x0C,
-       0x06,0x08,0x2B,0x06,0x01,0x02,0x01,0x01,0x01,0x00,0x05,0x00],
+    "block-overview":["byte",
+      [0x03,0x00,0x00,0x00],
       [
-        {label:"tag",k:"sync",r:[0,0],val:"SEQUENCE (0x30)",sel:4,branch:BER_TAGS,body:"The whole SNMP message is one outer SEQUENCE - BER's struct equivalent."},
-        {label:"length",k:"enum",r:[1,1],val:"38 bytes follow",body:"Every length byte on this page is the actual byte count of its content, computed the same way a checksum would be - not just written down."},
-        {label:"tag",k:"sync",r:[2,2],val:"INTEGER (0x02)",sel:0,branch:BER_TAGS},
-        {label:"length",k:"enum",r:[3,3],val:"1"},
-        {label:"version",k:"enum",r:[4,4],val:"0 (SNMPv1)",body:"0=v1, 1=v2c, 3=v3 (2 was never assigned to anything shipped)."},
-        {label:"tag",k:"sync",r:[5,5],val:"OCTET STRING (0x04)",sel:1,branch:BER_TAGS},
-        {label:"length",k:"enum",r:[6,6],val:"6"},
-        {label:"community",k:"flag",r:[7,12],val:"\"public\"",body:"The entire v1/v2c security model. Sent in cleartext with every single request - anyone who can see this packet on the wire has whatever access this string grants."},
-        {label:"tag",k:"sync",r:[13,13],val:"GetRequest-PDU (0xA0)",sel:5,branch:BER_TAGS,body:"Context-specific constructed tag [0] - BER's way of saying \"this SEQUENCE means something PDU-type-specific, not just a generic struct.\""},
-        {label:"length",k:"enum",r:[14,14],val:"25 bytes follow"},
-        {label:"tag",k:"sync",r:[15,15],val:"INTEGER (0x02)",sel:0,branch:BER_TAGS},
-        {label:"length",k:"enum",r:[16,16],val:"1"},
-        {label:"request-id",k:"enum",r:[17,17],val:"1",body:"Chosen by the manager; the response echoes it back so an overlapping request can be matched to its reply."},
-        {label:"tag",k:"sync",r:[18,18],val:"INTEGER (0x02)",sel:0,branch:BER_TAGS},
-        {label:"length",k:"enum",r:[19,19],val:"1"},
-        {label:"error-status",k:"enum",r:[20,20],val:"0 (noError)",body:"Meaningless in a request - only the response fills this in with anything other than 0."},
-        {label:"tag",k:"sync",r:[21,21],val:"INTEGER (0x02)",sel:0,branch:BER_TAGS},
-        {label:"length",k:"enum",r:[22,22],val:"1"},
-        {label:"error-index",k:"enum",r:[23,23],val:"0",body:"Points at which variable binding caused an error, when error-status is nonzero."},
-        {label:"tag",k:"sync",r:[24,24],val:"SEQUENCE (0x30)",sel:4,branch:BER_TAGS,body:"variable-bindings: a SEQUENCE OF VarBind - here, just one."},
-        {label:"length",k:"enum",r:[25,25],val:"14 bytes follow"},
-        {label:"tag",k:"sync",r:[26,26],val:"SEQUENCE (0x30)",sel:4,branch:BER_TAGS,body:"One VarBind: a name/value pair."},
-        {label:"length",k:"enum",r:[27,27],val:"12 bytes follow"},
-        {label:"tag",k:"sync",r:[28,28],val:"OBJECT IDENTIFIER (0x06)",sel:3,branch:BER_TAGS},
-        {label:"length",k:"enum",r:[29,29],val:"8"},
-        {label:"OID",k:"sync",r:[30,37],val:"1.3.6.1.2.1.1.1.0 (sysDescr.0)",
-          body:"BER-encodes the first two arcs (1, 3) into one byte via 40*X+Y = 0x2B, then one byte per remaining arc since each is under 128.",
-          note:"0x2B, 06, 01, 02, 01, 01, 01, 00 -> 1.3 . 6 . 1 . 2 . 1 . 1 . 1 . 0"},
-        {label:"tag",k:"sync",r:[38,38],val:"NULL (0x05)",sel:2,branch:BER_TAGS,body:"The value half of this VarBind - empty, because a GetRequest is asking for a value, not supplying one."},
-        {label:"length",k:"enum",r:[39,39],val:"0"}
+        {label:"type",k:"enum",r:[0,0],val:"Time Exceeded (3)",sel:2,branch:ICMP6_TYPES,
+          body:"Identifies which ICMPv6 message this is. The five Neighbor Discovery types (133-137) live in exactly this same field.",
+          note:"133-137 all share this one shape for their first 4 bytes."},
+        {label:"code",k:"enum",r:[1,1],val:"0 (hop limit exceeded in transit)",
+          body:"Meaning depends on type. For Time Exceeded: 0=hop limit exceeded in transit, 1=fragment reassembly time exceeded. For most NDP messages code is always 0."},
+        {label:"checksum",k:"sync",r:[2,3],val:"placeholder",
+          body:"One's-complement checksum over a pseudo-header (source, destination, upper-layer length, next header=58) plus the full message body.",
+          note:"shown as 0x0000 here since this tab has no body to checksum - every other tab on this page computes a real one."}
+      ]],
+    "block-rs":["byte",
+      [0x85,0x00,0x89,0xC5,0x00,0x00,0x00,0x00,0x01,0x01,0x00,0x1A,0x2B,0x3C,0x4D,0x5E],
+      [
+        {label:"type",k:"enum",r:[0,0],val:"Router Solicitation (133)"},
+        {label:"code",k:"enum",r:[1,1],val:"0"},
+        {label:"checksum",k:"enum",r:[2,3],val:"0x89C5",
+          body:"Computed over the pseudo-header (src=fe80::21a:2bff:fe3c:4d5e, dst=ff02::2, next-header=58) plus these 16 bytes."},
+        {label:"reserved",k:"rsv",r:[4,7],val:"0x00000000",body:"Must be zero, ignored on receipt."},
+        {label:"opt type",k:"enum",r:[8,8],val:"Source Link-Layer Address (1)",sel:0,branch:[
+          ["1","Source Link-Layer Address"],["2","Target Link-Layer Address"],["3","Prefix Information"],
+          ["5","MTU"],["24","Route Information"],["25","RDNSS"]],
+          body:"NDP options share one TLV shape across every NDP message type - this registry is shared by RS/RA/NS/NA/Redirect."},
+        {label:"opt len",k:"enum",r:[9,9],val:"1 (8 bytes)",body:"Option length in 8-byte units, including the type+len bytes themselves."},
+        {label:"opt MAC",k:"sync",r:[10,15],val:"00:1a:2b:3c:4d:5e",body:"Our own MAC - lets the router reply with a unicast RA without needing its own NS first."}
+      ]],
+    "block-ra":["byte",
+      [0x86,0x00,0xFB,0x90,0x40,0x48,0x07,0x08,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+       0x03,0x04,0x40,0xC0,0x00,0x27,0x8D,0x00,0x00,0x09,0x3A,0x80,0x00,0x00,0x00,0x00,
+       0x20,0x01,0x0D,0xB8,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00],
+      [
+        {label:"type",k:"enum",r:[0,0],val:"Router Advertisement (134)"},
+        {label:"code",k:"enum",r:[1,1],val:"0"},
+        {label:"checksum",k:"enum",r:[2,3],val:"0xFB90",
+          body:"Computed over the pseudo-header (src=fe80::1, dst=ff02::1, next-header=58) plus all 48 bytes of this message."},
+        {label:"cur hop limit",k:"enum",r:[4,4],val:"64",body:"Suggested Hop Limit for hosts on this link to use for their own outgoing traffic."},
+        {label:"flags",k:"flag",r:[5,5],val:"M=0 O=1 H=0 Prf=High",sel:0,branch:[
+          ["0x48","M=0 O=1 H=0 Prf=01 (High) Res=000"]],
+          body:"M: use DHCPv6 for the address. O: use DHCPv6 for other config (DNS etc) - set here, meaning stateless DHCPv6. H: this router also does mobile-IPv6 home-agent duty. Prf: 2-bit router preference, RFC 4191.",
+          note:"byte = M<<7 | O<<6 | H<<5 | Prf<<3 | Reserved = 0x48"},
+        {label:"router lifetime",k:"enum",r:[6,7],val:"1800s (30 min)",body:"How long this router should be used as a default router. 0 means \"don't use me as a default router,\" but I can still be on-link."},
+        {label:"reachable time",k:"enum",r:[8,11],val:"0 (unspecified)",body:"How long a neighbor is considered REACHABLE after confirmation, in ms. 0 means \"don't override the host's own value.\""},
+        {label:"retrans timer",k:"enum",r:[12,15],val:"0 (unspecified)",body:"Interval between retransmitted Neighbor Solicitations, in ms. 0 means \"don't override.\""},
+        {label:"PIO type",k:"enum",r:[16,16],val:"Prefix Information (3)"},
+        {label:"PIO len",k:"enum",r:[17,17],val:"4 (32 bytes)"},
+        {label:"prefix length",k:"enum",r:[18,18],val:"64",body:"How many bits of the prefix field below are significant."},
+        {label:"L/A flags",k:"flag",r:[19,19],val:"L=1 A=1",sel:0,branch:[["0xC0","L=1 (on-link) A=1 (autonomous/SLAAC) Reserved1=0"]],
+          body:"L: this prefix is on-link, no router needed to reach it. A: use this prefix for SLAAC address generation. Independent bits on purpose."},
+        {label:"valid lifetime",k:"enum",r:[20,23],val:"2592000s (30 days)",body:"How long an address formed from this prefix stays valid at all."},
+        {label:"preferred lifetime",k:"enum",r:[24,27],val:"604800s (7 days)",body:"How long the address stays preferred before deprecating (still valid, but no longer chosen for new connections)."},
+        {label:"reserved2",k:"rsv",r:[28,31],val:"0x00000000"},
+        {label:"prefix",k:"sync",r:[32,47],val:"2001:db8::/64",body:"The advertised prefix, always written as a full 128-bit field regardless of prefix length - only the high 64 bits are significant here."}
+      ]],
+    "block-ns":["byte",
+      [0x87,0x00,0x47,0x58,0x00,0x00,0x00,0x00,
+       0x20,0x01,0x0D,0xB8,0x00,0x00,0x00,0x00,0x00,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0x6F,
+       0x01,0x01,0x00,0x1A,0x2B,0x3C,0x4D,0x5E],
+      [
+        {label:"type",k:"enum",r:[0,0],val:"Neighbor Solicitation (135)"},
+        {label:"code",k:"enum",r:[1,1],val:"0"},
+        {label:"checksum",k:"enum",r:[2,3],val:"0x4758",
+          body:"Computed over the pseudo-header (src=fe80::21a:2bff:fe3c:4d5e, dst=ff02::1:ff4d:5e6f, next-header=58) plus these 32 bytes."},
+        {label:"reserved",k:"rsv",r:[4,7],val:"0x00000000"},
+        {label:"target address",k:"sync",r:[8,23],val:"2001:db8::1a2b:3c4d:5e6f",
+          body:"The address whose link-layer address we're asking for. Also what a Duplicate Address Detection probe sets this to - for its own tentative address, sourced from :: instead of a real one."},
+        {label:"opt type",k:"enum",r:[24,24],val:"Source Link-Layer Address (1)"},
+        {label:"opt len",k:"enum",r:[25,25],val:"1 (8 bytes)"},
+        {label:"opt MAC",k:"sync",r:[26,31],val:"00:1a:2b:3c:4d:5e"}
+      ]],
+    "block-na":["byte",
+      [0x88,0x00,0x5F,0x78,0x60,0x00,0x00,0x00,
+       0x20,0x01,0x0D,0xB8,0x00,0x00,0x00,0x00,0x00,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0x6F,
+       0x02,0x01,0x00,0x1A,0x2B,0x3C,0x4D,0x5E],
+      [
+        {label:"type",k:"enum",r:[0,0],val:"Neighbor Advertisement (136)"},
+        {label:"code",k:"enum",r:[1,1],val:"0"},
+        {label:"checksum",k:"enum",r:[2,3],val:"0x5F78",
+          body:"Computed over the pseudo-header (src=2001:db8::1a2b:3c4d:5e6f, dst=fe80::21a:2bff:fe3c:4d5e, next-header=58) plus these 32 bytes."},
+        {label:"flags",k:"flag",r:[4,4],val:"R=0 S=1 O=1",sel:0,branch:[["0x60","R=0 S=1 O=1 Reserved=00000"]],
+          body:"R: sender is a router. S: this is a solicited reply (vs. gratuitous/unsolicited). O: override any existing cache entry even if one exists - the exact primitive NDP spoofing abuses when sent unsolicited with a lying target."},
+        {label:"reserved",k:"rsv",r:[5,7],val:"0x000000"},
+        {label:"target address",k:"sync",r:[8,23],val:"2001:db8::1a2b:3c4d:5e6f",body:"Confirms which address this advertisement is answering for."},
+        {label:"opt type",k:"enum",r:[24,24],val:"Target Link-Layer Address (2)",sel:0,branch:[["1","Source Link-Layer Address (used in NS, RS)"],["2","Target Link-Layer Address (used in NA, Redirect)"]],
+          body:"NA and Redirect use option type 2 for the same MAC-carrying purpose NS/RS use type 1 for."},
+        {label:"opt len",k:"enum",r:[25,25],val:"1 (8 bytes)"},
+        {label:"opt MAC",k:"sync",r:[26,31],val:"00:1a:2b:3c:4d:5e"}
+      ]],
+    "block-redirect":["byte",
+      [0x89,0x00,0x1E,0x2B,0x00,0x00,0x00,0x00,
+       0xFE,0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x99,
+       0x20,0x01,0x0D,0xB8,0x00,0x00,0x00,0x00,0x00,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0x6F],
+      [
+        {label:"type",k:"enum",r:[0,0],val:"Redirect (137)"},
+        {label:"code",k:"enum",r:[1,1],val:"0"},
+        {label:"checksum",k:"enum",r:[2,3],val:"0x1E2B",
+          body:"Computed over the pseudo-header (src=fe80::1, dst=fe80::21a:2bff:fe3c:4d5e, next-header=58) plus these 40 bytes."},
+        {label:"reserved",k:"rsv",r:[4,7],val:"0x00000000"},
+        {label:"target address",k:"sync",r:[8,23],val:"fe80::99",body:"The better next-hop - usually another router on the same link as the one sending this Redirect."},
+        {label:"destination address",k:"sync",r:[24,39],val:"2001:db8::1a2b:3c4d:5e6f",body:"The original destination the host was trying to reach when it used the wrong router."}
       ]]
   };
 
@@ -343,7 +442,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   });});
   var initial=(location.hash||"").replace("#","");
   if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
-  else buildPanel("getrequest");
+  else buildPanel("overview");
 
 })();
 </script>
