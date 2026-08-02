@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Every. Fucking. Protocol. Ever.</title>
+<title>Network Protocol Headers</title>
 <script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,7 +27,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1360px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr auto;align-items:stretch}
+.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem}
 .head .title protofun-toggle{--protofun-w:44px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
@@ -55,10 +55,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .line-label{font-family:var(--ff);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;pointer-events:none}
 
 .detailcard{position:sticky;top:1rem;border:1px solid var(--line);border-left:3px solid var(--enum);background:var(--panel);padding:1rem 1.05rem;min-height:22rem}
-.detailcard .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
-.detailcard .dl .status{padding:1px 6px;border:1px solid var(--line);font-size:0.56rem}
-.detailcard .dl .status.built{color:var(--enum);border-color:var(--enum)}
-.detailcard .dl .status.planned{color:var(--faint)}
+.detailcard .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem}
 .detailcard h3{font-weight:500;font-size:1rem;margin-bottom:0.3rem;color:var(--ink)}
 .detailcard .layer{font-size:0.66rem;color:var(--faint);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.7rem}
 .detailcard p{font-size:0.8rem;color:var(--soft);line-height:1.7;margin-bottom:0.7rem}
@@ -89,12 +86,8 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   <div class="head">
     <div class="row">
-      <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . THE MAP</div><h1>Every. Fucking. Protocol. Ever.</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
+      <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . THE MAP</div><h1>Network Protocol Headers</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
       <div class="stamp"><a href="https://x.com/r3l0z">r3l0z</a> &middot; <a href="https://hed0rah.github.io">hed0rah.github.io</a><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>lines <b>5</b></div><div>stations <b>18</b></div>
-      <div>built <b>17 of 18</b></div><div>engine <b>same as ipv6-fun</b></div>
     </div>
   </div>
 
@@ -165,7 +158,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <aside class="detailcard" id="card">
-      <div class="dl"><span id="c-layer-tag">select a station</span><span class="status" id="c-status"></span></div>
+      <div class="dl"><span id="c-layer-tag">select a station</span></div>
       <h3 id="c-title">Hover or click any station</h3>
       <div class="layer" id="c-layer"></div>
       <p id="c-body">Layer, dependencies, and a link to the full byte-level page once built.</p>
@@ -231,7 +224,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   var card = {
     tag: document.getElementById("c-layer-tag"),
-    status: document.getElementById("c-status"),
     title: document.getElementById("c-title"),
     layer: document.getElementById("c-layer"),
     body: document.getElementById("c-body"),
@@ -241,8 +233,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   function paint(id){
     var s = STATIONS[id]; if(!s) return;
     card.tag.textContent = id;
-    card.status.textContent = s.built ? "built" : "planned";
-    card.status.className = "status " + (s.built ? "built" : "planned");
     card.title.textContent = s.title;
     card.layer.textContent = s.layer;
     card.body.textContent = s.body;
