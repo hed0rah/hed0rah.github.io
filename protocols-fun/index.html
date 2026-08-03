@@ -81,6 +81,19 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
 @media(max-width:820px){.mapblock{grid-template-columns:1fr}.detailcard{position:static}}
+/* station-index ASCII tree */
+.tree{font-size:0.82rem;line-height:1.85;margin-top:0.3rem}
+.troot{color:var(--faint);font-size:0.72rem;letter-spacing:0.04em;margin-bottom:0.2rem}
+.tgrp{display:flex;align-items:center;gap:0.45rem;margin-top:0.4rem}
+.tgrp .g,.tleaf .g{color:var(--faint);white-space:pre;font-family:var(--ff)}
+.gdot{width:0.55rem;height:0.55rem;border-radius:50%;display:inline-block;flex:0 0 auto}
+.glab{font-weight:600;letter-spacing:0.05em}
+.tleaf{display:flex;align-items:baseline;gap:0.5rem;text-decoration:none;padding:0.07rem 0.35rem;border-radius:2px}
+.tleaf .n{color:var(--enum);flex:0 0 6.5rem}
+.tleaf .b{color:var(--soft);font-size:0.72rem;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tleaf:hover{background:var(--panel)}
+.tleaf:hover .n{text-decoration:underline}
+@media(max-width:640px){.tleaf .b{display:none}.tleaf .n{flex:0 0 auto}}
 /* --- secret themes: amber CRT + green-bar (propagated) --- */
 :root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.32)}
 :root[data-theme="amber"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 3px)}
@@ -264,28 +277,39 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     });
   });
 
-  // build the station index list
+  // build the station index as an ASCII tree grouped by layer -- every leaf is a
+  // full clickable link (hover paints the detail card, like the map stations).
   var plist = document.getElementById("plist");
   var order = ["tcp","udp","ipv4","icmp","ipv6","arp","ethernet","wifi","ppp","dns","http","dhcp","snmp","bgp","ipx","pocsag","sitor","arpanet-imp"];
-  order.forEach(function(id){
-    var s = STATIONS[id];
-    var row = document.createElement("div"); row.className = "prow";
-    var dot = document.createElement("span"); dot.className = "dot";
-    dot.style.border = "2px solid " + s.color;
-    dot.style.background = s.built ? s.color : "transparent";
-    row.appendChild(dot);
-    var layer = document.createElement("span"); layer.className = "layer"; layer.textContent = s.layer.split(" ")[0]; row.appendChild(layer);
-    var name = document.createElement("span"); name.textContent = s.title; row.appendChild(name);
-    if(s.built){
-      var a=document.createElement("a"); a.href=s.page; a.textContent="open ->"; row.appendChild(a);
-    } else if(s.link){
-      var a2=document.createElement("a"); a2.href=s.link; a2.target="_blank"; a2.rel="noopener"; a2.textContent="ipv6-fun ->"; row.appendChild(a2);
-    } else {
-      var soon=document.createElement("span"); soon.className="soon"; soon.textContent="planned"; row.appendChild(soon);
-    }
-    row.addEventListener("mouseenter", function(){ paint(id); });
-    plist.appendChild(row);
+  var LAYERS = [
+    ["Application (L7)","var(--l-app)"],["Transport (L4)","var(--l-transport)"],
+    ["Internet (L3)","var(--l-internet)"],["Link (L2)","var(--l-link)"],["Legacy / Other","var(--l-legacy)"]
+  ];
+  var byLayer = {};
+  order.forEach(function(id){ var s=STATIONS[id]; (byLayer[s.layer]=byLayer[s.layer]||[]).push(id); });
+  var tree=document.createElement("div"); tree.className="tree";
+  var rootrow=document.createElement("div"); rootrow.className="troot"; rootrow.textContent="protocols/"; tree.appendChild(rootrow);
+  LAYERS.forEach(function(L,li){
+    var ids=byLayer[L[0]]||[]; if(!ids.length) return;
+    var lastGrp = li===LAYERS.length-1;
+    var gh=document.createElement("div"); gh.className="tgrp";
+    var gg=document.createElement("span"); gg.className="g"; gg.textContent=(lastGrp?"└─ ":"├─ "); gh.appendChild(gg);
+    var gd=document.createElement("span"); gd.className="gdot"; gd.style.background=L[1]; gh.appendChild(gd);
+    var gl=document.createElement("span"); gl.className="glab"; gl.style.color=L[1]; gl.textContent=L[0].toLowerCase(); gh.appendChild(gl);
+    tree.appendChild(gh);
+    ids.forEach(function(id,ci){
+      var s=STATIONS[id]; var lastLeaf=ci===ids.length-1;
+      var pre=(lastGrp?"   ":"│  ")+(lastLeaf?"└─ ":"├─ ");
+      var a=document.createElement("a"); a.className="tleaf";
+      if(s.built&&s.page) a.href=s.page; else if(s.link){ a.href=s.link; a.target="_blank"; a.rel="noopener"; }
+      var g=document.createElement("span"); g.className="g"; g.textContent=pre; a.appendChild(g);
+      var n=document.createElement("span"); n.className="n"; n.textContent=s.title; a.appendChild(n);
+      var b=document.createElement("span"); b.className="b"; b.textContent=(s.body.split(". ")[0]||"").replace(/\.$/,""); a.appendChild(b);
+      a.addEventListener("mouseenter", function(){ paint(id); });
+      tree.appendChild(a);
+    });
   });
+  plist.appendChild(tree);
 
   paint("tcp");
 
