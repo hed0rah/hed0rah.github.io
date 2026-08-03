@@ -1,5 +1,5 @@
 // protofun-toggle -- RJ, the protocols-fun / ipv6-fun mascot + 4-theme cycle.
-// Click cycles: light -> dark -> amber-CRT -> green-bar -> light. The two "secret"
+// Click cycles: light -> dark -> amber-CRT -> vaporwave -> light. The two "secret"
 // modes (amber/green) light RJ up -- happy eyes + pins racing -- like nibs in acid mode.
 // Sets data-theme on <html>; each page's CSS paints the palette. One shared file per repo.
 (function () {
@@ -38,11 +38,11 @@
     .box{width:var(--protofun-w,30px);height:var(--protofun-h,45px)}
     .eyes-happy,.eyes-scowl,.mouth-frown{display:none}
     /* any non-light theme => happy ^^ eyes */
-    :host([data-state="dark"]) .eyes,:host([data-state="amber"]) .eyes,:host([data-state="green"]) .eyes{display:none}
-    :host([data-state="dark"]) .eyes-happy,:host([data-state="amber"]) .eyes-happy,:host([data-state="green"]) .eyes-happy{display:inline}
+    :host([data-state="dark"]) .eyes,:host([data-state="amber"]) .eyes,:host([data-state="vapor"]) .eyes{display:none}
+    :host([data-state="dark"]) .eyes-happy,:host([data-state="amber"]) .eyes-happy,:host([data-state="vapor"]) .eyes-happy{display:inline}
     /* pins: gentle chase in dark, FAST in the secret amber/green (the rave) */
     :host([data-state="dark"]) .pins line{animation:pf-chase 1.3s ease-in-out infinite}
-    :host([data-state="amber"]) .pins line,:host([data-state="green"]) .pins line{animation:pf-chase .5s ease-in-out infinite}
+    :host([data-state="amber"]) .pins line,:host([data-state="vapor"]) .pins line{animation:pf-chase .5s ease-in-out infinite}
     .pins line:nth-child(2){animation-delay:.06s}.pins line:nth-child(3){animation-delay:.12s}
     .pins line:nth-child(4){animation-delay:.18s}.pins line:nth-child(5){animation-delay:.24s}
     .pins line:nth-child(6){animation-delay:.30s}.pins line:nth-child(7){animation-delay:.36s}
@@ -60,12 +60,12 @@
     @media (prefers-reduced-motion:reduce){.pins line,.eyes{animation:none}}
   `;
 
-  var STATES = ['light', 'dark', 'amber', 'green'];
+  var STATES = ['light', 'dark', 'amber', 'vapor'];
 
   class ProtofunToggle extends HTMLElement {
     connectedCallback() {
       var root = this.attachShadow({ mode: 'open' });
-      root.innerHTML = '<style>' + css + '</style><button type="button" aria-label="Cycle theme: light, dark, amber CRT, green-bar" title="Theme (click to cycle)"><span class="box">' + svg + '</span></button>';
+      root.innerHTML = '<style>' + css + '</style><button type="button" aria-label="Cycle theme: light, dark, amber CRT, vaporwave" title="Theme (click to cycle)"><span class="box">' + svg + '</span></button>';
       this._btn = root.querySelector('button');
       this._btn.addEventListener('click', () => this.cycle());
       this._sync = (e) => { if (e.target !== this && e.detail && e.detail.theme) this.apply(e.detail.theme, false); };
