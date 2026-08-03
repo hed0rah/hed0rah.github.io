@@ -254,6 +254,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       </div>
       <div class="callout hot"><b>why JA4 beat the old JA3.</b> JA3 hashed raw, order-sensitive fields into one opaque MD5 - trivially perturbed by GREASE and TLS extension-shuffling, so a client could randomize its own fingerprint per connection. JA4 <b>sorts</b> before hashing (defeating shuffling), strips GREASE, and keeps the human-readable prefix, so it's stable across sessions and skimmable by an analyst. The wider JA4+ suite adds <b>JA4H</b> (HTTP), <b>JA4T/JA4TS</b> (TCP), <b>JA4S</b> (the server's hello), and <b>JA4X</b> (the certificate).</div>
       <div class="callout"><b>the catch: fingerprints spoof too.</b> Tools like <code>curl-impersonate</code> and <code>utls</code> let a bot reproduce a real browser's exact ClientHello - so a fingerprint match is strong evidence, not proof. The state of the art combines the fingerprint with behavior (timing, ordering, whether it solves a challenge) rather than trusting any single signal - the same "obscurity is a layer, not the control" lesson from address scanning.</div>
+      <div class="callout"><b>see it on the wire.</b> To capture and pick these ClientHellos out of live traffic, see <a href="../filtering/capture-filter.html">capture &amp; filter</a> - the display filter is <code>tls.handshake.type == 1</code>.</div>
     </div>
 
     <div class="panel" data-panel="defense">
@@ -279,7 +280,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   </div>
 
-  <footer><span>protocols-fun / attack &amp; mitigation anatomy</span><span>RFC 4987 . RFC 2827 (BCP 38) . CVE-2023-44487 . JA4+</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
+  <footer><span>protocols-fun / attack &amp; mitigation anatomy</span><span>RFC 4987 . RFC 2827 (BCP 38) . CVE-2023-44487 . JA4+</span><span><a href="../filtering/capture-filter.html">capture &amp; filter</a> &middot; <a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
 </div>
 
 

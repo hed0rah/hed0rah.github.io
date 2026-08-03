@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>protocols-fun / capture &amp; filter</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E9ECEC; --panel:#F0F3F3; --ink:#141A1B; --soft:#4B585A;
+  --faint:#7E8B8D; --line:#CAD4D4; --hair:#DEE6E6;
+  --enum:#0E7A8C; --enum-soft:#D2E7EA;
+  --flag:#B4741A; --flag-soft:#F0E2CB;
+  --sync:#3E5169; --sync-soft:#DCE2EA;
+  --rsv:#828C8D;  --rsv-soft:rgba(20,26,27,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#0a0f0d;--panel:#0f1613;--ink:#c6f0d0;--soft:#7fae90;--faint:#4f6a5c;--line:#22302a;--hair:#151d19;--enum:#2fe38a;--enum-soft:#0e2a1d;--flag:#e0a92e;--flag-soft:#2c2410;--sync:#4fb8d6;--sync-soft:#0f2630;--rsv:#6f8f7f;--rsv-soft:rgba(198,240,208,0.05);}
+:root[data-theme="amber"]{--paper:#120c00;--panel:#1c1400;--ink:#ffb000;--soft:#c08a2a;--faint:#8a6a20;--line:#3a2a00;--hair:#241900;--enum:#ffb000;--enum-soft:#2a1d00;--flag:#ffd27a;--flag-soft:#332400;--sync:#d98a1a;--sync-soft:#241a00;--rsv:#9a7524;--rsv-soft:rgba(255,176,0,0.05);}
+:root[data-theme="green"]{--paper:#e9efe0;--panel:#eef3e6;--ink:#1a2418;--soft:#4a5a44;--faint:#7a8a70;--line:#b9caa9;--hair:#d3e0c4;--enum:#2f7d32;--enum-soft:#d9e8cf;--flag:#a2551a;--flag-soft:#eaddc8;--sync:#2b5a8c;--sync-soft:#d5e0ec;--rsv:#7a8a70;--rsv-soft:rgba(26,36,24,0.05);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
+.head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem}
+.head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
+.head .title protofun-toggle:hover{color:var(--enum)}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500}
+.lede a{color:var(--enum)}
+.intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
+.intro .lede{margin-bottom:0}
+.sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
+.sig .legrows{display:flex;flex-direction:column;gap:0.42rem}
+.sig .siglabel{writing-mode:vertical-rl;text-orientation:mixed;align-self:stretch;display:flex;align-items:center;justify-content:center;font-size:0.5rem;letter-spacing:0.34em;text-transform:uppercase;color:var(--faint);padding-left:0.9rem;border-left:1px solid var(--hair)}
+.sig .row{display:flex;align-items:center;gap:0.4rem;font-size:0.68rem;color:var(--soft);letter-spacing:0.02em;white-space:nowrap}
+.sig .swsep{color:var(--faint);font-size:0.62rem}
+.sig .sw{display:inline-flex;align-items:center;justify-content:center;width:6.1rem;height:1.45rem;padding:0;font-size:0.58rem;letter-spacing:0.1em;text-transform:lowercase;flex-shrink:0}
+.sig .sw.dark{color:var(--paper)}
+.sig .sw.light{color:var(--ink);border:1px solid var(--hair)}
+.sig .sw.dark.k-enum{background:var(--enum)} .sig .sw.light.k-enum{background:var(--enum-soft)}
+.sig .sw.dark.k-flag{background:var(--flag)} .sig .sw.light.k-flag{background:var(--flag-soft)}
+.sig .sw.dark.k-sync{background:var(--sync)} .sig .sw.light.k-sync{background:var(--sync-soft)}
+.sig .sw.dark.k-rsv{background:var(--faint)} .sig .sw.light.k-rsv{background:var(--rsv-soft)}
+@media(max-width:820px){.intro{display:block}.sig{display:none}}
+.k-en{color:var(--enum)} .k-fl{color:var(--flag)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:2.4rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:74ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.2rem 0 0.4rem;max-width:80ch}
+.callout b{color:var(--ink);font-weight:500}
+.callout.hot{border-left-color:var(--enum)}
+code{font-family:var(--ff);color:var(--enum);font-size:0.92em;background:var(--rsv-soft);padding:0.02rem 0.28rem;border-radius:2px;white-space:nowrap}
+.cmd{font-family:var(--ff);font-size:0.76rem;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--enum);padding:0.6rem 0.85rem;margin:0.5rem 0 1.2rem;overflow-x:auto;white-space:pre;color:var(--ink);line-height:1.7}
+.cmd .p{color:var(--faint)} .cmd .c{color:var(--faint);font-style:italic}
+.atable{width:100%;border-collapse:collapse;font-size:0.74rem;margin:0.4rem 0 1.4rem}
+.atable th,.atable td{text-align:left;padding:0.4rem 0.7rem;border-bottom:1px solid var(--hair);vertical-align:top}
+.atable th{font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+.atable td.x{font-family:var(--ff);color:var(--enum);white-space:nowrap;font-size:0.72rem}
+.atable td.f{color:var(--ink);font-weight:500;white-space:nowrap}
+.kv{font-size:0.78rem;margin:0.3rem 0 1.2rem}
+.kv div{display:grid;grid-template-columns:9rem 1fr;gap:1rem;padding:0.3rem 0;border-bottom:1px solid var(--hair)}
+.kv div:last-child{border-bottom:none}
+.kv .k{color:var(--enum)} .kv .v{color:var(--soft)}
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none;margin-bottom:0}
+.tab{padding:0.55rem 0.9rem;font-size:0.64rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:last-child{border-right:none}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.08em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none}
+.panel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+.plede{color:var(--soft);max-width:80ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
+.plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em}
+.diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
+.dbytes{display:flex;flex-wrap:wrap;gap:4px;margin:0.6rem 0 1.4rem}
+.bcol{display:flex;flex-direction:column;align-items:center}
+.bcol .off{font-size:0.5rem;color:var(--faint);margin-bottom:2px;letter-spacing:0.02em}
+.bcell{width:2.5rem;height:1.9rem;display:flex;align-items:center;justify-content:center;font-size:0.78rem;border:1px solid var(--hair);color:var(--soft);transition:background .12s,color .12s;cursor:pointer}
+.bcell.k-sync{background:var(--sync-soft)} .bcell.k-enum{background:var(--enum-soft)}
+.bcell.k-flag{background:var(--flag-soft)} .bcell.k-rsv{background:var(--rsv-soft)}
+.bcell.fstart{border-left:2px solid var(--line)}
+.bcell.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+.block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
+.left{min-width:0}
+.detailcol{position:relative}
+@media(max-width:820px){.block{grid-template-columns:1fr}.detailcol{position:static}}
+.fields{border-top:1px solid var(--line)}
+.field{display:grid;grid-template-columns:5rem 1fr auto;gap:0.8rem;align-items:baseline;padding:0.46rem 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.field:hover,.field.active,.field.cued{background:var(--panel)}
+.field .fb{font-size:0.6rem;color:var(--faint)} .field .fn{font-size:0.82rem;color:var(--ink)}
+.field[data-branch] .fn::after{content:"+";margin-left:0.4rem;color:var(--enum);font-weight:500}
+.field.active[data-branch] .fn::after{content:"\2212"}
+.fv{font-size:0.76rem;text-align:right}
+.fv.k-sync{color:var(--sync)} .fv.k-enum{color:var(--enum)} .fv.k-flag{color:var(--flag)} .fv.k-rsv{color:var(--faint)}
+.branch{grid-column:1 / -1;display:none;padding:0.5rem 0 0.2rem 5.8rem}
+.field.active .branch{display:block}
+.branch table{border-collapse:collapse;font-size:0.7rem;width:100%;max-width:26rem}
+.branch td{padding:1px 10px 1px 0;color:var(--soft)} .branch td.k{color:var(--faint);width:3.4rem;text-align:right}
+.branch tr.sel td{color:var(--ink)} .branch tr.sel td.k{color:var(--enum);font-weight:500}
+.detail{position:absolute;inset:0;border:1px solid var(--line);background:var(--panel);padding:1rem 1.05rem;overflow-y:auto}
+@media(max-width:820px){.detail{position:static;height:16rem}}
+.detail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
+.detail .dl .kind{color:var(--soft)}
+.detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
+.detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
+.detail .dn{font-size:0.7rem;color:var(--ink);margin-top:0.7rem;line-height:1.6;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap;font-family:var(--ff)}
+footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+/* --- secret themes: amber CRT + green-bar --- */
+:root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.32)}
+:root[data-theme="amber"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 3px)}
+:root[data-theme="green"] body{background:repeating-linear-gradient(var(--paper) 0 26px,#d8e6c6 26px 52px)}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . CAPTURE &amp; FILTER</div><h1>Capture &amp; Filter</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
+      <div class="stamp"><b>the wire, filtered</b>BPF &middot; tcpdump &middot; Wireshark<br>rev 2026.08</div>
+    </div>
+    <div class="strip">
+      <div>tools <b>tcpdump &middot; tshark &middot; Wireshark</b></div>
+      <div>rule <b>capture drops, display hides</b></div>
+      <div>goal <b>see only what matters</b></div>
+    </div>
+  </div>
+
+  <div class="intro">
+  <p class="lede">Two completely different filter languages get confused constantly. A <b>capture filter</b> is BPF (Berkeley Packet Filter) - it runs in the kernel <b>as packets arrive</b>, and anything it rejects is gone forever. A <b>display filter</b> is Wireshark's own language - it runs <b>after</b> capture, over the buffer, hiding rows without deleting them. Same intent, different syntax: <code>udp port 37008</code> (BPF) vs <code>udp.port == 37008</code> (display). This page is the Rosetta between the two, anchored to the bytes they actually match. <b>Hover</b> a field in the frame below to see the byte, its BPF idiom, and its Wireshark field side by side.</p>
+  <aside class="sig" aria-label="color key">
+    <div class="legrows">
+    <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
+    <div class="row"><span class="sw dark k-flag">amber</span><span class="swsep">&#8594;</span><span class="sw light k-flag">flag</span></div>
+    <div class="row"><span class="sw dark k-sync">steel</span><span class="swsep">&#8594;</span><span class="sw light k-sync">structural</span></div>
+    <div class="row"><span class="sw dark k-rsv">faint</span><span class="swsep">&#8594;</span><span class="sw light k-rsv">reserved</span></div>
+    </div>
+    <div class="siglabel">color key</div>
+  </aside>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="twofilters">Two Filters<small>capture vs display</small></button>
+    <button class="tab" data-p="tools">Tools<small>who speaks what</small></button>
+    <button class="tab" data-p="prims">tcpdump &amp; BPF<small>primitives</small></button>
+    <button class="tab" data-p="offsets">Offset Matching<small>byte &rarr; filter</small></button>
+    <button class="tab" data-p="display">Display Filters<small>Wireshark</small></button>
+    <button class="tab" data-p="recipes">Recipes<small>investigation</small></button>
+    <button class="tab" data-p="gotchas">Gotchas<small>traps</small></button>
+  </div>
+  <div class="panelwrap">
+
+    <div class="panel on" data-panel="twofilters">
+      <div class="pfacts"><span>capture<b>BPF, kernel, at capture time</b></span><span>display<b>Wireshark, post-hoc, on the buffer</b></span></div>
+      <p class="plede">Pick the wrong one and you either throw away evidence you needed or wait for a filter that never narrows the capture. The rule: <b>capture to keep the haystack small, display to find the needle.</b></p>
+      <table class="atable">
+        <thead><tr><th></th><th>capture filter (BPF)</th><th>display filter</th></tr></thead>
+        <tbody>
+          <tr><td class="f">when</td><td>as packets arrive, in the kernel</td><td>after capture, on stored packets</td></tr>
+          <tr><td class="f">effect</td><td>rejected packets are <b>gone forever</b></td><td>hidden rows, still in the file</td></tr>
+          <tr><td class="f">syntax</td><td class="x">udp port 53</td><td class="x">udp.port == 53</td></tr>
+          <tr><td class="f">power</td><td>fast, coarse, offset/mask math</td><td>per-field, dissector-aware, regex</td></tr>
+          <tr><td class="f">used by</td><td>tcpdump, tshark -f, Wireshark capture box</td><td>Wireshark, tshark -Y</td></tr>
+          <tr><td class="f">use it to</td><td>keep the capture small on a busy link</td><td>drill into what you already caught</td></tr>
+        </tbody>
+      </table>
+      <div class="callout hot"><b>the trap that bites everyone.</b> Typing a display-filter expression like <code>udp.port == 37008</code> into a <i>capture</i> box (or vice versa) just errors or matches nothing. And <code>tzsp</code> is a Wireshark <i>display</i> dissector name - as a capture filter you'd write <code>udp port 37008</code> instead. When a filter "does nothing," first ask which of the two languages the box actually speaks.</div>
+      <div class="callout"><b>on a busy link, capture narrowly.</b> A full-rate capture on a 10G link fills disk and drops packets in seconds. Use a BPF capture filter to keep only the conversation you care about (a host, a port, a subnet), then use display filters to explore what you kept. You can never display-filter your way back to a packet the capture filter already dropped.</div>
+    </div>
+
+    <div class="panel" data-panel="tools">
+      <div class="pfacts"><span>the point<b>every sniffer speaks one or both of the same two languages</b></span></div>
+      <p class="plede">There is no "tcpdump syntax" versus "Wireshark syntax" - there is <b>BPF</b> (capture) and the <b>display</b> language, and each tool is a frontend to one or both. Learn the two languages once; the tools are just ergonomics. A capture filter written for tcpdump pastes straight into Wireshark's capture box or <code>tshark -f</code>; a display filter from Wireshark pastes straight into <code>tshark -Y</code>.</p>
+      <table class="atable">
+        <thead><tr><th>tool</th><th>capture (BPF)</th><th>display</th><th>best at</th></tr></thead>
+        <tbody>
+          <tr><td class="f">tcpdump</td><td>yes (filter arg)</td><td>no</td><td>fast CLI capture, headless boxes, writing pcap</td></tr>
+          <tr><td class="f">tshark</td><td>yes (<code>-f</code>)</td><td>yes (<code>-Y</code>)</td><td>scripting, field extraction, stats, pipelines</td></tr>
+          <tr><td class="f">Wireshark</td><td>yes (capture box)</td><td>yes (main bar)</td><td>interactive analysis, dissectors, follow-stream</td></tr>
+          <tr><td class="f">termshark</td><td>yes</td><td>yes</td><td>Wireshark's TUI - full display filters over SSH</td></tr>
+          <tr><td class="f">ngrep</td><td>yes + regex</td><td>no</td><td>grep-style payload matching live on the wire</td></tr>
+          <tr><td class="f">tcpflow</td><td>yes</td><td>no</td><td>reassembling and dumping TCP stream contents</td></tr>
+        </tbody>
+      </table>
+      <div class="callout hot"><b>the one thing beginners get wrong.</b> Capture and display filters are <i>not</i> interchangeable - a display expression in a capture box matches nothing, and vice versa. That single confusion is why this guide is organized by the two languages, not by tool.</div>
+      <div class="callout"><b>when tcpdump isn't enough: line-rate capture.</b> At 10G+ and for lossless capture you drop below libpcap - AF_XDP, XDP/eBPF programs, or capture hardware. Those are for volume, not interactive troubleshooting; tcpdump and tshark (classic BPF via libpcap) stay the right tools at the console.</div>
+    </div>
+
+    <div class="panel" data-panel="prims">
+      <div class="pfacts"><span>grammar<b>qualifier + combinator</b></span><span>man<b>pcap-filter(7)</b></span></div>
+      <p class="plede">A BPF expression is <b>qualifiers</b> (what to match) joined by <b>and / or / not</b>. Qualifiers come in three kinds: <b>type</b> (<code>host</code>, <code>net</code>, <code>port</code>, <code>portrange</code>), <b>dir</b> (<code>src</code>, <code>dst</code>), and <b>proto</b> (<code>ether</code>, <code>ip</code>, <code>ip6</code>, <code>arp</code>, <code>tcp</code>, <code>udp</code>, <code>icmp</code>).</p>
+      <table class="atable">
+        <thead><tr><th>expression</th><th>matches</th></tr></thead>
+        <tbody>
+          <tr><td class="x">host 192.0.2.1</td><td>any packet to or from that address</td></tr>
+          <tr><td class="x">src net 198.51.100.0/24</td><td>sourced from that subnet</td></tr>
+          <tr><td class="x">tcp port 443</td><td>TCP, either direction, port 443</td></tr>
+          <tr><td class="x">portrange 6000-6100</td><td>any port in the range</td></tr>
+          <tr><td class="x">udp and not port 53</td><td>UDP except DNS</td></tr>
+          <tr><td class="x">icmp or icmp6</td><td>either ICMP</td></tr>
+          <tr><td class="x">vlan and host 192.0.2.1</td><td>inside an 802.1Q tag (resets offsets)</td></tr>
+        </tbody>
+      </table>
+      <div class="sec">tcpdump, the flags that matter</div>
+      <table class="atable">
+        <thead><tr><th>flag</th><th>does</th></tr></thead>
+        <tbody>
+          <tr><td class="x">-i eth0</td><td>interface (<code>-i any</code> = all)</td></tr>
+          <tr><td class="x">-n / -nn</td><td>don't resolve names / names and ports (do this - see gotchas)</td></tr>
+          <tr><td class="x">-w f.pcap / -r f.pcap</td><td>write raw / read back a capture</td></tr>
+          <tr><td class="x">-c 100</td><td>stop after 100 packets</td></tr>
+          <tr><td class="x">-s N</td><td>snaplen: keep only the first N bytes. Modern default is already full (262144), so <code>-s0</code> is a legacy habit - use <code>-s</code> only to truncate</td></tr>
+          <tr><td class="x">-A / -X</td><td>print ASCII payload / hex + ASCII</td></tr>
+          <tr><td class="x">-e</td><td>show the link-layer (MAC) header</td></tr>
+          <tr><td class="x">-C 100 -W 10 -G 300</td><td>ring buffer: 100MB files, keep 10, rotate every 300s</td></tr>
+          <tr><td class="x">--print</td><td>decode to the screen AND write <code>-w</code> at the same time</td></tr>
+          <tr><td class="x">-U</td><td>immediate/unbuffered - flush each packet (needed when piping live)</td></tr>
+          <tr><td class="x">--nano</td><td>nanosecond timestamps (writes a different pcap magic; some old readers choke)</td></tr>
+        </tbody>
+      </table>
+      <div class="cmd"><span class="p">$</span> tcpdump -ni eth0 -w susp.pcap <span class="c"># full packets by default; add --print to watch live too</span>
+<span class="p">&gt;</span>   'host 192.0.2.1 and tcp port 443'</div>
+    </div>
+
+    <div class="panel" data-panel="offsets">
+      <div class="pfacts"><span>syntax<b>proto[offset:size] &amp; mask</b></span><span>the Rosetta<b>byte / BPF / display</b></span></div>
+      <p class="plede">When the named qualifiers aren't enough, BPF lets you index raw bytes: <code>proto[offset:size]</code> reads <code>size</code> bytes (1, 2, or 4) at <code>offset</code> <b>relative to that protocol's header</b>, and you mask/compare them. This is a real 54-byte Ethernet+IPv4+TCP SYN frame - <b>hover any field</b> for its bytes, the BPF idiom that matches it, and the equivalent Wireshark field.</p>
+      <div id="block-frame" data-build></div>
+      <div class="sec">the classic offset idioms</div>
+      <table class="atable">
+        <thead><tr><th>BPF</th><th>matches</th></tr></thead>
+        <tbody>
+          <tr><td class="x">tcp[13] &amp; 2 != 0</td><td>SYN bit set (the flags byte, masked)</td></tr>
+          <tr><td class="x">tcp[13] == 2</td><td>SYN and <i>nothing else</i> - a bare connection attempt / SYN flood</td></tr>
+          <tr><td class="x">tcp[13] &amp; 0x12 == 0x12</td><td>SYN+ACK (the reply half of a handshake)</td></tr>
+          <tr><td class="x">ip[6] &amp; 0x20 != 0</td><td>More Fragments set - a fragmented packet</td></tr>
+          <tr><td class="x">ip[9] == 6</td><td>protocol is TCP (same as just <code>tcp</code>)</td></tr>
+          <tr><td class="x">icmp[0] == 8</td><td>ICMP Echo Request (ping)</td></tr>
+          <tr><td class="x">greater 512</td><td>packet longer than 512 bytes (amp-answer sized)</td></tr>
+          <tr><td class="x">tcp[tcpflags] &amp; (tcp-syn|tcp-ack) == tcp-syn</td><td>same as <code>tcp[13]==2</code> using readable flag constants (tcp-syn, tcp-fin, tcp-rst, tcp-ack...)</td></tr>
+          <tr><td class="x">tcp[((tcp[12]&amp;0xf0)&gt;&gt;2):4] = 0x47455420</td><td>"GET " at the real payload start - computes header length so it survives TCP options</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>offsets are protocol-relative, and BPF does the arithmetic.</b> <code>tcp[13]</code> is byte 13 of the TCP header - in this frame that lands at absolute byte 47, because BPF adds the 14-byte Ethernet and 20-byte IP headers for you. Change the link layer (VLAN, tunnels) and those base offsets shift, which is exactly why the <code>vlan</code> keyword exists.</div>
+
+      <div class="sec">the same trick at the firewall: match &amp; drop</div>
+      <p class="plede">The offset-and-mask idea isn't only for <i>observing</i> traffic - the firewall uses it to <b>drop</b> it. iptables' <code>u32</code> match reaches into header bytes exactly like BPF; nftables (its modern successor) does it with readable keywords or raw payload expressions. Same mental model, three contexts: <b>capture &rarr; legacy drop &rarr; modern drop</b>.</p>
+      <table class="atable">
+        <thead><tr><th>context</th><th>match a bare SYN (proto = TCP, flags byte = 0x02)</th></tr></thead>
+        <tbody>
+          <tr><td class="f">BPF (capture)</td><td class="x">tcp[13] == 2</td></tr>
+          <tr><td class="f">iptables u32 (legacy)</td><td class="x">-m u32 --u32 "6&amp;0xFF=0x6 &amp;&amp; 4&amp;0x1FFF=0 &amp;&amp; 0&gt;&gt;22&amp;0x3C@13&amp;0xFF=0x02"</td></tr>
+          <tr><td class="f">nftables (native)</td><td class="x">tcp flags &amp; (syn|ack) == syn</td></tr>
+          <tr><td class="f">nftables (raw payload)</td><td class="x">meta l4proto tcp @th,13,8 0x02</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>decoding <code>0&gt;&gt;22&amp;0x3C@</code>, u32's infamous incantation.</b> It computes the IP header length so the match can jump past IP options to the transport header: read the first 4 bytes, <code>&gt;&gt;22</code> shifts the IHL nibble into place, <code>&amp;0x3C</code> masks it to IHL&times;4 (header length in bytes), and <code>@</code> sets that as the new base offset. Then <code>@13&amp;0xFF=0x02</code> reads TCP byte 13 (the flags) and tests for SYN; the <code>4&amp;0x1FFF=0</code> guard first excludes fragments, which have no usable transport offset.</div>
+      <div class="callout hot"><b>on a modern box, reach for nftables.</b> <code>iptables</code> is now the nft-backed compatibility CLI on most distros, and <code>u32</code> survives only through the <code>xt_u32</code> shim - there is no native u32 in nftables. Write new rules with nftables' readable <code>tcp flags</code> / <code>ip protocol</code> matching, dropping to raw <code>@th,offset,len</code> payload only when a field has no keyword. Add <code>counter drop</code> and a filter becomes a mitigation - the bridge to the <a href="../attacks/attack-anatomy.html">attack &amp; mitigation</a> page.</div>
+    </div>
+
+    <div class="panel" data-panel="display">
+      <div class="pfacts"><span>form<b>proto.field OP value</b></span><span>power<b>dissector-aware, regex, per-field</b></span></div>
+      <p class="plede">Display filters address <b>dissected fields</b> by name and compare them. Operators: <code>==</code> <code>!=</code> <code>&gt;</code> <code>&lt;</code> <code>&gt;=</code> <code>&lt;=</code>, plus <code>contains</code> (substring), <code>matches</code> (regex), and set membership <code>in {..}</code>. Combine with <code>&amp;&amp;</code> <code>||</code> <code>!</code>.</p>
+      <table class="atable">
+        <thead><tr><th>display filter</th><th>shows</th></tr></thead>
+        <tbody>
+          <tr><td class="x">ip.addr == 192.0.2.1</td><td>packets to or from that host</td></tr>
+          <tr><td class="x">tcp.port == 443 &amp;&amp; tcp.flags.syn == 1</td><td>SYNs to/from 443</td></tr>
+          <tr><td class="x">tcp.flags.syn==1 &amp;&amp; tcp.flags.ack==0</td><td>bare SYNs (flood signature)</td></tr>
+          <tr><td class="x">tcp.analysis.retransmission</td><td>Wireshark-flagged retransmits (loss/pressure)</td></tr>
+          <tr><td class="x">http.request.method == "GET"</td><td>HTTP GET requests</td></tr>
+          <tr><td class="x">dns.qry.name contains "example"</td><td>DNS queries for a name substring</td></tr>
+          <tr><td class="x">tls.handshake.type == 1</td><td>TLS ClientHello - the packet you fingerprint (JA4)</td></tr>
+          <tr><td class="x">frame.len &gt; 512</td><td>large frames (amp answers)</td></tr>
+          <tr><td class="x">ip.ttl &lt; 32</td><td>low TTL - possible spoofing / distant OS</td></tr>
+          <tr><td class="x">tcp.stream eq 3</td><td>one whole TCP conversation (pair with Follow &rarr; TCP Stream)</td></tr>
+          <tr><td class="x">frame contains "password"</td><td>raw byte substring anywhere in the frame</td></tr>
+          <tr><td class="x">tcp.len &gt; 0</td><td>segments actually carrying payload (skip bare ACKs)</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>let Wireshark write the filter.</b> Right-click any field in the packet detail tree and <i>Apply as Filter</i> - it builds the exact <code>proto.field == value</code> for you. <i>Follow &rarr; TCP/HTTP Stream</i> reassembles a whole conversation, and <i>Statistics &rarr; Conversations / Endpoints</i> ranks talkers by bytes - the fastest way to spot the one host drowning a link.</div>
+    </div>
+
+    <div class="panel" data-panel="recipes">
+      <div class="pfacts"><span>use case<b>investigating hostile traffic</b></span><span>pairs with<b>the attack &amp; mitigation page</b></span></div>
+      <p class="plede">The payoff: turning "something is wrong" into a specific offender. These are vendor-neutral and use documentation addresses. See the <a href="../attacks/attack-anatomy.html">attack &amp; mitigation anatomy</a> for what each pattern <i>is</i>.</p>
+      <div class="sec">isolate a suspect address</div>
+      <div class="cmd"><span class="p">$</span> tcpdump -nni eth0 'host 203.0.113.5'          <span class="c"># capture</span>
+<span class="c"># Wireshark display:</span> ip.addr == 203.0.113.5</div>
+      <div class="sec">catch a SYN flood / count the sources</div>
+      <div class="cmd"><span class="p">$</span> tcpdump -nni eth0 'tcp[13] == 2'               <span class="c"># bare SYNs only</span>
+<span class="p">$</span> tshark -nr cap.pcap -Y 'tcp.flags.syn==1 &amp;&amp; tcp.flags.ack==0' \
+<span class="p">&gt;</span>   -T fields -e ip.src | sort | uniq -c | sort -rn   <span class="c"># top SYN sources</span></div>
+      <div class="sec">amplification-sized answers</div>
+      <div class="cmd"><span class="p">$</span> tcpdump -nni eth0 'udp port 53 and greater 512' <span class="c"># big DNS replies</span></div>
+      <div class="sec">extract ClientHellos to fingerprint</div>
+      <div class="cmd"><span class="p">$</span> tshark -nr cap.pcap -Y 'tls.handshake.type == 1' \
+<span class="p">&gt;</span>   -T fields -e ip.src -e tls.handshake.extensions_server_name</div>
+      <div class="sec">rank talkers, exclude your own session</div>
+      <div class="cmd"><span class="p">$</span> tcpdump -nni eth0 'not port 22'                 <span class="c"># don't capture your SSH</span>
+<span class="p">$</span> tshark -nr cap.pcap -qz conv,ip                  <span class="c"># IP conversation table</span></div>
+      <div class="sec">into a pipeline or SIEM</div>
+      <div class="cmd"><span class="p">$</span> tshark -nr cap.pcap -T ek &gt; events.ndjson         <span class="c"># newline JSON (Elasticsearch bulk)</span>
+<span class="p">$</span> tshark -nr cap.pcap -qz io,stat,1                 <span class="c"># throughput per second</span>
+<span class="p">$</span> tshark -nr cap.pcap -qz endpoints,ip              <span class="c"># rank hosts by bytes</span></div>
+    </div>
+
+    <div class="panel" data-panel="gotchas">
+      <div class="pfacts"><span>the theme<b>quiet ways captures lie</b></span></div>
+      <div class="kv">
+        <div><span class="k">capture vs display</span><span class="v">the #1 trap - a display expression in a capture box matches nothing. Know which language the box speaks.</span></div>
+        <div><span class="k">snaplen truncation</span><span class="v">modern tcpdump captures full packets by default, but an explicit short <code>-s</code> (or an old tool) grabs only the first N bytes and payload/TLS analysis silently breaks. Check <code>capinfos</code> if a capture looks cut off.</span></div>
+        <div><span class="k">the -n rule</span><span class="v">without <code>-n</code>, tools do reverse-DNS on every address - generating traffic, polluting your own capture, and stalling on a busy link.</span></div>
+        <div><span class="k">capturing your capture</span><span class="v">if you SSH in and sniff, you'll capture your own SSH + the mirror stream. Exclude with <code>not port 22</code> and the mirror port.</span></div>
+        <div><span class="k">promiscuous vs monitor</span><span class="v">promiscuous sees all wired frames on the segment; 802.11 needs <b>monitor mode</b> to see other stations' frames at all.</span></div>
+        <div><span class="k">offsets shift</span><span class="v">VLAN tags and tunnels (TZSP, GRE, VXLAN) move the base offsets BPF assumes - use the <code>vlan</code> keyword or filter on the outer header.</span></div>
+        <div><span class="k">you can't un-drop</span><span class="v">the capture filter is destructive. When unsure, capture broadly to a ring buffer and narrow with display filters afterward.</span></div>
+        <div><span class="k">piped capture lags</span><span class="v">tcpdump buffers when its output isn't a terminal, so a live pipe looks frozen. Add <code>-U</code> (immediate mode) to flush each packet.</span></div>
+        <div><span class="k">"retransmission" is a guess</span><span class="v"><code>tcp.analysis.*</code> flags are Wireshark's own sequence-number heuristics, not fields on the wire - treat them as strong hints, not truth.</span></div>
+        <div><span class="k">nanosecond pcaps</span><span class="v"><code>--nano</code> writes a different pcap magic number - fine in modern tools, misread by some old ones.</span></div>
+        <div><span class="k">Wireshark profiles</span><span class="v">save columns, coloring, and go-to filters per investigation type instead of re-tuning the GUI every time.</span></div>
+      </div>
+      <div class="callout"><b>the toolkit around the capture.</b> <code>capinfos</code> summarizes a pcap (count, duration, rate); <code>editcap</code> slices/trims it (time range, dedupe, re-snaplen); <code>mergecap</code> joins files; <code>tshark -qz</code> runs the same statistics as Wireshark's menus, headless - the right move for captures too big to open in the GUI.</div>
+      <div class="callout"><b>authoritative references.</b> Capture / BPF: <a href="https://www.tcpdump.org/manpages/pcap-filter.7.html">pcap-filter(7)</a> and <a href="https://www.tcpdump.org/manpages/tcpdump.1.html">tcpdump(1)</a>. Display filters: the <a href="https://www.wireshark.org/docs/dfref/">Wireshark display filter reference</a> (browsable per protocol). Firewall payload matching: <a href="https://wiki.nftables.org/wiki-nftables/index.php/Matching_packet_headers">nftables raw payload</a>.</div>
+    </div>
+
+  </div>
+
+  <footer><span>protocols-fun / capture &amp; filter</span><span>pcap-filter(7) . tcpdump(1) . wireshark-filter(4)</span><span><a href="../attacks/attack-anatomy.html">attacks</a> &middot; <a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
+</div>
+
+
+<script>
+(function(){
+  var KINDS={sync:"structural",enum:"value",flag:"flag",rsv:"reserved"};
+  function hx(b){return b.toString(16).toUpperCase().padStart(2,"0");}
+
+  function build(mountId, unit, bytes, fields){
+    var mount=document.getElementById(mountId);
+    var N = unit==="bit" ? bytes.length*8 : bytes.length;
+    var owner=new Array(N);
+    fields.forEach(function(f,fi){ for(var i=f.r[0];i<=f.r[1];i++) owner[i]=fi; });
+    var diagram=document.createElement("div");
+    if(unit==="bit"){
+      diagram.className="diagram";
+      for(var bi=0; bi<bytes.length; bi++){
+        var grp=document.createElement("div"); grp.className="bytegrp";
+        var ticks=document.createElement("div"); ticks.className="ticks";
+        var row=document.createElement("div"); row.className="brow";
+        for(var k=0;k<8;k++){
+          var idx=bi*8+k, f=fields[owner[idx]];
+          var t=document.createElement("span"); t.textContent=idx; ticks.appendChild(t);
+          var cell=document.createElement("span"); cell.className="bit k-"+f.k; cell.dataset.idx=idx;
+          if(idx===f.r[0]) cell.classList.add("fstart");
+          cell.textContent=(bytes[bi]>>(7-k))&1; row.appendChild(cell);
+        }
+        var hex=document.createElement("div"); hex.className="hex"; hex.textContent="0x"+hx(bytes[bi]);
+        grp.appendChild(ticks); grp.appendChild(row); grp.appendChild(hex); diagram.appendChild(grp);
+      }
+    } else {
+      diagram.className="dbytes";
+      bytes.forEach(function(b,i){
+        var f=fields[owner[i]];
+        var col=document.createElement("div"); col.className="bcol";
+        var off=document.createElement("div"); off.className="off"; off.textContent=i; col.appendChild(off);
+        var cell=document.createElement("div"); cell.className="bcell k-"+f.k; cell.dataset.idx=i;
+        if(i===f.r[0]) cell.classList.add("fstart");
+        cell.textContent=hx(b); col.appendChild(cell); diagram.appendChild(col);
+      });
+    }
+    var list=document.createElement("div"); list.className="fields";
+    var aside=document.createElement("aside"); aside.className="detail";
+    aside.innerHTML="<div class='dl'><span>field detail</span><span class='kind'></span></div>"+
+      "<h3>Hover a field or byte</h3><div class='dc'>"+bytes.length+" bytes</div>"+
+      "<p>Hover any field row or byte to light it. The lower box shows the BPF idiom and the Wireshark field.</p><div class='dn'></div>";
+    var det={t:aside.querySelector("h3"),c:aside.querySelector(".dc"),b:aside.querySelector("p"),n:aside.querySelector(".dn"),kind:aside.querySelector(".kind")};
+    var cells=[].slice.call(diagram.querySelectorAll("[data-idx]"));
+    var rows=[];
+    function light(a,b){cells.forEach(function(c){var i=+c.dataset.idx;c.classList.toggle("hi",i>=a&&i<=b);});}
+    function clearHi(){cells.forEach(function(c){c.classList.remove("hi");});}
+    function rl(f){ return "bytes "+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:""); }
+    function show(f){det.t.textContent=f.label;det.c.textContent=rl(f)+"  =  "+f.val;
+      det.b.textContent=f.body;det.n.textContent=f.note||"";det.kind.textContent=KINDS[f.k];}
+    function activeRow(){return list.querySelector(".field.active");}
+    function cue(fi){rows.forEach(function(r){r.classList.remove("cued");});rows[fi].classList.add("cued");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    function restore(){rows.forEach(function(r){r.classList.remove("cued");});var a=activeRow();if(a){var fi=+a.dataset.fi;light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}else clearHi();}
+    function pin(fi){var was=rows[fi].classList.contains("active");rows.forEach(function(r){r.classList.remove("active");});if(was){clearHi();return;}rows[fi].classList.add("active");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    fields.forEach(function(f,fi){
+      var row=document.createElement("div"); row.className="field"; row.dataset.fi=fi; if(f.branch) row.dataset.branch="1";
+      var lab = "0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-"+hx(f.r[1]):"");
+      row.innerHTML="<span class='fb'>"+lab+"</span><span class='fn'>"+f.label+"</span><span class='fv k-"+f.k+"'>"+f.val+"</span>";
+      if(f.branch){
+        var bw=document.createElement("div"); bw.className="branch";
+        bw.innerHTML="<table>"+f.branch.map(function(p,i){return "<tr class='"+(i===f.sel?"sel":"")+"'><td class='k'>"+p[0]+"</td><td>"+p[1]+"</td></tr>";}).join("")+"</table>";
+        row.appendChild(bw);
+      }
+      row.addEventListener("mouseenter",function(){cue(fi);});
+      row.addEventListener("click",function(){pin(fi);});
+      rows.push(row); list.appendChild(row);
+    });
+    cells.forEach(function(c){
+      var fi=owner[+c.dataset.idx];
+      c.addEventListener("mouseenter",function(){cue(fi);});
+      c.addEventListener("click",function(){pin(fi);});
+    });
+    var left=document.createElement("div"); left.className="left";
+    left.appendChild(diagram); left.appendChild(list);
+    var dcol=document.createElement("div"); dcol.className="detailcol"; dcol.appendChild(aside);
+    var block=document.createElement("div"); block.className="block";
+    block.appendChild(left); block.appendChild(dcol);
+    block.addEventListener("mouseleave",restore);
+    mount.appendChild(block);
+    var maxH=aside.scrollHeight;
+    fields.forEach(function(f){ show(f); if(aside.scrollHeight>maxH) maxH=aside.scrollHeight; });
+    det.t.textContent="Hover a field or byte";
+    det.c.textContent=bytes.length+" bytes";
+    det.b.textContent="Hover any field row or byte to light it. The lower box shows the BPF idiom and the Wireshark field.";
+    det.n.textContent="";
+    dcol.style.minHeight=(maxH+6)+"px";
+  }
+
+  var TCP_FLAGS=[["URG","urgent"],["ACK","acknowledgment"],["PSH","push"],["RST","reset"],["SYN","synchronize"],["FIN","finish"]];
+
+  var SPECS={
+    "block-frame":["byte",
+      [0xDE,0xAD,0xBE,0xEF,0x00,0x02,0xDE,0xAD,0xBE,0xEF,0x00,0x01,0x08,0x00,0x45,0x00,0x00,0x28,0xAB,0xCD,0x40,0x00,0x40,0x06,0xA2,0xC3,0xC0,0x00,0x02,0x01,0xC6,0x33,0x64,0x0A,0xC0,0x00,0x01,0xBB,0x12,0x34,0x56,0x78,0x00,0x00,0x00,0x00,0x50,0x02,0xFA,0xF0,0x9E,0x4A,0x00,0x00],
+      [
+        {label:"dest MAC",k:"sync",r:[0,5],val:"de:ad:be:ef:00:02",body:"Ethernet destination hardware address.",note:"BPF:  ether dst de:ad:be:ef:00:02\nWS :  eth.dst == de:ad:be:ef:00:02"},
+        {label:"source MAC",k:"sync",r:[6,11],val:"de:ad:be:ef:00:01",body:"Ethernet source hardware address.",note:"BPF:  ether src ...\nWS :  eth.src"},
+        {label:"EtherType",k:"enum",r:[12,13],val:"0x0800 (IPv4)",sel:0,branch:[["0800","IPv4"],["0806","ARP"],["86DD","IPv6"],["8100","802.1Q VLAN"]],
+          body:"What the frame carries. This is where BPF's proto qualifier reads.",note:"BPF:  ether proto \\ip   (or ether[12:2]==0x0800)\nWS :  eth.type == 0x0800"},
+        {label:"version + IHL",k:"sync",r:[14,14],val:"0x45",body:"IP version 4, header length 5 words = 20 bytes. IHL is the low nibble.",note:"BPF:  ip[0] & 0x0f  (header length)\nWS :  ip.hdr_len"},
+        {label:"DSCP + ECN",k:"rsv",r:[15,15],val:"0x00",body:"Differentiated services / congestion notification.",note:"WS :  ip.dsfield"},
+        {label:"total length",k:"sync",r:[16,17],val:"40",body:"Whole IP datagram length. BPF's greater/less compare against this.",note:"BPF:  greater 512\nWS :  ip.len > 512"},
+        {label:"identification",k:"sync",r:[18,19],val:"0xABCD",body:"Fragment reassembly ID.",note:"WS :  ip.id"},
+        {label:"flags + frag",k:"flag",r:[20,21],val:"DF set",sel:1,branch:[["bit0","reserved"],["DF","don't fragment"],["MF","more fragments"],["frag","offset (13b)"]],
+          body:"IP flags + fragment offset. Fragmented traffic is a classic evasion; this is how you catch it.",note:"BPF:  ip[6] & 0x20 != 0   (More Fragments)\n      ip[6:2] & 0x1fff != 0  (a later fragment)\nWS :  ip.flags.mf==1 || ip.frag_offset>0"},
+        {label:"TTL",k:"sync",r:[22,22],val:"64",body:"Hop limit. Anomalous TTLs can betray spoofing or reveal the sender OS.",note:"BPF:  ip[8] < 32\nWS :  ip.ttl < 32"},
+        {label:"protocol",k:"enum",r:[23,23],val:"6 (TCP)",sel:1,branch:[["1","ICMP"],["6","TCP"],["17","UDP"],["58","ICMPv6"]],
+          body:"The L4 payload protocol. Matching this is what the tcp/udp/icmp qualifiers do under the hood.",note:"BPF:  ip proto 6   (or ip[9]==6, or just: tcp)\nWS :  ip.proto == 6"},
+        {label:"IP checksum",k:"sync",r:[24,25],val:"0xA2C3",body:"Header checksum (verified for these addresses).",note:"WS :  ip.checksum  (ip.checksum.status for good/bad)"},
+        {label:"source IP",k:"enum",r:[26,29],val:"192.0.2.1",body:"The sender - where a suspect address shows up.",note:"BPF:  src host 192.0.2.1   (or ip[12:4])\nWS :  ip.src == 192.0.2.1"},
+        {label:"dest IP",k:"enum",r:[30,33],val:"198.51.100.10",body:"The destination address.",note:"BPF:  dst host 198.51.100.10\nWS :  ip.dst == 198.51.100.10"},
+        {label:"source port",k:"enum",r:[34,35],val:"49152",body:"TCP source port. Ports live in the first 4 bytes of the TCP header.",note:"BPF:  src port 49152   (or tcp[0:2])\nWS :  tcp.srcport == 49152"},
+        {label:"dest port",k:"enum",r:[36,37],val:"443 (HTTPS)",body:"TCP destination port - the most common filter target.",note:"BPF:  dst port 443   (or just: port 443)\nWS :  tcp.dstport == 443"},
+        {label:"sequence",k:"sync",r:[38,41],val:"0x12345678",body:"Byte-stream sequence number.",note:"WS :  tcp.seq"},
+        {label:"ack number",k:"rsv",r:[42,45],val:"0",body:"Zero on the opening SYN (ACK flag clear).",note:"WS :  tcp.ack"},
+        {label:"offset + flags",k:"flag",r:[46,47],val:"SYN",sel:4,branch:TCP_FLAGS,
+          body:"Data offset (4 bits) then the control flags. The flags live in the SECOND byte here (0x02 = SYN). This is THE most-used offset idiom.",note:"BPF:  tcp[13] & 2 != 0   (SYN set)\n      tcp[13] == 2        (SYN and nothing else)\nWS :  tcp.flags.syn==1 && tcp.flags.ack==0"},
+        {label:"window",k:"sync",r:[48,49],val:"64240",body:"Advertised receive window.",note:"WS :  tcp.window_size"},
+        {label:"TCP checksum",k:"sync",r:[50,51],val:"0x9E4A",body:"Covers a pseudo-header + the segment.",note:"WS :  tcp.checksum"},
+        {label:"urgent pointer",k:"rsv",r:[52,53],val:"0",body:"Unused (URG flag clear).",note:"WS :  tcp.urgent_pointer"}
+      ]]
+  };
+
+  var built={};
+  function buildPanel(name){
+    var panel=document.querySelector('[data-panel="'+name+'"]'); if(!panel) return;
+    panel.querySelectorAll("[data-build]").forEach(function(m){
+      if(built[m.id]) return; built[m.id]=1;
+      var spec=SPECS[m.id]; if(spec) build(m.id, spec[0], spec[1], spec[2]);
+    });
+  }
+  var tabs=[].slice.call(document.querySelectorAll(".tab"));
+  var panels=[].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    tabs.forEach(function(t){t.classList.toggle("on",t.dataset.p===name);});
+    panels.forEach(function(p){p.classList.toggle("on",p.dataset.panel===name);});
+    buildPanel(name);
+  }
+  tabs.forEach(function(t){t.addEventListener("click",function(){
+    activate(t.dataset.p);
+    if(history.replaceState) history.replaceState(null,"","#"+t.dataset.p);
+  });});
+  var initial=(location.hash||"").replace("#","");
+  if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
+  else buildPanel("twofilters");
+
+})();
+</script>
+<script src="../assets/protofun-toggle.js"></script>
+</body>
+</html>
