@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>protocols-fun / attack &amp; mitigation anatomy</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EAE7E4; --panel:#F1EEEB; --ink:#1A1416; --soft:#5A4E50;
+  --faint:#8B7E80; --line:#D2C7C4; --hair:#E4DBD8;
+  --enum:#B3202E; --enum-soft:#F2D6D8;
+  --flag:#B4741A; --flag-soft:#F0E2CB;
+  --sync:#3E5169; --sync-soft:#DCE2EA;
+  --rsv:#8A8286;  --rsv-soft:rgba(26,20,22,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#0a0f0d;--panel:#0f1613;--ink:#c6f0d0;--soft:#7fae90;--faint:#4f6a5c;--line:#22302a;--hair:#151d19;--enum:#2fe38a;--enum-soft:#0e2a1d;--flag:#e0a92e;--flag-soft:#2c2410;--sync:#4fb8d6;--sync-soft:#0f2630;--rsv:#6f8f7f;--rsv-soft:rgba(198,240,208,0.05);}
+:root[data-theme="amber"]{--paper:#120c00;--panel:#1c1400;--ink:#ffb000;--soft:#c08a2a;--faint:#8a6a20;--line:#3a2a00;--hair:#241900;--enum:#ffb000;--enum-soft:#2a1d00;--flag:#ffd27a;--flag-soft:#332400;--sync:#d98a1a;--sync-soft:#241a00;--rsv:#9a7524;--rsv-soft:rgba(255,176,0,0.05);}
+:root[data-theme="green"]{--paper:#e9efe0;--panel:#eef3e6;--ink:#1a2418;--soft:#4a5a44;--faint:#7a8a70;--line:#b9caa9;--hair:#d3e0c4;--enum:#2f7d32;--enum-soft:#d9e8cf;--flag:#a2551a;--flag-soft:#eaddc8;--sync:#2b5a8c;--sync-soft:#d5e0ec;--rsv:#7a8a70;--rsv-soft:rgba(26,36,24,0.05);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
+.head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem}
+.head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
+.head .title protofun-toggle:hover{color:var(--enum)}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500}
+.lede a{color:var(--enum)}
+.intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
+.intro .lede{margin-bottom:0}
+.sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
+.sig .legrows{display:flex;flex-direction:column;gap:0.42rem}
+.sig .siglabel{writing-mode:vertical-rl;text-orientation:mixed;align-self:stretch;display:flex;align-items:center;justify-content:center;font-size:0.5rem;letter-spacing:0.34em;text-transform:uppercase;color:var(--faint);padding-left:0.9rem;border-left:1px solid var(--hair)}
+.sig .row{display:flex;align-items:center;gap:0.4rem;font-size:0.68rem;color:var(--soft);letter-spacing:0.02em;white-space:nowrap}
+.sig .swsep{color:var(--faint);font-size:0.62rem}
+.sig .sw{display:inline-flex;align-items:center;justify-content:center;width:6.1rem;height:1.45rem;padding:0;font-size:0.58rem;letter-spacing:0.1em;text-transform:lowercase;flex-shrink:0}
+.sig .sw.dark{color:var(--paper)}
+.sig .sw.light{color:var(--ink);border:1px solid var(--hair)}
+.sig .sw.dark.k-enum{background:var(--enum)} .sig .sw.light.k-enum{background:var(--enum-soft)}
+.sig .sw.dark.k-flag{background:var(--flag)} .sig .sw.light.k-flag{background:var(--flag-soft)}
+.sig .sw.dark.k-sync{background:var(--sync)} .sig .sw.light.k-sync{background:var(--sync-soft)}
+.sig .sw.dark.k-rsv{background:var(--faint)} .sig .sw.light.k-rsv{background:var(--rsv-soft)}
+@media(max-width:820px){.intro{display:block}.sig{display:none}}
+.k-en{color:var(--enum)} .k-fl{color:var(--flag)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:2.4rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:74ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.2rem 0 0.4rem;max-width:78ch}
+.callout b{color:var(--ink);font-weight:500}
+.callout.hot{border-left-color:var(--enum)}
+.atable{width:100%;border-collapse:collapse;font-size:0.74rem;margin:0.4rem 0 1.4rem}
+.atable th,.atable td{text-align:left;padding:0.4rem 0.7rem;border-bottom:1px solid var(--hair);vertical-align:top}
+.atable th{font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+.atable td.f{color:var(--ink);font-weight:500;white-space:nowrap}
+.atable td.n{color:var(--enum);font-weight:500;text-align:right;white-space:nowrap}
+.kv{font-size:0.78rem;margin:0.3rem 0 1.2rem}
+.kv div{display:grid;grid-template-columns:9rem 1fr;gap:1rem;padding:0.3rem 0;border-bottom:1px solid var(--hair)}
+.kv div:last-child{border-bottom:none}
+.kv .k{color:var(--enum)} .kv .v{color:var(--soft)}
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none;margin-bottom:0}
+.tab{padding:0.55rem 0.9rem;font-size:0.64rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:last-child{border-right:none}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.08em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none}
+.panel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+.plede{color:var(--soft);max-width:78ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
+.plede b{color:var(--ink);font-weight:500} .plede code{color:var(--enum);font-size:0.9em}
+.diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
+.bytegrp{border:1px solid var(--line);background:var(--panel)}
+.bytegrp .ticks{display:flex;border-bottom:1px solid var(--hair)}
+.bytegrp .ticks span{width:1.55rem;text-align:center;font-size:0.5rem;color:var(--faint);padding:2px 0}
+.bytegrp .brow{display:flex}
+.bit{width:1.55rem;height:1.85rem;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--soft);border-right:1px solid var(--hair);transition:background .12s,color .12s;cursor:pointer}
+.bit:last-child{border-right:none}
+.bytegrp .hex{text-align:center;font-size:0.6rem;letter-spacing:0.12em;color:var(--ink);padding:3px 0;border-top:1px solid var(--hair);font-weight:500}
+.dbytes{display:flex;flex-wrap:wrap;gap:4px;margin:0.6rem 0 1.4rem}
+.bcol{display:flex;flex-direction:column;align-items:center}
+.bcol .off{font-size:0.5rem;color:var(--faint);margin-bottom:2px;letter-spacing:0.02em}
+.bcell{width:2.5rem;height:1.9rem;display:flex;align-items:center;justify-content:center;font-size:0.78rem;border:1px solid var(--hair);color:var(--soft);transition:background .12s,color .12s;cursor:pointer}
+.bcell.k-sync{background:var(--sync-soft)} .bcell.k-enum{background:var(--enum-soft)}
+.bcell.k-flag{background:var(--flag-soft)} .bcell.k-rsv{background:var(--rsv-soft)}
+.bcell.fstart{border-left:2px solid var(--line)}
+.bcell.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+.block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
+.left{min-width:0}
+.detailcol{position:relative}
+@media(max-width:820px){.block{grid-template-columns:1fr}.detailcol{position:static}}
+.fields{border-top:1px solid var(--line)}
+.field{display:grid;grid-template-columns:5rem 1fr auto;gap:0.8rem;align-items:baseline;padding:0.46rem 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.field:hover,.field.active,.field.cued{background:var(--panel)}
+.field .fb{font-size:0.6rem;color:var(--faint)} .field .fn{font-size:0.82rem;color:var(--ink)}
+.field[data-branch] .fn::after{content:"+";margin-left:0.4rem;color:var(--enum);font-weight:500}
+.field.active[data-branch] .fn::after{content:"\2212"}
+.fv{font-size:0.76rem;text-align:right}
+.fv.k-sync{color:var(--sync)} .fv.k-enum{color:var(--enum)} .fv.k-flag{color:var(--flag)} .fv.k-rsv{color:var(--faint)}
+.branch{grid-column:1 / -1;display:none;padding:0.5rem 0 0.2rem 5.8rem}
+.field.active .branch{display:block}
+.branch table{border-collapse:collapse;font-size:0.7rem;width:100%;max-width:26rem}
+.branch td{padding:1px 10px 1px 0;color:var(--soft)} .branch td.k{color:var(--faint);width:3.4rem;text-align:right}
+.branch tr.sel td{color:var(--ink)} .branch tr.sel td.k{color:var(--enum);font-weight:500}
+.detail{position:absolute;inset:0;border:1px solid var(--line);background:var(--panel);padding:1rem 1.05rem;overflow-y:auto}
+@media(max-width:820px){.detail{position:static;height:15rem}}
+.detail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
+.detail .dl .kind{color:var(--soft)}
+.detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
+.detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
+.detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
+.ja4{border:1px solid var(--line);background:var(--panel);padding:0.9rem 1rem;margin:0.6rem 0 1.2rem;font-size:0.9rem;letter-spacing:0.02em;overflow-x:auto}
+.ja4 .seg{padding:0.1rem 0.15rem}
+footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+/* --- secret themes: amber CRT + green-bar --- */
+:root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.32)}
+:root[data-theme="amber"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 3px)}
+:root[data-theme="green"] body{background:repeating-linear-gradient(var(--paper) 0 26px,#d8e6c6 26px 52px)}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . ATTACK ANATOMY</div><h1>Attacks &amp; Mitigations</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
+      <div class="stamp"><b>the modern landscape</b>L3 &rarr; L7 &middot; bots<br>rev 2026.08</div>
+    </div>
+    <div class="strip">
+      <div>scope <b>volumetric &middot; protocol &middot; application &middot; bots</b></div>
+      <div>lens <b>detect &rarr; identify &rarr; mitigate</b></div>
+      <div>identity <b>fingerprints &gt; UA + IP</b></div>
+    </div>
+  </div>
+
+  <div class="intro">
+  <p class="lede">A field guide to how the internet gets attacked and defended today. Attacks split three ways: <b>volumetric</b> (drown the pipe), <b>protocol/state</b> (exhaust a table), and <b>application</b> (make the server do expensive work) - plus <b>bots &amp; abuse</b>, which look like real traffic. The through-line of modern defense is <b>identity</b>: an IP is shared and a User-Agent is a free-text lie, so blocking leans on <b>fingerprints</b> of how a client actually speaks (JA4+). <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <aside class="sig" aria-label="color key">
+    <div class="legrows">
+    <div class="row"><span class="sw dark k-enum">crimson</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
+    <div class="row"><span class="sw dark k-flag">amber</span><span class="swsep">&#8594;</span><span class="sw light k-flag">flag</span></div>
+    <div class="row"><span class="sw dark k-sync">steel</span><span class="swsep">&#8594;</span><span class="sw light k-sync">structural</span></div>
+    <div class="row"><span class="sw dark k-rsv">faint</span><span class="swsep">&#8594;</span><span class="sw light k-rsv">reserved</span></div>
+    </div>
+    <div class="siglabel">color key</div>
+  </aside>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="landscape">Landscape<small>the taxonomy</small></button>
+    <button class="tab" data-p="l34">L3/4 Floods<small>volumetric + amplification</small></button>
+    <button class="tab" data-p="l7">L7 &amp; Slow<small>application layer</small></button>
+    <button class="tab" data-p="bots">Bots &amp; Abuse<small>looks like traffic</small></button>
+    <button class="tab" data-p="fp">Fingerprinting<small>who is this really</small></button>
+    <button class="tab" data-p="defense">Defense<small>in depth</small></button>
+    <button class="tab" data-p="arms">Arms Race<small>economics</small></button>
+  </div>
+  <div class="panelwrap">
+
+    <div class="panel on" data-panel="landscape">
+      <div class="pfacts"><span>classes<b>volumetric / protocol / application / abuse</b></span><span>layers<b>3, 4, 7</b></span></div>
+      <p class="plede">Three questions sort almost any attack: <b>what runs out first</b> (bandwidth, a kernel table, or CPU/backend), <b>what layer</b> it rides, and <b>does it look like real traffic</b>. Volumetric floods drown the link; protocol attacks exhaust finite state (half-open connections, conntrack); application attacks are cheap requests that trigger expensive work. Abuse (bots) is the odd one out - it IS "real" traffic, just unwanted, so you can't drop it by volume, you have to tell it apart.</p>
+      <div class="sec">the map</div>
+      <table class="atable">
+        <thead><tr><th>class</th><th>layer</th><th>runs out</th><th>examples</th></tr></thead>
+        <tbody>
+          <tr><td class="f">Volumetric</td><td>L3/4</td><td>bandwidth</td><td>UDP flood, amplification/reflection, ICMP flood</td></tr>
+          <tr><td class="f">Protocol / state</td><td>L3/4</td><td>a kernel table</td><td>SYN flood, ACK/RST flood, fragmentation, conntrack fill</td></tr>
+          <tr><td class="f">Application</td><td>L7</td><td>CPU / backend</td><td>HTTP flood, Slowloris, HTTP/2 Rapid Reset, cache-bust</td></tr>
+          <tr><td class="f">Bots &amp; abuse</td><td>L7</td><td>your business logic</td><td>credential stuffing, scraping, scalping, AI crawlers</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>the asymmetry that shapes everything.</b> The higher the layer, the cheaper it is to attack and the harder to defend: a single crafted L7 request can cost the attacker a few bytes and cost you a database query, a template render, and a backend round-trip. That gap - cheap to send, expensive to serve - is why L7 and bot defense is mostly about <i>identifying</i> the sender, not out-muscling the volume.</p></div>
+    </div>
+
+    <div class="panel" data-panel="l34">
+      <div class="pfacts"><span>SYN flood<b>RFC 4987</b></span><span>amplification<b>reflection off open UDP services</b></span></div>
+      <p class="plede">L3/4 is a numbers game against finite resources. A <b>SYN flood</b> sends the opening SYN of a TCP handshake and never completes it; each one pins a slot in the server's half-open-connection table until it times out. An <b>amplification/reflection</b> attack sends a small spoofed-source query to an open UDP service (DNS, NTP, memcached...) so the big answer lands on the victim - the attacker rents a little bandwidth and borrows a lot.</p>
+      <div class="sec">a SYN segment - the half-open primitive</div>
+      <p class="note">A real TCP SYN to port 443 (source/dest are RFC 5737 doc addresses). The whole attack is this one packet, sent by the million with spoofed sources so the SYN-ACKs go nowhere and the handshakes never finish.</p>
+      <div id="block-syn" data-build></div>
+      <div class="callout"><b>the fix: SYN cookies.</b> Instead of storing half-open state, the server encodes it into the SYN-ACK's initial sequence number (a MAC over the connection tuple + a slow timer) and keeps <i>nothing</i>. A legitimate client's ACK returns that number; the server recomputes and reconstructs the connection from thin air. No table to exhaust (RFC 4987).</div>
+      <div class="sec">a DNS amplification query - small in, huge out</div>
+      <p class="note">A 36-byte <code class="k-en">ANY</code> query with an EDNS0 option advertising a 4096-byte UDP buffer. Spoof the source to the victim and the multi-kilobyte answer is delivered to them, not you.</p>
+      <div id="block-dnsamp" data-build></div>
+      <div class="sec">amplification factors (why UDP reflection scales)</div>
+      <table class="atable">
+        <thead><tr><th>service</th><th>port</th><th>bandwidth factor</th></tr></thead>
+        <tbody>
+          <tr><td class="f">DNS (ANY)</td><td>53</td><td class="n">~28-54x</td></tr>
+          <tr><td class="f">NTP (monlist)</td><td>123</td><td class="n">~557x</td></tr>
+          <tr><td class="f">SSDP</td><td>1900</td><td class="n">~30x</td></tr>
+          <tr><td class="f">CLDAP</td><td>389</td><td class="n">~56-70x</td></tr>
+          <tr><td class="f">memcached</td><td>11211</td><td class="n">~10,000-51,000x</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><b>the root cause is spoofing.</b> Reflection only works because the source IP can be forged and the reflector answers whoever "asked." <a href="https://www.rfc-editor.org/rfc/rfc2827">BCP 38 / RFC 2827</a> ingress filtering at the network edge (drop packets whose source can't legitimately come from that link) would starve every amplification attack at once - which is exactly why it isn't universally deployed.</div>
+    </div>
+
+    <div class="panel" data-panel="l7">
+      <div class="pfacts"><span>slow attacks<b>hold connections open</b></span><span>Rapid Reset<b>CVE-2023-44487</b></span></div>
+      <p class="plede">At L7 the packets are valid HTTP - the damage is in what they make the server do. <b>Floods</b> hammer expensive endpoints (search, login, anything uncached). <b>Slow attacks</b> (Slowloris, slow-read, slow-POST) do the opposite: a trickle of bytes that keeps worker threads/connections pinned open, starving the pool with almost no bandwidth. And HTTP/2's multiplexing opened a new door.</p>
+      <div class="sec">HTTP/2 Rapid Reset - a frame that cancels itself</div>
+      <p class="note">The client opens a stream (HEADERS) then immediately cancels it with an <code class="k-en">RST_STREAM</code>. The request is fully processed server-side but never counts against the max-concurrent-streams limit, so one connection can churn tens of thousands of requests/second. This is the RST_STREAM frame: a 9-byte HTTP/2 frame header + a 4-byte error code.</p>
+      <div id="block-h2reset" data-build></div>
+      <div class="callout hot"><b>Rapid Reset (CVE-2023-44487, 2023).</b> The largest L7 DDoS on record at the time - it exploited a spec-legal behavior, not a bug, so every HTTP/2 implementation was affected at once. Mitigation is counting resets and reused streams per connection and killing abusive ones, plus capping request rate independent of the stream-concurrency limit. Its cousin, the CONTINUATION flood (2024), abuses unbounded header CONTINUATION frames the same way.</div>
+      <div class="callout"><b>slow attacks cost almost nothing.</b> Slowloris can take down a thread-per-connection server from a single laptop - the defense is event-driven servers, aggressive header/body timeouts, and a reverse proxy that buffers the full request before ever touching the origin.</div>
+    </div>
+
+    <div class="panel" data-panel="bots">
+      <div class="pfacts"><span>the hard part<b>it looks like real traffic</b></span><span>you can't drop by volume</span></div>
+      <p class="plede">Abuse traffic is well-formed, low-rate, and often distributed across huge <b>residential proxy</b> pools (real home IPs rented from malware/SDK networks), so IP reputation and rate limits barely dent it. You defend by telling the automated client apart from the human one.</p>
+      <div class="sec">the abuse catalog</div>
+      <div class="kv">
+        <div><span class="k">credential stuffing</span><span class="v">replaying leaked user/pass pairs to find reuse -&gt; account takeover (ATO)</span></div>
+        <div><span class="k">carding</span><span class="v">testing stolen card numbers against a checkout, cents at a time</span></div>
+        <div><span class="k">scraping</span><span class="v">harvesting content/prices; now includes the surge of AI training crawlers</span></div>
+        <div><span class="k">scalping</span><span class="v">bots hoarding limited inventory (tickets, drops, GPUs) faster than humans</span></div>
+        <div><span class="k">API abuse</span><span class="v">using an API exactly as designed, just far too much / not as intended</span></div>
+      </div>
+      <div class="callout"><b>the modern twist: AI crawlers.</b> A wave of LLM training and retrieval bots now scrapes at volumes that read like a soft DDoS - many ignore <code>robots.txt</code>, rotate residential IPs, and forge browser User-Agents. They are the clearest current case for <i>fingerprint</i>-based identification: the UA says "Chrome," the TLS/HTTP fingerprint says "a Python library."</div>
+    </div>
+
+    <div class="panel" data-panel="fp">
+      <div class="pfacts"><span>problem<b>IP is shared, UA is a free-text lie</b></span><span>answer<b>JA4+ fingerprints</b></span></div>
+      <p class="plede">You can't block by IP (CGNAT, proxies, shared clouds put thousands of users behind one address) and you can't trust the User-Agent (it's a client-set string - a scraper claims to be Chrome for free). So defenders fingerprint <b>how the client speaks</b>: the exact shape of its TLS handshake, HTTP/2 settings, and TCP options - things a library reveals whether or not it lies about its name.</p>
+      <div class="sec">a JA4 fingerprint, decomposed</div>
+      <p class="note">JA4 (the TLS ClientHello half of JA4+) hashes the negotiated capabilities into a stable, human-skimmable string. This is real Chrome:</p>
+      <div class="ja4"><span class="seg k-sync">t13d1516h2</span>_<span class="seg k-enum">8daaf6152771</span>_<span class="seg k-flag">02713d6af862</span></div>
+      <div class="kv">
+        <div><span class="k">t13d1516h2</span><span class="v">the readable part: <b>t</b>=TCP, <b>13</b>=TLS 1.3, <b>d</b>=SNI present, <b>15</b> cipher suites, <b>16</b> extensions, ALPN <b>h2</b></span></div>
+        <div><span class="k">8daaf6152771</span><span class="v">sha256[:12] of the sorted cipher-suite list</span></div>
+        <div><span class="k">02713d6af862</span><span class="v">sha256[:12] of the sorted extensions + signature algorithms</span></div>
+      </div>
+      <div class="callout hot"><b>why JA4 beat the old JA3.</b> JA3 hashed raw, order-sensitive fields into one opaque MD5 - trivially perturbed by GREASE and TLS extension-shuffling, so a client could randomize its own fingerprint per connection. JA4 <b>sorts</b> before hashing (defeating shuffling), strips GREASE, and keeps the human-readable prefix, so it's stable across sessions and skimmable by an analyst. The wider JA4+ suite adds <b>JA4H</b> (HTTP), <b>JA4T/JA4TS</b> (TCP), <b>JA4S</b> (the server's hello), and <b>JA4X</b> (the certificate).</div>
+      <div class="callout"><b>the catch: fingerprints spoof too.</b> Tools like <code>curl-impersonate</code> and <code>utls</code> let a bot reproduce a real browser's exact ClientHello - so a fingerprint match is strong evidence, not proof. The state of the art combines the fingerprint with behavior (timing, ordering, whether it solves a challenge) rather than trusting any single signal - the same "obscurity is a layer, not the control" lesson from address scanning.</div>
+    </div>
+
+    <div class="panel" data-panel="defense">
+      <div class="pfacts"><span>principle<b>defense in depth</b></span><span>each layer removes work before the next</span></div>
+      <p class="plede">No single control stops everything; you stack cheap filters in front of expensive ones so each layer sheds load before the next. Roughly outside-in:</p>
+      <div class="sec">the layers</div>
+      <div class="kv">
+        <div><span class="k">edge / network</span><span class="v">Anycast spreads the load across many sites; scrubbing centers absorb volume; BGP flowspec + RTBH (remote-triggered blackhole) drop floods upstream; CDNs serve cached bytes so attacks never reach origin</span></div>
+        <div><span class="k">transport</span><span class="v">SYN cookies, connection + rate caps, conntrack tuning - survive the state-exhaustion class</span></div>
+        <div><span class="k">application</span><span class="v">WAF rules, rate limiting (token-bucket / sliding-window), challenges (JS, CAPTCHA, proof-of-work), fingerprint + reputation blocking, bot management</span></div>
+        <div><span class="k">architectural</span><span class="v">cache everything cacheable, degrade gracefully under load, tarpit + honeypot the obvious offenders, autoscale with a cost ceiling</span></div>
+      </div>
+      <div class="callout"><b>challenges shift the cost back.</b> A <b>proof-of-work</b> challenge (e.g. Anubis, mCaptcha) makes every client burn a few CPU-milliseconds before it's served - invisible to one human, ruinous to a bot making millions of requests. It's the mirror image of the L7 asymmetry: finally make the <i>attacker</i> pay per request.</div>
+      <div class="callout"><b>rate limiting is a shape, not a number.</b> Token-bucket allows bursts then throttles; sliding-window smooths; per-fingerprint or per-account limits beat per-IP ones when the attacker is spread across a proxy pool. The honeypot angle ties in here - a decoy endpoint or address (see the ipv6-fun canary) turns any hit into a high-confidence "this is hostile" signal to feed the other layers.</div>
+    </div>
+
+    <div class="panel" data-panel="arms">
+      <div class="pfacts"><span>attack cost<b>rentable by the hour</b></span><span>the loop<b>spoof &harr; detect, forever</b></span></div>
+      <p class="plede">The economics are lopsided and that's the whole story. DDoS is a <b>service</b> - "booter/stresser" sites rent floods by the hour for pocket change, and residential-proxy networks sell millions of real IPs. Defense is anycast capacity, scrubbing contracts, and engineering time. The attacker pays cents; the defender pays a retainer.</p>
+      <div class="callout"><b>obscurity is never the control.</b> Hiding an address, a subdomain, or a fingerprint buys time and cuts noise, but anything discoverable will be found and anything static will be predicted - the same lesson whether you're hiding an IPv6 host or a client fingerprint. Layers you can reason about (rate, identity, challenge, capacity) are the actual defense; obscurity just thins the crowd first.</div>
+      <div class="callout hot"><b>the cat-and-mouse won't end.</b> Better fingerprinting (JA4) begets better spoofing (uTLS/curl-impersonate) begets behavioral + multi-signal detection begets... the durable posture isn't a silver bullet, it's raising the attacker's cost and your own observability faster than they adapt. Detect, identify, mitigate - then watch what changed and do it again.</div>
+    </div>
+
+  </div>
+
+  <footer><span>protocols-fun / attack &amp; mitigation anatomy</span><span>RFC 4987 . RFC 2827 (BCP 38) . CVE-2023-44487 . JA4+</span><span><a href="../index.html">the map</a> &middot; <a href="https://github.com/hed0rah/protocols-fun">github</a></span></footer>
+</div>
+
+
+<script>
+(function(){
+  var KINDS={sync:"structural",enum:"value",flag:"flag",rsv:"reserved"};
+  function hx(b){return b.toString(16).toUpperCase().padStart(2,"0");}
+
+  function build(mountId, unit, bytes, fields){
+    var mount=document.getElementById(mountId);
+    var N = unit==="bit" ? bytes.length*8 : bytes.length;
+    var owner=new Array(N);
+    fields.forEach(function(f,fi){ for(var i=f.r[0];i<=f.r[1];i++) owner[i]=fi; });
+    var diagram=document.createElement("div");
+    if(unit==="bit"){
+      diagram.className="diagram";
+      for(var bi=0; bi<bytes.length; bi++){
+        var grp=document.createElement("div"); grp.className="bytegrp";
+        var ticks=document.createElement("div"); ticks.className="ticks";
+        var row=document.createElement("div"); row.className="brow";
+        for(var k=0;k<8;k++){
+          var idx=bi*8+k, f=fields[owner[idx]];
+          var t=document.createElement("span"); t.textContent=idx; ticks.appendChild(t);
+          var cell=document.createElement("span"); cell.className="bit k-"+f.k; cell.dataset.idx=idx;
+          if(idx===f.r[0]) cell.classList.add("fstart");
+          cell.textContent=(bytes[bi]>>(7-k))&1; row.appendChild(cell);
+        }
+        var hex=document.createElement("div"); hex.className="hex"; hex.textContent="0x"+hx(bytes[bi]);
+        grp.appendChild(ticks); grp.appendChild(row); grp.appendChild(hex); diagram.appendChild(grp);
+      }
+    } else {
+      diagram.className="dbytes";
+      bytes.forEach(function(b,i){
+        var f=fields[owner[i]];
+        var col=document.createElement("div"); col.className="bcol";
+        var off=document.createElement("div"); off.className="off"; off.textContent="0x"+hx(i); col.appendChild(off);
+        var cell=document.createElement("div"); cell.className="bcell k-"+f.k; cell.dataset.idx=i;
+        if(i===f.r[0]) cell.classList.add("fstart");
+        cell.textContent=hx(b); col.appendChild(cell); diagram.appendChild(col);
+      });
+    }
+    var list=document.createElement("div"); list.className="fields";
+    var aside=document.createElement("aside"); aside.className="detail";
+    aside.innerHTML="<div class='dl'><span>field detail</span><span class='kind'></span></div>"+
+      "<h3>Hover a field or byte</h3><div class='dc'>"+(unit==="bit"?N+" bits":bytes.length+" bytes")+"</div>"+
+      "<p>Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.</p><div class='dn'></div>";
+    var det={t:aside.querySelector("h3"),c:aside.querySelector(".dc"),b:aside.querySelector("p"),n:aside.querySelector(".dn"),kind:aside.querySelector(".kind")};
+    var cells=[].slice.call(diagram.querySelectorAll("[data-idx]"));
+    var rows=[];
+    function light(a,b){cells.forEach(function(c){var i=+c.dataset.idx;c.classList.toggle("hi",i>=a&&i<=b);});}
+    function clearHi(){cells.forEach(function(c){c.classList.remove("hi");});}
+    function rl(f){ return unit==="bit"
+      ? "bits "+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")
+      : "bytes 0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-0x"+hx(f.r[1]):""); }
+    function show(f){det.t.textContent=f.label;det.c.textContent=rl(f)+"  =  "+f.val;
+      det.b.textContent=f.body;det.n.textContent=f.note||"";det.kind.textContent=KINDS[f.k];}
+    function activeRow(){return list.querySelector(".field.active");}
+    function cue(fi){rows.forEach(function(r){r.classList.remove("cued");});rows[fi].classList.add("cued");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    function restore(){rows.forEach(function(r){r.classList.remove("cued");});var a=activeRow();if(a){var fi=+a.dataset.fi;light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}else clearHi();}
+    function pin(fi){var was=rows[fi].classList.contains("active");rows.forEach(function(r){r.classList.remove("active");});if(was){clearHi();return;}rows[fi].classList.add("active");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    fields.forEach(function(f,fi){
+      var row=document.createElement("div"); row.className="field"; row.dataset.fi=fi; if(f.branch) row.dataset.branch="1";
+      var lab = unit==="bit" ? ("b"+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")) : ("0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-"+hx(f.r[1]):""));
+      row.innerHTML="<span class='fb'>"+lab+"</span><span class='fn'>"+f.label+"</span><span class='fv k-"+f.k+"'>"+f.val+"</span>";
+      if(f.branch){
+        var bw=document.createElement("div"); bw.className="branch";
+        bw.innerHTML="<table>"+f.branch.map(function(p,i){return "<tr class='"+(i===f.sel?"sel":"")+"'><td class='k'>"+p[0]+"</td><td>"+p[1]+"</td></tr>";}).join("")+"</table>";
+        row.appendChild(bw);
+      }
+      row.addEventListener("mouseenter",function(){cue(fi);});
+      row.addEventListener("click",function(){pin(fi);});
+      rows.push(row); list.appendChild(row);
+    });
+    cells.forEach(function(c){
+      var fi=owner[+c.dataset.idx];
+      c.addEventListener("mouseenter",function(){cue(fi);});
+      c.addEventListener("click",function(){pin(fi);});
+    });
+    var left=document.createElement("div"); left.className="left";
+    left.appendChild(diagram); left.appendChild(list);
+    var dcol=document.createElement("div"); dcol.className="detailcol"; dcol.appendChild(aside);
+    var block=document.createElement("div"); block.className="block";
+    block.appendChild(left); block.appendChild(dcol);
+    block.addEventListener("mouseleave",restore);
+    mount.appendChild(block);
+    var maxH=aside.scrollHeight;
+    fields.forEach(function(f){ show(f); if(aside.scrollHeight>maxH) maxH=aside.scrollHeight; });
+    det.t.textContent="Hover a field or byte";
+    det.c.textContent=(unit==="bit"?N+" bits":bytes.length+" bytes");
+    det.b.textContent="Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.";
+    det.n.textContent="";
+    dcol.style.minHeight=(maxH+6)+"px";
+  }
+
+  var TCP_FLAGS=[["URG","urgent pointer valid"],["ACK","acknowledgment valid"],["PSH","push to app now"],
+    ["RST","reset the connection"],["SYN","synchronize - open a connection"],["FIN","no more data"]];
+
+  var SPECS={
+    "block-syn":["bit",
+      [0xC0,0x00,0x01,0xBB,0x12,0x34,0x56,0x78,0x00,0x00,0x00,0x00,0x50,0x02,0xFA,0xF0,0x9E,0x4A,0x00,0x00],
+      [
+        {label:"source port",k:"enum",r:[0,15],val:"49152",body:"An ephemeral source port. In a flood these are randomized along with a spoofed source IP so the reply goes nowhere."},
+        {label:"dest port",k:"enum",r:[16,31],val:"443 (HTTPS)",body:"The victim service. A SYN flood targets a listening port so each SYN allocates real half-open state."},
+        {label:"sequence number",k:"sync",r:[32,63],val:"0x12345678",body:"Client initial sequence number. In a SYN-cookie defense the server's reply ISN encodes the connection state so nothing has to be stored."},
+        {label:"ack number",k:"rsv",r:[64,95],val:"0",body:"Zero - there's nothing to acknowledge yet on the very first SYN (the ACK flag is clear)."},
+        {label:"data offset",k:"sync",r:[96,99],val:"5 -> 20 bytes",body:"Header length in 32-bit words. 5 = the minimum 20-byte header, no options."},
+        {label:"reserved",k:"rsv",r:[100,105],val:"0",body:"Reserved bits, zero."},
+        {label:"flags",k:"flag",r:[106,111],val:"SYN",sel:4,branch:TCP_FLAGS,
+          body:"Only SYN is set - a connection-open request. The flood never sends the final ACK, so the handshake stays half-open and pins a table slot until timeout.",
+          note:"URG ACK PSH RST SYN FIN = 000010."},
+        {label:"window",k:"sync",r:[112,127],val:"64240",body:"Advertised receive window. Meaningless to the attacker; just has to be a plausible value."},
+        {label:"checksum",k:"sync",r:[128,143],val:"0x9E4A",body:"Covers a pseudo-header (src/dst IP, protocol, length) plus the TCP segment. Verified real for these doc addresses."},
+        {label:"urgent pointer",k:"rsv",r:[144,159],val:"0",body:"Unused when URG is clear."}
+      ]],
+    "block-dnsamp":["byte",
+      [0x13,0x37,0x01,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x01,0x03,0x69,0x73,0x63,0x03,0x6F,0x72,0x67,0x00,0x00,0xFF,0x00,0x01,0x00,0x00,0x29,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00],
+      [
+        {label:"transaction ID",k:"sync",r:[0,1],val:"0x1337",body:"Matches the (spoofed) request to its reply. The victim never sent it, so to them the big answer is unsolicited."},
+        {label:"flags",k:"flag",r:[2,3],val:"0x0100 (query, RD)",body:"Standard query with Recursion Desired set."},
+        {label:"QDCOUNT",k:"sync",r:[4,5],val:"1",body:"One question follows."},
+        {label:"AN/NS counts",k:"rsv",r:[6,9],val:"0",body:"No answer/authority records in a query."},
+        {label:"ARCOUNT",k:"sync",r:[10,11],val:"1",body:"One additional record - the EDNS0 OPT below."},
+        {label:"QNAME",k:"enum",r:[12,20],val:"isc.org",body:"Length-prefixed labels: 03 'isc' 03 'org' 00. A zone chosen because ANY returns a large record set."},
+        {label:"QTYPE",k:"enum",r:[21,22],val:"ANY (255)",sel:0,branch:[["255","ANY - return everything (the amplifier)"],["16","TXT"],["48","DNSKEY"],["1","A"]],
+          body:"ANY asks for every record type at once - the classic amplification trigger, turning a tiny query into a multi-kilobyte answer."},
+        {label:"QCLASS",k:"sync",r:[23,24],val:"IN (1)",body:"Internet class."},
+        {label:"EDNS0 OPT",k:"flag",r:[25,35],val:"UDP 4096",body:"The pseudo-record advertising a 4096-byte UDP payload - i.e. 'send me a big answer over UDP.' Larger buffer = larger reflected response = more amplification.",note:"name=root, type=41 (OPT)."}
+      ]],
+    "block-h2reset":["byte",
+      [0x00,0x00,0x04,0x03,0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x08],
+      [
+        {label:"length",k:"sync",r:[0,2],val:"4",body:"24-bit frame payload length: 4 bytes (just the error code)."},
+        {label:"type",k:"enum",r:[3,3],val:"0x03 RST_STREAM",sel:3,branch:[["0x0","DATA"],["0x1","HEADERS"],["0x3","RST_STREAM"],["0x4","SETTINGS"],["0x8","WINDOW_UPDATE"]],
+          body:"RST_STREAM immediately terminates a stream. In Rapid Reset the client sends HEADERS then this, over and over."},
+        {label:"flags",k:"rsv",r:[4,4],val:"0",body:"No flags on RST_STREAM."},
+        {label:"stream ID",k:"sync",r:[5,8],val:"1",body:"31-bit stream identifier (top reserved bit clear). The stream being cancelled - the server already did the work of processing it."},
+        {label:"error code",k:"flag",r:[9,12],val:"CANCEL (0x8)",sel:0,branch:[["0x8","CANCEL"],["0x0","NO_ERROR"],["0x1","PROTOCOL_ERROR"],["0xb","ENHANCE_YOUR_CALM"]],
+          body:"Why the stream ended. CANCEL is normal client behavior - which is what made Rapid Reset spec-legal and hard to distinguish from a real cancel."}
+      ]]
+  };
+
+  var built={};
+  function buildPanel(name){
+    var panel=document.querySelector('[data-panel="'+name+'"]'); if(!panel) return;
+    panel.querySelectorAll("[data-build]").forEach(function(m){
+      if(built[m.id]) return; built[m.id]=1;
+      var spec=SPECS[m.id]; if(spec) build(m.id, spec[0], spec[1], spec[2]);
+    });
+  }
+  var tabs=[].slice.call(document.querySelectorAll(".tab"));
+  var panels=[].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    tabs.forEach(function(t){t.classList.toggle("on",t.dataset.p===name);});
+    panels.forEach(function(p){p.classList.toggle("on",p.dataset.panel===name);});
+    buildPanel(name);
+  }
+  tabs.forEach(function(t){t.addEventListener("click",function(){
+    activate(t.dataset.p);
+    if(history.replaceState) history.replaceState(null,"","#"+t.dataset.p);
+  });});
+  var initial=(location.hash||"").replace("#","");
+  if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
+  else buildPanel("landscape");
+
+})();
+</script>
+<script src="../assets/protofun-toggle.js"></script>
+</body>
+</html>
