@@ -168,7 +168,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   </div>
 
   <div class="intro">
-  <p class="lede">Two completely different filter languages get confused constantly. A <b>capture filter</b> is BPF (Berkeley Packet Filter) - it runs in the kernel <b>as packets arrive</b>, and anything it rejects is gone forever. A <b>display filter</b> is Wireshark's own language - it runs <b>after</b> capture, over the buffer, hiding rows without deleting them. Same intent, different syntax: <code>udp port 37008</code> (BPF) vs <code>udp.port == 37008</code> (display). This page is the Rosetta between the two, anchored to the bytes they actually match. <b>Hover</b> a field in the frame below to see the byte, its BPF idiom, and its Wireshark field side by side.</p>
+  <p class="lede">Two filter languages. <b>Capture filter</b> = BPF: runs in-kernel <b>as packets arrive</b>; rejected packets are gone. <b>Display filter</b> = Wireshark's own language: runs <b>after</b> capture over the buffer, hides rows without deleting. Same intent, different syntax -- <code>udp port 37008</code> (BPF) vs <code>udp.port == 37008</code> (display). <b>Hover</b> a field below for the byte, its BPF idiom, and its Wireshark field.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -205,7 +205,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
           <tr><td class="f">use it to</td><td>keep the capture small on a busy link</td><td>drill into what you already caught</td></tr>
         </tbody>
       </table>
-      <div class="callout hot"><b>the trap that bites everyone.</b> Typing a display-filter expression like <code>udp.port == 37008</code> into a <i>capture</i> box (or vice versa) just errors or matches nothing. And <code>tzsp</code> is a Wireshark <i>display</i> dissector name - as a capture filter you'd write <code>udp port 37008</code> instead. When a filter "does nothing," first ask which of the two languages the box actually speaks.</div>
+      <div class="callout hot"><b>capture box vs display box.</b> A display expression in a <i>capture</i> box (or vice versa) errors or matches nothing. <code>tzsp</code> is a Wireshark <i>display</i> dissector name; as a capture filter you'd write <code>udp port 37008</code>. When a filter "does nothing," check which language the box speaks.</div>
       <div class="callout"><b>on a busy link, capture narrowly.</b> A full-rate capture on a 10G link fills disk and drops packets in seconds. Use a BPF capture filter to keep only the conversation you care about (a host, a port, a subnet), then use display filters to explore what you kept. You can never display-filter your way back to a packet the capture filter already dropped.</div>
     </div>
 
@@ -223,7 +223,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
           <tr><td class="f">tcpflow</td><td>yes</td><td>no</td><td>reassembling and dumping TCP stream contents</td></tr>
         </tbody>
       </table>
-      <div class="callout hot"><b>the one thing beginners get wrong.</b> Capture and display filters are <i>not</i> interchangeable - a display expression in a capture box matches nothing, and vice versa. That single confusion is why this guide is organized by the two languages, not by tool.</div>
+      <div class="callout hot"><b>not interchangeable.</b> Capture and display filters don't cross over -- a display expression in a capture box matches nothing, and vice versa. Hence this guide is organized by the two languages, not by tool.</div>
       <div class="callout"><b>when tcpdump isn't enough: line-rate capture.</b> At 10G+ and for lossless capture you drop below libpcap - AF_XDP, XDP/eBPF programs, or capture hardware. Those are for volume, not interactive troubleshooting; tcpdump and tshark (classic BPF via libpcap) stay the right tools at the console.</div>
     </div>
 
@@ -324,7 +324,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <div class="panel" data-panel="recipes">
       <div class="pfacts"><span>use case<b>investigating hostile traffic</b></span><span>pairs with<b>the attack &amp; mitigation page</b></span></div>
-      <p class="plede">The payoff: turning "something is wrong" into a specific offender. These are vendor-neutral and use documentation addresses. See the <a href="../attacks/attack-anatomy.html">attack &amp; mitigation anatomy</a> for what each pattern <i>is</i>.</p>
+      <p class="plede">Turning "something is wrong" into a specific offender. Vendor-neutral, documentation addresses. See <a href="../attacks/attack-anatomy.html">attack &amp; mitigation</a> for what each pattern <i>is</i>.</p>
       <div class="sec">isolate a suspect address</div>
       <div class="cmd"><span class="p">$</span> tcpdump -nni eth0 'host 203.0.113.5'          <span class="c"># capture</span>
 <span class="c"># Wireshark display:</span> ip.addr == 203.0.113.5</div>

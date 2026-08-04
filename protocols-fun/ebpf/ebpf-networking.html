@@ -115,7 +115,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
   </div>
 
-  <p class="lede">Some things about a connection are invisible from userland. eBPF lets you run tiny, <b>verifier-checked</b> programs directly on the kernel's packet path - to <b>read</b> details the socket API never exposes, and even to <b>rewrite</b> packets on the way out. This page is the "why + how," anchored to a real use case: recovering (and forging) the TCP-layer JA4+ fingerprints that a normal server can't otherwise see. See also <a href="../filtering/capture-filter.html">Capture &amp; Filter</a> (classic BPF, eBPF's ancestor) and <a href="../attacks/attack-anatomy.html">Attack &amp; Mitigation</a> (why fingerprints beat UA+IP).</p>
+  <p class="lede">eBPF runs tiny <b>verifier-checked</b> programs on the kernel's packet path -- to <b>read</b> details the socket API never exposes and to <b>rewrite</b> packets on egress. Anchored here to one use case: recovering (and forging) the TCP-layer JA4+ fingerprints a normal server can't see. See also <a href="../filtering/capture-filter.html">Capture &amp; Filter</a> (classic BPF, the ancestor) and <a href="../attacks/attack-anatomy.html">Attack &amp; Mitigation</a>.</p>
 
   <div class="tabs" id="tabs">
     <button class="tab on" data-p="blind">The Blind Spot<small>why you can't see it</small></button>
@@ -186,7 +186,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <div class="panel" data-panel="ja4">
       <div class="pfacts"><span>use case<b>fingerprint the transport layer, live</b></span><span>tool<b>ja4-loko</b></span></div>
-      <p class="plede">Put it together and you get a JA4+ toolkit that fingerprints <b>who</b> connects from raw wire data - using eBPF for exactly the transport members an endpoint can't otherwise reach. The organizing idea is the <b>spoofability gradient</b>: fingerprints get harder to forge the lower you go, because control moves <b>app &rarr; library &rarr; kernel</b>.</p>
+      <p class="plede">A JA4+ toolkit that fingerprints <b>who</b> connects from raw wire data, using eBPF for the transport members an endpoint can't otherwise reach. Organizing idea: the <b>spoofability gradient</b> -- harder to forge the lower you go, as control moves <b>app &rarr; library &rarr; kernel</b>.</p>
       <table class="atable">
         <thead><tr><th>member</th><th>layer</th><th>forge difficulty</th></tr></thead>
         <tbody>

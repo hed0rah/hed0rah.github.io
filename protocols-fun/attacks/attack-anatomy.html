@@ -174,7 +174,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   </div>
 
   <div class="intro">
-  <p class="lede">A field guide to how the internet gets attacked and defended today. Attacks split three ways: <b>volumetric</b> (drown the pipe), <b>protocol/state</b> (exhaust a table), and <b>application</b> (make the server do expensive work) - plus <b>bots &amp; abuse</b>, which look like real traffic. The through-line of modern defense is <b>identity</b>: an IP is shared and a User-Agent is a free-text lie, so blocking leans on <b>fingerprints</b> of how a client actually speaks (JA4+). <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede"><b>Hover</b> a field to light its bytes; <b>click</b> a field marked <span class="k-en">+</span> for its lookup table. Classes: <b>volumetric</b> (L3/4, bandwidth), <b>protocol/state</b> (L3/4, kernel tables), <b>application</b> (L7, CPU/backend), <b>bots/abuse</b> (L7, well-formed). Blocking keys on <b>fingerprints</b> (JA4+), not IP or UA.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">crimson</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -199,7 +199,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <div class="panel on" data-panel="landscape">
       <div class="pfacts"><span>classes<b>volumetric / protocol / application / abuse</b></span><span>layers<b>3, 4, 7</b></span></div>
-      <p class="plede">Three questions sort almost any attack: <b>what runs out first</b> (bandwidth, a kernel table, or CPU/backend), <b>what layer</b> it rides, and <b>does it look like real traffic</b>. Volumetric floods drown the link; protocol attacks exhaust finite state (half-open connections, conntrack); application attacks are cheap requests that trigger expensive work. Abuse (bots) is the odd one out - it IS "real" traffic, just unwanted, so you can't drop it by volume, you have to tell it apart.</p>
+      <p class="plede">Sort by <b>what exhausts first</b> (bandwidth / kernel table / CPU-backend), <b>layer</b>, and <b>whether it looks like real traffic</b>. Volumetric drowns the link; protocol/state exhausts finite tables (half-open conns, conntrack); application is cheap requests triggering expensive work; abuse is well-formed traffic you identify, not rate-drop.</p>
       <div class="sec">the map</div>
       <table class="atable">
         <thead><tr><th>class</th><th>layer</th><th>runs out</th><th>examples</th></tr></thead>
@@ -210,16 +210,16 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
           <tr><td class="f">Bots &amp; abuse</td><td>L7</td><td>your business logic</td><td>credential stuffing, scraping, scalping, AI crawlers</td></tr>
         </tbody>
       </table>
-      <div class="callout"><b>the asymmetry that shapes everything.</b> The higher the layer, the cheaper it is to attack and the harder to defend: a single crafted L7 request can cost the attacker a few bytes and cost you a database query, a template render, and a backend round-trip. That gap - cheap to send, expensive to serve - is why L7 and bot defense is mostly about <i>identifying</i> the sender, not out-muscling the volume.</p></div>
+      <div class="callout"><b>cost asymmetry.</b> Higher layer = cheaper to send, costlier to serve: one crafted L7 request is a few bytes for the attacker and a DB query + template render + backend round-trip for the server. So L7/bot defense is identification, not out-muscling volume.</div>
     </div>
 
     <div class="panel" data-panel="l34">
       <div class="pfacts"><span>SYN flood<b>RFC 4987</b></span><span>amplification<b>reflection off open UDP services</b></span></div>
-      <p class="plede">L3/4 is a numbers game against finite resources. A <b>SYN flood</b> sends the opening SYN of a TCP handshake and never completes it; each one pins a slot in the server's half-open-connection table until it times out. An <b>amplification/reflection</b> attack sends a small spoofed-source query to an open UDP service (DNS, NTP, memcached...) so the big answer lands on the victim - the attacker rents a little bandwidth and borrows a lot.</p>
+      <p class="plede"><b>SYN flood:</b> send the opening SYN, never complete the handshake; each pins a half-open-table slot until timeout. <b>Amplification/reflection:</b> small spoofed-source query to an open UDP service (DNS/NTP/memcached); the large reply lands on the spoofed victim.</p>
       <div class="sec">a SYN segment - the half-open primitive</div>
       <p class="note">A real TCP SYN to port 443 (source/dest are RFC 5737 doc addresses). The whole attack is this one packet, sent by the million with spoofed sources so the SYN-ACKs go nowhere and the handshakes never finish.</p>
       <div id="block-syn" data-build></div>
-      <div class="callout"><b>the fix: SYN cookies.</b> Instead of storing half-open state, the server encodes it into the SYN-ACK's initial sequence number (a MAC over the connection tuple + a slow timer) and keeps <i>nothing</i>. A legitimate client's ACK returns that number; the server recomputes and reconstructs the connection from thin air. No table to exhaust (RFC 4987).</div>
+      <div class="callout"><b>SYN cookies.</b> Store no half-open state; encode the connection into the SYN-ACK ISN (a MAC over the tuple + a slow timer). The client ACK returns it; the server recomputes and reconstructs the connection. Nothing to exhaust (RFC 4987).</div>
       <div class="sec">a DNS amplification query - small in, huge out</div>
       <p class="note">A 36-byte <code class="k-en">ANY</code> query with an EDNS0 option advertising a 4096-byte UDP buffer. Spoof the source to the victim and the multi-kilobyte answer is delivered to them, not you.</p>
       <div id="block-dnsamp" data-build></div>
@@ -234,22 +234,22 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
           <tr><td class="f">memcached</td><td>11211</td><td class="n">~10,000-51,000x</td></tr>
         </tbody>
       </table>
-      <div class="callout"><b>the root cause is spoofing.</b> Reflection only works because the source IP can be forged and the reflector answers whoever "asked." <a href="https://www.rfc-editor.org/rfc/rfc2827">BCP 38 / RFC 2827</a> ingress filtering at the network edge (drop packets whose source can't legitimately come from that link) would starve every amplification attack at once - which is exactly why it isn't universally deployed.</div>
+      <div class="callout"><b>root cause: source spoofing.</b> Reflection works only because the source IP is forgeable and the reflector answers anyone. <a href="https://www.rfc-editor.org/rfc/rfc2827">BCP 38 / RFC 2827</a> edge ingress filtering (drop packets whose source can't come from that link) starves every amplification attack; not universally deployed.</div>
     </div>
 
     <div class="panel" data-panel="l7">
       <div class="pfacts"><span>slow attacks<b>hold connections open</b></span><span>Rapid Reset<b>CVE-2023-44487</b></span></div>
-      <p class="plede">At L7 the packets are valid HTTP - the damage is in what they make the server do. <b>Floods</b> hammer expensive endpoints (search, login, anything uncached). <b>Slow attacks</b> (Slowloris, slow-read, slow-POST) do the opposite: a trickle of bytes that keeps worker threads/connections pinned open, starving the pool with almost no bandwidth. And HTTP/2's multiplexing opened a new door.</p>
+      <p class="plede">Packets are valid HTTP; cost is server-side work. <b>Floods</b> hit uncached/expensive endpoints (search, login). <b>Slow attacks</b> (Slowloris, slow-read, slow-POST) pin worker threads/connections with a trickle of bytes, starving the pool at near-zero bandwidth. HTTP/2 multiplexing added a vector:</p>
       <div class="sec">HTTP/2 Rapid Reset - a frame that cancels itself</div>
       <p class="note">The client opens a stream (HEADERS) then immediately cancels it with an <code class="k-en">RST_STREAM</code>. The request is fully processed server-side but never counts against the max-concurrent-streams limit, so one connection can churn tens of thousands of requests/second. This is the RST_STREAM frame: a 9-byte HTTP/2 frame header + a 4-byte error code.</p>
       <div id="block-h2reset" data-build></div>
       <div class="callout hot"><b>Rapid Reset (CVE-2023-44487, 2023).</b> The largest L7 DDoS on record at the time - it exploited a spec-legal behavior, not a bug, so every HTTP/2 implementation was affected at once. Mitigation is counting resets and reused streams per connection and killing abusive ones, plus capping request rate independent of the stream-concurrency limit. Its cousin, the CONTINUATION flood (2024), abuses unbounded header CONTINUATION frames the same way.</div>
-      <div class="callout"><b>slow attacks cost almost nothing.</b> Slowloris can take down a thread-per-connection server from a single laptop - the defense is event-driven servers, aggressive header/body timeouts, and a reverse proxy that buffers the full request before ever touching the origin.</div>
+      <div class="callout"><b>slow attacks.</b> Slowloris drops a thread-per-connection server from one laptop. Defense: event-driven servers, aggressive header/body timeouts, a reverse proxy that fully buffers the request before origin.</div>
     </div>
 
     <div class="panel" data-panel="bots">
       <div class="pfacts"><span>the hard part<b>it looks like real traffic</b></span><span>you can't drop by volume</span></div>
-      <p class="plede">Abuse traffic is well-formed, low-rate, and often distributed across huge <b>residential proxy</b> pools (real home IPs rented from malware/SDK networks), so IP reputation and rate limits barely dent it. You defend by telling the automated client apart from the human one.</p>
+      <p class="plede">Well-formed, low-rate, distributed across <b>residential proxy</b> pools (real home IPs rented via malware/SDK networks), so IP reputation and rate limits barely dent it. Defense = distinguishing automated from human.</p>
       <div class="sec">the abuse catalog</div>
       <div class="kv">
         <div><span class="k">credential stuffing</span><span class="v">replaying leaked user/pass pairs to find reuse -&gt; account takeover (ATO)</span></div>
@@ -258,12 +258,12 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
         <div><span class="k">scalping</span><span class="v">bots hoarding limited inventory (tickets, drops, GPUs) faster than humans</span></div>
         <div><span class="k">API abuse</span><span class="v">using an API exactly as designed, just far too much / not as intended</span></div>
       </div>
-      <div class="callout"><b>the modern twist: AI crawlers.</b> A wave of LLM training and retrieval bots now scrapes at volumes that read like a soft DDoS - many ignore <code>robots.txt</code>, rotate residential IPs, and forge browser User-Agents. They are the clearest current case for <i>fingerprint</i>-based identification: the UA says "Chrome," the TLS/HTTP fingerprint says "a Python library."</div>
+      <div class="callout"><b>AI crawlers.</b> LLM training/retrieval bots scrape at soft-DDoS volumes: ignore <code>robots.txt</code>, rotate residential IPs, forge browser UAs. The clearest current case for fingerprint-based ID -- UA says "Chrome," the TLS/HTTP fingerprint says "Python library."</div>
     </div>
 
     <div class="panel" data-panel="fp">
       <div class="pfacts"><span>problem<b>IP is shared, UA is a free-text lie</b></span><span>answer<b>JA4+ fingerprints</b></span></div>
-      <p class="plede">You can't block by IP (CGNAT, proxies, shared clouds put thousands of users behind one address) and you can't trust the User-Agent (it's a client-set string - a scraper claims to be Chrome for free). So defenders fingerprint <b>how the client speaks</b>: the exact shape of its TLS handshake, HTTP/2 settings, and TCP options - things a library reveals whether or not it lies about its name.</p>
+      <p class="plede">IP is unreliable (CGNAT, proxies, shared cloud) and the User-Agent is client-set free text. Fingerprint <b>how the client speaks</b> instead: TLS handshake shape, HTTP/2 settings, TCP options -- revealed by the library regardless of what it claims.</p>
       <div class="sec">a JA4 fingerprint, decomposed</div>
       <p class="note">JA4 (the TLS ClientHello half of JA4+) hashes the negotiated capabilities into a stable, human-skimmable string. This is real Chrome:</p>
       <div class="ja4"><span class="seg k-sync">t13d1516h2</span>_<span class="seg k-enum">8daaf6152771</span>_<span class="seg k-flag">02713d6af862</span></div>
@@ -272,14 +272,14 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
         <div><span class="k">8daaf6152771</span><span class="v">sha256[:12] of the sorted cipher-suite list</span></div>
         <div><span class="k">02713d6af862</span><span class="v">sha256[:12] of the sorted extensions + signature algorithms</span></div>
       </div>
-      <div class="callout hot"><b>why JA4 beat the old JA3.</b> JA3 hashed raw, order-sensitive fields into one opaque MD5 - trivially perturbed by GREASE and TLS extension-shuffling, so a client could randomize its own fingerprint per connection. JA4 <b>sorts</b> before hashing (defeating shuffling), strips GREASE, and keeps the human-readable prefix, so it's stable across sessions and skimmable by an analyst. The wider JA4+ suite adds <b>JA4H</b> (HTTP), <b>JA4T/JA4TS</b> (TCP), <b>JA4S</b> (the server's hello), and <b>JA4X</b> (the certificate).</div>
-      <div class="callout"><b>the catch: fingerprints spoof too.</b> Tools like <code>curl-impersonate</code> and <code>utls</code> let a bot reproduce a real browser's exact ClientHello - so a fingerprint match is strong evidence, not proof. The state of the art combines the fingerprint with behavior (timing, ordering, whether it solves a challenge) rather than trusting any single signal - the same "obscurity is a layer, not the control" lesson from address scanning.</div>
-      <div class="callout"><b>see it on the wire.</b> To capture and pick these ClientHellos out of live traffic, see <a href="../filtering/capture-filter.html">capture &amp; filter</a> - the display filter is <code>tls.handshake.type == 1</code>.</div>
+      <div class="callout hot"><b>JA4 vs JA3.</b> JA3 hashed raw order-sensitive fields into one MD5 -- perturbed by GREASE + extension-shuffling, so a client could randomize its own fingerprint. JA4 sorts before hashing (defeats shuffling), strips GREASE, keeps a readable prefix -> stable + skimmable. JA4+ suite: JA4H (HTTP), JA4T/JA4TS (TCP), JA4S (ServerHello), JA4X (cert).</div>
+      <div class="callout"><b>fingerprints spoof too.</b> <code>curl-impersonate</code> / <code>utls</code> reproduce a real browser's ClientHello -- a match is strong evidence, not proof. State of the art combines fingerprint + behavior (timing, ordering, challenge-solving); no single signal is trusted alone.</div>
+      <div class="callout"><b>capture it:</b> pick these ClientHellos out of live traffic in <a href="../filtering/capture-filter.html">capture &amp; filter</a> -- display filter <code>tls.handshake.type == 1</code>.</div>
     </div>
 
     <div class="panel" data-panel="defense">
       <div class="pfacts"><span>principle<b>defense in depth</b></span><span>each layer removes work before the next</span></div>
-      <p class="plede">No single control stops everything; you stack cheap filters in front of expensive ones so each layer sheds load before the next. Roughly outside-in:</p>
+      <p class="plede">Stack cheap filters ahead of expensive ones so each layer sheds load first. Outside-in:</p>
       <div class="sec">the layers</div>
       <div class="kv">
         <div><span class="k">edge / network</span><span class="v">Anycast spreads the load across many sites; scrubbing centers absorb volume; BGP flowspec + RTBH (remote-triggered blackhole) drop floods upstream; CDNs serve cached bytes so attacks never reach origin</span></div>
@@ -287,15 +287,15 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
         <div><span class="k">application</span><span class="v">WAF rules, rate limiting (token-bucket / sliding-window), challenges (JS, CAPTCHA, proof-of-work), fingerprint + reputation blocking, bot management</span></div>
         <div><span class="k">architectural</span><span class="v">cache everything cacheable, degrade gracefully under load, tarpit + honeypot the obvious offenders, autoscale with a cost ceiling</span></div>
       </div>
-      <div class="callout"><b>challenges shift the cost back.</b> A <b>proof-of-work</b> challenge (e.g. Anubis, mCaptcha) makes every client burn a few CPU-milliseconds before it's served - invisible to one human, ruinous to a bot making millions of requests. It's the mirror image of the L7 asymmetry: finally make the <i>attacker</i> pay per request.</div>
-      <div class="callout"><b>rate limiting is a shape, not a number.</b> Token-bucket allows bursts then throttles; sliding-window smooths; per-fingerprint or per-account limits beat per-IP ones when the attacker is spread across a proxy pool. The honeypot angle ties in here - a decoy endpoint or address (see the ipv6-fun canary) turns any hit into a high-confidence "this is hostile" signal to feed the other layers.</div>
+      <div class="callout"><b>proof-of-work challenges</b> (Anubis, mCaptcha) make every client burn CPU-ms before service -- negligible per human, ruinous per bot at scale. Inverts the L7 asymmetry: the attacker pays per request.</div>
+      <div class="callout"><b>rate limiting.</b> Token-bucket allows bursts then throttles; sliding-window smooths; per-fingerprint / per-account beats per-IP against proxy pools. Honeypot endpoints/addresses (the ipv6-fun canary) turn any hit into a high-confidence hostile signal.</div>
     </div>
 
     <div class="panel" data-panel="arms">
       <div class="pfacts"><span>attack cost<b>rentable by the hour</b></span><span>the loop<b>spoof &harr; detect, forever</b></span></div>
-      <p class="plede">The economics are lopsided and that's the whole story. DDoS is a <b>service</b> - "booter/stresser" sites rent floods by the hour for pocket change, and residential-proxy networks sell millions of real IPs. Defense is anycast capacity, scrubbing contracts, and engineering time. The attacker pays cents; the defender pays a retainer.</p>
-      <div class="callout"><b>obscurity is never the control.</b> Hiding an address, a subdomain, or a fingerprint buys time and cuts noise, but anything discoverable will be found and anything static will be predicted - the same lesson whether you're hiding an IPv6 host or a client fingerprint. Layers you can reason about (rate, identity, challenge, capacity) are the actual defense; obscurity just thins the crowd first.</div>
-      <div class="callout hot"><b>the cat-and-mouse won't end.</b> Better fingerprinting (JA4) begets better spoofing (uTLS/curl-impersonate) begets behavioral + multi-signal detection begets... the durable posture isn't a silver bullet, it's raising the attacker's cost and your own observability faster than they adapt. Detect, identify, mitigate - then watch what changed and do it again.</div>
+      <p class="plede">Asymmetric economics. DDoS-as-a-service: booter/stresser rentals by the hour; residential-proxy pools of millions of real IPs. Defense = anycast capacity + scrubbing contracts + engineering time. Attacker pays cents; defender pays a retainer.</p>
+      <div class="callout"><b>obscurity is not a control.</b> Hiding an address/subdomain/fingerprint buys time and cuts noise, but anything discoverable is found and anything static is predicted. The controls are the ones you can reason about: rate, identity, challenge, capacity.</div>
+      <div class="callout hot"><b>the loop doesn't converge.</b> Better fingerprinting (JA4) -> better spoofing (uTLS) -> behavioral/multi-signal detection -> ... Durable posture: raise attacker cost + your observability faster than they adapt. Detect -> identify -> mitigate -> observe -> repeat.</div>
     </div>
 
   </div>
