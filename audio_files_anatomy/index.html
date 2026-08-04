@@ -18,6 +18,9 @@
 }
 :root[data-theme="dark"]{--paper:#191a17;--panel:#212320;--ink:#e6e6e1;--soft:#abaca1;--faint:#7c7d72;--line:#383a32;--hair:#2b2d26;--accent:#9da69e}
 :root[data-theme="acid"]{--paper:#0b0912;--panel:#161022;--ink:#f4ecff;--soft:#ccb9f2;--faint:#8f7ec6;--line:#3b2c5c;--hair:#241a3a;--accent:#3fd0ff;--enum:#3fd0ff;--flag:#ff45a8;--sync:#f2e400}
+/* house modes: the site-wide Deep Dive skins (warm cream / neutral dark, house teal+orange) */
+:root[data-theme="house-light"]{--paper:#F2F1EE;--panel:#FBFAF6;--ink:#17150F;--soft:#4A4744;--faint:#8C877E;--line:#C9C5BB;--hair:#E4E0D7;--accent:#007870;--enum:#007870;--enum-soft:#D8E7E5;--flag:#E85000;--flag-soft:#F6E1D4;--sync:#33518C;--sync-soft:#DEE3EF;--rsv:#8C877E;--rsv-soft:rgba(23,21,15,0.04);}
+:root[data-theme="house-dark"]{--paper:#121213;--panel:#1c1c1e;--ink:#ececea;--soft:#a9a9a4;--faint:#6f6f6b;--line:#313135;--hair:#26262a;--accent:#08F9DF;--enum:#08F9DF;--enum-soft:#0e2a29;--flag:#FF4D00;--flag-soft:#2c1a10;--sync:#7fb2e0;--sync-soft:#16232f;--rsv:#8b8b88;--rsv-soft:rgba(236,236,234,0.05);}
 :root[data-theme="acid"] .name{color:var(--accent)}
 :root[data-theme="acid"] .sw.val{background:#0f2942;border-color:#3fd0ff}
 :root[data-theme="acid"] .sw.flag{background:#3a1030;border-color:#ff45a8}
@@ -40,6 +43,14 @@ a{color:inherit;text-decoration:none}
 .head .title acidcat-toggle:hover{color:var(--accent)}
 :root[data-theme="acid"] .head .title acidcat-toggle{color:var(--sync)}
 :root[data-theme="acid"] .head .title acidcat-toggle:hover{color:var(--flag)}
+:root[data-theme="house-light"] .head .title acidcat-toggle{color:var(--flag)}
+:root[data-theme="house-dark"] .head .title acidcat-toggle{color:var(--enum)}
+:root[data-theme="house-light"] .head .title acidcat-toggle:hover{color:var(--enum)}
+:root[data-theme="house-dark"] .head .title acidcat-toggle:hover{color:var(--flag)}
+:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
+:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
+:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.7rem,5vw,2.4rem);letter-spacing:0.02em;line-height:1.05;margin-top:0.2rem}
 .head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
@@ -113,7 +124,7 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
 
   <div class="head">
     <div class="row">
-      <div class="title"><div class="tt"><div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div><h1>Audio File Anatomy</h1></div><acidcat-toggle aria-label="Cycle theme: light, dark, acid"></acidcat-toggle></div>
+      <div class="title"><div class="tt"><div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div><h1>Audio File Anatomy</h1></div><acidcat-toggle aria-label="Cycle theme: light, dark, acid, house light, house dark"></acidcat-toggle></div>
       <div class="stamp"><b>21 formats</b>interactive<br>rev 2026.07</div>
     </div>
     <div class="strip">
@@ -404,6 +415,9 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
     :host([data-state="acid"]) .swirl:first-of-type{stroke:var(--enum)}
     :host([data-state="acid"]) .swirl:last-of-type{stroke:var(--flag);animation-direction:reverse}
     :host([data-state="acid"]) .tongue{transform:scaleY(1)}
+    /* house modes: awake + composed; eyes take the opposite accent from the face (cool/warm inversion) */
+    :host([data-state="house-light"]) .eye{fill:var(--enum)}
+    :host([data-state="house-dark"]) .eye{fill:var(--flag)}
     @keyframes acid-spin{to{transform:rotate(1turn)}}
     @keyframes zfloat{0%{opacity:0;transform:translateY(40px)}25%{opacity:.9}60%{opacity:.9}100%{opacity:0;transform:translateY(-90px)}}
     @media (prefers-reduced-motion:reduce){
@@ -412,11 +426,11 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
     }
   `;
 
-  const STATES = ['light', 'dark', 'acid'];
+  const STATES = ['light', 'dark', 'acid', 'house-light', 'house-dark'];
   class AcidcatToggle extends HTMLElement {
     connectedCallback() {
       const root = this.attachShadow({ mode: 'open' });
-      root.innerHTML = `<style>${css}</style><button type="button" aria-label="Cycle theme: light, dark, acid" title="Theme (click to cycle)"><span class="box">${svg}</span></button>`;
+      root.innerHTML = `<style>${css}</style><button type="button" aria-label="Cycle theme: light, dark, acid, house light, house dark" title="Theme (click to cycle)"><span class="box">${svg}</span></button>`;
       this._btn = root.querySelector('button');
       this._btn.addEventListener('click', () => this.cycle());
       // keep multiple toggles on one page visually in sync

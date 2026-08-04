@@ -2,7 +2,8 @@
 // Click cycles: light -> dark -> amber-CRT -> vaporwave -> house-light -> house-dark.
 // The two "secret" modes (amber/vapor) light RJ up -- happy eyes + pins racing.
 // The two "house" modes are the site-wide Deep Dive skins: RJ goes calm/buttoned-up
-// (open or focused eyes, level mouth, pins at rest) -- the serious sibling look.
+// (open eyes, level mouth, pins at rest); his eyes take the opposite accent from the
+// face -- teal face/orange eyes in house-dark, orange face/teal eyes in house-light.
 // Sets data-theme on <html>; each page's CSS paints the palette. One shared file per repo.
 (function () {
   if (customElements.get('protofun-toggle')) return;
@@ -26,10 +27,6 @@
       <line x1="70" y1="126" x2="90" y2="134" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
       <line x1="110" y1="134" x2="130" y2="126" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
     </g>
-    <g class="eyes-focus">
-      <line x1="71" y1="130" x2="89" y2="130" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
-      <line x1="111" y1="130" x2="129" y2="130" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
-    </g>
     <path class="mouth" d="M76,156 Q100,174 124,156" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linecap="round"/>
     <path class="mouth-frown" d="M78,168 Q100,154 122,168" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
     <path class="mouth-neutral" d="M78,158 Q100,163 122,158" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
@@ -43,15 +40,15 @@
     button{-webkit-appearance:none;appearance:none;background:none;border:0;padding:3px;margin:0;cursor:pointer;color:inherit;border-radius:6px;line-height:0;display:inline-flex}
     button:focus-visible{outline:2px solid currentColor;outline-offset:3px}
     .box{width:var(--protofun-w,30px);height:var(--protofun-h,45px)}
-    .eyes-happy,.eyes-scowl,.eyes-focus,.mouth-frown,.mouth-neutral{display:none}
+    .eyes-happy,.eyes-scowl,.mouth-frown,.mouth-neutral{display:none}
     /* the secret modes (dark/amber/vapor) => happy ^^ eyes */
     :host([data-state="dark"]) .eyes,:host([data-state="amber"]) .eyes,:host([data-state="vapor"]) .eyes{display:none}
     :host([data-state="dark"]) .eyes-happy,:host([data-state="amber"]) .eyes-happy,:host([data-state="vapor"]) .eyes-happy{display:inline}
-    /* house modes => calm: open (light) or focused (dark) eyes, level mouth, pins at rest */
+    /* house modes => calm: open eyes, level mouth, pins at rest; eyes take the opposite accent from the face */
     :host([data-state="house-light"]) .mouth,:host([data-state="house-dark"]) .mouth{display:none}
     :host([data-state="house-light"]) .mouth-neutral,:host([data-state="house-dark"]) .mouth-neutral{display:inline}
-    :host([data-state="house-dark"]) .eyes{display:none}
-    :host([data-state="house-dark"]) .eyes-focus{display:inline}
+    :host([data-state="house-light"]) .eyes circle[r="14"]{fill:var(--enum, var(--accent))}
+    :host([data-state="house-dark"]) .eyes circle[r="14"]{fill:var(--flag, var(--tx))}
     /* pins: gentle chase in dark, FAST in the secret amber/green (the rave) */
     :host([data-state="dark"]) .pins line{animation:pf-chase 1.3s ease-in-out infinite}
     :host([data-state="amber"]) .pins line,:host([data-state="vapor"]) .pins line{animation:pf-chase .5s ease-in-out infinite}
