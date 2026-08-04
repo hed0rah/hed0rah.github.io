@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>protocols-fun / JA4+ breakdown</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E6EBEE; --panel:#EFF3F5; --ink:#10171C; --soft:#46545E;
+  --faint:#7A8790; --line:#C1CDD3; --hair:#D6E0E4;
+  --enum:#0E7A8C; --enum-soft:#D1E7EA;
+  --flag:#C1501A; --flag-soft:#F0DACB;
+  --sync:#34507E; --sync-soft:#DCE3EE;
+  --rsv:#838E96;  --rsv-soft:rgba(16,23,28,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#0a0f0d;--panel:#0f1613;--ink:#c6f0d0;--soft:#7fae90;--faint:#4f6a5c;--line:#22302a;--hair:#151d19;--enum:#2fe38a;--enum-soft:#0e2a1d;--flag:#e0a92e;--flag-soft:#2c2410;--sync:#4fb8d6;--sync-soft:#0f2630;--rsv:#6f8f7f;--rsv-soft:rgba(198,240,208,0.05);}
+:root[data-theme="amber"]{--paper:#120c00;--panel:#1c1400;--ink:#ffb000;--soft:#c08a2a;--faint:#8a6a20;--line:#3a2a00;--hair:#241900;--enum:#ffb000;--enum-soft:#2a1d00;--flag:#ffd27a;--flag-soft:#332400;--sync:#d98a1a;--sync-soft:#241a00;--rsv:#9a7524;--rsv-soft:rgba(255,176,0,0.05);}
+:root[data-theme="vapor"]{--paper:#f4efe0;--panel:#ece4d0;--ink:#123b37;--soft:#3f605b;--faint:#8a9a90;--line:#e5457f;--hair:#ddd3bd;--enum:#e5457f;--enum-soft:#f8d9e4;--flag:#e0982f;--flag-soft:#f5e6c6;--sync:#0e9c90;--sync-soft:#cbe9e3;--rsv:#8a9a90;--rsv-soft:rgba(18,59,55,0.05);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
+.head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem}
+.head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
+.head .title protofun-toggle:hover{color:var(--enum)}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:80ch;margin-bottom:1.4rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500} .lede a{color:var(--enum)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:1.7rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.4rem 0 1rem;max-width:78ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.1rem 0 0.4rem;max-width:82ch}
+.callout b{color:var(--ink);font-weight:500} .callout a{color:var(--enum)}
+.callout.hot{border-left-color:var(--enum)}
+code{font-family:var(--ff);color:var(--enum);font-size:0.92em;background:var(--rsv-soft);padding:0.02rem 0.28rem;border-radius:2px;white-space:nowrap}
+.atable{width:100%;border-collapse:collapse;font-size:0.74rem;margin:0.4rem 0 1.3rem}
+.atable th,.atable td{text-align:left;padding:0.38rem 0.7rem;border-bottom:1px solid var(--hair);vertical-align:top}
+.atable th{font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+.atable td.x{font-family:var(--ff);color:var(--enum);white-space:nowrap;font-size:0.72rem}
+.atable td.f{color:var(--ink);font-weight:500;white-space:nowrap}
+.kv{font-size:0.78rem;margin:0.3rem 0 1.1rem}
+.kv div{display:grid;grid-template-columns:8.5rem 1fr;gap:1rem;padding:0.3rem 0;border-bottom:1px solid var(--hair)}
+.kv div:last-child{border-bottom:none}
+.kv .k{color:var(--enum)} .kv .v{color:var(--soft)}
+/* interactive JA4 string decoder */
+.decoder{display:grid;grid-template-columns:1fr 320px;gap:1.4rem;align-items:start;margin:0.4rem 0 1.2rem}
+@media(max-width:820px){.decoder{grid-template-columns:1fr}}
+.jstr{font-size:1.15rem;letter-spacing:0.02em;line-height:2.4;word-break:break-all;user-select:none}
+.jseg{padding:0.15rem 0.1rem;border-bottom:2px solid transparent;cursor:pointer;transition:background .12s}
+.jseg.k-enum{color:var(--enum)} .jseg.k-flag{color:var(--flag)} .jseg.k-sync{color:var(--sync)}
+.jseg:hover,.jseg.on{background:var(--panel);border-bottom-color:currentColor}
+.jsep{color:var(--faint)}
+.jdetail{border:1px solid var(--line);background:var(--panel);padding:0.9rem 1rem;min-height:9rem;position:sticky;top:1rem}
+.jdetail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.45rem;margin-bottom:0.55rem}
+.jdetail h3{font-weight:500;font-size:0.95rem;color:var(--ink)} .jdetail .dv{font-size:0.72rem;color:var(--enum);margin:0.2rem 0 0.55rem}
+.jdetail p{font-size:0.76rem;color:var(--soft);line-height:1.6}
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none}
+.tab{padding:0.55rem 0.85rem;font-size:0.63rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:last-child{border-right:none}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.06em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.5rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none} .panel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+.plede{color:var(--soft);max-width:82ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
+.plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em}
+.ja4{border:1px solid var(--line);background:var(--panel);padding:0.7rem 0.9rem;margin:0.3rem 0 0.9rem;font-size:0.95rem;letter-spacing:0.02em;overflow-x:auto}
+.ja4 .s1{color:var(--sync)} .ja4 .s2{color:var(--enum)} .ja4 .s3{color:var(--flag)}
+footer{margin-top:3.2rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+/* --- secret themes: amber CRT + vaporwave --- */
+:root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.32)}
+:root[data-theme="amber"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 3px)}
+:root[data-theme="vapor"] body{background:url(../assets/sakura-tile.webp) repeat, linear-gradient(160deg,#4fdfba 0%,#3fc8a4 60%,#57e3c0 100%);background-size:320px auto, cover;background-attachment:fixed}
+:root[data-theme="vapor"] .sheet{background:#f4efe0;box-shadow:0 0 0 3px #2ec6b9,0 14px 46px rgba(0,0,0,.28);border-radius:3px}
+:root[data-theme="vapor"] .head{border-color:#0e9c90}
+:root[data-theme="vapor"] .head .title protofun-toggle{color:#e5457f}
+:root[data-theme="vapor"] .tab.on{box-shadow:inset 0 -2px #e5457f}
+/* --- mobile --- */
+@media(max-width:560px){
+  body{font-size:13px}
+  .sheet{padding-left:1rem;padding-right:1rem}
+  .head .row{grid-template-columns:1fr}
+  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
+  .head .strip{grid-template-columns:1fr}
+  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
+  .head .strip div:last-child{border-bottom:none}
+  .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
+  .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
+  code{white-space:normal;overflow-wrap:anywhere}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . JA4+</div><h1>JA4+ Fingerprinting</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
+      <div class="stamp"><b>identity from the wire</b>FoxIO JA4+ suite<br>rev 2026.08</div>
+    </div>
+    <div class="strip">
+      <div>members <b>JA4 &middot; H &middot; S &middot; T &middot; L &middot; X &middot; SSH &middot; q</b></div>
+      <div>beats JA3 <b>sort-before-hash</b></div>
+      <div>truth <b>coherence &gt; any one hash</b></div>
+    </div>
+  </div>
+
+  <p class="lede"><b>JA4+</b> is a family of fingerprints for how a client (or server) speaks at each layer: TLS, HTTP, TCP, latency, certificate, SSH, QUIC. It replaced JA3 because it <b>sorts lists before hashing</b> - so it survives the per-connection TLS extension shuffling Chrome shipped in 2023 that made JA3 blocklists useless. Universal rules below apply to every member: <b>every hash is <code>sha256[:12]</code></b> (12 hex chars), <b>GREASE (RFC 8701) is stripped everywhere</b> before counting/hashing, an <b>empty list hashes to <code>000000000000</code></b>, counts are 2-digit capped at 99, and lists are sorted <i>only</i> where the sender could reorder them. Hover the JA4 string below.</p>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="ja4">JA4<small>TLS client</small></button>
+    <button class="tab" data-p="server">JA4S / JA4X<small>server + cert</small></button>
+    <button class="tab" data-p="ja4h">JA4H<small>HTTP</small></button>
+    <button class="tab" data-p="transport">JA4T / JA4L<small>TCP + latency</small></button>
+    <button class="tab" data-p="ssh">JA4SSH / q<small>SSH + QUIC</small></button>
+    <button class="tab" data-p="ja3">JA3 &rarr; JA4<small>why</small></button>
+    <button class="tab" data-p="spoof">Spoof &amp; Coherence<small>the truth</small></button>
+    <button class="tab" data-p="wild">In the Wild<small>uses + ecosystem</small></button>
+  </div>
+  <div class="panelwrap">
+
+    <div class="panel on" data-panel="ja4">
+      <div class="pfacts"><span>source<b>TLS ClientHello</b></span><span>fingerprints<b>the client's TLS library/build</b></span></div>
+      <p class="plede">The flagship. Format <code>a_b_c</code> = readable prefix, then two hashes. Real Chrome below - <b>hover a segment</b> for how it's derived.</p>
+      <div class="decoder">
+        <div class="jstr" id="jstr"></div>
+        <aside class="jdetail" id="jdetail"><div class="dl">segment</div><h3>Hover the string</h3><div class="dv"></div><p>Each segment lights on hover; the box shows exactly how it's computed.</p></aside>
+      </div>
+      <div class="callout hot"><b>the #1 gotcha - the SNI/ALPN asymmetry.</b> SNI and ALPN are <i>counted</i> in the extension count (chars 6-7) but <i>removed</i> before the extension hash. In FoxIO's <code>tls12.pcap</code> the count is 15 while the hashed list holds 13 - the difference is exactly SNI + ALPN. Get this wrong and every fingerprint is off.</div>
+      <div class="callout"><b>hash <code>c</code> is half-sorted.</b> The extension list is sorted (an evader can reorder extensions), but the signature-algorithm list appended after the last <code>_</code> is kept in <b>wire order</b> (it's an OS/stack tell). Version comes from the <code>supported_versions</code> extension (highest non-GREASE), not the legacy version field.</div>
+    </div>
+
+    <div class="panel" data-panel="server">
+      <div class="pfacts"><span>JA4S<b>ServerHello</b></span><span>JA4X<b>the X.509 cert</b></span></div>
+      <p class="plede"><b>JA4S</b> <code>&lt;proto&gt;&lt;ver&gt;&lt;ext#&gt;&lt;alpn&gt;_&lt;chosen-cipher&gt;_&lt;exthash&gt;</b> - fingerprints the server's TLS stack + its per-connection choices. Clusters C2 servers sharing a config.</p>
+      <div class="ja4"><span class="s1">t130200</span>_<span class="s2">1301</span>_<span class="s3">a56c5b993250</span></div>
+      <div class="kv">
+        <div><span class="k">t13 02 00</span><span class="v">TCP/TLS1.3, 02 ServerHello extensions, 00 ALPN selected</span></div>
+        <div><span class="k">1301</span><span class="v">the single cipher the server chose (TLS_AES_128_GCM_SHA256)</span></div>
+        <div><span class="k">a56c5b993250</span><span class="v">sha256[:12] of ServerHello extensions <b>in wire order (NOT sorted)</b> - the server owns its order, so order is signal</span></div>
+      </div>
+      <p class="plede"><b>JA4X</b> <code>&lt;issuerhash&gt;_&lt;subjecthash&gt;_&lt;exthash&gt;</code> - hashes the certificate's <b>OIDs (field types), not their values</b>, so tooling that randomizes CN/org but not cert shape still collides.</p>
+      <div class="ja4"><span class="s1">2166164053c1</span>_<span class="s2">2166164053c1</span>_<span class="s3">30d204a01551</span></div>
+      <div class="callout"><b>issuer == subject = self-signed</b>, the tell that clusters C2 frameworks (Sliver, Havoc). OIDs are hashed as DER content bytes only (drop tag + length). Instructive: a Go TLS server's JA4S is byte-identical to Sliver C2 - JA4S fingerprints the <i>library</i>, not the app.</div>
+    </div>
+
+    <div class="panel" data-panel="ja4h">
+      <div class="pfacts"><span>source<b>the HTTP request head</b></span><span>h1 line-framing + h2 HPACK</span></div>
+      <p class="plede">Format <code>a_b_c_d</code>. Fingerprints the HTTP client by method, header set + <b>order</b>, cookies, and language.</p>
+      <div class="ja4"><span class="s1">ge11cn060000</span>_<span class="s2">4e59edc1297a</span>_<span class="s3">4da5efaf0cbd</span>_<span class="s3">000000000000</span></div>
+      <table class="atable"><thead><tr><th>seg</th><th>value</th><th>derivation</th></tr></thead><tbody>
+        <tr><td class="x">ge 11</td><td class="f">method + version</td><td>first 2 chars of method (ge=GET), 11=HTTP/1.1 (20=h2, 30=h3)</td></tr>
+        <tr><td class="x">c / n</td><td class="f">cookie · referer</td><td>flags: Cookie header present? Referer present?</td></tr>
+        <tr><td class="x">06</td><td class="f">header count</td><td>headers <b>excluding Cookie + Referer</b>, cap 99</td></tr>
+        <tr><td class="x">0000</td><td class="f">Accept-Language</td><td>first 4 alnum of the first Accept-Language (en-US -&gt; enus); 0000 if none</td></tr>
+        <tr><td class="x">_b</td><td class="f">header hash</td><td>sha256[:12] of header <b>names in WIRE ORDER</b>, minus Cookie/Referer/h2 pseudo-headers</td></tr>
+        <tr><td class="x">_c _d</td><td class="f">cookie hashes</td><td>sha256[:12] of <b>sorted</b> cookie names, then sorted <code>name=value</code> pairs; 000000000000 if none</td></tr>
+      </tbody></table>
+      <div class="callout hot"><b>header ORDER feeds hash b.</b> Any framework that parses headers into a map (Go <code>net/http</code>, most stacks) destroys order and computes a wrong JA4H. You must read the raw request head - see the "from the wire" point on the Spoof tab.</div>
+    </div>
+
+    <div class="panel" data-panel="transport">
+      <div class="pfacts"><span>JA4T<b>the TCP SYN</b></span><span>invisible to a socket &mdash; needs eBPF</span></div>
+      <p class="plede"><b>JA4T</b> <code>&lt;window&gt;_&lt;option-kinds&gt;_&lt;mss&gt;_&lt;wscale&gt;</code> fingerprints the OS TCP stack. The SYN is consumed by the kernel before <code>accept()</code> returns, so a normal server can't see it - <a href="../ebpf/ebpf-networking.html">eBPF</a> recovers it off the wire.</p>
+      <div class="ja4"><span class="s1">64240</span>_<span class="s2">2-1-3-1-1-4</span>_<span class="s1">1460</span>_<span class="s3">8</span></div>
+      <div class="kv">
+        <div><span class="k">64240</span><span class="v">TCP window (Windows 64240, Linux/mac 65535)</span></div>
+        <div><span class="k">2-1-3-1-1-4</span><span class="v">option kinds in <b>WIRE ORDER</b> (2 MSS, 4 SACK-OK, 8 timestamps, 1 NOP, 3 wscale, 0 EOL) - NOT sorted; the order is what separates OS stacks</span></div>
+        <div><span class="k">1460 _ 8</span><span class="v">MSS value, window-scale shift. The 4th field is <b>wscale, not TTL</b> (common error)</span></div>
+      </div>
+      <p class="note">Ground truth: Windows <code>64240_2-1-3-1-1-4_1460_8</code> · Ubuntu <code>65535_2-4-8-1-3_1460_8</code> · macOS <code>65535_2-1-3-1-1-8-4-0-0_1460_6</code>. Windows omits timestamps (opt 8); an MSS below 1460 betrays a tunnel/VPN/proxy in front of the host.</p>
+      <p class="plede"><b>JA4L</b> <code>&lt;latency_us&gt;_&lt;ttl&gt;</code> - one-way latency estimate (half the handshake delta, microseconds) + IP TTL / IPv6 hop-limit (64 Linux/mac, 128 Windows, 255 gear, minus hops).</p>
+      <div class="ja4"><span class="s2">1424</span>_<span class="s3">64</span></div>
+      <div class="callout hot"><b>JA4L is physics, not a field.</b> You can rewrite the TTL byte, but you can't forge round-trip time without actually being that far away. It's the hard floor of the spoofability gradient. (Endpoint caveat: the server-leg JA4LS is really your own SYN-processing time, not network latency.)</div>
+    </div>
+
+    <div class="panel" data-panel="ssh">
+      <div class="pfacts"><span>JA4SSH<b>encrypted SSH cadence</b></span><span>JA4 q<b>QUIC Initial</b></span></div>
+      <p class="plede"><b>JA4SSH</b> reads an <i>encrypted</i> SSH session's behaviour over a 200-packet window - it fingerprints activity, not just identity. <code>c&lt;len&gt;s&lt;len&gt;_c&lt;pkts&gt;s&lt;pkts&gt;_c&lt;acks&gt;s&lt;acks&gt;</code>.</p>
+      <div class="ja4"><span class="s1">c76s76</span>_<span class="s2">c71s59</span>_<span class="s3">c0s70</span></div>
+      <div class="callout"><b>the ACK counts are the tell.</b> Interactive forward session = client types (<code>c69s0</code>); a <b>reverse shell flips the ACKs to the server</b> (<code>c0s70</code>) because the server is the one typing. Same identity, opposite direction - visible without decrypting a byte of payload.</div>
+      <p class="plede"><b>JA4 q</b> is identical to JA4, with protocol char <code>q</code>, but the ClientHello lives inside the <b>encrypted QUIC Initial</b>.</p>
+      <div class="ja4"><span class="s1">q13d0310h3</span>_<span class="s2">55b375c5d22e</span>_<span class="s3">cd85d2d88918</span></div>
+      <div class="callout hot"><b>"encrypted" doesn't mean unfingerprintable.</b> QUIC v1 Initials are AEAD-protected, but the keys derive (RFC 9001) from the Destination Connection ID, which travels <i>in the clear</i>. Any observer derives the keys, decrypts the Initial, reassembles the CRYPTO frames, and parses the ClientHello. QUIC's own key schedule hands out the handshake.</div>
+    </div>
+
+    <div class="panel" data-panel="ja3">
+      <div class="pfacts"><span>the headline change<b>sort before hash</b></span></div>
+      <p class="plede">JA3 hashed the cipher + extension lists <b>in wire order</b>. In early 2023 Chrome began <b>randomizing TLS extension order per connection</b> (default ~Chrome 110). With ~15! orderings, every Chrome connection produced a different JA3 - blocklists on the internet's most common client became meaningless, and <code>salesforce/ja3</code> was archived.</p>
+      <div class="kv">
+        <div><span class="k">sort-before-hash</span><span class="v">JA4 sorts the cipher + extension lists, collapsing randomized order back to one stable fingerprint</span></div>
+        <div><span class="k">readable prefix</span><span class="v">JA4's <code>a</code> segment is greppable before you touch a hash; JA3 was one opaque MD5</span></div>
+        <div><span class="k">reason-preserving</span><span class="v">separate cipher + extension hashes, sigalgs kept in order - drift is diagnosable, not just "different MD5"</span></div>
+      </div>
+      <div class="callout"><b>myth to correct:</b> GREASE is stripped by <i>both</i> JA3 and JA4, so GREASE is not the differentiator - <b>sorting is</b>. The rule throughout JA4+: canonicalize what an evader can cheaply randomize (cipher/extension order), preserve what the stack fixes (sigalg order, TCP option order, ServerHello order).</div>
+    </div>
+
+    <div class="panel" data-panel="spoof">
+      <div class="pfacts"><span>gradient<b>app &rarr; library &rarr; kernel</b></span><span>truth<b>cross-layer coherence</b></span></div>
+      <p class="plede">Forging gets harder the lower you go, because control moves from app to library to kernel:</p>
+      <table class="atable"><thead><tr><th>member</th><th>forge</th><th>how</th></tr></thead><tbody>
+        <tr><td class="f">JA4H (HTTP)</td><td class="x">trivial</td><td>client owns method/headers/order - just write bytes</td></tr>
+        <tr><td class="f">JA4 (TLS)</td><td class="x">moderate</td><td>drive cipher/ext/curve/sigalg sets via uTLS; easier than JA3 (need the right <i>set</i>, not order)</td></tr>
+        <tr><td class="f">JA4T (TCP)</td><td class="x">hard</td><td>no per-conn socket knob; raw-packet the SYN or rewrite it on egress with eBPF (order included)</td></tr>
+        <tr><td class="f">JA4L (latency)</td><td class="x" style="color:var(--flag)">can't</td><td>round-trip physics; TTL you can set, timing you'd have to actually be there</td></tr>
+      </tbody></table>
+      <div class="callout"><b>from the wire, not the library.</b> Computing JA4 from a parsed library struct (Go's <code>tls.ClientHelloInfo</code>, a header map) is lossy and <i>wrong</i>: the lib strips GREASE, hides extension order, drops what it doesn't model, and a header map destroys JA4H order. An honest fingerprinter sits at the wire (proxy / sensor / eBPF), then replays the untouched bytes into the stack.</div>
+      <div class="callout hot"><b>a single hash is not identity - coherence is.</b> JA4 collapses exactly where an adversary borrows a real browser's stack: against browser-driving agents JA4-alone can score <i>worse than raw IP</i>, while the full multi-layer stack reaches ~0.99. The signal is <b>agreement across layers</b> - TLS says Chrome-on-Windows but the SYN says Linux = a tool wearing a mask. Ambiguity is real: Sliver's cipher hash is shared with Evilginx and stock Go, because it fingerprints the Go stack, not Sliver.</div>
+    </div>
+
+    <div class="panel" data-panel="wild">
+      <div class="pfacts"><span>consumed by<b>Cloudflare, AWS, Fastly, Akamai, Zeek, Suricata...</b></span></div>
+      <div class="sec">what it's for</div>
+      <ul style="font-size:0.8rem;color:var(--soft);line-height:1.6;padding-left:1.1rem;margin:0 0 1rem">
+        <li><b>Bot / scraper ID</b> - JA4 near-perfectly separates HTTP-library bots; the stack can't lie as cheaply as a UA string.</li>
+        <li><b>The "User-Agent lies" problem</b> - a request claims Chrome-on-Windows while its JA4 is stock Go or Python; JA4 fingerprints the stack, catching the spoof.</li>
+        <li><b>C2 / malware clustering</b> - implants share a stack with their C2 (Sliver, Cobalt Strike, IcedID, Qakbot have published JA4/S/X/H values); value is in the combination, not one hash.</li>
+        <li><b>Reverse-shell detection</b> via JA4SSH ACK-flip; <b>proxy/VPN detection</b> via JA4T sub-1460 MSS + stack-inconsistent SYNs.</li>
+      </ul>
+      <div class="sec">ecosystem</div>
+      <p class="note"><b>Cloudflare JA4 Signals</b> (hourly behavioural aggregates keyed on JA4; WAF field <code>cf.bot_management.ja4</code>) - and Cloudflare states plainly that fingerprints are easily spoofed, treating JA4 as a <b>population join key, not an identity</b>. Also AWS CloudFront/WAF, Fastly, Akamai, F5, HAProxy; analysis in Wireshark, Zeek (official package), Suricata (<code>ja4.hash</code>), Censys. Licensing: <b>JA4 is BSD-3</b>; the rest of JA4+ is <b>FoxIO License 1.1</b> (research/internal, not for monetization).</p>
+      <div class="callout"><b>a working reference implementation:</b> <a href="https://github.com/hed0rah/ja4-loko">ja4-loko</a> computes every member above from raw wire data (validated byte-exact vs FoxIO vectors), recovers JA4T/JA4L via an eBPF tc sensor, and can forge JA4/JA4H/JA4T to demonstrate the gradient. See also <a href="../attacks/attack-anatomy.html">Attack &amp; Mitigation</a> and <a href="../ebpf/ebpf-networking.html">eBPF in the Network Stack</a>.</div>
+    </div>
+
+  </div>
+
+  <footer><span>protocols-fun / JA4+ breakdown</span><span>FoxIO JA4+ . JA4=BSD-3 . rest=FoxIO 1.1</span><span><a href="https://github.com/hed0rah/ja4-loko">ja4-loko</a> &middot; <a href="../attacks/attack-anatomy.html">attacks</a> &middot; <a href="../ebpf/ebpf-networking.html">ebpf</a> &middot; <a href="../index.html">the map</a></span></footer>
+</div>
+
+<script>
+(function(){
+  // interactive JA4 string decoder
+  var SEG=[
+    {t:"t",k:"sync",n:"protocol",v:"t",d:"Transport: t = TCP (TLS-over-TCP), q = QUIC, d = DTLS."},
+    {t:"13",k:"sync",n:"TLS version",v:"1.3",d:"Highest non-GREASE value from the supported_versions extension (0x0304 -> 13). Falls back to the legacy version field for TLS 1.2 and below."},
+    {t:"d",k:"flag",n:"SNI",v:"present",d:"d = SNI extension present (a domain). i = absent (connecting to a bare IP)."},
+    {t:"15",k:"enum",n:"cipher count",v:"15",d:"Count of cipher suites, GREASE excluded, 2-digit, capped at 99."},
+    {t:"16",k:"enum",n:"extension count",v:"16",d:"Count of extensions, GREASE excluded, but SNI and ALPN ARE included here. This is the asymmetry: they're counted but not hashed."},
+    {t:"h2",k:"flag",n:"ALPN",v:"h2",d:"First + last character of the FIRST ALPN value (hex fallback if non-alphanumeric). 00 if no ALPN offered."},
+    {sep:"_"},
+    {t:"8daaf6152771",k:"enum",n:"cipher hash",v:"sha256[:12]",d:"sha256, first 12 hex, of the SORTED (ascending) non-GREASE cipher list. Sorting is what defeats Chrome's per-connection shuffle."},
+    {sep:"_"},
+    {t:"02713d6af862",k:"sync",n:"extension + sigalg hash",v:"sha256[:12]",d:"sha256[:12] of the SORTED non-GREASE extensions with SNI + ALPN REMOVED, then _ + the signature algorithms in WIRE ORDER (not sorted). Half-sorted by design."}
+  ];
+  var str=document.getElementById("jstr"), det=document.getElementById("jdetail");
+  var dl=det.querySelector(".dl"), h3=det.querySelector("h3"), dv=det.querySelector(".dv"), p=det.querySelector("p");
+  var segs=[];
+  SEG.forEach(function(s){
+    if(s.sep){ var sp=document.createElement("span"); sp.className="jsep"; sp.textContent=s.sep; str.appendChild(sp); return; }
+    var el=document.createElement("span"); el.className="jseg k-"+s.k; el.textContent=s.t;
+    function show(){ segs.forEach(function(x){x.classList.remove("on");}); el.classList.add("on");
+      dl.textContent=s.n; h3.textContent=s.t; dv.textContent=s.v; p.textContent=s.d; }
+    el.addEventListener("mouseenter",show); el.addEventListener("click",show);
+    str.appendChild(el); segs.push(el);
+  });
+
+  // tabs
+  var tabs=[].slice.call(document.querySelectorAll(".tab"));
+  var panels=[].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    tabs.forEach(function(t){t.classList.toggle("on",t.dataset.p===name);});
+    panels.forEach(function(pn){pn.classList.toggle("on",pn.dataset.panel===name);});
+  }
+  tabs.forEach(function(t){t.addEventListener("click",function(){activate(t.dataset.p);if(history.replaceState)history.replaceState(null,"","#"+t.dataset.p);});});
+  var init=(location.hash||"").replace("#","");
+  if(init&&document.querySelector('[data-panel="'+init+'"]'))activate(init);
+})();
+</script>
+<script src="../assets/protofun-toggle.js"></script>
+</body>
+</html>
