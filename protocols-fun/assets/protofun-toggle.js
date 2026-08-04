@@ -1,6 +1,8 @@
-// protofun-toggle -- RJ, the protocols-fun / ipv6-fun mascot + 4-theme cycle.
-// Click cycles: light -> dark -> amber-CRT -> vaporwave -> light. The two "secret"
-// modes (amber/green) light RJ up -- happy eyes + pins racing -- like nibs in acid mode.
+// protofun-toggle -- RJ, the protocols-fun / ipv6-fun mascot + 6-theme cycle.
+// Click cycles: light -> dark -> amber-CRT -> vaporwave -> house-light -> house-dark.
+// The two "secret" modes (amber/vapor) light RJ up -- happy eyes + pins racing.
+// The two "house" modes are the site-wide Deep Dive skins: RJ goes calm/buttoned-up
+// (open or focused eyes, level mouth, pins at rest) -- the serious sibling look.
 // Sets data-theme on <html>; each page's CSS paints the palette. One shared file per repo.
 (function () {
   if (customElements.get('protofun-toggle')) return;
@@ -24,8 +26,13 @@
       <line x1="70" y1="126" x2="90" y2="134" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
       <line x1="110" y1="134" x2="130" y2="126" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
     </g>
+    <g class="eyes-focus">
+      <line x1="71" y1="130" x2="89" y2="130" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+      <line x1="111" y1="130" x2="129" y2="130" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+    </g>
     <path class="mouth" d="M76,156 Q100,174 124,156" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linecap="round"/>
     <path class="mouth-frown" d="M78,168 Q100,154 122,168" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+    <path class="mouth-neutral" d="M78,158 Q100,163 122,158" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
     <g class="sheath" stroke="currentColor" stroke-width="6" stroke-linecap="round">
       <line x1="66" y1="214" x2="134" y2="214"/><line x1="72" y1="226" x2="128" y2="226"/><line x1="78" y1="238" x2="122" y2="238"/>
     </g>
@@ -36,10 +43,15 @@
     button{-webkit-appearance:none;appearance:none;background:none;border:0;padding:3px;margin:0;cursor:pointer;color:inherit;border-radius:6px;line-height:0;display:inline-flex}
     button:focus-visible{outline:2px solid currentColor;outline-offset:3px}
     .box{width:var(--protofun-w,30px);height:var(--protofun-h,45px)}
-    .eyes-happy,.eyes-scowl,.mouth-frown{display:none}
-    /* any non-light theme => happy ^^ eyes */
+    .eyes-happy,.eyes-scowl,.eyes-focus,.mouth-frown,.mouth-neutral{display:none}
+    /* the secret modes (dark/amber/vapor) => happy ^^ eyes */
     :host([data-state="dark"]) .eyes,:host([data-state="amber"]) .eyes,:host([data-state="vapor"]) .eyes{display:none}
     :host([data-state="dark"]) .eyes-happy,:host([data-state="amber"]) .eyes-happy,:host([data-state="vapor"]) .eyes-happy{display:inline}
+    /* house modes => calm: open (light) or focused (dark) eyes, level mouth, pins at rest */
+    :host([data-state="house-light"]) .mouth,:host([data-state="house-dark"]) .mouth{display:none}
+    :host([data-state="house-light"]) .mouth-neutral,:host([data-state="house-dark"]) .mouth-neutral{display:inline}
+    :host([data-state="house-dark"]) .eyes{display:none}
+    :host([data-state="house-dark"]) .eyes-focus{display:inline}
     /* pins: gentle chase in dark, FAST in the secret amber/green (the rave) */
     :host([data-state="dark"]) .pins line{animation:pf-chase 1.3s ease-in-out infinite}
     :host([data-state="amber"]) .pins line,:host([data-state="vapor"]) .pins line{animation:pf-chase .5s ease-in-out infinite}
@@ -60,12 +72,12 @@
     @media (prefers-reduced-motion:reduce){.pins line,.eyes{animation:none}}
   `;
 
-  var STATES = ['light', 'dark', 'amber', 'vapor'];
+  var STATES = ['light', 'dark', 'amber', 'vapor', 'house-light', 'house-dark'];
 
   class ProtofunToggle extends HTMLElement {
     connectedCallback() {
       var root = this.attachShadow({ mode: 'open' });
-      root.innerHTML = '<style>' + css + '</style><button type="button" aria-label="Cycle theme: light, dark, amber CRT, vaporwave" title="Theme (click to cycle)"><span class="box">' + svg + '</span></button>';
+      root.innerHTML = '<style>' + css + '</style><button type="button" aria-label="Cycle theme: light, dark, amber CRT, vaporwave, house light, house dark" title="Theme (click to cycle)"><span class="box">' + svg + '</span></button>';
       this._btn = root.querySelector('button');
       this._btn.addEventListener('click', () => this.cycle());
       this._sync = (e) => { if (e.target !== this && e.detail && e.detail.theme) this.apply(e.detail.theme, false); };
