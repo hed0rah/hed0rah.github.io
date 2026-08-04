@@ -4,31 +4,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ipv6-fun / header anatomy</title>
-<script>(function(){try{var m=localStorage.getItem("ipv6fun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root{
-  --paper:#E7E9EA; --panel:#EEF0F0; --ink:#1A1D1F; --soft:#5C6266;
-  --faint:#8B9195; --line:#C7CCCE; --hair:#D7DBDC;
-  /* kind palette: teal value, amber flag, indigo structural, gray reserved */
-  --enum:#2B6E73; --enum-soft:#D3E4E5;
-  --flag:#9A6B2A; --flag-soft:#EEE1C9;
-  --sync:#48507C; --sync-soft:#DEE0EC;
-  --rsv:#8A8D85;  --rsv-soft:rgba(26,29,31,0.04);
+  --paper:#E6EBEE; --panel:#EFF3F5; --ink:#10171C; --soft:#46545E;
+  --faint:#7A8790; --line:#C1CDD3; --hair:#D6E0E4;
+  --enum:#0E7A8C; --enum-soft:#D1E7EA;
+  --flag:#C1501A; --flag-soft:#F0DACB;
+  --sync:#34507E; --sync-soft:#DCE3EE;
+  --rsv:#838E96;  --rsv-soft:rgba(16,23,28,0.04);
   --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
 }
-:root[data-theme="dark"]{--paper:#15171A;--panel:#1D2023;--ink:#E6E8E9;--soft:#A6ACAF;--faint:#75797C;--line:#2E3235;--hair:#25282B;--enum:#7FC3C9;--enum-soft:#1B2B2B;--flag:#D8B26D;--flag-soft:#2E2717;--sync:#A9AEDB;--sync-soft:#25273A;--rsv:#B7B9B1;--rsv-soft:rgba(230,232,233,0.04);}
+:root[data-theme="dark"]{--paper:#0a0f0d;--panel:#0f1613;--ink:#c6f0d0;--soft:#7fae90;--faint:#4f6a5c;--line:#22302a;--hair:#151d19;--enum:#2fe38a;--enum-soft:#0e2a1d;--flag:#e0a92e;--flag-soft:#2c2410;--sync:#4fb8d6;--sync-soft:#0f2630;--rsv:#6f8f7f;--rsv-soft:rgba(198,240,208,0.05);}
+:root[data-theme="amber"]{--paper:#120c00;--panel:#1c1400;--ink:#ffb000;--soft:#c08a2a;--faint:#8a6a20;--line:#3a2a00;--hair:#241900;--enum:#ffb000;--enum-soft:#2a1d00;--flag:#ffd27a;--flag-soft:#332400;--sync:#d98a1a;--sync-soft:#241a00;--rsv:#9a7524;--rsv-soft:rgba(255,176,0,0.05);}
+:root[data-theme="vapor"]{--paper:#f4efe0;--panel:#ece4d0;--ink:#123b37;--soft:#3f605b;--faint:#8a9a90;--line:#e5457f;--hair:#ddd3bd;--enum:#e5457f;--enum-soft:#f8d9e4;--flag:#e0982f;--flag-soft:#f5e6c6;--sync:#0e9c90;--sync-soft:#cbe9e3;--rsv:#8a9a90;--rsv-soft:rgba(18,59,55,0.05);}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--enum);color:var(--paper)}
-.theme-toggle{position:fixed;bottom:0.9rem;right:0.9rem;z-index:50;font-family:var(--ff);font-size:0.56rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--soft);background:var(--panel);border:1px solid var(--line);padding:0.45rem 0.7rem;cursor:pointer;font-weight:400;transition:color .15s,border-color .15s}
-.theme-toggle:hover{color:var(--enum);border-color:var(--enum)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
 .head .row{display:grid;grid-template-columns:1fr auto;align-items:stretch}
-.head .title{padding:0.9rem 1.1rem}
+.head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem}
+.head .title .tt{min-width:0}
+.head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
+.head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.5rem,4vw,2rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
 .head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
@@ -138,6 +140,29 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 
 footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+/* --- secret themes: amber CRT + vaporwave --- */
+:root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.32)}
+:root[data-theme="amber"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 3px)}
+:root[data-theme="vapor"] body{background:url(../protocols-fun/assets/sakura-tile.webp) repeat, linear-gradient(160deg,#4fdfba 0%,#3fc8a4 60%,#57e3c0 100%);background-size:320px auto, cover;background-attachment:fixed}
+:root[data-theme="vapor"] .sheet{background:#f4efe0;box-shadow:0 0 0 3px #2ec6b9,0 14px 46px rgba(0,0,0,.28);border-radius:3px}
+:root[data-theme="vapor"] .head{border-color:#0e9c90}
+:root[data-theme="vapor"] .head .title protofun-toggle{color:#e5457f}
+:root[data-theme="vapor"] .bcell{box-shadow:inset 1px 1px rgba(255,255,255,.7),inset -1px -1px rgba(18,59,55,.16)}
+:root[data-theme="vapor"] .tab.on{box-shadow:inset 0 -2px #e5457f}
+/* --- mobile / narrow screens --- */
+@media(max-width:560px){
+  body{font-size:13px}
+  .sheet{padding-left:1rem;padding-right:1rem}
+  .head .row{grid-template-columns:1fr}
+  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
+  .head .strip{grid-template-columns:1fr}
+  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
+  .head .strip div:last-child{border-bottom:none}
+  .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
+  .branch{padding-left:0.4rem}
+  .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
+  code{white-space:normal;overflow-wrap:anywhere}
+}
 </style>
 </head>
 <body>
@@ -145,8 +170,8 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   <div class="head">
     <div class="row">
-      <div class="title"><div class="sysmark">IPV6-FUN . PACKET ANATOMY</div><h1>IP Header Anatomy</h1></div>
-      <div class="stamp"><b>IPv4 (RFC 791) + IPv6 (RFC 8200)</b>byte by byte, field by field<br>rev 2026.07</div>
+      <div class="title"><div class="tt"><div class="sysmark">IPV6-FUN . PACKET ANATOMY</div><h1>IP Header Anatomy</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
+      <div class="stamp"><b>IPv4 (RFC 791) + IPv6 (RFC 8200)</b>byte by byte, field by field<br>rev 2026.08</div>
     </div>
     <div class="strip">
       <div>layer <b>L3 . network</b></div><div>v6 header <b>40B fixed</b></div>
@@ -224,8 +249,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   <footer><span>ipv6-fun / header anatomy</span><span>toggle: IPv4 &middot; IPv6</span><span><a href="deep-dive.md">deep-dive.md</a> &middot; <a href="cheatsheet.md">cheatsheet.md</a> &middot; <a href="https://github.com/hed0rah/ipv6-fun">github</a></span></footer>
 </div>
-
-<button class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark theme">theme</button>
 
 <script>
 (function(){
@@ -475,18 +498,8 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   });
   showOsi("l3");
 
-  // theme toggle
-  var tbtn=document.getElementById("theme-toggle");
-  function currentTheme(){return document.documentElement.getAttribute("data-theme")||"light";}
-  function paintToggle(){tbtn.textContent = currentTheme()==="dark" ? "◐ light" : "◑ dark";}
-  tbtn.addEventListener("click",function(){
-    var next = currentTheme()==="dark" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme",next);
-    try{localStorage.setItem("ipv6fun-theme",next);}catch(e){}
-    paintToggle();
-  });
-  paintToggle();
 })();
 </script>
+<script src="../protocols-fun/assets/protofun-toggle.js"></script>
 </body>
 </html>
