@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ipv6-fun / header anatomy</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E6EBEE; --panel:#EFF3F5; --ink:#10171C; --soft:#46545E;
+  --faint:#7A8790; --line:#C1CDD3; --hair:#D6E0E4;
+  --enum:#0E7A8C; --enum-soft:#D1E7EA;
+  --flag:#C1501A; --flag-soft:#F0DACB;
+  --sync:#34507E; --sync-soft:#DCE3EE;
+  --rsv:#838E96;  --rsv-soft:rgba(16,23,28,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#0a0f0d;--panel:#0f1613;--ink:#c6f0d0;--soft:#7fae90;--faint:#4f6a5c;--line:#22302a;--hair:#151d19;--enum:#2fe38a;--enum-soft:#0e2a1d;--flag:#e0a92e;--flag-soft:#2c2410;--sync:#4fb8d6;--sync-soft:#0f2630;--rsv:#6f8f7f;--rsv-soft:rgba(198,240,208,0.05);}
+:root[data-theme="amber"]{--paper:#120c00;--panel:#1c1400;--ink:#ffb000;--soft:#c08a2a;--faint:#8a6a20;--line:#3a2a00;--hair:#241900;--enum:#ffb000;--enum-soft:#2a1d00;--flag:#ffd27a;--flag-soft:#332400;--sync:#d98a1a;--sync-soft:#241a00;--rsv:#9a7524;--rsv-soft:rgba(255,176,0,0.05);}
+:root[data-theme="vapor"]{--paper:#f4efe0;--panel:#ece4d0;--ink:#123b37;--soft:#3f605b;--faint:#8a9a90;--line:#e5457f;--hair:#ddd3bd;--enum:#e5457f;--enum-soft:#f8d9e4;--flag:#e0982f;--flag-soft:#f5e6c6;--sync:#0e9c90;--sync-soft:#cbe9e3;--rsv:#8a9a90;--rsv-soft:rgba(18,59,55,0.05);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr auto;align-items:stretch}
+.head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem}
+.head .title .tt{min-width:0}
+.head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
+.head .title protofun-toggle:hover{color:var(--enum)}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.5rem,4vw,2rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500}
+.intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
+.intro .lede{margin-bottom:0}
+.sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
+.sig .legrows{display:flex;flex-direction:column;gap:0.42rem}
+.sig .siglabel{writing-mode:vertical-rl;text-orientation:mixed;align-self:stretch;display:flex;align-items:center;justify-content:center;font-size:0.5rem;letter-spacing:0.34em;text-transform:uppercase;color:var(--faint);padding-left:0.9rem;border-left:1px solid var(--hair)}
+.sig .row{display:flex;align-items:center;gap:0.4rem;font-size:0.68rem;color:var(--soft);letter-spacing:0.02em;white-space:nowrap}
+.sig .swsep{color:var(--faint);font-size:0.62rem}
+.sig .sw{display:inline-flex;align-items:center;justify-content:center;width:6.1rem;height:1.45rem;padding:0;font-size:0.58rem;letter-spacing:0.1em;text-transform:lowercase;flex-shrink:0}
+.sig .sw.dark{color:var(--paper)}
+.sig .sw.light{color:var(--ink);border:1px solid var(--hair)}
+.sig .sw.dark.k-enum{background:var(--enum)} .sig .sw.light.k-enum{background:var(--enum-soft)}
+.sig .sw.dark.k-flag{background:var(--flag)} .sig .sw.light.k-flag{background:var(--flag-soft)}
+.sig .sw.dark.k-sync{background:var(--sync)} .sig .sw.light.k-sync{background:var(--sync-soft)}
+.sig .sw.dark.k-rsv{background:var(--faint)} .sig .sw.light.k-rsv{background:var(--rsv-soft)}
+@media(max-width:820px){.intro{display:block}.sig{display:none}}
+.k-en{color:var(--enum)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:2.4rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:74ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.2rem 0 0.4rem;max-width:76ch}
+.callout b{color:var(--ink);font-weight:500}
+
+/* version toggle - the little switch */
+.verswitch{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;background:var(--panel);margin:0.4rem 0 1.4rem}
+.verswitch button{border:0;background:none;font-family:var(--ff);font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.45rem 1.3rem;border-radius:999px;cursor:pointer;color:var(--soft);transition:color .15s,background .15s}
+.verswitch button:hover{color:var(--ink)}
+.verswitch button.on{color:var(--paper);background:var(--enum)}
+.verpanel{display:none}
+.verpanel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+
+/* diff table, always visible regardless of toggle */
+.difftable{width:100%;border-collapse:collapse;font-size:0.76rem;margin:0.6rem 0 1.8rem}
+.difftable th,.difftable td{border:1px solid var(--hair);padding:0.5rem 0.75rem;text-align:left;vertical-align:top}
+.difftable th{background:var(--panel);color:var(--ink);font-weight:500;font-size:0.64rem;letter-spacing:0.08em;text-transform:uppercase}
+.difftable td:first-child{color:var(--soft);white-space:nowrap}
+.difftable td b{color:var(--ink);font-weight:500}
+
+/* bit diagram */
+.diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
+.bytegrp{border:1px solid var(--line);background:var(--panel)}
+.bytegrp .ticks{display:flex;border-bottom:1px solid var(--hair)}
+.bytegrp .ticks span{width:1.55rem;text-align:center;font-size:0.5rem;color:var(--faint);padding:2px 0}
+.bytegrp .brow{display:flex}
+.bit{width:1.55rem;height:1.85rem;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--soft);border-right:1px solid var(--hair);transition:background .12s,color .12s;cursor:pointer}
+.bit:last-child{border-right:none}
+.bytegrp .hex{text-align:center;font-size:0.6rem;letter-spacing:0.12em;color:var(--ink);padding:3px 0;border-top:1px solid var(--hair);font-weight:500}
+
+/* byte diagram */
+.dbytes{display:flex;flex-wrap:wrap;gap:4px;margin:0.6rem 0 1.4rem}
+.bcol{display:flex;flex-direction:column;align-items:center}
+.bcol .off{font-size:0.5rem;color:var(--faint);margin-bottom:2px;letter-spacing:0.02em}
+.bcell{width:2.5rem;height:1.9rem;display:flex;align-items:center;justify-content:center;font-size:0.78rem;border:1px solid var(--hair);color:var(--soft);transition:background .12s,color .12s;cursor:pointer}
+.bcell.k-sync{background:var(--sync-soft)} .bcell.k-enum{background:var(--enum-soft)}
+.bcell.k-flag{background:var(--flag-soft)} .bcell.k-rsv{background:var(--rsv-soft)}
+.bcell.fstart{border-left:2px solid var(--line)}
+.bcell.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+.bit.k-sync{background:var(--sync-soft)} .bit.k-enum{background:var(--enum-soft)}
+.bit.k-flag{background:var(--flag-soft)} .bit.k-rsv{background:var(--rsv-soft)}
+.bit.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bit.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bit.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bit.hi.k-rsv{background:var(--faint);color:var(--paper)}
+
+.block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
+.left{min-width:0}
+.detailcol{position:relative}
+@media(max-width:820px){.block{grid-template-columns:1fr}.detailcol{position:static}}
+.fields{border-top:1px solid var(--line)}
+.field{display:grid;grid-template-columns:5rem 1fr auto;gap:0.8rem;align-items:baseline;padding:0.46rem 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.field:hover,.field.active,.field.cued{background:var(--panel)}
+.field .fb{font-size:0.6rem;color:var(--faint)} .field .fn{font-size:0.82rem;color:var(--ink)}
+.field[data-branch] .fn::after{content:"+";margin-left:0.4rem;color:var(--enum);font-weight:500}
+.field.active[data-branch] .fn::after{content:"\2212"}
+.fv{font-size:0.76rem;text-align:right}
+.fv.k-sync{color:var(--sync)} .fv.k-enum{color:var(--enum)} .fv.k-flag{color:var(--flag)} .fv.k-rsv{color:var(--faint)}
+.branch{grid-column:1 / -1;display:none;padding:0.5rem 0 0.2rem 5.8rem}
+.field.active .branch{display:block}
+.branch table{border-collapse:collapse;font-size:0.7rem;width:100%;max-width:26rem}
+.branch td{padding:1px 10px 1px 0;color:var(--soft)} .branch td.k{color:var(--faint);width:3.4rem;text-align:right}
+.branch tr.sel td{color:var(--ink)} .branch tr.sel td.k{color:var(--enum);font-weight:500}
+.detail{position:absolute;inset:0;border:1px solid var(--line);background:var(--panel);padding:1rem 1.05rem;overflow-y:auto}
+@media(max-width:820px){.detail{position:static;height:15rem}}
+.detail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
+.detail .dl .kind{color:var(--soft)}
+.detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
+.detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
+.detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap;font-family:var(--ff)}
+
+/* OSI stack sandwich - same field/detail idiom, hand-wired instead of build() */
+.osilist .field{grid-template-columns:1fr auto}
+.osilist .fn b{display:block;font-size:0.6rem;letter-spacing:0.14em;color:var(--faint);font-weight:400;text-transform:uppercase;margin-bottom:0.15rem}
+
+footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+/* --- secret themes: amber CRT + vaporwave --- */
+:root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.32)}
+:root[data-theme="amber"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 3px)}
+:root[data-theme="vapor"] body{background:url(../protocols-fun/assets/sakura-tile.webp) repeat, linear-gradient(160deg,#4fdfba 0%,#3fc8a4 60%,#57e3c0 100%);background-size:320px auto, cover;background-attachment:fixed}
+:root[data-theme="vapor"] .sheet{background:#f4efe0;box-shadow:0 0 0 3px #2ec6b9,0 14px 46px rgba(0,0,0,.28);border-radius:3px}
+:root[data-theme="vapor"] .head{border-color:#0e9c90}
+:root[data-theme="vapor"] .head .title protofun-toggle{color:#e5457f}
+:root[data-theme="vapor"] .bcell{box-shadow:inset 1px 1px rgba(255,255,255,.7),inset -1px -1px rgba(18,59,55,.16)}
+:root[data-theme="vapor"] .tab.on{box-shadow:inset 0 -2px #e5457f}
+/* --- mobile / narrow screens --- */
+@media(max-width:560px){
+  body{font-size:13px}
+  .sheet{padding-left:1rem;padding-right:1rem}
+  .head .row{grid-template-columns:1fr}
+  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
+  .head .strip{grid-template-columns:1fr}
+  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
+  .head .strip div:last-child{border-bottom:none}
+  .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
+  .branch{padding-left:0.4rem}
+  .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
+  code{white-space:normal;overflow-wrap:anywhere}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title"><div class="tt"><div class="sysmark">IPV6-FUN . PACKET ANATOMY</div><h1>IP Header Anatomy</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
+      <div class="stamp"><b>IPv4 (RFC 791) + IPv6 (RFC 8200)</b>byte by byte, field by field<br>rev 2026.08</div>
+    </div>
+    <div class="strip">
+      <div>layer <b>L3 . network</b></div><div>v6 header <b>40B fixed</b></div>
+      <div>v4 header <b>20-60B</b></div><div>byte order <b>network (big)</b></div>
+    </div>
+  </div>
+
+  <div class="intro">
+  <p class="lede">Every packet on the internet opens with one of these two headers. <b>IPv4</b>'s 20-byte header has carried the internet since 1981; <b>IPv6</b>'s fixed 40-byte header, finalized in 2017, trades IPv4's variable-length options for a chain of separate extension headers and swaps a 32-bit address space for a 128-bit one. Toggle between them below - <b>hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table. Color marks kind (see the key). Full protocol writeup and citations: <a href="deep-dive.md">deep-dive.md</a>.</p>
+  <aside class="sig" aria-label="color key">
+    <div class="legrows">
+    <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
+    <div class="row"><span class="sw dark k-flag">amber</span><span class="swsep">&#8594;</span><span class="sw light k-flag">flag</span></div>
+    <div class="row"><span class="sw dark k-sync">indigo</span><span class="swsep">&#8594;</span><span class="sw light k-sync">structural</span></div>
+    <div class="row"><span class="sw dark k-rsv">faint</span><span class="swsep">&#8594;</span><span class="sw light k-rsv">reserved</span></div>
+    </div>
+    <div class="siglabel">color key</div>
+  </aside>
+  </div>
+
+  <div class="sec">where this sits</div>
+  <p class="note">The IP header is layer 3 - it hands off to a transport header above and rides inside a link-layer frame below. Hover a row for the layer's own byte layout and a code snippet.</p>
+  <div class="block">
+    <div class="left">
+      <div class="fields osilist" id="osi-list">
+        <div class="field" data-osi="l4"><span class="fn"><b>L4 . transport</b>TCP / UDP / ICMPv6</span><span class="fv k-enum">above</span></div>
+        <div class="field cued" data-osi="l3"><span class="fn"><b>L3 . network</b>IPv4 / IPv6 - this page</span><span class="fv k-sync">here</span></div>
+        <div class="field" data-osi="l2"><span class="fn"><b>L2 . data link</b>Ethernet / Wi-Fi frame</span><span class="fv k-flag">below</span></div>
+      </div>
+    </div>
+    <div class="detailcol"><aside class="detail" id="osi-detail">
+      <div class="dl"><span>layer detail</span><span class="kind"></span></div>
+      <h3></h3><div class="dc"></div><p></p><div class="dn"></div>
+    </aside></div>
+  </div>
+
+  <div class="sec">the diff, at a glance</div>
+  <table class="difftable">
+    <tr><th></th><th>IPv4</th><th>IPv6</th></tr>
+    <tr><td>Header size</td><td>20-60 bytes, variable (options)</td><td><b>40 bytes, fixed</b> - extensions are separate chained headers</td></tr>
+    <tr><td>Address length</td><td>32 bits</td><td><b>128 bits</b></td></tr>
+    <tr><td>Header checksum</td><td>yes - recomputed every hop</td><td><b>none</b> - integrity pushed to upper layers</td></tr>
+    <tr><td>Fragmentation</td><td>routers may fragment in flight</td><td><b>source only</b>, via a Fragment extension header</td></tr>
+    <tr><td>"next protocol" field</td><td>Protocol (byte 9)</td><td>Next Header (byte 6) - <b>same IANA registry</b>, same numbers</td></tr>
+    <tr><td>Broadcast</td><td>yes</td><td><b>none</b> - multicast only</td></tr>
+    <tr><td>Address autoconfig</td><td>DHCP (or static)</td><td>SLAAC or DHCPv6</td></tr>
+    <tr><td>Defining spec</td><td>RFC 791 (1981)</td><td>RFC 8200 (2017)</td></tr>
+  </table>
+
+  <div class="sec">the header, byte by byte</div>
+  <div class="verswitch" id="verswitch">
+    <button class="tab on" data-v="ipv6">IPv6</button>
+    <button class="tab" data-v="ipv4">IPv4</button>
+  </div>
+
+  <!-- ===================== IPv6 ===================== -->
+  <div class="verpanel on" data-ver="ipv6">
+    <div class="pfacts"><span>size<b>40 bytes, fixed</b></span><span>addr<b>128-bit</b></span><span>spec<b>RFC 8200</b></span></div>
+    <p class="note">First word (version, traffic class, flow label) is bit-packed, so it's drawn bit by bit. Everything after it is byte-aligned - payload length, next header, hop limit, then the two 128-bit addresses drawn byte by byte.</p>
+    <div id="ipv6-word0" data-build></div>
+    <div id="ipv6-rest" data-build></div>
+  </div>
+
+  <!-- ===================== IPv4 ===================== -->
+  <div class="verpanel" data-ver="ipv4">
+    <div class="pfacts"><span>size<b>20-60 bytes</b></span><span>addr<b>32-bit</b></span><span>spec<b>RFC 791</b></span></div>
+    <p class="note">Version+IHL+DSCP+ECN pack into the first 2 bytes, so they're drawn bit by bit; Total Length and Identification are byte-aligned; Flags+Fragment Offset pack into 2 more bits; TTL, Protocol, Checksum, and both addresses are byte-aligned.</p>
+    <div id="ipv4-word0" data-build></div>
+    <div id="ipv4-lengths" data-build></div>
+    <div id="ipv4-flags" data-build></div>
+    <div id="ipv4-rest" data-build></div>
+  </div>
+
+  <div class="callout"><b>why the source is documentation-safe.</b> The example addresses on this page use the reserved documentation ranges - <code>2001:db8::/32</code> for IPv6 (RFC 3849) and <code>192.0.2.0/24</code> / <code>203.0.113.0/24</code> for IPv4 (RFC 5737) - so nothing here is a real routable host.</div>
+
+  <footer><span>ipv6-fun / header anatomy</span><span>toggle: IPv4 &middot; IPv6</span><span><a href="deep-dive.md">deep-dive.md</a> &middot; <a href="cheatsheet.md">cheatsheet.md</a> &middot; <a href="https://github.com/hed0rah/ipv6-fun">github</a></span></footer>
+</div>
+
+<script>
+(function(){
+  var KINDS={sync:"structural",enum:"value",flag:"flag",rsv:"reserved"};
+  function hx(b){return b.toString(16).toUpperCase().padStart(2,"0");}
+
+  function build(mountId, unit, bytes, fields){
+    var mount=document.getElementById(mountId);
+    var N = unit==="bit" ? bytes.length*8 : bytes.length;
+    var owner=new Array(N);
+    fields.forEach(function(f,fi){ for(var i=f.r[0];i<=f.r[1];i++) owner[i]=fi; });
+    var diagram=document.createElement("div");
+    if(unit==="bit"){
+      diagram.className="diagram";
+      for(var bi=0; bi<bytes.length; bi++){
+        var grp=document.createElement("div"); grp.className="bytegrp";
+        var ticks=document.createElement("div"); ticks.className="ticks";
+        var row=document.createElement("div"); row.className="brow";
+        for(var k=0;k<8;k++){
+          var idx=bi*8+k, f=fields[owner[idx]];
+          var t=document.createElement("span"); t.textContent=idx; ticks.appendChild(t);
+          var cell=document.createElement("span"); cell.className="bit k-"+f.k; cell.dataset.idx=idx;
+          if(idx===f.r[0]) cell.classList.add("fstart");
+          cell.textContent=(bytes[bi]>>(7-k))&1; row.appendChild(cell);
+        }
+        var hex=document.createElement("div"); hex.className="hex"; hex.textContent="0x"+hx(bytes[bi]);
+        grp.appendChild(ticks); grp.appendChild(row); grp.appendChild(hex); diagram.appendChild(grp);
+      }
+    } else {
+      diagram.className="dbytes";
+      bytes.forEach(function(b,i){
+        var f=fields[owner[i]];
+        var col=document.createElement("div"); col.className="bcol";
+        var off=document.createElement("div"); off.className="off"; off.textContent="0x"+hx(i); col.appendChild(off);
+        var cell=document.createElement("div"); cell.className="bcell k-"+f.k; cell.dataset.idx=i;
+        if(i===f.r[0]) cell.classList.add("fstart");
+        cell.textContent=hx(b); col.appendChild(cell); diagram.appendChild(col);
+      });
+    }
+    var list=document.createElement("div"); list.className="fields";
+    var aside=document.createElement("aside"); aside.className="detail";
+    aside.innerHTML="<div class='dl'><span>field detail</span><span class='kind'></span></div>"+
+      "<h3>Hover a field or byte</h3><div class='dc'>"+(unit==="bit"?N+" bits":bytes.length+" bytes")+"</div>"+
+      "<p>Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.</p><div class='dn'></div>";
+    var det={t:aside.querySelector("h3"),c:aside.querySelector(".dc"),b:aside.querySelector("p"),n:aside.querySelector(".dn"),kind:aside.querySelector(".kind")};
+    var cells=[].slice.call(diagram.querySelectorAll("[data-idx]"));
+    var rows=[];
+    function light(a,b){cells.forEach(function(c){var i=+c.dataset.idx;c.classList.toggle("hi",i>=a&&i<=b);});}
+    function clearHi(){cells.forEach(function(c){c.classList.remove("hi");});}
+    function rl(f){ return unit==="bit"
+      ? "bits "+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")
+      : "bytes 0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-0x"+hx(f.r[1]):""); }
+    function show(f){det.t.textContent=f.label;det.c.textContent=rl(f)+"  =  "+f.val;
+      det.b.textContent=f.body;det.n.textContent=f.note||"";det.kind.textContent=KINDS[f.k];}
+    function activeRow(){return list.querySelector(".field.active");}
+    function cue(fi){rows.forEach(function(r){r.classList.remove("cued");});rows[fi].classList.add("cued");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    function restore(){rows.forEach(function(r){r.classList.remove("cued");});var a=activeRow();if(a){var fi=+a.dataset.fi;light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}else clearHi();}
+    function pin(fi){var was=rows[fi].classList.contains("active");rows.forEach(function(r){r.classList.remove("active");});if(was){clearHi();return;}rows[fi].classList.add("active");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    fields.forEach(function(f,fi){
+      var row=document.createElement("div"); row.className="field"; row.dataset.fi=fi; if(f.branch) row.dataset.branch="1";
+      var lab = unit==="bit" ? ("b"+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")) : ("0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-"+hx(f.r[1]):""));
+      row.innerHTML="<span class='fb'>"+lab+"</span><span class='fn'>"+f.label+"</span><span class='fv k-"+f.k+"'>"+f.val+"</span>";
+      if(f.branch){
+        var bw=document.createElement("div"); bw.className="branch";
+        bw.innerHTML="<table>"+f.branch.map(function(p,i){return "<tr class='"+(i===f.sel?"sel":"")+"'><td class='k'>"+p[0]+"</td><td>"+p[1]+"</td></tr>";}).join("")+"</table>";
+        row.appendChild(bw);
+      }
+      row.addEventListener("mouseenter",function(){cue(fi);});
+      row.addEventListener("click",function(){pin(fi);});
+      rows.push(row); list.appendChild(row);
+    });
+    cells.forEach(function(c){
+      var fi=owner[+c.dataset.idx];
+      c.addEventListener("mouseenter",function(){cue(fi);});
+      c.addEventListener("click",function(){pin(fi);});
+    });
+    var left=document.createElement("div"); left.className="left";
+    left.appendChild(diagram); left.appendChild(list);
+    var dcol=document.createElement("div"); dcol.className="detailcol"; dcol.appendChild(aside);
+    var block=document.createElement("div"); block.className="block";
+    block.appendChild(left); block.appendChild(dcol);
+    block.addEventListener("mouseleave",restore);
+    mount.appendChild(block);
+    var maxH=aside.scrollHeight;
+    fields.forEach(function(f){ show(f); if(aside.scrollHeight>maxH) maxH=aside.scrollHeight; });
+    det.t.textContent="Hover a field or byte";
+    det.c.textContent=(unit==="bit"?N+" bits":bytes.length+" bytes");
+    det.b.textContent="Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.";
+    det.n.textContent="";
+    dcol.style.minHeight=(maxH+6)+"px";
+  }
+
+  var DSCP_BRANCH=[["0","Default / Best Effort"],["8","CS1"],["10","AF11"],["18","AF21"],["26","AF31"],["34","AF41"],["46","EF (voice, low latency)"],["48","CS6 (routing control)"],["56","CS7 (network control)"]];
+  var ECN_BRANCH=[["00","Not-ECT (no ECN support)"],["01","ECT(1)"],["10","ECT(0)"],["11","CE (congestion experienced)"]];
+
+  // IPv6 example header: version 6, DSCP 46 (EF), ECN 0, flow label 0xCAFE,
+  // payload length 32, next header ICMPv6, hop limit 64,
+  // src 2001:db8::1a2b:3c4d:5e6f, dst 2001:db8::1 (RFC 3849 documentation prefix)
+  build("ipv6-word0","bit",
+    [0x6B,0x80,0xCA,0xFE],
+    [
+      {label:"version",k:"sync",r:[0,3],val:"6",
+        body:"Fixed at 6. The very first nibble on the wire is how a receiver tells an IPv6 packet from an IPv4 one before parsing anything else.",
+        note:"IPv4's first nibble is 4 in the exact same bit position - a dual-stack parser only needs to read 4 bits to route the rest of decoding."},
+      {label:"DSCP",k:"enum",r:[4,9],val:"46 (EF)",sel:6,branch:DSCP_BRANCH,
+        body:"Differentiated Services Code Point - 6 bits of QoS marking, defined by RFC 2474. 46 (EF, Expedited Forwarding) is the classic low-latency marking used for VoIP.",
+        note:"DSCP + ECN together are what IPv6 calls the Traffic Class byte and IPv4 calls DSCP/ECN too - identical semantics, same RFC 2474/3168, in both headers."},
+      {label:"ECN",k:"flag",r:[10,11],val:"00 (Not-ECT)",sel:0,branch:ECN_BRANCH,
+        body:"Explicit Congestion Notification (RFC 3168). A router can mark CE instead of dropping a packet under load, if both endpoints negotiated ECN support.",
+        note:"a lone router flipping this bit is how ECN signals congestion without ever touching a payload."},
+      {label:"flow label",k:"enum",r:[12,31],val:"0xCAFE (51966)",
+        body:"20 bits meant to let routers hash and load-balance a flow without inspecting the transport header (RFC 6437). Set once at flow start, ideally left unchanged for the flow's life.",
+        note:"in practice most stacks leave this at 0, or fill it with a hash of the 5-tuple - full flow-label-aware routing never saw wide deployment."}
+    ]);
+
+  build("ipv6-rest","byte",
+    [0x00,0x20,0x3A,0x40,
+     0x20,0x01,0x0D,0xB8,0x00,0x00,0x00,0x00,0x00,0x00,0x1A,0x2B,0x3C,0x4D,0x5E,0x6F,
+     0x20,0x01,0x0D,0xB8,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01],
+    [
+      {label:"payload length",k:"enum",r:[0,1],val:"32 bytes",
+        body:"Length of everything AFTER this 40-byte fixed header - extension headers plus upper-layer data. Unlike IPv4's Total Length, this never includes the header itself.",
+        note:"0x0000 is a real value here too, but it means something specific: a jumbogram, whose true length lives in a Hop-by-Hop Jumbo Payload option (RFC 2675) instead."},
+      {label:"next header",k:"enum",r:[2,2],val:"ICMPv6 (58)",sel:7,branch:[
+          ["0","Hop-by-Hop Options"],["6","TCP"],["17","UDP"],["43","Routing"],["44","Fragment"],
+          ["50","ESP"],["51","AH"],["58","ICMPv6"],["59","No Next Header"],["60","Destination Options"]],
+        body:"What comes right after this header - either an extension header or the upper-layer protocol. Walks the same chain IPv4 calls Protocol.",
+        note:"same IANA \"Protocol Numbers\" registry as IPv4's Protocol field - TCP is 6 and UDP is 17 in both headers, no re-mapping needed."},
+      {label:"hop limit",k:"enum",r:[3,3],val:"64",
+        body:"Decremented by 1 at every router; the packet is dropped and an ICMPv6 Time Exceeded (type 3) is sent back when it hits 0. Direct functional twin of IPv4's TTL.",
+        note:"64 and 128 are the two common OS defaults (Linux/macOS vs Windows) - traceroute output leaks which OS sent a reply by working backward from the observed hop count."},
+      {label:"source address",k:"sync",r:[4,19],val:"2001:db8::1a2b:3c4d:5e6f",
+        body:"128 bits, no exceptions - even a link-local-only packet carries a full address here. See deep-dive.md's Address Anatomy section for how the interface-ID half is built.",
+        note:"2001:db8::/32 is the RFC 3849 documentation prefix - guaranteed to never be routed on the real internet, the IPv6 analogue of IPv4's 192.0.2.0/24."},
+      {label:"destination address",k:"sync",r:[20,35],val:"2001:db8::1",
+        body:"Same 128-bit format as the source. Can be unicast, multicast, or (rarely, and only as a source) the unspecified address ::.",
+        note:"a multicast destination here is exactly how Neighbor Solicitation avoids ever needing a broadcast - see deep-dive.md's Neighbor Discovery section."}
+    ]);
+
+  // IPv4 example header: version 4, IHL 5, DSCP 0, ECN 0, total length 60,
+  // identification 0x1234, DF set, TTL 64, protocol ICMP,
+  // src 192.0.2.10, dst 203.0.113.5 (RFC 5737 documentation prefixes)
+  build("ipv4-word0","bit",
+    [0x45,0x00],
+    [
+      {label:"version",k:"sync",r:[0,3],val:"4",
+        body:"Fixed at 4. Same field, same bit position as IPv6's version nibble - a dual-stack receiver checks exactly this nibble first.",
+        note:"the classic first byte of a plain IPv4 packet, 0x45, is version 4 + IHL 5 packed into one byte - one of the most-seen bytes on the internet."},
+      {label:"IHL",k:"enum",r:[4,7],val:"5 (20 bytes)",
+        body:"Internet Header Length, in 32-bit words. 5 means 20 bytes - no options. IPv6 has no equivalent field: its header is always exactly 40 bytes, full stop.",
+        note:"IHL can go up to 15 (60 bytes) when options are present - real-world options are rare enough that middleboxes routinely mishandle them."},
+      {label:"DSCP",k:"enum",r:[8,13],val:"0 (Default)",sel:0,branch:DSCP_BRANCH,
+        body:"Identical semantics and identical bit width to IPv6's DSCP field - this byte was originally IPv4's Type of Service, redefined by RFC 2474 to match.",
+        note:"set to Default/Best-Effort here, unlike the IPv6 example's EF marking - flip to the IPv6 tab to compare."},
+      {label:"ECN",k:"flag",r:[14,15],val:"00 (Not-ECT)",sel:0,branch:ECN_BRANCH,
+        body:"Same Explicit Congestion Notification mechanism as IPv6 (RFC 3168) - this is genuinely one field IPv4 and IPv6 share byte-for-byte, bit-for-bit."}
+    ]);
+
+  build("ipv4-lengths","byte",
+    [0x00,0x3C, 0x12,0x34],
+    [
+      {label:"total length",k:"enum",r:[0,1],val:"60 bytes",
+        body:"Entire packet length including this header, in bytes - the one meaningful difference from IPv6's Payload Length, which excludes its own header.",
+        note:"max value 65535 is IPv4's real-world MTU ceiling absent jumbograms; this is part of why IPv6 needed a Jumbo Payload option to go bigger."},
+      {label:"identification",k:"enum",r:[2,3],val:"0x1234",
+        body:"Tags all fragments of one original datagram so the destination can group them back together. Combined with source+destination+protocol to form the reassembly key.",
+        note:"IPv6 keeps an Identification field too, but only inside the separate Fragment extension header - it doesn't exist at all in an unfragmented IPv6 packet."}
+    ]);
+
+  build("ipv4-flags","bit",
+    [0x40,0x00],
+    [
+      {label:"reserved",k:"rsv",r:[0,0],val:"0",
+        body:"Must be zero (RFC 791). Sometimes called the \"evil bit\" as an April Fools' joke in RFC 3514 - not a real security mechanism, but a genuinely published RFC."},
+      {label:"DF",k:"flag",r:[1,1],val:"1 (Don't Fragment)",sel:1,branch:[["0","may fragment"],["1","don't fragment - drop + ICMP if too big"]],
+        body:"When set, a router that can't forward the packet whole must drop it and send ICMP Fragmentation Needed (type 3, code 4) instead of splitting it - this is what drives IPv4 Path MTU Discovery.",
+        note:"nearly every modern stack sets DF by default; the once-common in-flight IPv4 fragmentation this bit prevents is rare in practice now."},
+      {label:"MF",k:"flag",r:[2,2],val:"0 (last fragment)",sel:0,branch:[["0","last fragment"],["1","more fragments follow"]],
+        body:"Set on every fragment except the last one. A reassembler knows it has everything once it has fragment offset 0 through an MF=0 fragment with no gaps."},
+      {label:"fragment offset",k:"enum",r:[3,15],val:"0",
+        body:"Position of this fragment's data within the original datagram, in 8-byte units (13 bits, so max offset covers a 65536-byte reassembled packet).",
+        note:"IPv6 moves this exact field, bit for bit, into the separate Fragment extension header - see deep-dive.md's Extension Headers section."}
+    ]);
+
+  build("ipv4-rest","byte",
+    [0x40,0x01, 0x2A,0x7D, 0xC0,0x00,0x02,0x0A, 0xCB,0x00,0x71,0x05],
+    [
+      {label:"TTL",k:"enum",r:[0,0],val:"64",
+        body:"Time To Live - decremented at every router, packet dropped and ICMP Time Exceeded sent when it hits 0. IPv6 renamed this Hop Limit but kept the exact behavior.",
+        note:"despite the name, this was never a real \"time\" even in the original 1981 spec - it was a hop count from day one."},
+      {label:"protocol",k:"enum",r:[1,1],val:"ICMP (1)",sel:0,branch:[
+          ["1","ICMP"],["6","TCP"],["17","UDP"],["41","IPv6 encapsulation (6in4)"],
+          ["50","ESP"],["51","AH"],["58","ICMPv6 (carried over v4)"],["89","OSPF"]],
+        body:"What upper-layer protocol follows this header - the direct predecessor of IPv6's Next Header field, drawing from the exact same IANA registry.",
+        note:"protocol 41 (6in4) is literally \"the payload is an entire IPv6 packet\" - one of the transition mechanisms in deep-dive.md's Transition Mechanisms section."},
+      {label:"header checksum",k:"enum",r:[2,3],val:"0x2A7D",
+        body:"One's-complement checksum over this header ONLY (not the payload). Must be recomputed at every hop that changes TTL - real per-hop cost IPv6 designers removed entirely by dropping this field.",
+        note:"sum = 0\nfor each 16-bit header word (checksum field zeroed):\n    sum += word\nwhile sum > 0xFFFF:\n    sum = (sum & 0xFFFF) + (sum >> 16)\nchecksum = ~sum & 0xFFFF\n\ncomputed live for this example's 20 header bytes -> 0x2A7D."},
+      {label:"source address",k:"sync",r:[4,7],val:"192.0.2.10",
+        body:"32 bits, four dotted-decimal octets. No structural equivalent of IPv6's interface-ID/EUI-64 story - IPv4 addresses are just assigned, statically or via DHCP.",
+        note:"192.0.2.0/24 is one of three RFC 5737 documentation ranges (with 198.51.100.0/24 and 203.0.113.0/24) - IPv4's answer to IPv6's 2001:db8::/32."},
+      {label:"destination address",k:"sync",r:[8,11],val:"203.0.113.5",
+        body:"Same 32-bit format as the source. No IPv4 address is ever 128 bits - that jump is IPv6's single biggest structural change."}
+    ]);
+
+  // version toggle
+  var vbtns=[].slice.call(document.querySelectorAll("#verswitch .tab"));
+  var vpanels=[].slice.call(document.querySelectorAll(".verpanel"));
+  vbtns.forEach(function(b){
+    b.addEventListener("click",function(){
+      vbtns.forEach(function(x){x.classList.toggle("on",x===b);});
+      vpanels.forEach(function(p){p.classList.toggle("on",p.dataset.ver===b.dataset.v);});
+    });
+  });
+
+  // OSI sandwich - same hover idiom, hand-wired (not byte data, so no build())
+  var OSI={
+    l4:{label:"L4 - Transport",kind:"enum",val:"TCP / UDP / ICMPv6",
+      body:"Carries port numbers and per-protocol semantics. UDP is an 8-byte header with no state at all; TCP is 20 bytes minimum and adds sequence numbers, acknowledgments, window size, and flags for reliable, ordered delivery. ICMPv6 rides in the Next Header chain like a transport protocol but has no ports of its own.",
+      note:"struct udphdr {\n  uint16_t source;\n  uint16_t dest;\n  uint16_t len;\n  uint16_t check;\n};"},
+    l3:{label:"L3 - Network",kind:"sync",val:"IPv4 / IPv6 (this page)",
+      body:"Addressing and routing between networks - the layer this whole page is about. IPv4 uses 32-bit addresses in a single 20-60 byte header; IPv6 uses 128-bit addresses in a fixed 40-byte header plus a chain of optional extension headers. Neither layer guarantees delivery - that's Transport's job above it.",
+      note:"toggle IPv4 / IPv6 below this to compare the two headers byte for byte."},
+    l2:{label:"L2 - Data Link",kind:"flag",val:"Ethernet / Wi-Fi frame",
+      body:"Delivers a frame across a single physical link using link-layer (MAC) addresses, with no concept of routing beyond that link. The EtherType field is what tells the receiver whether the payload is IPv4 or IPv6 - there's no version field at this layer the way IP has one.",
+      note:"struct ethhdr {\n  unsigned char  h_dest[6];\n  unsigned char  h_source[6];\n  unsigned short h_proto;\n  /* 0x0800 = IPv4, 0x86DD = IPv6 */\n};"}
+  };
+  var osiRows=[].slice.call(document.querySelectorAll("#osi-list .field"));
+  var osiDetail=document.getElementById("osi-detail");
+  var od={t:osiDetail.querySelector("h3"),c:osiDetail.querySelector(".dc"),b:osiDetail.querySelector("p"),n:osiDetail.querySelector(".dn"),kind:osiDetail.querySelector(".kind")};
+  var KINDS2={sync:"structural",enum:"value",flag:"flag",rsv:"reserved"};
+  function showOsi(key){
+    var o=OSI[key];
+    od.t.textContent=o.label; od.c.textContent=o.val; od.b.textContent=o.body; od.n.textContent=o.note||""; od.kind.textContent=KINDS2[o.kind];
+  }
+  osiRows.forEach(function(row){
+    row.addEventListener("mouseenter",function(){
+      osiRows.forEach(function(r){r.classList.remove("cued");});
+      row.classList.add("cued");
+      showOsi(row.dataset.osi);
+    });
+  });
+  document.getElementById("osi-list").addEventListener("mouseleave",function(){
+    osiRows.forEach(function(r){r.classList.remove("cued");});
+    osiRows[1].classList.add("cued");
+    showOsi("l3");
+  });
+  showOsi("l3");
+
+})();
+</script>
+<script src="../protocols-fun/assets/protofun-toggle.js"></script>
+</body>
+</html>
