@@ -458,9 +458,51 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   .masthead { padding: 40px 20px 28px; }
 }
 @media (max-width: 1280px) { .spine { display: none; } }
+
+/* dark mode -- ink + gunmetal + teal/orange accents */
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:        #121213;
+  --surface:   #0e0e0f;
+  --surface2:  #1c1c1e;
+  --border:    #313135;
+  --border2:   #26262a;
+  --orange:    #FF4D00;
+  --cyan:      #08F9DF;
+  --yellow:    #E0913E;
+  --red:       #E04858;
+  --green:     #4DC26B;
+  --magenta:   #C97FD4;
+  --dim:       #8b8b88;
+  --dim2:      #5a5a5c;
+  --text:      #cbcbc9;
+  --bright:    #ececea;
+}
+:root[data-theme="dark"] ::selection { background: #08F9DF; color: #121213; }
+:root[data-theme="dark"] pre,
+:root[data-theme="dark"] .diagram {
+  background: #0e0e0f;
+  border-top-color: #2b2b30;
+  border-right-color: #2b2b30;
+  border-bottom-color: #2b2b30;
+}
+:root[data-theme="dark"] pre .label { color: #5a5a5e; }
+:root[data-theme="dark"] pre .cm, :root[data-theme="dark"] .diagram .dim { color: #66666b; }
+:root[data-theme="dark"] pre .kw { color: #F56A31; }
+:root[data-theme="dark"] pre .key, :root[data-theme="dark"] .diagram .acc2 { color: #5CD9CE; }
+:root[data-theme="dark"] .radial { background: rgba(18,18,19,0.96); }
+.theme-toggle { white-space: nowrap; }
 </style>
 </head>
 <body>
+<script>
+(function () {
+  const saved = localStorage.getItem('theme');
+  const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+})();
+</script>
 
 <!-- masthead -->
 <div class="masthead">
@@ -484,15 +526,19 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   <a href="#tools"><span>08</span>Tools</a>
   <a href="#manage"><span>09</span>Backup · Export · Upgrade</a>
   <button class="side-dial" id="sideDial" title="radial section dial">◎ dial</button>
+  <button class="side-dial theme-toggle" title="toggle dark mode">◐ dark</button>
 </nav>
 
 <!-- nav -->
 <div class="nav">
   <div class="nav-inner">
     <span class="nav-brand">RouterOS Deep Dive</span>
-    <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
-      <span class="num" id="navNum">01 //</span> <span id="navLabel">Getting In</span> <span class="nav-hint">◎</span>
-    </button>
+    <span style="display:flex;gap:6px">
+      <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
+        <span class="num" id="navNum">01 //</span> <span id="navLabel">Getting In</span> <span class="nav-hint">◎</span>
+      </button>
+      <button class="nav-current theme-toggle" title="toggle dark mode">◐</button>
+    </span>
   </div>
 </div>
 
@@ -508,11 +554,11 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 <section id="orient" data-num="01">
   <h2>Getting <em class="or">In</em></h2>
   <div class="section-bar"></div>
-  <p>RouterOS is MikroTik's Linux-based network OS. Everything is one command tree you drive from a console; the GUIs are just skins over that same tree, so whatever you learn in one transfers to the others. Four ways in — all land at the same config.</p>
+  <p>RouterOS is MikroTik's Linux-based network OS. Everything is one command tree you drive from a console; the GUIs are just skins over that same tree, so whatever you learn in one transfers to the others. Four ways in - all land at the same config.</p>
 
   <table>
     <tr><th>Way in</th><th>What</th><th>Port / how</th><th>When</th></tr>
-    <tr><td class="meth">WinBox</td><td>Native GUI (Windows/Wine)</td><td>TCP 8291, or by MAC</td><td>Best for learning — visual, live</td></tr>
+    <tr><td class="meth">WinBox</td><td>Native GUI (Windows/Wine)</td><td>TCP 8291, or by MAC</td><td>Best for learning - visual, live</td></tr>
     <tr><td class="meth">WebFig</td><td>Browser UI</td><td><code>http://192.168.88.1</code></td><td>Same config, no install</td></tr>
     <tr><td class="meth cy">SSH / CLI</td><td>The real command tree</td><td>TCP 22</td><td>Scripting, export, automation</td></tr>
     <tr><td class="meth cy">mac-telnet / mac-winbox</td><td>Layer-2, no IP needed</td><td>the router's MAC</td><td>When there's no working IP path (fresh box, wrong subnet)</td></tr>
@@ -520,7 +566,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 
   <div class="info-box">
     <strong>Factory defaults</strong>
-    A reset RouterOS box comes up at <code>192.168.88.1</code>, user <code>admin</code>, no password (newer versions prompt you to set one on first login). If you can't get an IP path, WinBox's <em>Neighbors</em> tab finds it on Layer 2 by MAC — that's how you rescue a box you've locked yourself out of.
+    A reset RouterOS box comes up at <code>192.168.88.1</code>, user <code>admin</code>, no password (newer versions prompt you to set one on first login). If you can't get an IP path, WinBox's <em>Neighbors</em> tab finds it on Layer 2 by MAC - that's how you rescue a box you've locked yourself out of.
   </div>
 </section>
 
@@ -528,7 +574,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 <section id="cli" data-num="02">
   <h2>The <em class="cy">Command Tree</em></h2>
   <div class="section-bar cy"></div>
-  <p>Everything hangs off <code>/</code>. You navigate menus (<code>/ip firewall filter</code>) and run verbs inside them (<code>print</code>, <code>add</code>, <code>set</code>, <code>remove</code>). <code>?</code> lists what's available at any point, <code>Tab</code> completes, and <code>[find ...]</code> selects items by property instead of by index. Nothing is saved-then-applied — every command takes effect immediately, which is exactly why <span class="or">Safe Mode</span> exists.</p>
+  <p>Everything hangs off <code>/</code>. You navigate menus (<code>/ip firewall filter</code>) and run verbs inside them (<code>print</code>, <code>add</code>, <code>set</code>, <code>remove</code>). <code>?</code> lists what's available at any point, <code>Tab</code> completes, and <code>[find ...]</code> selects items by property instead of by index. Nothing is saved-then-applied - every command takes effect immediately, which is exactly why <span class="or">Safe Mode</span> exists.</p>
 
   <pre class="cy"><span class="label">CLI basics</span><span class="cm"># menus are paths; run a verb inside one, or give the full path inline</span>
 /ip firewall filter <span class="fn">print</span>              <span class="cm"># list rules in this menu</span>
@@ -546,17 +592,17 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 
   <div class="info-box warn">
     <strong>Safe Mode is your undo button</strong>
-    Press <code>Ctrl-X</code> to enter Safe Mode (the prompt shows <code>[Safe]</code>). Every change is provisional; if your session drops — you just firewalled yourself out — the router auto-reverts everything since you entered. <code>Ctrl-X</code> again to commit, <code>Ctrl-D</code> to abort. <strong>Always Safe-Mode remote firewall/interface edits.</strong>
+    Press <code>Ctrl-X</code> to enter Safe Mode (the prompt shows <code>[Safe]</code>). Every change is provisional; if your session drops - you just firewalled yourself out - the router auto-reverts everything since you entered. <code>Ctrl-X</code> again to commit, <code>Ctrl-D</code> to abort. <strong>Always Safe-Mode remote firewall/interface edits.</strong>
   </div>
 
   <h3 class="cy">The menus you actually use</h3>
   <table>
     <tr><th>Path</th><th>What lives there</th></tr>
-    <tr><td class="meth cy">/interface</td><td>ethernet, bridge, wireless, VLAN — every port and virtual iface</td></tr>
+    <tr><td class="meth cy">/interface</td><td>ethernet, bridge, wireless, VLAN - every port and virtual iface</td></tr>
     <tr><td class="meth cy">/ip</td><td>address, dhcp-server, dhcp-client, dns, firewall, route, pool</td></tr>
-    <tr><td class="meth cy">/interface ethernet switch</td><td>the hardware switch chip — VLANs, <em class="or">port mirroring</em></td></tr>
+    <tr><td class="meth cy">/interface ethernet switch</td><td>the hardware switch chip - VLANs, <em class="or">port mirroring</em></td></tr>
     <tr><td class="meth cy">/system</td><td>identity, clock, backup, package/upgrade, reboot, resource</td></tr>
-    <tr><td class="meth cy">/tool</td><td>torch, sniffer, netwatch, ping, bandwidth-test — the diagnostics</td></tr>
+    <tr><td class="meth cy">/tool</td><td>torch, sniffer, netwatch, ping, bandwidth-test - the diagnostics</td></tr>
   </table>
 </section>
 
@@ -564,7 +610,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 <section id="ifaces" data-num="03">
   <h2>Interfaces &amp; <em class="or">Bridges</em></h2>
   <div class="section-bar"></div>
-  <p>Physical ports are <code>ether1..N</code>, plus <code>sfp1</code>, <code>wlanN</code>. A <strong>bridge</strong> is a software switch: add ports to it and they become one flat L2 segment. A typical build puts every LAN port + wifi into one bridge and leaves the WAN port (<code>ether1</code>) OUT — that port is the uplink.</p>
+  <p>Physical ports are <code>ether1..N</code>, plus <code>sfp1</code>, <code>wlanN</code>. A <strong>bridge</strong> is a software switch: add ports to it and they become one flat L2 segment. A typical build puts every LAN port + wifi into one bridge and leaves the WAN port (<code>ether1</code>) OUT - that port is the uplink.</p>
 
   <pre><span class="label">bridge + ports</span><span class="cm"># make the bridge, then enroll ports into it</span>
 /interface bridge <span class="fn">add</span> <span class="key">name</span>=<span class="val">bridgeLAN</span>
@@ -585,7 +631,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 <section id="ipaddr" data-num="04">
   <h2>IP · <em class="cy">DHCP</em> · DNS</h2>
   <div class="section-bar cy"></div>
-  <p>The router holds an address on the bridge (the LAN gateway) and typically runs a DHCP <em>server</em> for the LAN plus a DHCP <em>client</em> on the WAN. It can also be the LAN's DNS resolver — which is a handy lever (see the note).</p>
+  <p>The router holds an address on the bridge (the LAN gateway) and typically runs a DHCP <em>server</em> for the LAN plus a DHCP <em>client</em> on the WAN. It can also be the LAN's DNS resolver - which is a handy lever (see the note).</p>
 
   <pre class="cy"><span class="label">addressing + dhcp + dns</span><span class="cm"># the gateway address on the LAN bridge</span>
 /ip address <span class="fn">add</span> <span class="key">address</span>=<span class="val">192.168.88.1/24</span> <span class="key">interface</span>=<span class="val">bridgeLAN</span>
@@ -606,7 +652,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 
   <div class="info-box cy">
     <strong>DNS is a redirect lever</strong>
-    When the router resolves for the LAN, one static entry points a domain wherever you want — clean redirection with no ARP games: <code>/ip dns static add name=api.example.com address=192.168.88.50</code>. Useful for pinning a device to a lab endpoint you control.
+    When the router resolves for the LAN, one static entry points a domain wherever you want - clean redirection with no ARP games: <code>/ip dns static add name=api.example.com address=192.168.88.50</code>. Useful for pinning a device to a lab endpoint you control.
   </div>
 </section>
 
@@ -616,28 +662,28 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   <div class="section-bar rd"></div>
   <p>Two pieces make an isolated segment: a <strong>filter</strong> that drops anything the outside tries to start inward, and <strong>masquerade NAT</strong> so inside hosts can still reach the internet. Chains: <code>input</code> = traffic <em>to</em> the router, <code>forward</code> = traffic <em>through</em> it, <code>output</code> = <em>from</em> it. Rules run top-to-bottom, first match wins.</p>
 
-  <pre class="rd"><span class="label">a one-way isolation ruleset</span><span class="cm"># INPUT — protect the router itself</span>
+  <pre class="rd"><span class="label">a one-way isolation ruleset</span><span class="cm"># INPUT - protect the router itself</span>
 /ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">input</span> <span class="key">connection-state</span>=<span class="val">established,related</span> <span class="key">action</span>=<span class="val">accept</span>
 /ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">input</span> <span class="key">connection-state</span>=<span class="val">invalid</span> <span class="key">action</span>=<span class="val">drop</span>
 /ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">input</span> <span class="key">in-interface</span>=<span class="val">bridgeLAN</span> <span class="key">action</span>=<span class="val">accept</span>
 /ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">input</span> <span class="key">protocol</span>=<span class="val">icmp</span> <span class="key">action</span>=<span class="val">accept</span>
 /ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">input</span> <span class="key">action</span>=<span class="val">drop</span>                <span class="cm"># everything else (i.e. from WAN)</span>
 
-<span class="cm"># FORWARD — one-way membrane: LAN reaches out, WAN can't start in</span>
+<span class="cm"># FORWARD - one-way membrane: LAN reaches out, WAN can't start in</span>
 /ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">forward</span> <span class="key">connection-state</span>=<span class="val">established,related</span> <span class="key">action</span>=<span class="val">accept</span>
 /ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">forward</span> <span class="key">in-interface</span>=<span class="val">bridgeLAN</span> <span class="key">out-interface</span>=<span class="val">ether1</span> <span class="key">action</span>=<span class="val">accept</span>
 /ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">forward</span> <span class="key">connection-state</span>=<span class="val">new</span> <span class="key">in-interface</span>=<span class="val">ether1</span> <span class="key">action</span>=<span class="val">drop</span>
 
-<span class="cm"># NAT — masquerade the LAN out the WAN</span>
+<span class="cm"># NAT - masquerade the LAN out the WAN</span>
 /ip firewall nat <span class="fn">add</span> <span class="key">chain</span>=<span class="val">srcnat</span> <span class="key">out-interface</span>=<span class="val">ether1</span> <span class="key">action</span>=<span class="val">masquerade</span></pre>
 
   <div class="info-box danger">
     <strong>Watch a drop rule to see what's knocking</strong>
-    Add <code>log=yes log-prefix=WAN-DROP</code> to the final input/forward drops and <code>/log print follow</code> shows every uninvited packet — great for spotting a device phoning somewhere odd, or a scan from outside.
+    Add <code>log=yes log-prefix=WAN-DROP</code> to the final input/forward drops and <code>/log print follow</code> shows every uninvited packet - great for spotting a device phoning somewhere odd, or a scan from outside.
   </div>
 
   <h3 class="rd">Remote management, safely</h3>
-  <p>To allow WinBox from one trusted IP only — and do it in Safe Mode so a mistake self-reverts:</p>
+  <p>To allow WinBox from one trusted IP only - and do it in Safe Mode so a mistake self-reverts:</p>
   <pre class="rd"><span class="cm"># Ctrl-X first. accept 8291 from one host, on the WAN in-interface, before the input drop</span>
 /ip firewall filter <span class="fn">add</span> <span class="key">chain</span>=<span class="val">input</span> <span class="key">protocol</span>=<span class="val">tcp</span> <span class="key">dst-port</span>=<span class="val">8291</span> <span class="key">src-address</span>=<span class="val">203.0.113.10</span> <span class="key">action</span>=<span class="val">accept</span> <span class="key">place-before</span>=<span class="val">[find chain=input action=drop]</span></pre>
 </section>
@@ -665,7 +711,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 <section id="switch" data-num="07">
   <h2>Switch &amp; <em class="or">Port Mirror</em></h2>
   <div class="section-bar"></div>
-  <p>Underneath the software bridge is real switch silicon. The killer feature for device analysis lives here: <strong>port mirroring</strong> — tell the chip to photocopy every frame on one port to another. The device talks to its cloud completely normally; your capture box gets a full copy. No ARP poisoning, no insertion into the path, invisible.</p>
+  <p>Underneath the software bridge is real switch silicon. The killer feature for device analysis lives here: <strong>port mirroring</strong> - tell the chip to photocopy every frame on one port to another. The device talks to its cloud completely normally; your capture box gets a full copy. No ARP poisoning, no insertion into the path, invisible.</p>
 
   <pre class="diagram">   <span class="dim">a switch chip's ports</span>
    <span class="dim">┌────────────────────────────────┐</span>
@@ -675,7 +721,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
      <span class="acc">ether3 = the DEVICE under test</span>
      <span class="acc2">ether4 = your CAPTURE box</span>
 
-   <span class="acc3">mirror source + target MUST be on the SAME chip — check /interface ethernet switch port print</span></pre>
+   <span class="acc3">mirror source + target MUST be on the SAME chip - check /interface ethernet switch port print</span></pre>
 
   <pre><span class="label">port mirror</span><span class="cm"># many boards have >1 switch chip; source and target must share one</span>
 /interface ethernet switch port <span class="fn">print</span>          <span class="cm"># which port is on which chip</span>
@@ -688,7 +734,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 
   <div class="info-box">
     <strong>Then capture on the target box</strong>
-    On the capture host, put the NIC in promiscuous mode and record: <code>sudo ip link set eth0 promisc on; sudo tcpdump -i eth0 -w dev.pcap</code>. HTTPS payloads stay encrypted, but you get DNS, TLS SNI, endpoints, and any cleartext — usually the interesting part for watching a device reach its cloud.
+    On the capture host, put the NIC in promiscuous mode and record: <code>sudo ip link set eth0 promisc on; sudo tcpdump -i eth0 -w dev.pcap</code>. HTTPS payloads stay encrypted, but you get DNS, TLS SNI, endpoints, and any cleartext - usually the interesting part for watching a device reach its cloud.
   </div>
 </section>
 
@@ -696,7 +742,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 <section id="tools" data-num="08">
   <h2>Built-in <em class="cy">Tools</em></h2>
   <div class="section-bar cy"></div>
-  <p>You don't always need to mirror to another box — RouterOS can watch traffic itself. <strong>Torch</strong> is a live per-flow bandwidth view; the <strong>sniffer</strong> captures pcap you can stream straight into Wireshark; <strong>netwatch</strong> pings hosts and runs scripts on up/down.</p>
+  <p>You don't always need to mirror to another box - RouterOS can watch traffic itself. <strong>Torch</strong> is a live per-flow bandwidth view; the <strong>sniffer</strong> captures pcap you can stream straight into Wireshark; <strong>netwatch</strong> pings hosts and runs scripts on up/down.</p>
 
   <pre class="cy"><span class="label">diagnostics</span><span class="cm"># live top-talkers on a port (a good first look at a new device)</span>
 /tool torch <span class="val">ether3</span> <span class="key">src-address</span>=<span class="val">0.0.0.0/0</span> <span class="key">port</span>=<span class="val">any</span>
@@ -729,7 +775,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 
   <div class="info-box warn">
     <strong>v6 → v7 is a project, not a click</strong>
-    RouterOS 7 is current and patches real CVEs, but from the long-lived v6 line the switch/bridge/wireless config syntax changed substantially — a straight upgrade can mangle a mirror or bridge setup. Plan it: full backup + export first, read the v7 migration notes, ideally dry-run on a spare board.
+    RouterOS 7 is current and patches real CVEs, but from the long-lived v6 line the switch/bridge/wireless config syntax changed substantially - a straight upgrade can mangle a mirror or bridge setup. Plan it: full backup + export first, read the v7 migration notes, ideally dry-run on a spare board.
   </div>
 </section>
 
@@ -832,6 +878,21 @@ document.addEventListener('keydown', e => {
 window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
 window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
 activate(location.hash.slice(1));
+
+// dark mode toggle (initial theme set by the inline script in <body>)
+const themeButtons = [...document.querySelectorAll('.theme-toggle')];
+function paintTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  themeButtons.forEach(b => b.textContent = (b.classList.contains('side-dial') ? (dark ? '◑ light' : '◐ dark') : (dark ? '◑' : '◐')));
+}
+themeButtons.forEach(b => b.addEventListener('click', () => {
+  const dark = document.documentElement.getAttribute('data-theme') !== 'dark';
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+  paintTheme();
+}));
+paintTheme();
 </script>
 </body>
 </html>
