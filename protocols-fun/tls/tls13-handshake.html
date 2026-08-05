@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>protocols-fun / TLS 1.3 handshake</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E6EBEE; --panel:#EFF3F5; --ink:#10171C; --soft:#46545E;
+  --faint:#7A8790; --line:#C1CDD3; --hair:#D6E0E4;
+  --enum:#0E7A8C; --enum-soft:#D1E7EA;
+  --flag:#C1501A; --flag-soft:#F0DACB;
+  --sync:#34507E; --sync-soft:#DCE3EE;
+  --rsv:#838E96;  --rsv-soft:rgba(16,23,28,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#0a0f0d;--panel:#0f1613;--ink:#c6f0d0;--soft:#7fae90;--faint:#4f6a5c;--line:#22302a;--hair:#151d19;--enum:#2fe38a;--enum-soft:#0e2a1d;--flag:#e0a92e;--flag-soft:#2c2410;--sync:#4fb8d6;--sync-soft:#0f2630;--rsv:#6f8f7f;--rsv-soft:rgba(198,240,208,0.05);}
+:root[data-theme="amber"]{--paper:#120c00;--panel:#1c1400;--ink:#ffb000;--soft:#c08a2a;--faint:#8a6a20;--line:#3a2a00;--hair:#241900;--enum:#ffb000;--enum-soft:#2a1d00;--flag:#ffd27a;--flag-soft:#332400;--sync:#d98a1a;--sync-soft:#241a00;--rsv:#9a7524;--rsv-soft:rgba(255,176,0,0.05);}
+:root[data-theme="vapor"]{--paper:#f4efe0;--panel:#ece4d0;--ink:#123b37;--soft:#3f605b;--faint:#8a9a90;--line:#e5457f;--hair:#ddd3bd;--enum:#e5457f;--enum-soft:#f8d9e4;--flag:#e0982f;--flag-soft:#f5e6c6;--sync:#0e9c90;--sync-soft:#cbe9e3;--rsv:#8a9a90;--rsv-soft:rgba(18,59,55,0.05);}
+/* house modes: the site-wide Deep Dive skins (warm cream / neutral dark, house teal+orange) */
+:root[data-theme="house-light"]{--paper:#F2F1EE;--panel:#FBFAF6;--ink:#17150F;--soft:#4A4744;--faint:#8C877E;--line:#C9C5BB;--hair:#E4E0D7;--enum:#007870;--enum-soft:#D8E7E5;--flag:#E85000;--flag-soft:#F6E1D4;--sync:#33518C;--sync-soft:#DEE3EF;--rsv:#8C877E;--rsv-soft:rgba(23,21,15,0.04);}
+:root[data-theme="house-dark"]{--paper:#121213;--panel:#1c1c1e;--ink:#ececea;--soft:#a9a9a4;--faint:#6f6f6b;--line:#313135;--hair:#26262a;--enum:#08F9DF;--enum-soft:#0e2a29;--flag:#FF4D00;--flag-soft:#2c1a10;--sync:#7fb2e0;--sync-soft:#16232f;--rsv:#8b8b88;--rsv-soft:rgba(236,236,234,0.05);}
+/* house modes: RJ wears teal and flips to orange on hover; a couple of subtle orange touches in the head */
+:root[data-theme="house-light"] .head .title protofun-toggle{color:var(--flag)}
+:root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
+:root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
+:root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
+:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
+:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
+:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
+.head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem}
+.head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
+.head .title protofun-toggle:hover{color:var(--enum)}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500}
+.lede a{color:var(--enum)}
+.intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
+.intro .lede{margin-bottom:0}
+.sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
+.sig .legrows{display:flex;flex-direction:column;gap:0.42rem}
+.sig .siglabel{writing-mode:vertical-rl;text-orientation:mixed;align-self:stretch;display:flex;align-items:center;justify-content:center;font-size:0.5rem;letter-spacing:0.34em;text-transform:uppercase;color:var(--faint);padding-left:0.9rem;border-left:1px solid var(--hair)}
+.sig .row{display:flex;align-items:center;gap:0.4rem;font-size:0.68rem;color:var(--soft);letter-spacing:0.02em;white-space:nowrap}
+.sig .swsep{color:var(--faint);font-size:0.62rem}
+.sig .sw{display:inline-flex;align-items:center;justify-content:center;width:6.1rem;height:1.45rem;padding:0;font-size:0.58rem;letter-spacing:0.1em;text-transform:lowercase;flex-shrink:0}
+.sig .sw.dark{color:var(--paper)}
+.sig .sw.light{color:var(--ink);border:1px solid var(--hair)}
+.sig .sw.dark.k-enum{background:var(--enum)} .sig .sw.light.k-enum{background:var(--enum-soft)}
+.sig .sw.dark.k-flag{background:var(--flag)} .sig .sw.light.k-flag{background:var(--flag-soft)}
+.sig .sw.dark.k-sync{background:var(--sync)} .sig .sw.light.k-sync{background:var(--sync-soft)}
+.sig .sw.dark.k-rsv{background:var(--faint)} .sig .sw.light.k-rsv{background:var(--rsv-soft)}
+@media(max-width:820px){.intro{display:block}.sig{display:none}}
+.k-en{color:var(--enum)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:2.2rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:78ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.2rem 0 0.4rem;max-width:82ch}
+.callout b{color:var(--ink);font-weight:500} .callout a{color:var(--enum)}
+.callout.hot{border-left-color:var(--enum)}
+code{font-family:var(--ff);color:var(--enum);font-size:0.92em;background:var(--rsv-soft);padding:0.02rem 0.28rem;border-radius:2px;white-space:nowrap}
+.atable{width:100%;border-collapse:collapse;font-size:0.74rem;margin:0.4rem 0 1.3rem}
+.atable th,.atable td{text-align:left;padding:0.38rem 0.7rem;border-bottom:1px solid var(--hair);vertical-align:top}
+.atable th{font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+.atable td.x{font-family:var(--ff);color:var(--enum);white-space:nowrap;font-size:0.72rem}
+.atable td.f{color:var(--ink);font-weight:500;white-space:nowrap}
+.atable td.g{color:var(--faint)}
+.kv{font-size:0.78rem;margin:0.3rem 0 1.1rem}
+.kv div{display:grid;grid-template-columns:9.5rem 1fr;gap:1rem;padding:0.3rem 0;border-bottom:1px solid var(--hair)}
+.kv div:last-child{border-bottom:none}
+.kv .k{color:var(--enum)} .kv .v{color:var(--soft)}
+.cmd{font-family:var(--ff);font-size:0.76rem;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--enum);padding:0.6rem 0.85rem;margin:0.5rem 0 1.2rem;overflow-x:auto;white-space:pre;color:var(--ink);line-height:1.7}
+.cmd .p{color:var(--faint)} .cmd .c{color:var(--faint);font-style:italic}
+
+/* byte inspector (shared engine with the anatomy pages) */
+.dbytes{display:flex;flex-wrap:wrap;gap:4px;margin:0.6rem 0 1.4rem}
+.bcol{display:flex;flex-direction:column;align-items:center}
+.bcol .off{font-size:0.5rem;color:var(--faint);margin-bottom:2px;letter-spacing:0.02em}
+.bcell{width:2.5rem;height:1.9rem;display:flex;align-items:center;justify-content:center;font-size:0.78rem;border:1px solid var(--hair);color:var(--soft);transition:background .12s,color .12s;cursor:pointer}
+.bcell.k-sync{background:var(--sync-soft)} .bcell.k-enum{background:var(--enum-soft)}
+.bcell.k-flag{background:var(--flag-soft)} .bcell.k-rsv{background:var(--rsv-soft)}
+.bcell.fstart{border-left:2px solid var(--line)}
+.bcell.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+.block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
+.left{min-width:0}
+.detailcol{position:relative}
+@media(max-width:820px){.block{grid-template-columns:1fr}.detailcol{position:static}}
+.fields{border-top:1px solid var(--line)}
+.field{display:grid;grid-template-columns:5.4rem 1fr auto;gap:0.8rem;align-items:baseline;padding:0.46rem 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.field:hover,.field.active,.field.cued{background:var(--panel)}
+.field .fb{font-size:0.6rem;color:var(--faint)} .field .fn{font-size:0.82rem;color:var(--ink)}
+.field[data-branch] .fn::after{content:"+";margin-left:0.4rem;color:var(--enum);font-weight:500}
+.field.active[data-branch] .fn::after{content:"\2212"}
+.fv{font-size:0.76rem;text-align:right}
+.fv.k-sync{color:var(--sync)} .fv.k-enum{color:var(--enum)} .fv.k-flag{color:var(--flag)} .fv.k-rsv{color:var(--faint)}
+.branch{grid-column:1 / -1;display:none;padding:0.5rem 0 0.2rem 6.2rem}
+.field.active .branch{display:block}
+.branch table{border-collapse:collapse;font-size:0.7rem;width:100%;max-width:30rem}
+.branch td{padding:1px 10px 1px 0;color:var(--soft)} .branch td.k{color:var(--faint);width:4.2rem;text-align:right}
+.branch tr.sel td{color:var(--ink)} .branch tr.sel td.k{color:var(--enum);font-weight:500}
+.detail{position:absolute;inset:0;border:1px solid var(--line);background:var(--panel);padding:1rem 1.05rem;overflow-y:auto}
+@media(max-width:820px){.detail{position:static;height:16rem}}
+.detail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
+.detail .dl .kind{color:var(--soft)}
+.detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
+.detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
+.detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
+
+/* handshake flight ladder */
+.flow{border:1px solid var(--line);background:var(--panel);margin:0.6rem 0 1.3rem}
+.flow .fhead{display:grid;grid-template-columns:1fr 4.6rem 1fr;border-bottom:1px solid var(--line);font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint)}
+.flow .fhead span{padding:0.5rem 0.9rem}
+.flow .fhead span:nth-child(2){text-align:center}
+.flow .fhead span:nth-child(3){text-align:right}
+.flow .step{display:grid;grid-template-columns:1fr 4.6rem 1fr;align-items:stretch;border-bottom:1px solid var(--hair)}
+.flow .step:last-child{border-bottom:none}
+.flow .m{padding:0.5rem 0.9rem;font-size:0.76rem;color:var(--ink);min-width:0;overflow-wrap:anywhere}
+.flow .m.srv{text-align:right}
+.flow .m em{font-style:normal;color:var(--faint);display:block;font-size:0.63rem;letter-spacing:0.02em;line-height:1.5}
+.flow .dir{display:flex;align-items:center;justify-content:center;color:var(--enum);font-size:0.85rem;border-left:1px solid var(--hair);border-right:1px solid var(--hair)}
+.flow .mark{grid-column:1 / -1;border-top:1px dashed var(--line);background:var(--rsv-soft);padding:0.3rem 0.9rem;font-size:0.56rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--flag);text-align:center}
+.pk{display:inline-block;font-size:0.5rem;letter-spacing:0.1em;text-transform:uppercase;padding:0 0.3rem;margin-left:0.35rem;border:1px solid currentColor;vertical-align:1px;white-space:nowrap}
+.flow .m.srv .pk{margin-left:0;margin-right:0.35rem}
+.pk.p0{color:var(--faint)} .pk.p1{color:var(--flag)} .pk.p2{color:var(--enum)} .pk.p3{color:var(--sync)}
+
+/* key schedule tree */
+.tree{font-size:0.72rem;line-height:1.7;white-space:pre;overflow-x:auto;border:1px solid var(--line);border-left:2px solid var(--enum);background:var(--panel);padding:0.9rem 1rem;margin:0.5rem 0 1.2rem;color:var(--faint)}
+.tree b{color:var(--ink);font-weight:500}
+.tree i{color:var(--enum);font-style:normal}
+.tree u{color:var(--flag);text-decoration:none}
+.tree s{color:var(--sync);text-decoration:none}
+
+/* JA4 string decoder (same widget as the JA4+ breakdown) */
+.decoder{display:grid;grid-template-columns:1fr 320px;gap:1.4rem;align-items:start;margin:0.4rem 0 1.2rem}
+@media(max-width:820px){.decoder{grid-template-columns:1fr}}
+.jstr{font-size:1.15rem;letter-spacing:0.02em;line-height:2.4;word-break:break-all;user-select:none}
+.jseg{padding:0.15rem 0.1rem;border-bottom:2px solid transparent;cursor:pointer;transition:background .12s}
+.jseg.k-enum{color:var(--enum)} .jseg.k-flag{color:var(--flag)} .jseg.k-sync{color:var(--sync)}
+.jseg:hover,.jseg.on{background:var(--panel);border-bottom-color:currentColor}
+.jsep{color:var(--faint)}
+.jdetail{border:1px solid var(--line);background:var(--panel);padding:0.9rem 1rem;min-height:9rem;position:sticky;top:1rem}
+.jdetail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.45rem;margin-bottom:0.55rem}
+.jdetail h3{font-weight:500;font-size:0.95rem;color:var(--ink)} .jdetail .dv{font-size:0.72rem;color:var(--enum);margin:0.2rem 0 0.55rem}
+.jdetail p{font-size:0.76rem;color:var(--soft);line-height:1.6}
+.ja4{border:1px solid var(--line);background:var(--panel);padding:0.7rem 0.9rem;margin:0.3rem 0 0.9rem;font-size:0.95rem;letter-spacing:0.02em;overflow-x:auto}
+.ja4 .s1{color:var(--sync)} .ja4 .s2{color:var(--enum)} .ja4 .s3{color:var(--flag)}
+
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none}
+.tab{padding:0.55rem 0.85rem;font-size:0.63rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:last-child{border-right:none}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.06em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none} .panel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+.plede{color:var(--soft);max-width:82ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
+.plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em} .plede a{color:var(--enum)}
+footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+/* --- secret themes: amber CRT + vaporwave --- */
+:root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.32)}
+:root[data-theme="amber"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 3px)}
+:root[data-theme="vapor"] body{background:url(../assets/sakura-tile.webp) repeat, linear-gradient(160deg,#4fdfba 0%,#3fc8a4 60%,#57e3c0 100%);background-size:320px auto, cover;background-attachment:fixed}
+:root[data-theme="vapor"] .sheet{background:#f4efe0;box-shadow:0 0 0 3px #2ec6b9,0 14px 46px rgba(0,0,0,.28);border-radius:3px}
+:root[data-theme="vapor"] .head{border-color:#0e9c90}
+:root[data-theme="vapor"] .head .title protofun-toggle{color:#e5457f}
+:root[data-theme="vapor"] .bcell{box-shadow:inset 1px 1px rgba(255,255,255,.7),inset -1px -1px rgba(18,59,55,.16)}
+:root[data-theme="vapor"] .tab.on{box-shadow:inset 0 -2px #e5457f}
+/* --- mobile / narrow screens --- */
+@media(max-width:560px){
+  body{font-size:13px}
+  .sheet{padding-left:1rem;padding-right:1rem}
+  .head .row{grid-template-columns:1fr}
+  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
+  .head .strip{grid-template-columns:1fr}
+  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
+  .head .strip div:last-child{border-bottom:none}
+  .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
+  .branch{padding-left:0.4rem}
+  .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
+  code{white-space:normal;overflow-wrap:anywhere}
+  .flow .fhead,.flow .step{grid-template-columns:1fr 2.4rem 1fr}
+  .flow .m{padding:0.45rem 0.5rem;font-size:0.68rem}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . TLS 1.3</div><h1>TLS 1.3 Handshake</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
+      <div class="stamp"><b>RFC 8446</b><br>rev 2026.08</div>
+    </div>
+    <div class="strip">
+      <div>handshake <b>1-RTT &middot; 0-RTT on resume</b></div>
+      <div>key exchange <b>(EC)DHE only, always forward secret</b></div>
+      <div>encrypted from <b>the message after ServerHello</b></div>
+    </div>
+  </div>
+
+  <div class="intro">
+  <p class="lede"><a href="https://www.rfc-editor.org/rfc/rfc8446">RFC 8446</a> is not TLS 1.2 with better ciphers. It deleted static RSA key transport, renegotiation, compression, custom DH groups, and every non-AEAD cipher, then moved the entire server flight behind encryption one message after <code>ServerHello</code>. What is left on the wire in cleartext is a <b>ClientHello</b> and a <b>ServerHello</b> - which is exactly why those two messages became the fingerprinting surface that <a href="../ja4/ja4plus-breakdown.html">JA4+</a> reads. Everything below decodes one real 517-byte Chrome-shaped ClientHello to <code>example.com</code>, byte for byte, and the JA4 tab shows precisely which of those bytes get hashed. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <aside class="sig" aria-label="color key">
+    <div class="legrows">
+    <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
+    <div class="row"><span class="sw dark k-flag">amber</span><span class="swsep">&#8594;</span><span class="sw light k-flag">grease / flag</span></div>
+    <div class="row"><span class="sw dark k-sync">steel</span><span class="swsep">&#8594;</span><span class="sw light k-sync">structural</span></div>
+    <div class="row"><span class="sw dark k-rsv">faint</span><span class="swsep">&#8594;</span><span class="sw light k-rsv">legacy / pad</span></div>
+    </div>
+    <div class="siglabel">color key</div>
+  </aside>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="frame">Record &amp; Frame<small>the 5-byte header</small></button>
+    <button class="tab" data-p="clienthello">ClientHello<small>517 bytes</small></button>
+    <button class="tab" data-p="extensions">Extensions<small>where 1.3 lives</small></button>
+    <button class="tab" data-p="serverhello">ServerHello<small>+ HRR, EE</small></button>
+    <button class="tab" data-p="flow">1-RTT Flow<small>the flights</small></button>
+    <button class="tab" data-p="schedule">Key Schedule<small>HKDF</small></button>
+    <button class="tab" data-p="zerortt">0-RTT &amp; PSK<small>resumption</small></button>
+    <button class="tab" data-p="ja4">The JA4 Bytes<small>what gets hashed</small></button>
+  </div>
+  <div class="panelwrap">
+
+    <!-- ================= RECORD ================= -->
+    <div class="panel on" data-panel="frame">
+      <div class="pfacts"><span>record header<b>5 bytes, never encrypted</b></span><span>spec<b>RFC 8446 &sect;5</b></span></div>
+      <p class="plede">Every TLS byte on the wire sits inside a record: one byte of type, two bytes of legacy version, two bytes of length. That header is the AEAD's <b>additional data</b>, so it is authenticated but never confidential - the length of every encrypted record is public, forever.</p>
+
+      <div class="sec">the two record types</div>
+      <table class="atable"><thead><tr><th>struct</th><th>bytes</th><th>when</th></tr></thead><tbody>
+        <tr><td class="f">TLSPlaintext</td><td class="x">type &middot; 0x0301/0x0303 &middot; len &middot; fragment</td><td>ClientHello, ServerHello, alerts before keys, and the dummy ChangeCipherSpec. <code>type</code> is the real content type.</td></tr>
+        <tr><td class="f">TLSCiphertext</td><td class="x">0x17 &middot; 0x0303 &middot; len &middot; encrypted_record</td><td>Everything else. <code>opaque_type</code> is <b>always</b> <code>application_data (23)</code>, whatever is actually inside.</td></tr>
+      </tbody></table>
+      <p class="note">Limits: <code>TLSPlaintext.length</code> must not exceed 2^14. <code>TLSCiphertext.length</code> gets 256 bytes of slack (2^14 + 256) for the content-type byte, padding, and the AEAD tag. A record with a longer length is a <code>record_overflow</code> alert, not a parse.</p>
+
+      <div class="sec">an encrypted record on the wire</div>
+      <p class="note">Five clear bytes, then opaque. Offsets in every inspector on this page are relative to the block shown.</p>
+      <div id="block-ct" data-build></div>
+
+      <div class="sec">what was inside it</div>
+      <p class="note">The AEAD covers <code>TLSInnerPlaintext</code>: the real content, then the real content type, then any zero padding. The receiver decrypts, scans backwards past the zeros, and the first non-zero byte it hits is the content type.</p>
+      <div id="block-ip" data-build></div>
+      <div class="callout"><b>the content type moved inside the encryption.</b> In TLS 1.2 an eavesdropper could see handshake records, alert records, and data records as distinct types. In 1.3 they are all <code>0x17</code> on the outside. That also gives padding for free: append zeros before encrypting and record lengths stop leaking exact message sizes. <b>Scan backwards from the end</b> - a receiver that scans forward for the first byte that "looks like" a type is parsing attacker-controlled plaintext.</div>
+
+      <div class="sec">the dummy ChangeCipherSpec</div>
+      <div class="cmd"><span class="c">// middlebox compatibility mode, RFC 8446 Appendix D.4</span>
+14 03 03 00 01 01   <span class="p">ChangeCipherSpec, length 1, value 1</span></div>
+      <p class="note">TLS 1.3 has no CCS. This record exists purely so that network middleboxes hard-coded against the TLS 1.2 handshake shape see something familiar after the hello and stop mangling the connection. The client sends it after its ClientHello, the server after its ServerHello. A 1.3 endpoint <b>must ignore it</b>, and it is not part of the handshake transcript.</p>
+      <div class="callout hot"><b>every legacy field in TLS 1.3 is scar tissue from a middlebox.</b> The <code>0x0301</code> in the initial ClientHello record, the 32-byte fake session ID, the CCS above, and the <code>0x0303</code> in <code>legacy_version</code> all exist because a deployed box somewhere drops what it does not recognise. The real version negotiation was moved into an extension precisely because the version field was unusable. This is why 1.3 is the version that shipped as "TLS 1.2 with extensions" on the wire.</div>
+    </div>
+
+    <!-- ================= CLIENTHELLO ================= -->
+    <div class="panel" data-panel="clienthello">
+      <div class="pfacts"><span>record<b>517 bytes total</b></span><span>handshake msg<b>512 bytes</b></span><span>spec<b>RFC 8446 &sect;4.1.2</b></span></div>
+      <p class="plede">The first 114 bytes: record header, handshake header, and every fixed field of the ClientHello up to the extensions. Three of the five fields here are dead, kept only so the message still parses as TLS 1.2 to anything watching.</p>
+
+      <div class="sec">ClientHello, record byte 0 through 113</div>
+      <p class="note">Client at <code>192.0.2.10</code> opening to <code>example.com</code>. Cipher list, extension set, and ordering are a real Chrome profile - the JA4 tab hashes exactly these bytes.</p>
+      <div id="block-ch" data-build></div>
+
+      <div class="callout"><b><code>legacy_version</code> is frozen at <code>0x0303</code>.</b> A ClientHello offering TLS 1.3 still says "TLS 1.2" here, because clients that put <code>0x0304</code> in this field in 2016 found servers that simply dropped the connection. The real answer is in the <code>supported_versions</code> extension at offset 277, and a 1.3 server <b>must</b> look there first and ignore this field. Same story in reverse for <code>ServerHello.legacy_version</code>.</div>
+      <div class="callout"><b>the session ID is 32 bytes of noise that means nothing.</b> TLS 1.3 resumes with PSK tickets, not session IDs, so this field has no protocol function at all. Clients fill it with 32 random bytes and servers echo it back verbatim, purely so the exchange looks like a TLS 1.2 session resumption to a middlebox. An empty <code>legacy_session_id</code> is legal and is what a 1.3-only stack that has given up on compatibility mode sends.</div>
+      <div class="callout hot"><b>why 517 bytes.</b> The padding extension (offset 304, 208 bytes) pushes the handshake message to exactly 512 bytes, 517 with the record header. This is not privacy padding - it is <a href="https://www.rfc-editor.org/rfc/rfc7685">RFC 7685</a> working around F5 load balancers that choke on ClientHellos between 256 and 511 bytes. The 517-byte ClientHello is now so universal it is itself a fingerprint, and a post-quantum key share blows straight past it: an <code>X25519MLKEM768</code> share is 1216 bytes, which is what forced the ClientHello to start spanning multiple TCP segments and broke another round of middleboxes in 2024.</div>
+    </div>
+
+    <!-- ================= EXTENSIONS ================= -->
+    <div class="panel" data-panel="extensions">
+      <div class="pfacts"><span>in this hello<b>18 extensions, 403 bytes</b></span><span>counted by JA4<b>16 (GREASE stripped)</b></span></div>
+      <p class="plede">TLS 1.3 put its actual protocol in extensions. Version negotiation, key exchange, and authentication are all extension payloads hanging off a message whose fixed fields are frozen for compatibility. The four that matter are below; the roster at the end is the full 403 bytes in wire order.</p>
+
+      <div class="sec">supported_versions (43) - the real version field</div>
+      <p class="note">A 1-byte list length, then 2-byte versions in client preference order. The server picks the first one it supports and echoes a single version back.</p>
+      <div id="block-sv" data-build></div>
+      <div class="callout"><b>JA4 reads its version from here, not from <code>legacy_version</code>.</b> Highest non-GREASE value wins: <code>0x0304</code> becomes <code>13</code>. A client that offers 1.3 and gets downgraded still fingerprints as a 1.3-capable client, which is the point.</div>
+
+      <div class="sec">key_share (51) - the client guesses</div>
+      <p class="note">The client sends a real (EC)DHE public key <i>before</i> the server has said which group it wants. Guess right and the handshake is 1-RTT; guess wrong and it costs a HelloRetryRequest.</p>
+      <div id="block-ks" data-build></div>
+      <div class="callout"><b>this is where the round trip was saved.</b> TLS 1.2 needed ServerHello and ServerKeyExchange before the client could contribute a DH share. TLS 1.3 speculates: send x25519 up front, because the server almost certainly supports it. The cost of being wrong is a full extra round trip, so clients send one share for the group they expect and list the rest in <code>supported_groups</code>.</div>
+
+      <div class="sec">supported_groups (10) and signature_algorithms (13)</div>
+      <p class="note">Groups the client will do (EC)DHE over, then the signature schemes it will accept in a certificate and in CertificateVerify. Both lists carry GREASE.</p>
+      <div id="block-groups" data-build></div>
+      <div id="block-sigalg" data-build></div>
+      <div class="callout"><b>the <code>0x04xx</code> entries are certificate-only.</b> <code>rsa_pkcs1_sha256</code> and friends are legal to advertise so a server can still present an RSA PKCS#1 certificate chain, but RFC 8446 &sect;4.2.3 forbids them in <code>CertificateVerify</code> - a 1.3 handshake signs with RSA-PSS or ECDSA. JA4 keeps this list in <b>wire order</b> rather than sorting it, because the order is a stable property of the TLS library rather than something a client shuffles.</div>
+
+      <div class="sec">server_name (0) and ALPN (16)</div>
+      <p class="note">The two extensions JA4 counts but does not hash. Both are attacker-visible plaintext in a 1.3 handshake.</p>
+      <div id="block-sni" data-build></div>
+      <div id="block-alpn" data-build></div>
+      <div class="callout hot"><b>SNI is the last plaintext identity in TLS 1.3.</b> Everything else about the connection moved behind encryption, and then the hostname stayed in the clear at offset 118 because the server needs it to pick a certificate. That single field is what national-scale filtering keys on. <a href="https://datatracker.ietf.org/doc/draft-ietf-tls-esni/">Encrypted Client Hello</a> (extension <code>0xfe0d</code>, still a draft) fixes it by encrypting an inner ClientHello to a public key fetched from DNS, which relocates the trust problem rather than deleting it.</div>
+
+      <div class="sec">the full roster, wire order</div>
+      <p class="note">Offsets are from byte 0 of the record. <span class="k-en">JA4</span> marks whether each extension is counted, hashed, or stripped.</p>
+      <table class="atable"><thead><tr><th>off</th><th>len</th><th>type</th><th>name</th><th>ja4</th><th>role in TLS 1.3</th></tr></thead><tbody>
+        <tr><td class="x">114</td><td class="g">4</td><td class="x">0x3a3a</td><td class="f">GREASE</td><td class="g">stripped</td><td>RFC 8701 poison pill. Servers must ignore it.</td></tr>
+        <tr><td class="x">118</td><td class="g">20</td><td class="x">0x0000</td><td class="f">server_name</td><td class="g">counted only</td><td>RFC 6066. The certificate selector. Plaintext.</td></tr>
+        <tr><td class="x">138</td><td class="g">4</td><td class="x">0x0017</td><td class="f">extended_master_secret</td><td class="g">counted + hashed</td><td>RFC 7627. Dead in 1.3 - the key schedule already binds the transcript.</td></tr>
+        <tr><td class="x">142</td><td class="g">5</td><td class="x">0xff01</td><td class="f">renegotiation_info</td><td class="g">counted + hashed</td><td>RFC 5746. Dead in 1.3 - there is no renegotiation.</td></tr>
+        <tr><td class="x">147</td><td class="g">14</td><td class="x">0x000a</td><td class="f">supported_groups</td><td class="g">counted + hashed</td><td>Live. (EC)DHE groups, and FFDHE groups too since 1.3.</td></tr>
+        <tr><td class="x">161</td><td class="g">6</td><td class="x">0x000b</td><td class="f">ec_point_formats</td><td class="g">counted + hashed</td><td>RFC 8422. Dead in 1.3 - only uncompressed points exist.</td></tr>
+        <tr><td class="x">167</td><td class="g">4</td><td class="x">0x0023</td><td class="f">session_ticket</td><td class="g">counted + hashed</td><td>RFC 5077. Dead in 1.3 - superseded by PSK.</td></tr>
+        <tr><td class="x">171</td><td class="g">18</td><td class="x">0x0010</td><td class="f">ALPN</td><td class="g">counted only</td><td>RFC 7301. Live. Picks h2 vs http/1.1. Plaintext in the hello.</td></tr>
+        <tr><td class="x">189</td><td class="g">9</td><td class="x">0x0005</td><td class="f">status_request</td><td class="g">counted + hashed</td><td>RFC 6066. Live - OCSP stapling, now carried per-certificate.</td></tr>
+        <tr><td class="x">198</td><td class="g">22</td><td class="x">0x000d</td><td class="f">signature_algorithms</td><td class="g">counted + hashed</td><td>Live. Mandatory whenever certificate auth is used.</td></tr>
+        <tr><td class="x">220</td><td class="g">4</td><td class="x">0x0012</td><td class="f">signed_certificate_timestamp</td><td class="g">counted + hashed</td><td>RFC 6962. Live. Certificate Transparency proofs.</td></tr>
+        <tr><td class="x">224</td><td class="g">47</td><td class="x">0x0033</td><td class="f">key_share</td><td class="g">counted + hashed</td><td>Live, and load-bearing. The (EC)DHE public key.</td></tr>
+        <tr><td class="x">271</td><td class="g">6</td><td class="x">0x002d</td><td class="f">psk_key_exchange_modes</td><td class="g">counted + hashed</td><td>Live. <code>psk_dhe_ke(1)</code> here - resumption that stays forward secret.</td></tr>
+        <tr><td class="x">277</td><td class="g">11</td><td class="x">0x002b</td><td class="f">supported_versions</td><td class="g">counted + hashed</td><td>Live. The actual version negotiation.</td></tr>
+        <tr><td class="x">288</td><td class="g">7</td><td class="x">0x001b</td><td class="f">compress_certificate</td><td class="g">counted + hashed</td><td>RFC 8879. Live. Brotli here - shrinks the server's cert chain.</td></tr>
+        <tr><td class="x">295</td><td class="g">9</td><td class="x">0x4469</td><td class="f">application_settings</td><td class="g">counted + hashed</td><td>Chrome's ALPS draft. Not an RFC - and a strong Chrome tell.</td></tr>
+        <tr><td class="x">304</td><td class="g">208</td><td class="x">0x0015</td><td class="f">padding</td><td class="g">counted + hashed</td><td>RFC 7685. Pads the message to 512 bytes.</td></tr>
+        <tr><td class="x">512</td><td class="g">5</td><td class="x">0xdada</td><td class="f">GREASE</td><td class="g">stripped</td><td>Second poison pill, at the end of the list.</td></tr>
+      </tbody></table>
+      <div class="callout"><b>GREASE (<a href="https://www.rfc-editor.org/rfc/rfc8701">RFC 8701</a>) is a vaccine against ossification.</b> The sixteen reserved values <code>0x0a0a, 0x1a1a, ... 0xfafa</code> are advertised in cipher suites, extensions, groups, versions, ALPN, and PSK modes. They mean nothing, and a peer that fails on an unknown value gets caught in testing rather than blocking the next real extension. Both JA3 and JA4 strip them before counting or hashing - a fingerprint that included GREASE would change on every connection, which is exactly what GREASE is for.</div>
+      <div class="callout hot"><b>ten of the eighteen extensions here do nothing.</b> <code>extended_master_secret</code>, <code>renegotiation_info</code>, <code>ec_point_formats</code>, <code>session_ticket</code>, and both GREASE entries are inert in a 1.3 handshake. They are sent because the same ClientHello has to work against a TLS 1.2 server, and browsers only get one hello. That dead weight is a large part of what JA4 is actually fingerprinting: not what the client is doing, but which library decided what to keep.</div>
+    </div>
+
+    <!-- ================= SERVERHELLO ================= -->
+    <div class="panel" data-panel="serverhello">
+      <div class="pfacts"><span>ServerHello<b>127 bytes, cleartext</b></span><span>then<b>everything is encrypted</b></span></div>
+      <p class="plede">The last plaintext message of the handshake. It carries exactly two live extensions - the chosen version and the server's key share - because after this message both sides can derive handshake keys, and everything else moves inside <code>EncryptedExtensions</code>.</p>
+
+      <div class="sec">ServerHello, the whole record</div>
+      <p class="note">One cipher suite, no compression, and a session ID echoed back byte-for-byte from the client's 32 bytes of noise.</p>
+      <div id="block-sh" data-build></div>
+
+      <div class="callout"><b>a 1.3 cipher suite names less than a 1.2 one.</b> <code>TLS_AES_128_GCM_SHA256</code> is only an AEAD plus a hash for HKDF. Key exchange and authentication are gone from the name because they are negotiated separately, in <code>supported_groups</code>/<code>key_share</code> and <code>signature_algorithms</code>. That is why there are five 1.3 suites total instead of hundreds - the combinatorial explosion of <code>ECDHE_RSA_WITH_...</code> was a bug, not a feature.</div>
+
+      <div class="sec">HelloRetryRequest - a ServerHello in disguise</div>
+      <p class="note">If the client's key share used a group the server will not do, the server does not error. It sends a ServerHello whose Random is a fixed magic constant.</p>
+      <div class="cmd"><span class="c">// SHA-256("HelloRetryRequest") - RFC 8446 4.1.3</span>
+CF 21 AD 74 E5 9A 61 11 BE 1D 8C 02 1E 65 B8 91
+C2 A2 11 16 7A BB 8C 5E 07 9E 09 E2 C8 A8 33 9C</div>
+      <p class="note">The client checks <code>ServerHello.random</code> against that constant before parsing anything else. On a match it re-sends a ClientHello with a share for the group the server named, and the handshake costs 2-RTT.</p>
+      <div class="callout"><b>HRR rewrites the transcript.</b> To keep the hash a fixed size and stop an attacker from replaying flights, the first ClientHello is replaced in the transcript by a synthetic <code>message_hash</code> message: <code>0xfe</code>, a 3-byte length, then <code>Hash(ClientHello1)</code>. Every later Derive-Secret runs over that stand-in, not over the original bytes. Implementations that forget this produce a handshake that verifies fine until the first HRR in production.</div>
+
+      <div class="sec">EncryptedExtensions - the first encrypted message</div>
+      <table class="atable"><thead><tr><th>lands in</th><th>extension</th><th>why there</th></tr></thead><tbody>
+        <tr><td class="f">ServerHello</td><td class="x">supported_versions, key_share, pre_shared_key</td><td>Needed to derive keys. Must be readable before encryption exists.</td></tr>
+        <tr><td class="f">EncryptedExtensions</td><td class="x">ALPN, server_name ack, early_data, record_size_limit, supported_groups</td><td>Not needed for key derivation, so 1.3 hides them. The negotiated protocol is no longer visible on the wire.</td></tr>
+        <tr><td class="f">Certificate</td><td class="x">status_request, signed_certificate_timestamp</td><td>Per-certificate in 1.3, attached to the CertificateEntry rather than sent as separate handshake messages.</td></tr>
+      </tbody></table>
+      <div class="callout hot"><b>ALPN went dark, SNI did not.</b> The server's ALPN choice is inside <code>EncryptedExtensions</code>, so an observer cannot see whether a connection negotiated h2 or http/1.1 from the server side. But the client's ALPN offer is still plaintext in the ClientHello at offset 171 - which is why JA4's <code>a</code> segment can read <code>h2</code> off the wire, and why traffic analysis of TLS 1.3 still works from the client's half of the handshake alone.</div>
+    </div>
+
+    <!-- ================= FLOW ================= -->
+    <div class="panel" data-panel="flow">
+      <div class="pfacts"><span>full handshake<b>1-RTT</b></span><span>resumption<b>0-RTT</b></span><span>mismatched group<b>2-RTT</b></span></div>
+      <p class="plede">Braces mean encrypted under handshake keys, brackets mean application keys. The client can send application data after one round trip; the server can start after half of one.</p>
+
+      <div class="sec">the 1-RTT handshake</div>
+      <div class="flow">
+        <div class="fhead"><span>client</span><span>&nbsp;</span><span>server</span></div>
+        <div class="step">
+          <div class="m">ClientHello<em>key_share, supported_versions, sigalgs, SNI, ALPN</em><span class="pk p0">cleartext</span></div>
+          <div class="dir">&rarr;</div><div class="m srv"></div>
+        </div>
+        <div class="step">
+          <div class="m"></div><div class="dir">&larr;</div>
+          <div class="m srv"><span class="pk p0">cleartext</span>ServerHello<em>key_share, supported_versions</em></div>
+        </div>
+        <div class="step">
+          <div class="m"></div><div class="dir">&larr;</div>
+          <div class="m srv"><span class="pk p1">handshake keys</span>{EncryptedExtensions}<br>{CertificateRequest*}<br>{Certificate}<br>{CertificateVerify}<br>{Finished}<em>server is authenticated as of CertificateVerify</em></div>
+        </div>
+        <div class="step">
+          <div class="m"></div><div class="dir">&larr;</div>
+          <div class="m srv"><span class="pk p2">app keys</span>[Application Data]<em>0.5-RTT data, sent before the client is authenticated</em></div>
+        </div>
+        <div class="step">
+          <div class="m">{Certificate*}<br>{CertificateVerify*}<br>{Finished}<span class="pk p1">handshake keys</span></div>
+          <div class="dir">&rarr;</div><div class="m srv"></div>
+        </div>
+        <div class="mark">1-RTT complete - both directions on application keys</div>
+        <div class="step">
+          <div class="m">[Application Data]<span class="pk p2">app keys</span></div>
+          <div class="dir">&harr;</div>
+          <div class="m srv"><span class="pk p2">app keys</span>[Application Data]</div>
+        </div>
+      </div>
+      <p class="note">Messages marked <code>*</code> are situational: client certificates only appear if the server sent a CertificateRequest. In a PSK handshake, <code>Certificate</code> and <code>CertificateVerify</code> vanish from both sides - the PSK is the authentication.</p>
+
+      <div class="sec">what proves what</div>
+      <div class="kv">
+        <div><span class="k">CertificateVerify</span><span class="v">signature over 64 <code>0x20</code> bytes, then the context string <code>"TLS 1.3, server CertificateVerify"</code>, then <code>0x00</code>, then the transcript hash. The 64-space prefix stops a signature from one context being replayed into another - the same trick that fixed cross-protocol attacks in earlier designs.</span></div>
+        <div><span class="k">Finished</span><span class="v"><code>HMAC(finished_key, Transcript-Hash(everything so far))</code>, where <code>finished_key = HKDF-Expand-Label(handshake_traffic_secret, "finished", "", Hash.length)</code>. This is what makes downgrade and modification of any earlier byte detectable.</span></div>
+        <div><span class="k">the transcript</span><span class="v">Concatenated <b>handshake messages</b> - type byte, 3-byte length, body - with record headers excluded and the dummy ChangeCipherSpec excluded. Getting this boundary wrong is the single most common way a from-scratch implementation fails at Finished.</span></div>
+      </div>
+
+      <div class="callout hot"><b>0.5-RTT data is a real trap.</b> The server may send application data immediately after its own Finished, before it has seen the client's. At that point the client is <i>not</i> authenticated - the server does not know whether the peer that will complete the handshake is the one it thinks. RFC 8446 &sect;2.2 is explicit that a server sending 0.5-RTT data must not assume client authentication. Anything gated on a client certificate has to wait for the client's Finished.</div>
+      <div class="callout"><b>the downgrade sentinel.</b> A 1.3-capable server that negotiates 1.2 or below writes a fixed 8-byte value into the last 8 bytes of <code>ServerHello.random</code>: <code>44 4F 57 4E 47 52 44 01</code> for TLS 1.2, <code>...00</code> for 1.1 and below. The client checks for it, and because the random is covered by the 1.2 Finished MAC, an attacker who strips the 1.3 offer cannot forge it. Downgrade protection built out of a field that already existed.</div>
+    </div>
+
+    <!-- ================= KEY SCHEDULE ================= -->
+    <div class="panel" data-panel="schedule">
+      <div class="pfacts"><span>primitive<b>HKDF (RFC 5869)</b></span><span>stages<b>3 extracts</b></span><span>spec<b>RFC 8446 &sect;7.1</b></span></div>
+      <p class="plede">Three HKDF-Extract steps chained through a Derive-Secret between each. Every secret is bound to a transcript hash, so a secret derived over a modified handshake is a different secret and the Finished MAC fails.</p>
+
+      <div class="sec">the schedule</div>
+      <div class="tree">             0
+             |
+             v
+   PSK -&gt;  <b>HKDF-Extract</b>  =  <i>Early Secret</i>
+             |
+             +-&gt; Derive-Secret(., <u>"ext binder" | "res binder"</u>, "")  = binder_key
+             +-&gt; Derive-Secret(., <u>"c e traffic"</u>,  ClientHello)      = <s>client_early_traffic_secret</s>
+             +-&gt; Derive-Secret(., <u>"e exp master"</u>, ClientHello)      = early_exporter_master_secret
+             |
+             v
+       Derive-Secret(., <u>"derived"</u>, "")
+             |
+             v
+(EC)DHE -&gt;  <b>HKDF-Extract</b>  =  <i>Handshake Secret</i>
+             |
+             +-&gt; Derive-Secret(., <u>"c hs traffic"</u>, CH..SH) = <s>client_handshake_traffic_secret</s>
+             +-&gt; Derive-Secret(., <u>"s hs traffic"</u>, CH..SH) = <s>server_handshake_traffic_secret</s>
+             |
+             v
+       Derive-Secret(., <u>"derived"</u>, "")
+             |
+             v
+     0  -&gt;  <b>HKDF-Extract</b>  =  <i>Master Secret</i>
+             |
+             +-&gt; Derive-Secret(., <u>"c ap traffic"</u>, CH..server Fin) = <s>client_application_traffic_secret_0</s>
+             +-&gt; Derive-Secret(., <u>"s ap traffic"</u>, CH..server Fin) = <s>server_application_traffic_secret_0</s>
+             +-&gt; Derive-Secret(., <u>"exp master"</u>,   CH..server Fin) = exporter_master_secret
+             +-&gt; Derive-Secret(., <u>"res master"</u>,   CH..client Fin) = resumption_master_secret</div>
+      <p class="note">The <b>vertical</b> arrow into each Extract is the salt; the <b>horizontal</b> arrow is the input keying material. Reversing the two is a silent interop failure that only shows up against another implementation. With no PSK, the PSK input is <code>Hash.length</code> zero bytes.</p>
+
+      <div class="sec">HkdfLabel, on the wire</div>
+      <p class="note">Every expansion serialises its label into this struct first. Shown: deriving the server handshake traffic secret, 32 output bytes, with a SHA-256 transcript hash as context.</p>
+      <div id="block-hkdf" data-build></div>
+      <div class="callout"><b>the <code>"tls13 "</code> prefix is domain separation.</b> Six bytes prepended to every label mean a TLS 1.3 key schedule can never collide with any other protocol that reuses HKDF with the same secret. The 1-byte label length caps a label at 255 bytes, and the 1-byte context length caps the transcript hash - which is why 1.3 cannot use a hash longer than 255 bytes and nobody has ever noticed.</div>
+
+      <div class="sec">from secret to record keys</div>
+      <div class="kv">
+        <div><span class="k">write_key</span><span class="v"><code>HKDF-Expand-Label(secret, "key", "", key_length)</code> - 16 bytes for AES-128-GCM, 32 for AES-256-GCM and ChaCha20.</span></div>
+        <div><span class="k">write_iv</span><span class="v"><code>HKDF-Expand-Label(secret, "iv", "", 12)</code> - a static IV, not a nonce.</span></div>
+        <div><span class="k">nonce</span><span class="v">64-bit record sequence number, left-padded with zeros to 12 bytes, XORed with <code>write_iv</code>. The sequence resets to zero on every key change, and is never transmitted.</span></div>
+        <div><span class="k">additional data</span><span class="v">The 5-byte record header exactly as it appears on the wire: <code>0x17 0x03 0x03 len_hi len_lo</code>. Authenticated, not encrypted.</span></div>
+        <div><span class="k">key update</span><span class="v"><code>secret_{N+1} = HKDF-Expand-Label(secret_N, "traffic upd", "", Hash.length)</code>, triggered by a <code>KeyUpdate</code> message. One-way: an attacker with secret_N gets every future secret, so this bounds the damage of a leaked key going <i>forward</i> in time, not backward.</span></div>
+      </div>
+      <div class="callout hot"><b>every session key depends on a fresh (EC)DHE share, with no exceptions.</b> Deleting static RSA key transport is the single biggest change in TLS 1.3: there is no longer any mode where recording traffic today and stealing the server's private key later decrypts it. That also broke passive enterprise inspection outright, which is why "eTLS"/ETS was proposed and rejected - it worked by putting a static key back, which is precisely the thing that was removed.</div>
+    </div>
+
+    <!-- ================= 0-RTT ================= -->
+    <div class="panel" data-panel="zerortt">
+      <div class="pfacts"><span>0-RTT<b>data with the ClientHello</b></span><span>cost<b>replayable, not forward secret</b></span><span>spec<b>RFC 8446 &sect;2.3, &sect;8</b></span></div>
+      <p class="plede">After a handshake, the server hands out tickets. On the next connection the client can send application data in its very first flight, encrypted under a key derived from the ticket alone. It is the fastest thing in TLS and the only part of 1.3 with a security caveat printed in the spec.</p>
+
+      <div class="sec">NewSessionTicket - the server issues a PSK</div>
+      <div id="block-nst" data-build></div>
+      <p class="note">The PSK itself never crosses the wire: <code>resumption_psk = HKDF-Expand-Label(resumption_master_secret, "resumption", ticket_nonce, Hash.length)</code>. The ticket is an opaque handle - either a database key or the PSK sealed under a server-side key.</p>
+
+      <div class="sec">pre_shared_key (41) - the client presents it</div>
+      <p class="note">Identity plus obfuscated age, then a binder. This extension <b>must be the last one</b> in the ClientHello, and it is the only extension in TLS with an ordering requirement.</p>
+      <div id="block-psk" data-build></div>
+      <div class="callout"><b>the binder is why it must be last.</b> The binder is an HMAC over the ClientHello <i>truncated immediately before the binders list</i>. If <code>pre_shared_key</code> were anywhere else, the truncation point would fall in the middle of the message and every extension after it would be unauthenticated. Placing it last makes "everything before the binder" and "the whole message minus the binder" the same span of bytes.</div>
+
+      <div class="sec">psk_key_exchange_modes (45)</div>
+      <div id="block-pskmode" data-build></div>
+      <div class="callout"><b><code>psk_dhe_ke(1)</code> is the one you want.</b> Plain <code>psk_ke(0)</code> resumes with no fresh Diffie-Hellman at all, so the session key depends only on the ticket - compromise the ticket key and every session resumed under it decrypts. With <code>psk_dhe_ke</code> the resumed handshake still mixes a fresh (EC)DHE share into the Handshake Secret, and forward secrecy survives. Browsers send <code>01</code>.</div>
+
+      <div class="sec">the 0-RTT flight</div>
+      <div class="flow">
+        <div class="fhead"><span>client</span><span>&nbsp;</span><span>server</span></div>
+        <div class="step">
+          <div class="m">ClientHello<em>+ early_data, pre_shared_key (last)</em><span class="pk p0">cleartext</span></div>
+          <div class="dir">&rarr;</div><div class="m srv"></div>
+        </div>
+        <div class="step">
+          <div class="m">(Application Data*)<em>0-RTT: replayable, not forward secret</em><span class="pk p3">early keys</span></div>
+          <div class="dir">&rarr;</div><div class="m srv"></div>
+        </div>
+        <div class="step">
+          <div class="m"></div><div class="dir">&larr;</div>
+          <div class="m srv"><span class="pk p0">cleartext</span>ServerHello<em>+ pre_shared_key</em></div>
+        </div>
+        <div class="step">
+          <div class="m"></div><div class="dir">&larr;</div>
+          <div class="m srv"><span class="pk p1">handshake keys</span>{EncryptedExtensions + early_data}<br>{Finished}<em>the early_data ack here is the accept signal</em></div>
+        </div>
+        <div class="step">
+          <div class="m">{EndOfEarlyData}<br>{Finished}<span class="pk p1">handshake keys</span></div>
+          <div class="dir">&rarr;</div><div class="m srv"></div>
+        </div>
+        <div class="mark">from here, ordinary 1-RTT application keys</div>
+      </div>
+      <p class="note"><code>EndOfEarlyData</code> is encrypted under the <b>early</b> traffic keys, not the handshake keys, and is only sent if the server accepted. A rejecting server just omits <code>early_data</code> from EncryptedExtensions; the client discards the early keys and replays its data over the completed 1-RTT connection.</p>
+
+      <div class="sec">what 0-RTT costs</div>
+      <table class="atable"><thead><tr><th>property</th><th>1-RTT</th><th>0-RTT</th></tr></thead><tbody>
+        <tr><td class="f">forward secrecy</td><td class="x">yes, fresh (EC)DHE</td><td class="x" style="color:var(--flag)">no - keyed from the ticket alone</td></tr>
+        <tr><td class="f">replay protection</td><td class="x">yes, from the server random</td><td class="x" style="color:var(--flag)">not from the protocol</td></tr>
+        <tr><td class="f">server can reject</td><td class="g">n/a</td><td class="x">yes, silently, client replays</td></tr>
+      </tbody></table>
+      <p class="note">RFC 8446 &sect;8 gives three defences, and expects you to pick one: single-use tickets, a server-side record of accepted ClientHellos within a time window, or freshness checks against <code>obfuscated_ticket_age</code>. None of them are the protocol doing it for you.</p>
+      <div class="callout hot"><b>0-RTT moves a guarantee into your application.</b> An attacker who captures a 0-RTT flight can resend it verbatim, and it will decrypt. That is fine for <code>GET /index.html</code> and catastrophic for <code>POST /transfer</code>. The rule that actually holds: only ever put idempotent requests in early data, and treat the ticket age check as a rate limiter rather than a guarantee. Deployments that hand 0-RTT to a generic HTTP handler have shipped a replay vulnerability, not a latency optimisation.</div>
+    </div>
+
+    <!-- ================= JA4 ================= -->
+    <div class="panel" data-panel="ja4">
+      <div class="pfacts"><span>input<b>the 517 bytes on the ClientHello tab</b></span><span>output<b>sha256[:12] x2</b></span><span>sibling<b><a href="../ja4/ja4plus-breakdown.html" style="color:var(--enum)">JA4+ breakdown</a></b></span></div>
+      <p class="plede">TLS 1.3 encrypted the handshake, and the ClientHello is what was left behind. JA4 is the fingerprint computed from exactly the fields decoded above - <b>hover a segment</b> to see which bytes it came from.</p>
+
+      <div class="decoder">
+        <div class="jstr" id="jstr"></div>
+        <aside class="jdetail" id="jdetail"><div class="dl">segment</div><h3>Hover the string</h3><div class="dv"></div><p>Each segment lights on hover; the box names the exact byte range on the ClientHello tab that produced it.</p></aside>
+      </div>
+
+      <div class="sec">the exact inputs</div>
+      <p class="note">Reproduced from the bytes on this page. This is FoxIO's published Chrome vector, which is a useful check that the hello above is shaped like a real one and not a plausible-looking invention.</p>
+      <div class="cmd"><span class="c">// hash b: sorted, GREASE stripped, from the cipher list at offset 78</span>
+002f,0035,009c,009d,1301,1302,1303,c013,c014,c02b,c02c,c02f,c030,cca8,cca9
+  <span class="p">sha256[:12] -&gt; 8daaf6152771</span>
+
+<span class="c">// hash c: sorted extensions, GREASE + SNI + ALPN removed, then sigalgs in WIRE order</span>
+0005,000a,000b,000d,0012,0015,0017,001b,0023,002b,002d,0033,4469,ff01
+  _0403,0804,0401,0503,0805,0501,0806,0601
+  <span class="p">sha256[:12] -&gt; e5627efa2ab1</span></div>
+
+      <div class="sec">byte ranges JA4 touches</div>
+      <table class="atable"><thead><tr><th>ja4 segment</th><th>bytes on the ClientHello</th><th>treatment</th></tr></thead><tbody>
+        <tr><td class="x">t</td><td class="g">not in the hello</td><td>Transport, from the layer below. <code>t</code> TCP, <code>q</code> QUIC, <code>d</code> DTLS.</td></tr>
+        <tr><td class="x">13</td><td class="f">277-287</td><td><code>supported_versions</code>, highest non-GREASE value. <b>Not</b> <code>legacy_version</code> at byte 9.</td></tr>
+        <tr><td class="x">d</td><td class="f">118-137</td><td><code>server_name</code> present. <code>i</code> if absent, i.e. a bare-IP connection.</td></tr>
+        <tr><td class="x">15</td><td class="f">78-109</td><td>16 suites in 32 bytes, minus the GREASE at byte 78 = 15.</td></tr>
+        <tr><td class="x">16</td><td class="f">114-516</td><td>18 extensions, minus two GREASE = 16. SNI and ALPN <b>are</b> counted here.</td></tr>
+        <tr><td class="x">h2</td><td class="f">171-188</td><td>First and last character of the <i>first</i> ALPN value. <code>http/1.1</code> would give <code>h1</code>.</td></tr>
+        <tr><td class="x">_b</td><td class="f">80-109</td><td>The 15 non-GREASE suites, sorted ascending, hashed.</td></tr>
+        <tr><td class="x">_c</td><td class="f">114-516 + 200-221</td><td>14 extension IDs (16 counted, minus SNI and ALPN), sorted, then <code>_</code> and the 8 sigalgs in wire order.</td></tr>
+      </tbody></table>
+
+      <div class="callout hot"><b>the count/hash asymmetry lives right here.</b> The extension count reads <b>16</b> - it includes <code>server_name</code> at 118 and <code>ALPN</code> at 171. The extension hash is computed over <b>14</b> - those two are removed first. They are counted because their presence is a stable client property, and removed from the hash because their <i>values</i> are per-destination: hashing them would give a different fingerprint for every hostname a browser visits.</div>
+      <div class="callout"><b>sorted vs wire order, byte by byte.</b> The cipher list (78-109) and the extension IDs are <b>sorted</b> before hashing, because Chrome shuffles both per connection and JA3 died over it. The signature algorithms at 200-221 stay in <b>wire order</b>, because no client randomises them and the order is a property of the library build. Same rule everywhere in JA4+: canonicalise what an evader can cheaply randomise, preserve what the stack fixes.</div>
+      <div class="callout"><b>this fingerprint is derived from a struct that no longer needs to exist.</b> Of the 16 counted extensions, 6 are inert in TLS 1.3 and 208 bytes of the message are padding for a load balancer bug. JA4 is stable precisely because that legacy baggage is stable - a client is identified by the shape of its compatibility compromises. Compute it from the wire and not from a parsed <code>tls.ClientHelloInfo</code>: the library has already stripped GREASE, lost extension order, and dropped what it does not model. See the <a href="../ja4/ja4plus-breakdown.html">JA4+ breakdown</a> for the rest of the family, and <a href="../ebpf/ebpf-networking.html">eBPF in the network stack</a> for reading these bytes before the kernel hands them up.</div>
+    </div>
+
+  </div>
+
+  <footer><span>protocols-fun / TLS 1.3 handshake</span><span>RFC 8446 &middot; 8701 &middot; 7301 &middot; 6066</span><span><a href="../ja4/ja4plus-breakdown.html">ja4+</a> &middot; <a href="../quic/quic-http3-breakdown.html">quic / http3</a> &middot; <a href="../ebpf/ebpf-networking.html">ebpf</a> &middot; <a href="../attacks/attack-anatomy.html">attacks</a> &middot; <a href="../index.html">the map</a></span></footer>
+</div>
+
+<script>
+(function(){
+  var KINDS={sync:"structural",enum:"value",flag:"flag / grease",rsv:"legacy / pad"};
+  function hx(b){return b.toString(16).toUpperCase().padStart(2,"0");}
+
+  function build(mountId, unit, bytes, fields){
+    var mount=document.getElementById(mountId);
+    var N = unit==="bit" ? bytes.length*8 : bytes.length;
+    var owner=new Array(N);
+    fields.forEach(function(f,fi){ for(var i=f.r[0];i<=f.r[1];i++) owner[i]=fi; });
+    var diagram=document.createElement("div");
+    diagram.className="dbytes";
+    bytes.forEach(function(b,i){
+      var f=fields[owner[i]];
+      var col=document.createElement("div"); col.className="bcol";
+      var off=document.createElement("div"); off.className="off"; off.textContent=i; col.appendChild(off);
+      var cell=document.createElement("div"); cell.className="bcell k-"+f.k; cell.dataset.idx=i;
+      if(i===f.r[0]) cell.classList.add("fstart");
+      cell.textContent=hx(b); col.appendChild(cell); diagram.appendChild(col);
+    });
+    var list=document.createElement("div"); list.className="fields";
+    var aside=document.createElement("aside"); aside.className="detail";
+    aside.innerHTML="<div class='dl'><span>field detail</span><span class='kind'></span></div>"+
+      "<h3>Hover a field or byte</h3><div class='dc'>"+bytes.length+" bytes</div>"+
+      "<p>Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.</p><div class='dn'></div>";
+    var det={t:aside.querySelector("h3"),c:aside.querySelector(".dc"),b:aside.querySelector("p"),n:aside.querySelector(".dn"),kind:aside.querySelector(".kind")};
+    var cells=[].slice.call(diagram.querySelectorAll("[data-idx]"));
+    var rows=[];
+    function light(a,b){cells.forEach(function(c){var i=+c.dataset.idx;c.classList.toggle("hi",i>=a&&i<=b);});}
+    function clearHi(){cells.forEach(function(c){c.classList.remove("hi");});}
+    function rl(f){ return "bytes "+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:""); }
+    function show(f){det.t.textContent=f.label;det.c.textContent=rl(f)+"  =  "+f.val;
+      det.b.textContent=f.body||"";det.n.textContent=f.note||"";det.kind.textContent=KINDS[f.k];}
+    function activeRow(){return list.querySelector(".field.active");}
+    function cue(fi){rows.forEach(function(r){r.classList.remove("cued");});rows[fi].classList.add("cued");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    function restore(){rows.forEach(function(r){r.classList.remove("cued");});var a=activeRow();if(a){var fi=+a.dataset.fi;light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}else clearHi();}
+    function pin(fi){var was=rows[fi].classList.contains("active");rows.forEach(function(r){r.classList.remove("active");});if(was){clearHi();return;}rows[fi].classList.add("active");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    fields.forEach(function(f,fi){
+      var row=document.createElement("div"); row.className="field"; row.dataset.fi=fi; if(f.branch) row.dataset.branch="1";
+      var lab = f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"");
+      row.innerHTML="<span class='fb'>"+lab+"</span><span class='fn'>"+f.label+"</span><span class='fv k-"+f.k+"'>"+f.val+"</span>";
+      if(f.branch){
+        var bw=document.createElement("div"); bw.className="branch";
+        bw.innerHTML="<table>"+f.branch.map(function(p,i){return "<tr class='"+(i===f.sel?"sel":"")+"'><td class='k'>"+p[0]+"</td><td>"+p[1]+"</td></tr>";}).join("")+"</table>";
+        row.appendChild(bw);
+      }
+      row.addEventListener("mouseenter",function(){cue(fi);});
+      row.addEventListener("click",function(){pin(fi);});
+      rows.push(row); list.appendChild(row);
+    });
+    cells.forEach(function(c){
+      var fi=owner[+c.dataset.idx];
+      c.addEventListener("mouseenter",function(){cue(fi);});
+      c.addEventListener("click",function(){pin(fi);});
+    });
+    var left=document.createElement("div"); left.className="left";
+    left.appendChild(diagram); left.appendChild(list);
+    var dcol=document.createElement("div"); dcol.className="detailcol"; dcol.appendChild(aside);
+    var block=document.createElement("div"); block.className="block";
+    block.appendChild(left); block.appendChild(dcol);
+    block.addEventListener("mouseleave",restore);
+    mount.appendChild(block);
+    var maxH=aside.scrollHeight;
+    fields.forEach(function(f){ show(f); if(aside.scrollHeight>maxH) maxH=aside.scrollHeight; });
+    det.t.textContent="Hover a field or byte";
+    det.c.textContent=bytes.length+" bytes";
+    det.b.textContent="Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.";
+    det.n.textContent="";
+    dcol.style.minHeight=(maxH+6)+"px";
+  }
+
+  /* ---- byte arrays: generated, every length field computed ---- */
+  var B_CH = [0x16,0x03,0x01,0x02,0x00,0x01,0x00,0x01,0xFC,0x03,0x03,0x9D,0x2F,0x4C,0x81,0xB0,
+       0x7A,0x3E,0x6F,0x15,0xC8,0xD4,0x92,0x0A,0xB3,0x77,0x5E,0x6C,0x1F,0x88,0xD3,0x4E,
+       0x05,0xA2,0x9B,0x7F,0xD1,0x36,0x0E,0xC4,0xA8,0x5B,0x12,0x20,0x4B,0x3C,0xA7,0xE0,
+       0xD8,0x15,0x9F,0x22,0x63,0xBD,0x47,0xAC,0x0E,0x91,0xF5,0x38,0x6D,0xA2,0xC0,0x7B,
+       0x45,0xE8,0x93,0x1F,0xA6,0xC2,0xDD,0x50,0x17,0x3B,0xE8,0x94,0x00,0x20,0x8A,0x8A,
+       0x13,0x01,0x13,0x02,0x13,0x03,0xC0,0x2B,0xC0,0x2F,0xC0,0x2C,0xC0,0x30,0xCC,0xA9,
+       0xCC,0xA8,0xC0,0x13,0xC0,0x14,0x00,0x9C,0x00,0x9D,0x00,0x2F,0x00,0x35,0x01,0x00,
+       0x01,0x93];
+  var B_SNI = [0x00,0x00,0x00,0x10,0x00,0x0E,0x00,0x00,0x0B,0x65,0x78,0x61,0x6D,0x70,0x6C,0x65,
+       0x2E,0x63,0x6F,0x6D];
+  var B_SV = [0x00,0x2B,0x00,0x07,0x06,0x3A,0x3A,0x03,0x04,0x03,0x03];
+  var B_KS = [0x00,0x33,0x00,0x2B,0x00,0x29,0x7A,0x7A,0x00,0x01,0x00,0x00,0x1D,0x00,0x20,0x3F,
+       0xA6,0xC1,0xD7,0x0E,0x5B,0x82,0x94,0x47,0xFD,0x13,0xAE,0x6C,0x05,0xB7,0xF2,0x81,
+       0xD9,0x4A,0x36,0x08,0xCE,0x5F,0x27,0xBB,0x1A,0x4D,0x90,0xE3,0x76,0x2C,0x58];
+  var B_GROUPS = [0x00,0x0A,0x00,0x0A,0x00,0x08,0x7A,0x7A,0x00,0x1D,0x00,0x17,0x00,0x18];
+  var B_SIGALG = [0x00,0x0D,0x00,0x12,0x00,0x10,0x04,0x03,0x08,0x04,0x04,0x01,0x05,0x03,0x08,0x05,
+       0x05,0x01,0x08,0x06,0x06,0x01];
+  var B_ALPN = [0x00,0x10,0x00,0x0E,0x00,0x0C,0x02,0x68,0x32,0x08,0x68,0x74,0x74,0x70,0x2F,0x31,
+       0x2E,0x31];
+  var B_SH = [0x16,0x03,0x03,0x00,0x7A,0x02,0x00,0x00,0x76,0x03,0x03,0x70,0x7A,0x1C,0x3F,0xD8,
+       0xE9,0x4B,0x62,0x05,0xAF,0x81,0x37,0xC6,0xE2,0xD0,0x5B,0x94,0x3F,0x1A,0x7C,0xE8,
+       0x0D,0x62,0xB5,0xF4,0x91,0x7A,0xC3,0x08,0x2E,0xBD,0x16,0x20,0x4B,0x3C,0xA7,0xE0,
+       0xD8,0x15,0x9F,0x22,0x63,0xBD,0x47,0xAC,0x0E,0x91,0xF5,0x38,0x6D,0xA2,0xC0,0x7B,
+       0x45,0xE8,0x93,0x1F,0xA6,0xC2,0xDD,0x50,0x17,0x3B,0xE8,0x94,0x13,0x01,0x00,0x00,
+       0x2E,0x00,0x2B,0x00,0x02,0x03,0x04,0x00,0x33,0x00,0x24,0x00,0x1D,0x00,0x20,0xC8,
+       0x1D,0x6A,0x3F,0x09,0x42,0xBE,0x75,0xD3,0xC1,0x58,0x0E,0xA7,0xF2,0x6B,0x94,0x38,
+       0xDE,0x50,0xC1,0x7A,0xB3,0x92,0xF6,0x04,0x1D,0x8C,0xE5,0xB7,0x2A,0x93,0x0F];
+  var B_HKDF = [0x00,0x20,0x12,0x74,0x6C,0x73,0x31,0x33,0x20,0x73,0x20,0x68,0x73,0x20,0x74,0x72,
+       0x61,0x66,0x66,0x69,0x63,0x20,0x2B,0x8F,0x10,0xC4,0xA9,0x5D,0x3E,0x71,0xF6,0x02,
+       0x7C,0x48,0xDB,0x19,0xAE,0x53,0x64,0x0F,0x8B,0x2C,0xE7,0xD5,0x1A,0x93,0x6C,0xB0,
+       0x4E,0xF2,0x8D,0x7A,0x16,0x5C];
+  var B_NST = [0x04,0x00,0x00,0x2F,0x00,0x00,0x1C,0x20,0xA3,0xF1,0x0E,0x7C,0x02,0x00,0x00,0x00,
+       0x18,0x7F,0x0C,0x95,0xA3,0xE1,0x4B,0x6D,0x82,0x0F,0xAE,0x35,0xC7,0x91,0x0D,0x4B,
+       0x6E,0xC2,0xA8,0x0F,0x53,0x79,0xBD,0x14,0xE6,0x00,0x08,0x00,0x2A,0x00,0x04,0x00,
+       0x00,0x40,0x00];
+  var B_PSK = [0x00,0x29,0x00,0x43,0x00,0x1E,0x00,0x18,0x7F,0x0C,0x95,0xA3,0xE1,0x4B,0x6D,0x82,
+       0x0F,0xAE,0x35,0xC7,0x91,0x0D,0x4B,0x6E,0xC2,0xA8,0x0F,0x53,0x79,0xBD,0x14,0xE6,
+       0x00,0x04,0xF2,0xA1,0x00,0x21,0x20,0xE5,0x1A,0x70,0xC9,0x3F,0x8D,0x26,0xB4,0x01,
+       0x7C,0xAE,0x5D,0x93,0x82,0xF6,0x1B,0x0D,0x47,0xC8,0xA2,0x35,0x9E,0x0F,0xB6,0x1C,
+       0x2D,0x84,0x73,0x0A,0xF9,0x5E,0x18];
+  var B_PSKMODE = [0x00,0x2D,0x00,0x02,0x01,0x01];
+  var B_CT = [0x17,0x03,0x03,0x00,0x18,0x8E,0x2B,0xD1,0x60,0xF3,0x47,0xAC,0x09,0x5D,0xE1,0x72,
+       0xB8,0x30,0xC6,0x9F,0x14,0x4A,0xD7,0x0B,0x63,0xE2,0x91,0x58,0xFC];
+  var B_IP = [0x68,0x65,0x6C,0x6C,0x6F,0x17,0x00,0x00];
+
+  var CT_TYPES=[["20","change_cipher_spec - the dummy record only"],["21","alert"],["22","handshake"],
+                ["23","application_data - and every encrypted record"],["24","heartbeat (RFC 6520)"]];
+  var HS_TYPES=[["1","client_hello"],["2","server_hello"],["4","new_session_ticket"],["5","end_of_early_data"],
+                ["8","encrypted_extensions"],["11","certificate"],["13","certificate_request"],
+                ["15","certificate_verify"],["20","finished"],["24","key_update"],["254","message_hash (HRR)"]];
+  var SUITES=[["0x1301","TLS_AES_128_GCM_SHA256"],["0x1302","TLS_AES_256_GCM_SHA384"],
+              ["0x1303","TLS_CHACHA20_POLY1305_SHA256"],["0x1304","TLS_AES_128_CCM_SHA256"],
+              ["0x1305","TLS_AES_128_CCM_8_SHA256"]];
+  var GROUPS=[["0x0017","secp256r1 (P-256), 65-byte share"],["0x0018","secp384r1 (P-384)"],
+              ["0x001d","x25519, 32-byte share"],["0x001e","x448"],
+              ["0x0100","ffdhe2048"],["0x11ec","X25519MLKEM768, 1216-byte share"]];
+  var SIGS=[["0x0403","ecdsa_secp256r1_sha256"],["0x0804","rsa_pss_rsae_sha256"],
+            ["0x0401","rsa_pkcs1_sha256 - certificates only"],["0x0503","ecdsa_secp384r1_sha384"],
+            ["0x0805","rsa_pss_rsae_sha384"],["0x0501","rsa_pkcs1_sha384 - certificates only"],
+            ["0x0806","rsa_pss_rsae_sha512"],["0x0601","rsa_pkcs1_sha512 - certificates only"],
+            ["0x0807","ed25519"],["0x0808","ed448"]];
+  var VERS=[["0x0304","TLS 1.3"],["0x0303","TLS 1.2"],["0x0302","TLS 1.1 - forbidden, RFC 8996"],
+            ["0x0301","TLS 1.0 - forbidden, RFC 8996"]];
+
+  var SPECS={
+    /* ---------------- record layer ---------------- */
+    "block-ct":["byte", B_CT, [
+      {label:"opaque_type",k:"flag",r:[0,0],val:"0x17 application_data",sel:3,branch:CT_TYPES,
+        body:"Always application_data on an encrypted record, whatever is really inside. The real type is the second-to-last byte of the decrypted plaintext, not this."},
+      {label:"legacy_record_version",k:"rsv",r:[1,2],val:"0x0303",
+        body:"Frozen at TLS 1.2 forever. Receivers must not validate it. The initial ClientHello record may use 0x0301 instead, which is the only place the value varies."},
+      {label:"length",k:"sync",r:[3,4],val:"24",
+        body:"Length of the encrypted_record that follows. Part of the AEAD's additional data, so it is authenticated - but it is also cleartext, so record sizes leak to any observer.",
+        note:"limit: 2^14 + 256, else record_overflow"},
+      {label:"encrypted_record",k:"enum",r:[5,28],val:"24 bytes opaque",
+        body:"AEAD ciphertext: 8 bytes of TLSInnerPlaintext plus a 16-byte tag. Nothing here is parseable without the key, including whether this is a handshake message, an alert, or user data."}
+    ]],
+    "block-ip":["byte", B_IP, [
+      {label:"content",k:"enum",r:[0,4],val:"\"hello\"",
+        body:"The actual message bytes. For a handshake record this would be one or more complete handshake messages; a single message may also be split across records."},
+      {label:"content_type",k:"flag",r:[5,5],val:"0x17 application_data",sel:3,branch:CT_TYPES,
+        body:"The real type, hidden inside the encryption. This is what the outer opaque_type byte pretends not to be."},
+      {label:"zeros",k:"rsv",r:[6,7],val:"2 bytes of padding",
+        body:"Any number of zero bytes, chosen freely by the sender to blur message length. The receiver scans backwards from the end past the zeros; the first non-zero byte is the content type.",
+        note:"scan backwards - a forward scan parses attacker-controlled bytes"}
+    ]],
+
+    /* ---------------- clienthello ---------------- */
+    "block-ch":["byte", B_CH, [
+      {label:"record type",k:"flag",r:[0,0],val:"0x16 handshake",sel:2,branch:CT_TYPES,
+        body:"A real content type, because this record is TLSPlaintext - no keys exist yet."},
+      {label:"legacy_record_version",k:"rsv",r:[1,2],val:"0x0301 (TLS 1.0)",
+        body:"The one place 0x0301 is still legal: an initial ClientHello, not one sent after a HelloRetryRequest. Purely to get past middleboxes that inspect this byte. Every other record says 0x0303."},
+      {label:"record length",k:"sync",r:[3,4],val:"512",
+        body:"0x0200. The handshake message that follows is exactly 512 bytes, so the record is 517 on the wire - the number you see in every packet capture of a modern browser."},
+      {label:"handshake type",k:"flag",r:[5,5],val:"1 client_hello",sel:0,branch:HS_TYPES,
+        body:"Handshake message types share one registry. 254 is the synthetic message_hash used only to rewrite the transcript after a HelloRetryRequest."},
+      {label:"handshake length",k:"sync",r:[6,8],val:"508",
+        body:"24-bit length of the ClientHello body. The transcript hash covers this header plus the body - type byte, these three length bytes, and everything after - but never the 5-byte record header.",
+        note:"0x0001FC = 508; 4 + 508 = the 512-byte message"},
+      {label:"legacy_version",k:"rsv",r:[9,10],val:"0x0303 (TLS 1.2)",
+        body:"Dead. A TLS 1.3 client writes 1.2 here because clients that wrote 0x0304 in 2016 hit servers that dropped the connection. The real version is in supported_versions at record offset 277, and a 1.3 server must ignore this field entirely.",
+        note:"see the Extensions tab"},
+      {label:"random",k:"enum",r:[11,42],val:"32 bytes",
+        body:"32 bytes from a CSPRNG, no timestamp. TLS 1.2 spent the first 4 bytes on gmt_unix_time; 1.3 deleted that because it leaked clock skew and helped nobody. On the server side the last 8 bytes carry the downgrade sentinel."},
+      {label:"legacy_session_id length",k:"sync",r:[43,43],val:"32",
+        body:"Either 0 or 32. A 1.3-only client that has given up on middlebox compatibility mode sends 0."},
+      {label:"legacy_session_id",k:"rsv",r:[44,75],val:"32 bytes of noise",
+        body:"Has no protocol meaning in TLS 1.3 - resumption uses PSK tickets. The client generates 32 random bytes and the server echoes them back verbatim, so that a middlebox watching sees what looks like a TLS 1.2 session resumption and leaves the connection alone.",
+        note:"echoed unchanged in ServerHello bytes 44-75"},
+      {label:"cipher_suites length",k:"sync",r:[76,77],val:"32 bytes = 16 suites",
+        body:"Byte length, not a count. JA4's cipher count is derived from this list after removing GREASE: 16 - 1 = 15."},
+      {label:"cipher_suites",k:"enum",r:[78,109],val:"16 suites, 1 GREASE",sel:0,branch:SUITES,
+        body:"GREASE 0x8a8a first, then the three TLS 1.3 suites, then eleven TLS 1.2 suites kept for servers that have not upgraded. A 1.3 suite names only an AEAD and a hash - key exchange and authentication are negotiated in extensions, which is why there are five of them instead of hundreds.",
+        note:"JA4 hash b sorts bytes 80-109 and hashes them"},
+      {label:"legacy_compression_methods",k:"rsv",r:[110,111],val:"1 method: null",
+        body:"Must be exactly 01 00 in TLS 1.3. Compression was removed outright after CRIME showed that compressing attacker-influenced plaintext alongside a secret leaks the secret one byte at a time. A non-zero method here is an illegal_parameter alert."},
+      {label:"extensions length",k:"sync",r:[112,113],val:"403 bytes",
+        body:"Everything that actually matters in a TLS 1.3 ClientHello is in the 403 bytes after this field: version negotiation, key exchange, authentication preferences, and the hostname. See the Extensions tab.",
+        note:"0x0193 = 403; 18 extensions"}
+    ]],
+
+    /* ---------------- extensions ---------------- */
+    "block-sv":["byte", B_SV, [
+      {label:"extension type",k:"flag",r:[0,1],val:"43 supported_versions",
+        body:"The extension that actually negotiates the TLS version, added because the legacy_version field was unusable in practice."},
+      {label:"extension length",k:"sync",r:[2,3],val:"7"},
+      {label:"list length",k:"sync",r:[4,4],val:"6 bytes = 3 versions",
+        body:"A 1-byte length in bytes, not entries. In ServerHello this whole wrapper disappears and the extension carries a single 2-byte version."},
+      {label:"GREASE version",k:"flag",r:[5,6],val:"0x3a3a",
+        body:"A reserved value with no meaning. A server that fails on it, rather than ignoring it, is broken and gets caught here instead of blocking the next real version."},
+      {label:"TLS 1.3",k:"enum",r:[7,8],val:"0x0304",sel:0,branch:VERS,
+        body:"The client's real offer. JA4 takes the highest non-GREASE value in this list, so this becomes the 13 in the fingerprint prefix."},
+      {label:"TLS 1.2",k:"enum",r:[9,10],val:"0x0303",
+        body:"Fallback. TLS 1.0 and 1.1 are forbidden by RFC 8996 and no current browser offers them."}
+    ]],
+    "block-ks":["byte", B_KS, [
+      {label:"extension type",k:"flag",r:[0,1],val:"51 key_share"},
+      {label:"extension length",k:"sync",r:[2,3],val:"43"},
+      {label:"client_shares length",k:"sync",r:[4,5],val:"41 bytes",
+        body:"A list of KeyShareEntry. A client may send several, but each costs its full key size in the hello - so in practice it sends one for the group it expects and lists the rest in supported_groups."},
+      {label:"GREASE group",k:"flag",r:[6,7],val:"0x7a7a",
+        body:"GREASE reaches into key_share too, carrying a 1-byte dummy key. Exercises the server's handling of an unknown group without costing real bytes."},
+      {label:"GREASE key length",k:"sync",r:[8,9],val:"1"},
+      {label:"GREASE key",k:"flag",r:[10,10],val:"0x00"},
+      {label:"named group",k:"enum",r:[11,12],val:"0x001d x25519",sel:2,branch:GROUPS,
+        body:"The group this share is for. x25519 is the near-universal default: 32-byte keys, constant-time by construction, no invalid-curve class of bugs.",
+        note:"the server picks a group; a mismatch costs a HelloRetryRequest"},
+      {label:"key_exchange length",k:"sync",r:[13,14],val:"32"},
+      {label:"key_exchange",k:"enum",r:[15,46],val:"32-byte x25519 public key",
+        body:"A real ephemeral public key, sent speculatively before the server has said anything. This is the round trip TLS 1.3 saved. A P-256 share would be 65 bytes (0x04 then X then Y); an X25519MLKEM768 hybrid share is 1216 bytes, which is what pushed the ClientHello past one TCP segment in 2024."}
+    ]],
+    "block-groups":["byte", B_GROUPS, [
+      {label:"extension type",k:"flag",r:[0,1],val:"10 supported_groups"},
+      {label:"extension length",k:"sync",r:[2,3],val:"10"},
+      {label:"list length",k:"sync",r:[4,5],val:"8 bytes = 4 groups"},
+      {label:"GREASE",k:"flag",r:[6,7],val:"0x7a7a"},
+      {label:"x25519",k:"enum",r:[8,9],val:"0x001d",sel:2,branch:GROUPS,
+        body:"First preference, and the group the key_share above actually guessed."},
+      {label:"secp256r1",k:"enum",r:[10,11],val:"0x0017",
+        body:"P-256. Still first choice on plenty of hardware-accelerated servers."},
+      {label:"secp384r1",k:"enum",r:[12,13],val:"0x0018",
+        body:"Named as acceptable but with no share offered - choosing it costs the server a HelloRetryRequest. The registry was renamed from elliptic_curves in TLS 1.3 because it now covers finite-field DH groups too."}
+    ]],
+    "block-sigalg":["byte", B_SIGALG, [
+      {label:"extension type",k:"flag",r:[0,1],val:"13 signature_algorithms"},
+      {label:"extension length",k:"sync",r:[2,3],val:"18"},
+      {label:"list length",k:"sync",r:[4,5],val:"16 bytes = 8 schemes"},
+      {label:"ecdsa_secp256r1_sha256",k:"enum",r:[6,7],val:"0x0403",sel:0,branch:SIGS,
+        body:"Top preference. In TLS 1.3 these are opaque SignatureScheme codepoints, not the hash/signature byte pair they were in 1.2 - which is how RSA-PSS got expressed at all."},
+      {label:"rsa_pss_rsae_sha256",k:"enum",r:[8,9],val:"0x0804",
+        body:"The RSA scheme a 1.3 CertificateVerify is actually allowed to use."},
+      {label:"rsa_pkcs1_sha256",k:"rsv",r:[10,11],val:"0x0401",
+        body:"Legal to advertise so the server can present a PKCS#1 certificate chain, but forbidden in CertificateVerify by RFC 8446 section 4.2.3. Certificates only."},
+      {label:"ecdsa_secp384r1_sha384",k:"enum",r:[12,13],val:"0x0503"},
+      {label:"rsa_pss_rsae_sha384",k:"enum",r:[14,15],val:"0x0805"},
+      {label:"rsa_pkcs1_sha384",k:"rsv",r:[16,17],val:"0x0501",body:"Certificates only."},
+      {label:"rsa_pss_rsae_sha512",k:"enum",r:[18,19],val:"0x0806"},
+      {label:"rsa_pkcs1_sha512",k:"rsv",r:[20,21],val:"0x0601",
+        body:"Certificates only. JA4 appends this whole list to hash c in WIRE ORDER, unsorted - no client randomises it, so the order is a stable tell for the library build.",
+        note:"record offsets 200-221 feed JA4 hash c"}
+    ]],
+    "block-sni":["byte", B_SNI, [
+      {label:"extension type",k:"flag",r:[0,1],val:"0 server_name"},
+      {label:"extension length",k:"sync",r:[2,3],val:"16"},
+      {label:"server_name_list length",k:"sync",r:[4,5],val:"14 bytes",
+        body:"RFC 6066 defines a list, but it must not hold two entries of the same name_type and no other type was ever defined - so in practice it always holds exactly one host_name."},
+      {label:"name_type",k:"flag",r:[6,6],val:"0 host_name",
+        body:"The only NameType ever assigned."},
+      {label:"host_name length",k:"sync",r:[7,8],val:"11"},
+      {label:"host_name",k:"enum",r:[9,19],val:"\"example.com\"",
+        body:"Plaintext, in the first flight, in every TLS 1.3 connection that does not use ECH. The server needs it before it can choose a certificate, so it cannot be encrypted under a key derived from that certificate. This one field is the basis of most SNI-based filtering and censorship.",
+        note:"JA4 counts this extension but never hashes its value"}
+    ]],
+    "block-alpn":["byte", B_ALPN, [
+      {label:"extension type",k:"flag",r:[0,1],val:"16 ALPN"},
+      {label:"extension length",k:"sync",r:[2,3],val:"14"},
+      {label:"protocol list length",k:"sync",r:[4,5],val:"12 bytes"},
+      {label:"length of \"h2\"",k:"sync",r:[6,6],val:"2"},
+      {label:"\"h2\"",k:"enum",r:[7,8],val:"HTTP/2",
+        body:"First preference. JA4 takes the first and last character of the FIRST value here: h and 2, giving the h2 in the fingerprint prefix. http/1.1 would give h1.",
+        note:"record offsets 171-188"},
+      {label:"length of \"http/1.1\"",k:"sync",r:[9,9],val:"8"},
+      {label:"\"http/1.1\"",k:"enum",r:[10,17],val:"HTTP/1.1",
+        body:"Fallback. The server's choice comes back inside EncryptedExtensions, so the negotiated protocol is not visible on the wire - but the client's offer, right here, is."}
+    ]],
+
+    /* ---------------- serverhello ---------------- */
+    "block-sh":["byte", B_SH, [
+      {label:"record type",k:"flag",r:[0,0],val:"0x16 handshake"},
+      {label:"legacy_record_version",k:"rsv",r:[1,2],val:"0x0303"},
+      {label:"record length",k:"sync",r:[3,4],val:"122"},
+      {label:"handshake type",k:"flag",r:[5,5],val:"2 server_hello",sel:1,branch:HS_TYPES,
+        body:"A HelloRetryRequest uses this same type - it is distinguished only by the magic value in the random field."},
+      {label:"handshake length",k:"sync",r:[6,8],val:"118"},
+      {label:"legacy_version",k:"rsv",r:[9,10],val:"0x0303",
+        body:"Dead, same as in the ClientHello. The negotiated version is in the supported_versions extension below."},
+      {label:"random",k:"enum",r:[11,42],val:"32 bytes",
+        body:"32 random bytes - unless this is a HelloRetryRequest, in which case it is SHA-256(\"HelloRetryRequest\"), or unless the server is downgrading, in which case the last 8 bytes carry the DOWNGRD sentinel.",
+        note:"HRR: CF 21 AD 74 ... C8 A8 33 9C"},
+      {label:"legacy_session_id_echo length",k:"sync",r:[43,43],val:"32"},
+      {label:"legacy_session_id_echo",k:"rsv",r:[44,75],val:"the client's 32 bytes",
+        body:"Byte-identical to ClientHello bytes 44-75. The server must echo it exactly; a mismatch is an illegal_parameter alert. It means nothing and exists only to complete the illusion of a TLS 1.2 resumption."},
+      {label:"cipher_suite",k:"enum",r:[76,77],val:"0x1301 TLS_AES_128_GCM_SHA256",sel:0,branch:SUITES,
+        body:"One suite, chosen from the client's list. It fixes the AEAD for the record layer and the hash for the entire key schedule - SHA-256 here, so every secret is 32 bytes."},
+      {label:"legacy_compression_method",k:"rsv",r:[78,78],val:"0 null",
+        body:"Must be zero. Note the ClientHello sends a length-prefixed list here and the ServerHello sends a bare byte."},
+      {label:"extensions length",k:"sync",r:[79,80],val:"46 bytes",
+        body:"Only two extensions are allowed in a ServerHello: what is needed to derive keys. Everything else waits for EncryptedExtensions."},
+      {label:"supported_versions",k:"enum",r:[81,86],val:"0x0304 TLS 1.3",sel:0,branch:VERS,
+        body:"Type 43, length 2, then one version. This - not legacy_version - is what tells the client the handshake is TLS 1.3.",
+        note:"00 2B 00 02 03 04"},
+      {label:"key_share",k:"enum",r:[87,126],val:"x25519, 32-byte share",
+        body:"Type 51, length 36, group 0x001d, then the server's ephemeral public key. The client already sent a matching share, so both sides compute the (EC)DHE shared secret now and every message after this record is encrypted.",
+        note:"handshake keys exist from the byte after this one"}
+    ]],
+
+    /* ---------------- key schedule ---------------- */
+    "block-hkdf":["byte", B_HKDF, [
+      {label:"length",k:"sync",r:[0,1],val:"32 output bytes",
+        body:"How many bytes HKDF-Expand should produce. 32 for a SHA-256 secret; 16 for an AES-128 key; 12 for an IV."},
+      {label:"label length",k:"sync",r:[2,2],val:"18",
+        body:"A single byte, so a label can never exceed 255 bytes - including the 6-byte prefix."},
+      {label:"\"tls13 \" prefix",k:"flag",r:[3,8],val:"6 bytes",
+        body:"Domain separation. Every TLS 1.3 expansion carries it, so this key schedule can never collide with another protocol expanding the same secret with the same HKDF."},
+      {label:"label",k:"enum",r:[9,20],val:"\"s hs traffic\"",
+        body:"The label names exactly one secret in the schedule. The full set: ext binder, res binder, c e traffic, e exp master, derived, c hs traffic, s hs traffic, c ap traffic, s ap traffic, exp master, res master, plus key, iv, finished, resumption, and traffic upd.",
+        note:"deriving server_handshake_traffic_secret"},
+      {label:"context length",k:"sync",r:[21,21],val:"32"},
+      {label:"context",k:"enum",r:[22,53],val:"Transcript-Hash(CH..SH)",
+        body:"The transcript hash - here, over the ClientHello and ServerHello handshake messages, record headers excluded. This is what binds every derived key to the exact bytes of the handshake: change one byte anywhere and every subsequent secret changes, so Finished fails.",
+        note:"empty for key, iv, finished and traffic upd"}
+    ]],
+
+    /* ---------------- 0-RTT ---------------- */
+    "block-nst":["byte", B_NST, [
+      {label:"handshake type",k:"flag",r:[0,0],val:"4 new_session_ticket",sel:2,branch:HS_TYPES,
+        body:"Sent by the server after its Finished, over the application-data keys. A server may send several, and typically does, so the client has a fresh single-use ticket per future connection."},
+      {label:"handshake length",k:"sync",r:[1,3],val:"47"},
+      {label:"ticket_lifetime",k:"enum",r:[4,7],val:"7200 s (2 hours)",
+        body:"Seconds. Capped at 604800 (7 days) by the spec. A client must not use the ticket after this, and the server may forget it sooner."},
+      {label:"ticket_age_add",k:"enum",r:[8,11],val:"0xa3f10e7c",
+        body:"A random 32-bit value the client adds to the ticket's real age before sending it back, mod 2^32. Without it, the ticket age would be a cross-connection correlation handle visible to any observer."},
+      {label:"ticket_nonce length",k:"sync",r:[12,12],val:"2"},
+      {label:"ticket_nonce",k:"enum",r:[13,14],val:"0x0000",
+        body:"Unique per ticket from this connection. It is the context in resumption_psk = HKDF-Expand-Label(resumption_master_secret, \"resumption\", ticket_nonce, Hash.length), so several tickets from one session yield different PSKs."},
+      {label:"ticket length",k:"sync",r:[15,16],val:"24"},
+      {label:"ticket",k:"enum",r:[17,40],val:"24 opaque bytes",
+        body:"Opaque to the client, which just echoes it back. Server-side it is either a database key or the PSK itself sealed under a server key. Sealed tickets are why a stolen ticket-encryption key breaks every session resumed under it - the reason to rotate them and to prefer psk_dhe_ke."},
+      {label:"extensions length",k:"sync",r:[41,42],val:"8"},
+      {label:"early_data",k:"enum",r:[43,50],val:"max 16384 bytes",
+        body:"Type 42 with a 4-byte max_early_data_size. Its presence is what authorises the client to send 0-RTT data on the next connection; without it, early data is not allowed at all.",
+        note:"00 2A 00 04 00 00 40 00"}
+    ]],
+    "block-psk":["byte", B_PSK, [
+      {label:"extension type",k:"flag",r:[0,1],val:"41 pre_shared_key",
+        body:"Must be the final extension in the ClientHello. It is the only extension in TLS with a mandatory position."},
+      {label:"extension length",k:"sync",r:[2,3],val:"67"},
+      {label:"identities length",k:"sync",r:[4,5],val:"30 bytes",
+        body:"A list of PskIdentity. Clients usually offer one, but may offer several and let the server choose by index."},
+      {label:"identity length",k:"sync",r:[6,7],val:"24"},
+      {label:"identity",k:"enum",r:[8,31],val:"the ticket, echoed",
+        body:"Byte-identical to the ticket the server issued in its NewSessionTicket."},
+      {label:"obfuscated_ticket_age",k:"enum",r:[32,35],val:"0x0004f2a1",
+        body:"(real age in ms + ticket_age_add) mod 2^32. The server subtracts its own ticket_age_add and checks the result against how long ago it issued the ticket. This is the freshness check that RFC 8446 section 8 offers as one anti-replay defence - and it is a heuristic, not a guarantee."},
+      {label:"binders length",k:"sync",r:[36,37],val:"33 bytes",
+        body:"One binder per offered identity, in the same order."},
+      {label:"binder length",k:"sync",r:[38,38],val:"32"},
+      {label:"binder",k:"enum",r:[39,70],val:"HMAC over the truncated hello",
+        body:"HMAC keyed by binder_key over Transcript-Hash of this ClientHello truncated immediately before the binders list. It proves the client holds the PSK and binds the PSK to this exact hello. This is the reason pre_shared_key must be last: the truncation point has to be the end of the message.",
+        note:"binder_key comes from the Early Secret"}
+    ]],
+    "block-pskmode":["byte", B_PSKMODE, [
+      {label:"extension type",k:"flag",r:[0,1],val:"45 psk_key_exchange_modes"},
+      {label:"extension length",k:"sync",r:[2,3],val:"2"},
+      {label:"list length",k:"sync",r:[4,4],val:"1 mode"},
+      {label:"psk_dhe_ke",k:"enum",r:[5,5],val:"1",sel:1,branch:[["0","psk_ke - PSK only, no fresh DH, NOT forward secret"],["1","psk_dhe_ke - PSK plus fresh (EC)DHE"]],
+        body:"With psk_dhe_ke a resumed handshake still performs a fresh (EC)DHE exchange, so forward secrecy survives resumption. Plain psk_ke derives everything from the ticket, so a stolen ticket key decrypts every session resumed under it. Browsers send 01."}
+    ]]
+  };
+
+  var built={};
+  function buildPanel(name){
+    var panel=document.querySelector('[data-panel="'+name+'"]'); if(!panel) return;
+    panel.querySelectorAll("[data-build]").forEach(function(m){
+      if(built[m.id]) return; built[m.id]=1;
+      var spec=SPECS[m.id]; if(spec) build(m.id, spec[0], spec[1], spec[2]);
+    });
+  }
+
+  /* ---- JA4 string decoder ---- */
+  var SEG=[
+    {t:"t",k:"sync",n:"protocol",v:"t = TCP",d:"Transport, not read from the hello at all: t = TLS over TCP, q = QUIC, d = DTLS."},
+    {t:"13",k:"sync",n:"TLS version",v:"1.3",d:"Highest non-GREASE value in supported_versions, at record offset 277 - 0x0304 becomes 13. NOT the legacy_version field at byte 9, which says 0x0303."},
+    {t:"d",k:"flag",n:"SNI",v:"present",d:"d because server_name is present at record offset 118. i would mean absent, i.e. the client connected to a bare IP."},
+    {t:"15",k:"enum",n:"cipher count",v:"15",d:"The cipher list at record offset 78 holds 32 bytes = 16 suites. GREASE 0x8a8a is stripped, leaving 15. Two digits, capped at 99."},
+    {t:"16",k:"enum",n:"extension count",v:"16",d:"18 extensions in the 403 bytes from offset 114, minus the two GREASE entries = 16. server_name and ALPN ARE counted here, even though they are removed before hashing."},
+    {t:"h2",k:"flag",n:"ALPN",v:"h2",d:"First and last character of the FIRST ALPN value, at record offset 171. \"h2\" gives h2; \"http/1.1\" would give h1. 00 if no ALPN was offered."},
+    {sep:"_"},
+    {t:"8daaf6152771",k:"enum",n:"cipher hash",v:"sha256[:12]",d:"The 15 non-GREASE suites from bytes 80-109, rendered as lowercase 4-hex-digit values, SORTED ascending, comma-joined, then sha256 truncated to 12 hex. Sorting is what survives Chrome's per-connection shuffle."},
+    {sep:"_"},
+    {t:"e5627efa2ab1",k:"sync",n:"extension + sigalg hash",v:"sha256[:12]",d:"The 16 counted extensions minus server_name and ALPN = 14, sorted and comma-joined, then _ and the 8 signature algorithms from offsets 200-221 in WIRE ORDER, unsorted. Half-sorted by design."}
+  ];
+  var jstrEl=document.getElementById("jstr"), det=document.getElementById("jdetail");
+  var dl=det.querySelector(".dl"), h3=det.querySelector("h3"), dv=det.querySelector(".dv"), pp=det.querySelector("p");
+  var segs=[];
+  SEG.forEach(function(s){
+    if(s.sep){ var sp=document.createElement("span"); sp.className="jsep"; sp.textContent=s.sep; jstrEl.appendChild(sp); return; }
+    var el=document.createElement("span"); el.className="jseg k-"+s.k; el.textContent=s.t;
+    function show(){ segs.forEach(function(x){x.classList.remove("on");}); el.classList.add("on");
+      dl.textContent=s.n; h3.textContent=s.t; dv.textContent=s.v; pp.textContent=s.d; }
+    el.addEventListener("mouseenter",show); el.addEventListener("click",show);
+    jstrEl.appendChild(el); segs.push(el);
+  });
+
+  /* ---- tabs ---- */
+  var tabs=[].slice.call(document.querySelectorAll(".tab"));
+  var panels=[].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    tabs.forEach(function(t){t.classList.toggle("on",t.dataset.p===name);});
+    panels.forEach(function(p){p.classList.toggle("on",p.dataset.panel===name);});
+    buildPanel(name);
+  }
+  tabs.forEach(function(t){t.addEventListener("click",function(){
+    activate(t.dataset.p);
+    if(history.replaceState) history.replaceState(null,"","#"+t.dataset.p);
+  });});
+  var initial=(location.hash||"").replace("#","");
+  if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
+  else buildPanel("frame");
+})();
+</script>
+<script src="../assets/protofun-toggle.js"></script>
+</body>
+</html>

@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>protocols-fun / QUIC and HTTP-3 breakdown</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  --paper:#E6EBEE; --panel:#EFF3F5; --ink:#10171C; --soft:#46545E;
+  --faint:#7A8790; --line:#C1CDD3; --hair:#D6E0E4;
+  --enum:#0E7A8C; --enum-soft:#D1E7EA;
+  --flag:#C1501A; --flag-soft:#F0DACB;
+  --sync:#34507E; --sync-soft:#DCE3EE;
+  --rsv:#838E96;  --rsv-soft:rgba(16,23,28,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#0a0f0d;--panel:#0f1613;--ink:#c6f0d0;--soft:#7fae90;--faint:#4f6a5c;--line:#22302a;--hair:#151d19;--enum:#2fe38a;--enum-soft:#0e2a1d;--flag:#e0a92e;--flag-soft:#2c2410;--sync:#4fb8d6;--sync-soft:#0f2630;--rsv:#6f8f7f;--rsv-soft:rgba(198,240,208,0.05);}
+:root[data-theme="amber"]{--paper:#120c00;--panel:#1c1400;--ink:#ffb000;--soft:#c08a2a;--faint:#8a6a20;--line:#3a2a00;--hair:#241900;--enum:#ffb000;--enum-soft:#2a1d00;--flag:#ffd27a;--flag-soft:#332400;--sync:#d98a1a;--sync-soft:#241a00;--rsv:#9a7524;--rsv-soft:rgba(255,176,0,0.05);}
+:root[data-theme="vapor"]{--paper:#f4efe0;--panel:#ece4d0;--ink:#123b37;--soft:#3f605b;--faint:#8a9a90;--line:#e5457f;--hair:#ddd3bd;--enum:#e5457f;--enum-soft:#f8d9e4;--flag:#e0982f;--flag-soft:#f5e6c6;--sync:#0e9c90;--sync-soft:#cbe9e3;--rsv:#8a9a90;--rsv-soft:rgba(18,59,55,0.05);}
+/* house modes: the site-wide Deep Dive skins (warm cream / neutral dark, house teal+orange) */
+:root[data-theme="house-light"]{--paper:#F2F1EE;--panel:#FBFAF6;--ink:#17150F;--soft:#4A4744;--faint:#8C877E;--line:#C9C5BB;--hair:#E4E0D7;--enum:#007870;--enum-soft:#D8E7E5;--flag:#E85000;--flag-soft:#F6E1D4;--sync:#33518C;--sync-soft:#DEE3EF;--rsv:#8C877E;--rsv-soft:rgba(23,21,15,0.04);}
+:root[data-theme="house-dark"]{--paper:#121213;--panel:#1c1c1e;--ink:#ececea;--soft:#a9a9a4;--faint:#6f6f6b;--line:#313135;--hair:#26262a;--enum:#08F9DF;--enum-soft:#0e2a29;--flag:#FF4D00;--flag-soft:#2c1a10;--sync:#7fb2e0;--sync-soft:#16232f;--rsv:#8b8b88;--rsv-soft:rgba(236,236,234,0.05);}
+/* house modes: RJ wears teal and flips to orange on hover; a couple of subtle orange touches in the head */
+:root[data-theme="house-light"] .head .title protofun-toggle{color:var(--flag)}
+:root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
+:root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
+:root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
+:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
+:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
+:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
+.head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem}
+.head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
+.head .title protofun-toggle:hover{color:var(--enum)}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500}
+.lede a{color:var(--enum)}
+.intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
+.intro .lede{margin-bottom:0}
+.sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
+.sig .legrows{display:flex;flex-direction:column;gap:0.42rem}
+.sig .siglabel{writing-mode:vertical-rl;text-orientation:mixed;align-self:stretch;display:flex;align-items:center;justify-content:center;font-size:0.5rem;letter-spacing:0.34em;text-transform:uppercase;color:var(--faint);padding-left:0.9rem;border-left:1px solid var(--hair)}
+.sig .row{display:flex;align-items:center;gap:0.4rem;font-size:0.68rem;color:var(--soft);letter-spacing:0.02em;white-space:nowrap}
+.sig .swsep{color:var(--faint);font-size:0.62rem}
+.sig .sw{display:inline-flex;align-items:center;justify-content:center;width:6.1rem;height:1.45rem;padding:0;font-size:0.58rem;letter-spacing:0.1em;text-transform:lowercase;flex-shrink:0}
+.sig .sw.dark{color:var(--paper)}
+.sig .sw.light{color:var(--ink);border:1px solid var(--hair)}
+.sig .sw.dark.k-enum{background:var(--enum)} .sig .sw.light.k-enum{background:var(--enum-soft)}
+.sig .sw.dark.k-flag{background:var(--flag)} .sig .sw.light.k-flag{background:var(--flag-soft)}
+.sig .sw.dark.k-sync{background:var(--sync)} .sig .sw.light.k-sync{background:var(--sync-soft)}
+.sig .sw.dark.k-rsv{background:var(--faint)} .sig .sw.light.k-rsv{background:var(--rsv-soft)}
+@media(max-width:820px){.intro{display:block}.sig{display:none}}
+.k-en{color:var(--enum)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:2.2rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:78ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.2rem 0 0.4rem;max-width:82ch}
+.callout b{color:var(--ink);font-weight:500} .callout a{color:var(--enum)}
+.callout.hot{border-left-color:var(--enum)}
+code{font-family:var(--ff);color:var(--enum);font-size:0.92em;background:var(--rsv-soft);padding:0.02rem 0.28rem;border-radius:2px;white-space:nowrap}
+.atable{width:100%;border-collapse:collapse;font-size:0.74rem;margin:0.4rem 0 1.3rem}
+.atable th,.atable td{text-align:left;padding:0.38rem 0.7rem;border-bottom:1px solid var(--hair);vertical-align:top}
+.atable th{font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+.atable td.x{font-family:var(--ff);color:var(--enum);white-space:nowrap;font-size:0.72rem}
+.atable td.f{color:var(--ink);font-weight:500;white-space:nowrap}
+.atable td.g{color:var(--faint)}
+.kv{font-size:0.78rem;margin:0.3rem 0 1.1rem}
+.kv div{display:grid;grid-template-columns:9.5rem 1fr;gap:1rem;padding:0.3rem 0;border-bottom:1px solid var(--hair)}
+.kv div:last-child{border-bottom:none}
+.kv .k{color:var(--enum)} .kv .v{color:var(--soft)}
+.cmd{font-family:var(--ff);font-size:0.76rem;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--enum);padding:0.6rem 0.85rem;margin:0.5rem 0 1.2rem;overflow-x:auto;white-space:pre;color:var(--ink);line-height:1.7}
+.cmd .p{color:var(--faint)} .cmd .c{color:var(--faint);font-style:italic}
+
+/* byte inspector (shared engine with the anatomy pages) */
+.dbytes{display:flex;flex-wrap:wrap;gap:4px;margin:0.6rem 0 1.4rem}
+.bcol{display:flex;flex-direction:column;align-items:center}
+.bcol .off{font-size:0.5rem;color:var(--faint);margin-bottom:2px;letter-spacing:0.02em}
+.bcell{width:2.5rem;height:1.9rem;display:flex;align-items:center;justify-content:center;font-size:0.78rem;border:1px solid var(--hair);color:var(--soft);transition:background .12s,color .12s;cursor:pointer}
+.bcell.k-sync{background:var(--sync-soft)} .bcell.k-enum{background:var(--enum-soft)}
+.bcell.k-flag{background:var(--flag-soft)} .bcell.k-rsv{background:var(--rsv-soft)}
+.bcell.fstart{border-left:2px solid var(--line)}
+.bcell.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+.block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
+.left{min-width:0}
+.detailcol{position:relative}
+@media(max-width:820px){.block{grid-template-columns:1fr}.detailcol{position:static}}
+.fields{border-top:1px solid var(--line)}
+.field{display:grid;grid-template-columns:5.4rem 1fr auto;gap:0.8rem;align-items:baseline;padding:0.46rem 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.field:hover,.field.active,.field.cued{background:var(--panel)}
+.field .fb{font-size:0.6rem;color:var(--faint)} .field .fn{font-size:0.82rem;color:var(--ink)}
+.field[data-branch] .fn::after{content:"+";margin-left:0.4rem;color:var(--enum);font-weight:500}
+.field.active[data-branch] .fn::after{content:"\2212"}
+.fv{font-size:0.76rem;text-align:right}
+.fv.k-sync{color:var(--sync)} .fv.k-enum{color:var(--enum)} .fv.k-flag{color:var(--flag)} .fv.k-rsv{color:var(--faint)}
+.branch{grid-column:1 / -1;display:none;padding:0.5rem 0 0.2rem 6.2rem}
+.field.active .branch{display:block}
+.branch table{border-collapse:collapse;font-size:0.7rem;width:100%;max-width:30rem}
+.branch td{padding:1px 10px 1px 0;color:var(--soft)} .branch td.k{color:var(--faint);width:4.2rem;text-align:right}
+.branch tr.sel td{color:var(--ink)} .branch tr.sel td.k{color:var(--enum);font-weight:500}
+.detail{position:absolute;inset:0;border:1px solid var(--line);background:var(--panel);padding:1rem 1.05rem;overflow-y:auto}
+@media(max-width:820px){.detail{position:static;height:16rem}}
+.detail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
+.detail .dl .kind{color:var(--soft)}
+.detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
+.detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
+.detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
+
+/* handshake flight ladder */
+.flow{border:1px solid var(--line);background:var(--panel);margin:0.6rem 0 1.3rem}
+.flow .fhead{display:grid;grid-template-columns:1fr 4.6rem 1fr;border-bottom:1px solid var(--line);font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint)}
+.flow .fhead span{padding:0.5rem 0.9rem}
+.flow .fhead span:nth-child(2){text-align:center}
+.flow .fhead span:nth-child(3){text-align:right}
+.flow .step{display:grid;grid-template-columns:1fr 4.6rem 1fr;align-items:stretch;border-bottom:1px solid var(--hair)}
+.flow .step:last-child{border-bottom:none}
+.flow .m{padding:0.5rem 0.9rem;font-size:0.76rem;color:var(--ink);min-width:0;overflow-wrap:anywhere}
+.flow .m.srv{text-align:right}
+.flow .m em{font-style:normal;color:var(--faint);display:block;font-size:0.63rem;letter-spacing:0.02em;line-height:1.5}
+.flow .dir{display:flex;align-items:center;justify-content:center;color:var(--enum);font-size:0.85rem;border-left:1px solid var(--hair);border-right:1px solid var(--hair)}
+.flow .mark{grid-column:1 / -1;border-top:1px dashed var(--line);background:var(--rsv-soft);padding:0.3rem 0.9rem;font-size:0.56rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--flag);text-align:center}
+.pk{display:inline-block;font-size:0.5rem;letter-spacing:0.1em;text-transform:uppercase;padding:0 0.3rem;margin-left:0.35rem;border:1px solid currentColor;vertical-align:1px;white-space:nowrap}
+.flow .m.srv .pk{margin-left:0;margin-right:0.35rem}
+.pk.p0{color:var(--faint)} .pk.p1{color:var(--flag)} .pk.p2{color:var(--enum)} .pk.p3{color:var(--sync)}
+
+/* key schedule tree */
+.tree{font-size:0.72rem;line-height:1.7;white-space:pre;overflow-x:auto;border:1px solid var(--line);border-left:2px solid var(--enum);background:var(--panel);padding:0.9rem 1rem;margin:0.5rem 0 1.2rem;color:var(--faint)}
+.tree b{color:var(--ink);font-weight:500}
+.tree i{color:var(--enum);font-style:normal}
+.tree u{color:var(--flag);text-decoration:none}
+.tree s{color:var(--sync);text-decoration:none}
+
+/* JA4 string decoder (same widget as the JA4+ breakdown) */
+.decoder{display:grid;grid-template-columns:1fr 320px;gap:1.4rem;align-items:start;margin:0.4rem 0 1.2rem}
+@media(max-width:820px){.decoder{grid-template-columns:1fr}}
+.jstr{font-size:1.15rem;letter-spacing:0.02em;line-height:2.4;word-break:break-all;user-select:none}
+.jseg{padding:0.15rem 0.1rem;border-bottom:2px solid transparent;cursor:pointer;transition:background .12s}
+.jseg.k-enum{color:var(--enum)} .jseg.k-flag{color:var(--flag)} .jseg.k-sync{color:var(--sync)}
+.jseg:hover,.jseg.on{background:var(--panel);border-bottom-color:currentColor}
+.jsep{color:var(--faint)}
+.jdetail{border:1px solid var(--line);background:var(--panel);padding:0.9rem 1rem;min-height:9rem;position:sticky;top:1rem}
+.jdetail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.45rem;margin-bottom:0.55rem}
+.jdetail h3{font-weight:500;font-size:0.95rem;color:var(--ink)} .jdetail .dv{font-size:0.72rem;color:var(--enum);margin:0.2rem 0 0.55rem}
+.jdetail p{font-size:0.76rem;color:var(--soft);line-height:1.6}
+.ja4{border:1px solid var(--line);background:var(--panel);padding:0.7rem 0.9rem;margin:0.3rem 0 0.9rem;font-size:0.95rem;letter-spacing:0.02em;overflow-x:auto}
+.ja4 .s1{color:var(--sync)} .ja4 .s2{color:var(--enum)} .ja4 .s3{color:var(--flag)}
+
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none}
+.tab{padding:0.55rem 0.85rem;font-size:0.63rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:last-child{border-right:none}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.06em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none} .panel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+.plede{color:var(--soft);max-width:82ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
+.plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em} .plede a{color:var(--enum)}
+footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+/* --- secret themes: amber CRT + vaporwave --- */
+:root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.32)}
+:root[data-theme="amber"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 3px)}
+:root[data-theme="vapor"] body{background:url(../assets/sakura-tile.webp) repeat, linear-gradient(160deg,#4fdfba 0%,#3fc8a4 60%,#57e3c0 100%);background-size:320px auto, cover;background-attachment:fixed}
+:root[data-theme="vapor"] .sheet{background:#f4efe0;box-shadow:0 0 0 3px #2ec6b9,0 14px 46px rgba(0,0,0,.28);border-radius:3px}
+:root[data-theme="vapor"] .head{border-color:#0e9c90}
+:root[data-theme="vapor"] .head .title protofun-toggle{color:#e5457f}
+:root[data-theme="vapor"] .bcell{box-shadow:inset 1px 1px rgba(255,255,255,.7),inset -1px -1px rgba(18,59,55,.16)}
+:root[data-theme="vapor"] .tab.on{box-shadow:inset 0 -2px #e5457f}
+/* --- mobile / narrow screens --- */
+@media(max-width:560px){
+  body{font-size:13px}
+  .sheet{padding-left:1rem;padding-right:1rem}
+  .head .row{grid-template-columns:1fr}
+  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
+  .head .strip{grid-template-columns:1fr}
+  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
+  .head .strip div:last-child{border-bottom:none}
+  .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
+  .branch{padding-left:0.4rem}
+  .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
+  code{white-space:normal;overflow-wrap:anywhere}
+  .flow .fhead,.flow .step{grid-template-columns:1fr 2.4rem 1fr}
+  .flow .m{padding:0.45rem 0.5rem;font-size:0.68rem}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . QUIC / HTTP-3</div><h1>QUIC and HTTP/3</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
+      <div class="stamp"><b>RFC 9000 &middot; 9001 &middot; 9114</b><br>rev 2026.08</div>
+    </div>
+    <div class="strip">
+      <div>transport <b>on UDP, in user space</b></div>
+      <div>crypto <b>TLS 1.3, no record layer</b></div>
+      <div>encrypted <b>headers included, almost</b></div>
+    </div>
+  </div>
+
+  <div class="intro">
+  <p class="lede">QUIC is a transport that swallowed its own security layer. <a href="https://www.rfc-editor.org/rfc/rfc9000">RFC 9000</a> defines streams, loss recovery, and connection migration; <a href="https://www.rfc-editor.org/rfc/rfc9001">RFC 9001</a> hands key management to <a href="../tls/tls13-handshake.html">TLS 1.3</a> but throws away the TLS record layer, carrying handshake bytes in CRYPTO frames instead. The result encrypts nearly the whole packet, including most of the header - and then leaves the first flight readable by anyone who can see it, because the keys that protect an Initial packet are derived from a connection ID that travels in the clear. Every byte below is from the published test vectors in RFC 9001 Appendix A, re-derived rather than copied. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <aside class="sig" aria-label="color key">
+    <div class="legrows">
+    <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
+    <div class="row"><span class="sw dark k-flag">amber</span><span class="swsep">&#8594;</span><span class="sw light k-flag">protected</span></div>
+    <div class="row"><span class="sw dark k-sync">steel</span><span class="swsep">&#8594;</span><span class="sw light k-sync">structural</span></div>
+    <div class="row"><span class="sw dark k-rsv">faint</span><span class="swsep">&#8594;</span><span class="sw light k-rsv">cleartext</span></div>
+    </div>
+    <div class="siglabel">color key</div>
+  </aside>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="packets">Packet Shapes<small>long + short</small></button>
+    <button class="tab" data-p="initial">Initial &amp; Keys<small>the open secret</small></button>
+    <button class="tab" data-p="frames">Varints &amp; Frames<small>the payload</small></button>
+    <button class="tab" data-p="handshake">Handshake<small>TLS without records</small></button>
+    <button class="tab" data-p="cids">Connection IDs<small>migration</small></button>
+    <button class="tab" data-p="http3">HTTP/3<small>streams + frames</small></button>
+    <button class="tab" data-p="qpack">QPACK<small>header compression</small></button>
+    <button class="tab" data-p="ja4q">JA4q<small>fingerprinting</small></button>
+  </div>
+  <div class="panelwrap">
+
+    <!-- ================= PACKETS ================= -->
+    <div class="panel on" data-panel="packets">
+      <div class="pfacts"><span>carrier<b>one UDP datagram, one or more packets</b></span><span>spec<b>RFC 9000 &sect;17</b></span></div>
+      <p class="plede">Two header shapes. The <b>long header</b> carries a version and both connection IDs, and is used only until the handshake completes. The <b>short header</b> drops everything the peer already knows and is what carries virtually all real traffic. A single UDP datagram may hold several QUIC packets back to back, which is how a client sends Initial and Handshake packets together.</p>
+
+      <div class="sec">long header: a client Initial packet</div>
+      <p class="note">The header exactly as RFC 9001 Appendix A.2 defines it, <b>before</b> header protection is applied. The Initial &amp; Keys tab shows what changes on the wire.</p>
+      <div id="block-init" data-build></div>
+
+      <div class="callout"><b>the second bit is a lie detector.</b> Bit 1 of the first byte is the Fixed Bit, and it is always 1 - a packet with it clear is not QUIC. It exists so that QUIC can be distinguished from other UDP protocols on the same port, and it is the one bit QUIC deliberately did not encrypt or randomise. The "greasing the QUIC bit" extension (<a href="https://www.rfc-editor.org/rfc/rfc9287">RFC 9287</a>) lets endpoints negotiate clearing it anyway, precisely so nothing starts depending on it.</div>
+
+      <div class="sec">short header: a 1-RTT packet</div>
+      <p class="note">No version, no source connection ID, no length. Eleven bytes of header for a packet that may carry 1400 bytes of payload.</p>
+      <div id="block-short" data-build></div>
+      <div class="callout hot"><b>there is no length field, and that is deliberate.</b> A short header packet runs to the end of the UDP datagram, so a receiver cannot find the payload boundary without first knowing the connection ID length - which is not in the packet either. Only the endpoint that chose the connection ID knows how long it is. An observer that did not watch the handshake cannot reliably parse a 1-RTT packet at all, which is the point.</div>
+
+      <div class="sec">version negotiation</div>
+      <p class="note">Not a real packet type: a long header with version 0x00000000, listing what the server does support. The client picks one and starts over.</p>
+      <div id="block-vn" data-build></div>
+      <div class="callout"><b>versions <code>0x?a?a?a?a</code> are reserved to be refused.</b> Same GREASE logic as <a href="https://www.rfc-editor.org/rfc/rfc8701">RFC 8701</a> in TLS: a client offers a version it knows nobody implements, and a server that fails to negotiate cleanly gets caught in testing rather than blocking QUIC v2 forever. <b>QUIC v2</b> (<a href="https://www.rfc-editor.org/rfc/rfc9369">RFC 9369</a>, version <code>0x6b3343cf</code>) exists almost entirely for this reason - it is wire-compatible in shape but renumbers the long header packet types and changes the key-derivation salt and labels, so anything that hardcoded v1 constants breaks loudly.</div>
+
+      <div class="sec">long header packet types, v1</div>
+      <table class="atable"><thead><tr><th>bits</th><th>type</th><th>carries</th><th>keys</th></tr></thead><tbody>
+        <tr><td class="x">0x00</td><td class="f">Initial</td><td>CRYPTO (the ClientHello), ACK, PADDING</td><td>derived from the destination connection ID - readable by anyone</td></tr>
+        <tr><td class="x">0x01</td><td class="f">0-RTT</td><td>application data, before the handshake finishes</td><td>early traffic keys from the PSK</td></tr>
+        <tr><td class="x">0x02</td><td class="f">Handshake</td><td>CRYPTO (the rest of the TLS handshake), ACK</td><td>TLS handshake traffic secrets</td></tr>
+        <tr><td class="x">0x03</td><td class="f">Retry</td><td>a token, no packet number, no payload</td><td>none - integrity-tagged with a fixed known key</td></tr>
+      </tbody></table>
+      <p class="note">QUIC v2 renumbers these to Initial=1, 0-RTT=2, Handshake=3, Retry=0. Nothing about the packets changed; the numbers moved so that ossified middleboxes fail visibly.</p>
+    </div>
+
+    <!-- ================= INITIAL ================= -->
+    <div class="panel" data-panel="initial">
+      <div class="pfacts"><span>salt<b>a constant in the RFC</b></span><span>input<b>the destination connection ID</b></span><span>spec<b>RFC 9001 &sect;5.2</b></span></div>
+      <p class="plede">Initial packets are encrypted. They are also readable by every observer on the path, because both facts are true at once: the key is derived from a value that travels in the clear, using a salt printed in the RFC. This is not a flaw - it is integrity protection against blind injection, not confidentiality - but it is routinely misread as "QUIC encrypts the handshake".</p>
+
+      <div class="sec">deriving the client Initial keys</div>
+      <div class="cmd"><span class="c">// RFC 9001 5.2 - initial_salt is a constant, DCID is the client's first destination CID</span>
+initial_salt   = 0x38762cf7f55934b34d179ae6a4c80cad ccbb7f0a
+DCID           = 0x8394c8f03e515708
+
+initial_secret = HKDF-Extract(initial_salt, DCID)
+               = 7db5df06e7a69e432496adedb0085192 3595221596ae2ae9fb8115c1e9ed0a44
+
+client_secret  = HKDF-Expand-Label(initial_secret, <span class="p">"client in"</span>, "", 32)
+               = c00cf151ca5be075ed0ebfb5c80323c4 2d6b7db67881289af4008f1f6c357aea
+
+key            = HKDF-Expand-Label(client_secret, <span class="p">"quic key"</span>, "", 16) = 1f369613dd76d5467730efcbe3b1a22d
+iv             = HKDF-Expand-Label(client_secret, <span class="p">"quic iv"</span>,  "", 12) = fa044b2f42a3fd3b46fb255c
+hp             = HKDF-Expand-Label(client_secret, <span class="p">"quic hp"</span>,  "", 16) = 9f50449e04a0e810283a1e9933adedd2</div>
+      <p class="note">Same <code>HKDF-Expand-Label</code> as TLS 1.3, <code>"tls13 "</code> prefix included - see the <a href="../tls/tls13-handshake.html#schedule">key schedule</a> on the TLS page. The server side is identical with the label <code>"server in"</code>. Every value above was re-derived for this page and matches RFC 9001 Appendix A byte for byte.</p>
+
+      <div class="callout hot"><b>this is why "encrypted" QUIC is fingerprintable.</b> Any observer reads the DCID out of the clear header, runs the same three lines, decrypts the Initial, reassembles the CRYPTO frames, and parses the TLS ClientHello inside. That is exactly what <a href="../ja4/ja4plus-breakdown.html">JA4q</a> does. Initial protection exists to stop off-path attackers injecting packets, not to hide the handshake - and once the handshake completes, real keys take over and this stops applying.</div>
+
+      <div class="sec">header protection</div>
+      <p class="note">Applied <i>after</i> payload encryption, over the bits an observer could otherwise use to correlate packets: the low bits of the first byte and the packet number.</p>
+      <div class="cmd"><span class="c">// RFC 9001 5.4.2 - sample starts 4 bytes past the start of the packet number</span>
+<span class="c">// field, with the packet number ASSUMED to be 4 bytes long for sampling</span>
+sample = d1b1c98dd7689fb8ec11d242b123dc9b   <span class="p">16 bytes of the encrypted payload</span>
+mask   = AES-ECB(hp, sample)[0..4] = 437b9aec36
+
+first byte:  c3 ^ (0x43 &amp; 0x0f) = c0        <span class="p">long header: low 4 bits only</span>
+pkt number:  00000002 ^ 7b9aec36 = 7b9aec34
+
+unprotected  c300000001088394c8f03e5157080000449e<span class="p">00000002</span>
+on the wire  c000000001088394c8f03e5157080000449e<span class="p">7b9aec34</span></div>
+      <div id="block-prot" data-build></div>
+      <div class="callout"><b>a chicken-and-egg the receiver solves by construction.</b> You need the packet number to build the AEAD nonce, but the packet number is protected, and the mask comes from the encrypted payload - which starts at an offset that depends on the packet number length, which is in the protected first byte. QUIC breaks the loop by fixing the sample offset at <i>packet number offset + 4</i> regardless of the actual packet number length, so a receiver can always locate the sample before it knows anything else.</div>
+      <div class="callout"><b>short headers protect 5 bits, not 4.</b> The mask covers the low 5 bits of a short header's first byte because the Key Phase bit is in there and would otherwise let an observer see exactly when a connection rotated keys. Long headers have no Key Phase bit, so only 4 bits are masked.</div>
+
+      <div class="sec">Retry - a packet with no packet number</div>
+      <p class="note">Sent when a server wants to validate the client's address before committing state. It carries a token the client must echo, and a 16-byte tag computed with a key published in the RFC. <b>Provenance note:</b> every other byte on this page was re-derived from field values; these 16 tag bytes are RFC 9001 Appendix A.4's published value, reproduced as-is rather than recomputed.</p>
+      <div id="block-retry" data-build></div>
+      <div class="callout"><b>the Retry tag authenticates the path, not the server.</b> Its key is a constant in RFC 9001 &sect;5.8, so anyone can compute it - it only proves the Retry was not corrupted, and stops off-path injection by an attacker who cannot see the original connection ID. Real protection comes later: the server must echo the original DCID back in a transport parameter, and the client checks it, so a forged Retry is detected at handshake completion.</div>
+      <div class="callout hot"><b>the amplification limit.</b> Before validating a client's address, a server must not send more than <b>3x</b> the bytes it has received (RFC 9000 &sect;8.1). That is also why a client Initial must be padded so the UDP datagram is at least <b>1200 bytes</b> - without the padding, the server's certificate chain would not fit in its 3x budget and the handshake would stall. QUIC's flood-amplification story is a size arithmetic problem, solved with mandatory padding.</div>
+    </div>
+
+    <!-- ================= FRAMES ================= -->
+    <div class="panel" data-panel="frames">
+      <div class="pfacts"><span>packet payload<b>a sequence of frames</b></span><span>integers<b>variable length, 1-8 bytes</b></span></div>
+      <p class="plede">A QUIC packet has no payload structure of its own - it decrypts to a stream of frames, each self-describing, read until the packet runs out. Almost every length and identifier in QUIC is a variable-length integer, so the encoding is worth reading first.</p>
+
+      <div class="sec">variable-length integers</div>
+      <p class="note">The top two bits of the first byte give the total length. All four RFC 9000 Appendix A.1 test vectors, concatenated.</p>
+      <div id="block-varint" data-build></div>
+      <table class="atable"><thead><tr><th>2msb</th><th>length</th><th>usable bits</th><th>range</th></tr></thead><tbody>
+        <tr><td class="x">00</td><td class="f">1 byte</td><td>6</td><td>0 - 63</td></tr>
+        <tr><td class="x">01</td><td class="f">2 bytes</td><td>14</td><td>0 - 16383</td></tr>
+        <tr><td class="x">10</td><td class="f">4 bytes</td><td>30</td><td>0 - 1073741823</td></tr>
+        <tr><td class="x">11</td><td class="f">8 bytes</td><td>62</td><td>0 - 4611686018427387903</td></tr>
+      </tbody></table>
+      <div class="callout"><b>non-minimal encodings are legal.</b> The value 37 is <code>0x25</code> in one byte and <code>0x4025</code> in two, and both are valid - RFC 9000 &sect;16 explicitly permits the longer form. Anything comparing encoded bytes instead of decoded values is wrong. Frame types are varints too - which is how the type space extends past 63 without a flag day - but they are the one documented <b>exception</b> to the rule above: RFC 9000 &sect;12.4 requires a frame type to use the shortest possible encoding, so a parser may compare those bytes directly.</div>
+
+      <div class="sec">CRYPTO - the TLS handshake, with no TLS record layer</div>
+      <p class="note">Offset and length, then raw handshake bytes. The first 16 bytes of the same ClientHello decoded on the <a href="../tls/tls13-handshake.html#clienthello">TLS page</a>.</p>
+      <div id="block-crypto" data-build></div>
+      <div class="callout"><b>CRYPTO is an ordered stream that is not a stream.</b> It has an offset like a STREAM frame, so handshake data can arrive out of order and be reassembled - but it has no stream ID, no flow control, and cannot be reset. There is one CRYPTO stream per packet number space. This is what replaced the TLS record layer: no 5-byte record header, no content type byte, no <code>0x17</code> disguise.</div>
+
+      <div class="sec">STREAM - application data</div>
+      <p class="note">Type byte <code>0b00001OFF</code>: the low three bits say whether Offset and Length are present and whether this is the final frame. Here all three are set.</p>
+      <div id="block-stream" data-build></div>
+      <div class="kv">
+        <div><span class="k">0x08 base</span><span class="v">STREAM frames occupy types 0x08 through 0x0f - the type byte <i>is</i> the flags.</span></div>
+        <div><span class="k">+0x04 OFF</span><span class="v">an Offset field is present. Absent means offset 0.</span></div>
+        <div><span class="k">+0x02 LEN</span><span class="v">a Length field is present. Absent means the frame runs to the end of the packet, which is how a sender avoids paying for a length on the last frame.</span></div>
+        <div><span class="k">+0x01 FIN</span><span class="v">this is the last data on the stream in this direction.</span></div>
+      </div>
+      <div class="callout"><b>stream IDs encode who opened it and what it does.</b> The low two bits: <code>0x00</code> client-initiated bidirectional, <code>0x01</code> server-initiated bidirectional, <code>0x02</code> client-initiated unidirectional, <code>0x03</code> server-initiated unidirectional. Stream 0 is therefore the first client bidirectional stream, which in HTTP/3 is the first request. No handshake is needed to open a stream - you just send data on an ID you are allowed to use, and the limit is raised with MAX_STREAMS.</div>
+
+      <div class="sec">ACK - ranges, not a bitmap</div>
+      <div id="block-ack" data-build></div>
+      <p class="note">This frame acknowledges packets 8 through 10 and 3 through 5. Ranges are encoded descending from the largest, each Gap counting the unacked packets between - and both Gap and Length are stored one less than their true value, because a zero-length range is meaningless.</p>
+      <div class="callout hot"><b>packet numbers never repeat, and that fixes TCP's oldest ambiguity.</b> A TCP retransmission reuses the sequence number, so an ACK for it is ambiguous - did it acknowledge the original or the retransmission? The measured RTT is then wrong in a way that cannot be detected, which is the retransmission ambiguity problem Karn's algorithm works around by discarding those samples. QUIC gives every transmission a new packet number and tracks separately which <i>data</i> it carried, so every ACK produces a usable RTT sample. Losing that ambiguity is most of why <a href="https://www.rfc-editor.org/rfc/rfc9002">RFC 9002</a> loss recovery is simpler than TCP's.</div>
+
+      <div class="sec">where each frame is allowed</div>
+      <p class="note">I = Initial, H = Handshake, 0 = 0-RTT, 1 = 1-RTT. A frame in the wrong packet type is a PROTOCOL_VIOLATION.</p>
+      <table class="atable"><thead><tr><th>type</th><th>frame</th><th>I H 0 1</th><th>note</th></tr></thead><tbody>
+        <tr><td class="x">0x00</td><td class="f">PADDING</td><td class="x">I H 0 1</td><td>A zero byte. Also what pads an Initial to 1200.</td></tr>
+        <tr><td class="x">0x01</td><td class="f">PING</td><td class="x">I H 0 1</td><td>Elicits an ACK. Keepalive and path probing.</td></tr>
+        <tr><td class="x">0x02-03</td><td class="f">ACK</td><td class="x">I H &middot; 1</td><td>0x03 carries ECN counts. Never in 0-RTT.</td></tr>
+        <tr><td class="x">0x06</td><td class="f">CRYPTO</td><td class="x">I H &middot; 1</td><td>Not in 0-RTT: early data is not handshake data.</td></tr>
+        <tr><td class="x">0x07</td><td class="f">NEW_TOKEN</td><td class="x">&middot; &middot; &middot; 1</td><td>A token for the client to use on a future connection.</td></tr>
+        <tr><td class="x">0x08-0f</td><td class="f">STREAM</td><td class="x">&middot; &middot; 0 1</td><td>Application data only.</td></tr>
+        <tr><td class="x">0x18</td><td class="f">NEW_CONNECTION_ID</td><td class="x">&middot; &middot; 0 1</td><td>Supplies spare CIDs for migration.</td></tr>
+        <tr><td class="x">0x1a-1b</td><td class="f">PATH_CHALLENGE / RESPONSE</td><td class="x">&middot; &middot; 0 1</td><td>RESPONSE is 1-RTT only.</td></tr>
+        <tr><td class="x">0x1c-1d</td><td class="f">CONNECTION_CLOSE</td><td class="x">I H 0 1</td><td>Only the 0x1c form is allowed in Initial and Handshake - 0x1d reports an application error, and there is no application yet.</td></tr>
+        <tr><td class="x">0x1e</td><td class="f">HANDSHAKE_DONE</td><td class="x">&middot; &middot; &middot; 1</td><td>Server to client. The TLS Finished still exists, in CRYPTO frames - this is the separate signal that the server considers the handshake <i>confirmed</i>, which is the point a client may discard its handshake keys.</td></tr>
+      </tbody></table>
+    </div>
+
+    <!-- ================= HANDSHAKE ================= -->
+    <div class="panel" data-panel="handshake">
+      <div class="pfacts"><span>TLS<b>1.3 only, no negotiation</b></span><span>spaces<b>3 packet number spaces</b></span><span>spec<b>RFC 9001</b></span></div>
+      <p class="plede">QUIC uses TLS 1.3 for key agreement and nothing else. There is no TLS record layer, no ChangeCipherSpec, no session ID, no EndOfEarlyData, and no version negotiation inside TLS - a QUIC connection that is not TLS 1.3 is not a QUIC connection.</p>
+
+      <div class="sec">the 1-RTT handshake</div>
+      <div class="flow">
+        <div class="fhead"><span>client</span><span>&nbsp;</span><span>server</span></div>
+        <div class="step">
+          <div class="m">Initial[0]: CRYPTO(ClientHello)<em>padded to 1200 bytes, PADDING frames</em><span class="pk p0">initial keys</span></div>
+          <div class="dir">&rarr;</div><div class="m srv"></div>
+        </div>
+        <div class="step">
+          <div class="m"></div><div class="dir">&larr;</div>
+          <div class="m srv"><span class="pk p0">initial keys</span>Initial[0]: CRYPTO(ServerHello), ACK<em>anyone on the path can read both of these</em></div>
+        </div>
+        <div class="step">
+          <div class="m"></div><div class="dir">&larr;</div>
+          <div class="m srv"><span class="pk p1">handshake keys</span>Handshake[0]: CRYPTO(EncryptedExtensions,<br>Certificate, CertificateVerify, Finished)</div>
+        </div>
+        <div class="step">
+          <div class="m"></div><div class="dir">&larr;</div>
+          <div class="m srv"><span class="pk p2">1-RTT keys</span>1-RTT[0]: STREAM<em>0.5-RTT data, client not yet authenticated</em></div>
+        </div>
+        <div class="step">
+          <div class="m">Handshake[0]: CRYPTO(Finished)<span class="pk p1">handshake keys</span></div>
+          <div class="dir">&rarr;</div><div class="m srv"></div>
+        </div>
+        <div class="mark">1-RTT complete</div>
+        <div class="step">
+          <div class="m">1-RTT[1]: STREAM<span class="pk p2">1-RTT keys</span></div>
+          <div class="dir">&harr;</div>
+          <div class="m srv"><span class="pk p2">1-RTT keys</span>1-RTT[1]: HANDSHAKE_DONE</div>
+        </div>
+      </div>
+      <p class="note">The bracketed number is the packet number <i>in that space</i>. Initial, Handshake, and Application Data each number from zero independently, each with their own keys and their own ACK state - a lost Handshake packet cannot be acknowledged by a 1-RTT ACK, because they are different spaces.</p>
+
+      <div class="sec">what QUIC deleted from TLS</div>
+      <table class="atable"><thead><tr><th>TLS 1.3 over TCP</th><th>in QUIC</th><th>why</th></tr></thead><tbody>
+        <tr><td class="f">record layer</td><td class="x">gone</td><td>QUIC packets already frame and protect. A second framing layer would be pure overhead.</td></tr>
+        <tr><td class="f">ChangeCipherSpec</td><td class="x">gone</td><td>The middlebox-compatibility dummy is meaningless on UDP - nothing was ossified to look for it.</td></tr>
+        <tr><td class="f">legacy_session_id</td><td class="x">must be empty</td><td>Same reason. RFC 9001 &sect;8.4 requires zero length.</td></tr>
+        <tr><td class="f">EndOfEarlyData</td><td class="x">gone</td><td>Packet number spaces already mark where early data ends.</td></tr>
+        <tr><td class="f">key update</td><td class="x">one bit</td><td>The Key Phase bit in the short header replaces the KeyUpdate message. Next secret is <code>HKDF-Expand-Label(secret, "quic ku", "", 32)</code>.</td></tr>
+        <tr><td class="f">TLS 1.2 fallback</td><td class="x">forbidden</td><td>No downgrade path exists, so no downgrade protection is needed.</td></tr>
+      </tbody></table>
+
+      <div class="sec">quic_transport_parameters (extension 57)</div>
+      <p class="note">QUIC's own negotiation rides inside the TLS ClientHello as a single extension. Flow control limits, idle timeout, and connection ID confirmation all live here.</p>
+      <div id="block-tp" data-build></div>
+      <div class="callout"><b>this extension is why a QUIC ClientHello fingerprints differently.</b> It is present on every QUIC connection and absent on every TCP one, and its contents are a detailed profile of the client's transport tuning. It also carries the anti-forgery check for Retry: the server echoes <code>original_destination_connection_id</code>, and a client that sees the wrong value knows the Retry was injected.</div>
+      <div class="callout hot"><b>0-RTT in QUIC resumes the transport, not just the crypto.</b> A client sending early data must remember the server's transport parameters from the previous connection and stay within them, because it is sending before the server has stated its limits. If the server comes back with lower limits than were remembered, that is a connection error. So 0-RTT carries every replay caveat from the <a href="../tls/tls13-handshake.html#zerortt">TLS page</a> - not forward secret, replayable, idempotent requests only - plus a transport state machine that has to agree with a connection that already ended.</div>
+    </div>
+
+    <!-- ================= CONNECTION IDS ================= -->
+    <div class="panel" data-panel="cids">
+      <div class="pfacts"><span>identity<b>a connection ID, not a 4-tuple</b></span><span>spec<b>RFC 9000 &sect;5, &sect;9</b></span></div>
+      <p class="plede">A TCP connection <i>is</i> its four-tuple: change the client's IP and the connection is dead. QUIC identifies a connection by an opaque connection ID chosen by the receiver, so the addresses underneath can change without the connection noticing. That single decision is what makes handoff between wifi and cellular survivable, and it creates a linkability problem QUIC then has to spend the rest of &sect;9 solving.</p>
+
+      <div class="sec">each side names itself</div>
+      <div class="kv">
+        <div><span class="k">asymmetric</span><span class="v">Each endpoint chooses the connection ID that its <i>peer</i> will put in outgoing packets. The two directions use different CIDs and different lengths, and neither side knows how the other derives its own.</span></div>
+        <div><span class="k">0 to 20 bytes</span><span class="v">A server behind a load balancer encodes routing information into the CID so any box in the fleet can steer a packet to the right server. A client that never migrates can use a zero-length CID.</span></div>
+        <div><span class="k">the first DCID</span><span class="v">Chosen at random by the client, used only to derive Initial keys, then discarded. The server replaces it in its first flight.</span></div>
+        <div><span class="k">spares</span><span class="v">NEW_CONNECTION_ID supplies unused CIDs in advance, each with a stateless reset token. <code>active_connection_id_limit</code> caps how many the peer must track.</span></div>
+      </div>
+
+      <div class="sec">migration, and the linkability it creates</div>
+      <p class="note">Path validation is a two-frame challenge-response with 8 bytes of unpredictable data.</p>
+      <div class="flow">
+        <div class="fhead"><span>client (new address)</span><span>&nbsp;</span><span>server</span></div>
+        <div class="step">
+          <div class="m">1-RTT from a new IP:port<em>non-probing frame, e.g. STREAM</em><span class="pk p2">1-RTT keys</span></div>
+          <div class="dir">&rarr;</div><div class="m srv"></div>
+        </div>
+        <div class="step">
+          <div class="m"></div><div class="dir">&larr;</div>
+          <div class="m srv"><span class="pk p2">1-RTT keys</span>PATH_CHALLENGE<em>8 random bytes, sent to the new address</em></div>
+        </div>
+        <div class="step">
+          <div class="m">PATH_RESPONSE<em>same 8 bytes back</em><span class="pk p2">1-RTT keys</span></div>
+          <div class="dir">&rarr;</div><div class="m srv"></div>
+        </div>
+        <div class="mark">path validated - congestion controller resets to a fresh path</div>
+      </div>
+      <div class="callout hot"><b>migration hands an observer a correlation key for free, so QUIC rotates it.</b> If the client kept the same connection ID when it moved from wifi to cellular, anyone watching both networks could link the two addresses to one user with certainty. RFC 9000 &sect;9.5 therefore requires a client to <b>use a fresh, previously unused connection ID when it migrates</b>, and to not reuse one across paths. The privacy of migration depends entirely on having spare CIDs already issued - which is why NEW_CONNECTION_ID is sent early and often rather than on demand.</div>
+      <div class="callout"><b>a migrating connection restarts congestion control.</b> The new path has unknown capacity, so RFC 9000 &sect;9.4 requires resetting the congestion controller and RTT estimate. Migration is cheap for connection state and expensive for throughput - the connection survives, but the first seconds on the new path are slow starts again.</div>
+
+      <div class="sec">stateless reset</div>
+      <p class="note">A server that has lost its state cannot send a CONNECTION_CLOSE, because it no longer has the keys to encrypt one.</p>
+      <div class="cmd"><span class="c">// RFC 9000 10.3 - shaped to be indistinguishable from a short header packet</span>
+01xxxxxx  <span class="p">first byte: fixed bit set, everything else random</span>
+&lt;random&gt;   <span class="p">unpredictable bits, at least 38 of them</span>
+&lt;token&gt;    <span class="p">the last 16 bytes: the stateless reset token for that CID</span></div>
+      <div class="callout"><b>the whole design is that it looks like nothing.</b> An endpoint receiving one cannot tell it from an undecryptable 1-RTT packet - it just fails to decrypt, then checks whether the last 16 bytes match a reset token it was issued. Any observer sees a packet of random bytes. The token was delivered earlier, encrypted, in a NEW_CONNECTION_ID frame, so only the real peer can produce it and only the real peer can recognise it.</div>
+    </div>
+
+    <!-- ================= HTTP/3 ================= -->
+    <div class="panel" data-panel="http3">
+      <div class="pfacts"><span>one request<b>one bidirectional stream</b></span><span>spec<b>RFC 9114</b></span></div>
+      <p class="plede">HTTP/3 is HTTP/2's semantics with the multiplexing deleted, because QUIC already does it. HTTP/2 built streams on top of one TCP connection and inherited head-of-line blocking at the transport; HTTP/3 maps each request onto its own QUIC stream, so a lost packet stalls only the streams whose bytes were in it.</p>
+
+      <div class="sec">streams and their jobs</div>
+      <table class="atable"><thead><tr><th>stream</th><th>type</th><th>carries</th></tr></thead><tbody>
+        <tr><td class="f">request</td><td class="x">client bidi</td><td>HEADERS, then DATA, then optional trailing HEADERS. One request and its response, then closed.</td></tr>
+        <tr><td class="f">control</td><td class="x">uni 0x00</td><td>SETTINGS first, then GOAWAY, MAX_PUSH_ID. Exactly one per side, never closed - closing it is a connection error.</td></tr>
+        <tr><td class="f">push</td><td class="x">uni 0x01</td><td>A server push response, keyed to a PUSH_PROMISE sent earlier on a request stream.</td></tr>
+        <tr><td class="f">QPACK encoder</td><td class="x">uni 0x02</td><td>Dynamic table insertions, in order.</td></tr>
+        <tr><td class="f">QPACK decoder</td><td class="x">uni 0x03</td><td>Acknowledgements telling the encoder what the peer has processed.</td></tr>
+      </tbody></table>
+      <p class="note">A unidirectional stream announces its purpose with a varint stream type as its first bytes. Unknown types are not an error - the receiver abandons the stream, which is how new stream types ship without a version bump. Types of the form <code>0x1f * N + 0x21</code> are reserved to be sent and ignored, the same GREASE trick QUIC uses on versions.</p>
+
+      <div class="sec">which frame is legal on which stream</div>
+      <p class="note">RFC 9114 &sect;7.2. A frame on the wrong stream is a <b>connection</b> error, not a stream error - the whole connection dies.</p>
+      <table class="atable"><thead><tr><th>type</th><th>frame</th><th>control</th><th>request</th><th>push</th><th>note</th></tr></thead><tbody>
+        <tr><td class="x">0x00</td><td class="f">DATA</td><td class="g">no</td><td class="x">yes</td><td class="x">yes</td><td>Must follow a HEADERS frame. DATA arriving first is <code>H3_FRAME_UNEXPECTED</code>.</td></tr>
+        <tr><td class="x">0x01</td><td class="f">HEADERS</td><td class="g">no</td><td class="x">yes</td><td class="x">yes</td><td>Request or response fields, then optionally again for trailers.</td></tr>
+        <tr><td class="x">0x03</td><td class="f">CANCEL_PUSH</td><td class="x">yes</td><td class="g">no</td><td class="g">no</td><td>Either side, to abandon a promised push before it is delivered.</td></tr>
+        <tr><td class="x">0x04</td><td class="f">SETTINGS</td><td class="x">first, once</td><td class="g">no</td><td class="g">no</td><td>Any other frame first on the control stream is <code>H3_MISSING_SETTINGS</code>; a second SETTINGS is <code>H3_FRAME_UNEXPECTED</code>.</td></tr>
+        <tr><td class="x">0x05</td><td class="f">PUSH_PROMISE</td><td class="g">no</td><td class="x">server only</td><td class="g">-</td><td>Carries the promised request fields. A client sending one is an error.</td></tr>
+        <tr><td class="x">0x07</td><td class="f">GOAWAY</td><td class="x">yes</td><td class="g">no</td><td class="g">no</td><td>A server sends the last stream ID it will serve; a client sends the last push ID it will accept.</td></tr>
+        <tr><td class="x">0x0d</td><td class="f">MAX_PUSH_ID</td><td class="x">client only</td><td class="g">no</td><td class="g">no</td><td>Raises the push budget. There is no way to lower it.</td></tr>
+        <tr><td class="x">0x02 0x06<br>0x08 0x09</td><td class="f">reserved</td><td class="g">never</td><td class="g">never</td><td class="g">never</td><td>HTTP/2's PRIORITY, PING, WINDOW_UPDATE, CONTINUATION. Receipt anywhere is <code>H3_FRAME_UNEXPECTED</code>.</td></tr>
+        <tr><td class="x">0x1f*N<br>+0x21</td><td class="x">GREASE</td><td class="x">ignore</td><td class="x">ignore</td><td class="x">ignore</td><td>Reserved to be sent and ignored. <b>Not</b> an error - that distinction is the entire point.</td></tr>
+      </tbody></table>
+      <div class="callout"><b>reserved and GREASE are opposites, and conflating them breaks both.</b> The four HTTP/2 codepoints are <i>poisoned</i>: receiving one kills the connection, so a proxy blindly forwarding h2 frames into h3 fails loudly instead of half-working. The <code>0x1f*N+0x21</code> series is <i>inert</i>: receiving one must be silently ignored, so implementations stay tolerant of frames invented later. One is a tripwire, the other is a vaccine.</div>
+      <div class="callout"><b>the control stream is critical and unclosable.</b> Exactly one per direction, opened before anything else, and closing it at any point is <code>H3_CLOSED_CRITICAL_STREAM</code>. The two QPACK streams are critical in the same way. This is a real departure from HTTP/2, where settings and pings shared the single connection - HTTP/3 has to keep several streams alive for the connection to mean anything.</div>
+
+      <div class="sec">a HEADERS frame: GET https://example.com/</div>
+      <p class="note">Frame type, length, then a QPACK-encoded field section. Four header fields in fourteen bytes.</p>
+      <div id="block-h3h" data-build></div>
+
+      <div class="sec">a SETTINGS frame</div>
+      <div id="block-h3s" data-build></div>
+      <div class="callout"><b>HTTP/2's frame numbers are poisoned on purpose.</b> Types <code>0x02</code>, <code>0x06</code>, <code>0x08</code> and <code>0x09</code> - PRIORITY, PING, WINDOW_UPDATE and CONTINUATION in HTTP/2 - are reserved in HTTP/3 and receiving one is a connection error of type <code>H3_FRAME_UNEXPECTED</code>. They are not merely unused: they are actively rejected, so a proxy that blindly forwards h2 frames into an h3 connection fails immediately instead of half-working. Their jobs are gone anyway - flow control and pings belong to QUIC now, and CONTINUATION is unnecessary because a QUIC stream has no frame size limit.</div>
+      <div class="callout hot"><b>head-of-line blocking moved, it did not vanish.</b> QUIC removes it at the transport: a lost packet no longer stalls unrelated streams. But QPACK's dynamic table reintroduces it at the compression layer - a field section that references a table entry the decoder has not received yet <i>must</i> block until it arrives. HTTP/3 exposes the tradeoff as a setting, <code>QPACK_BLOCKED_STREAMS</code>, and an encoder that wants zero blocking simply never references the dynamic table, paying in bytes instead of latency.</div>
+    </div>
+
+    <!-- ================= QPACK ================= -->
+    <div class="panel" data-panel="qpack">
+      <div class="pfacts"><span>problem<b>HPACK assumes ordered delivery</b></span><span>spec<b>RFC 9204</b></span></div>
+      <p class="plede">HPACK compresses HTTP/2 headers against a dynamic table that both sides mutate in lockstep - which works only because TCP delivers in order. QUIC streams have no order between them, so a table update on one stream may arrive after a reference to it on another. QPACK is HPACK rebuilt around that fact.</p>
+
+      <div class="sec">the five field line representations</div>
+      <p class="note">RFC 9204 &sect;4.5. The high bits of the first byte select the form; the remaining bits are a prefixed integer that may continue into further bytes.</p>
+      <table class="atable"><thead><tr><th>pattern</th><th>name</th><th>meaning</th></tr></thead><tbody>
+        <tr><td class="x">1Txxxxxx</td><td class="f">Indexed</td><td>Name and value both come from table entry <code>xxxxxx</code>. T=1 static, T=0 dynamic. One byte for a complete header field.</td></tr>
+        <tr><td class="x">0001xxxx</td><td class="f">Indexed, post-base</td><td>References a dynamic entry added <i>after</i> the Base. Relative addressing that stays correct however the insertions interleave with this section.</td></tr>
+        <tr><td class="x">01NTxxxx</td><td class="f">Literal, name reference</td><td>Name from the table, value inline. <b>N=1 means never index this field</b> - set on authorization and anything else a CRIME-style oracle could probe, and it must survive being forwarded by an intermediary.</td></tr>
+        <tr><td class="x">0000Nxxx</td><td class="f">Literal, post-base name ref</td><td>Same, but the name is a post-base dynamic entry.</td></tr>
+        <tr><td class="x">001NHxxx</td><td class="f">Literal, literal name</td><td>Both spelled out. H flags Huffman coding on the <i>name</i>; the value that follows carries its own H bit in its length prefix.</td></tr>
+      </tbody></table>
+
+      <div class="sec">the field section prefix</div>
+      <p class="note">Two prefixed integers in front of every field section, and the whole reason QPACK can decode out of order.</p>
+      <div class="kv">
+        <div><span class="k">Required Insert Count</span><span class="v">An 8-bit prefix integer. <b>Zero means the section references no dynamic entries and can never block</b> - which is exactly what the HEADERS frame on the HTTP/3 tab does. A non-zero value is <b>not</b> the raw count: RFC 9204 &sect;4.5.1.1 encodes it modulo <code>2 * MaxEntries</code>, offset by one, so it stays small and the decoder reconstructs the true value from what it has already inserted.</span></div>
+        <div><span class="k">Delta Base</span><span class="v">A sign bit <code>S</code> then a 7-bit prefix integer. <code>S=0</code> gives <code>Base = ReqInsertCount + DeltaBase</code>; <code>S=1</code> gives <code>Base = ReqInsertCount - DeltaBase - 1</code>. Base is the origin that relative dynamic references count back from, which is what lets one encoding stay valid no matter what else arrived first.</span></div>
+      </div>
+      <div class="callout"><b>the static table is 99 entries and does most of the work.</b> HPACK's was 61. QPACK's holds values as well as names - <code>:method GET</code> at index 17 and <code>:scheme https</code> at 23 are single bytes because the whole pair is in the table. A request built only from static entries compresses well and can never block, which is why encoders default to exactly that and reach for the dynamic table only under sustained load.</div>
+
+      <div class="sec">the two side streams</div>
+      <p class="note">Each endpoint opens one of each, as unidirectional streams typed <code>0x02</code> and <code>0x03</code>. Both are critical: closing either is a connection error.</p>
+      <table class="atable"><thead><tr><th>stream</th><th>instruction</th><th>pattern</th><th>does</th></tr></thead><tbody>
+        <tr><td class="f">encoder 0x02</td><td class="x">Set Dynamic Table Capacity</td><td class="x">001xxxxx</td><td>Resizes the table, bounded by the peer's <code>QPACK_MAX_TABLE_CAPACITY</code>.</td></tr>
+        <tr><td class="f">encoder</td><td class="x">Insert with Name Reference</td><td class="x">1Txxxxxx</td><td>New entry, name taken from the static (T=1) or dynamic (T=0) table.</td></tr>
+        <tr><td class="f">encoder</td><td class="x">Insert with Literal Name</td><td class="x">01Hxxxxx</td><td>New entry, name spelled out. H flags Huffman coding.</td></tr>
+        <tr><td class="f">encoder</td><td class="x">Duplicate</td><td class="x">000xxxxx</td><td>Re-inserts an existing entry at the head so it survives eviction.</td></tr>
+        <tr><td class="f">decoder 0x03</td><td class="x">Section Acknowledgment</td><td class="x">1xxxxxxx</td><td>A field section on that stream ID decoded successfully - the encoder now knows those entries were understood.</td></tr>
+        <tr><td class="f">decoder</td><td class="x">Stream Cancellation</td><td class="x">01xxxxxx</td><td>That stream died; drop its outstanding references so entries can be evicted.</td></tr>
+        <tr><td class="f">decoder</td><td class="x">Insert Count Increment</td><td class="x">00xxxxxx</td><td>Acknowledges insertions the decoder has processed, so the encoder learns what it may safely reference without blocking.</td></tr>
+      </tbody></table>
+      <div class="callout hot"><b>two extra streams exist because compression state cannot ride in-band.</b> Putting table updates on a request stream would make every request depend on every other one, reinventing the head-of-line blocking QUIC just removed. So insertions go on their own ordered stream and acknowledgements come back on another. The cost is that QPACK needs four streams of machinery to do what HPACK did with one shared table - the honest price of unordered delivery.</div>
+      <div class="callout"><b>eviction is the reason the decoder talks back at all.</b> An encoder cannot evict an entry that some in-flight field section still references, and it has no other way to learn when that section was decoded. Section Acknowledgment and Stream Cancellation are what free the table. An encoder that ignores the decoder stream slowly runs out of usable table and degrades to literals - correct, just steadily worse.</div>
+    </div>
+
+    <!-- ================= JA4Q ================= -->
+    <div class="panel" data-panel="ja4q">
+      <div class="pfacts"><span>input<b>the ClientHello inside the Initial</b></span><span>sibling<b><a href="../ja4/ja4plus-breakdown.html" style="color:var(--enum)">JA4+ breakdown</a></b></span></div>
+      <p class="plede">JA4q is JA4 with the protocol character <code>q</code>. Everything else about the derivation is identical, because the input is the same TLS ClientHello - it just arrives inside CRYPTO frames in an encrypted Initial packet instead of a TCP stream. As the Initial &amp; Keys tab shows, that encryption stops nobody.</p>
+
+      <div class="decoder">
+        <div class="jstr" id="jstr"></div>
+        <aside class="jdetail" id="jdetail"><div class="dl">segment</div><h3>Hover the string</h3><div class="dv"></div><p>Each segment lights on hover; the box shows how it is derived and how QUIC changes it.</p></aside>
+      </div>
+      <p class="note">Example value carried over from the <a href="../ja4/ja4plus-breakdown.html">JA4+ breakdown</a> so the two pages agree. The hashes are FoxIO's; the structural claims below are derived from RFC 9001.</p>
+
+      <div class="sec">how a QUIC hello differs from a TCP one</div>
+      <p class="note">Typical browser values, <b>not</b> protocol requirements. Only the version row is mandated by RFC 9001; the rest is what current clients happen to send, which is exactly what makes it a fingerprint.</p>
+      <table class="atable"><thead><tr><th>segment</th><th>TCP hello</th><th>QUIC hello</th><th>fixed?</th><th>why</th></tr></thead><tbody>
+        <tr><td class="x">protocol</td><td class="f">t</td><td class="f">q</td><td class="g">n/a</td><td>The only difference in the algorithm itself.</td></tr>
+        <tr><td class="x">version</td><td class="f">13</td><td class="f">13</td><td class="x">mandated</td><td>RFC 9001 &sect;4.2 forbids offering anything below TLS 1.3, so this segment carries no information on QUIC.</td></tr>
+        <tr><td class="x">cipher count</td><td class="f">15</td><td class="f">03</td><td class="g">convention</td><td>RFC 9001 &sect;5.3 bars only <code>TLS_AES_128_CCM_8_SHA256</code>, so <b>four</b> suites are legal. Browsers offer three; the count drops from 15 because the TLS 1.2 suites a TCP hello carries for fallback are useless here.</td></tr>
+        <tr><td class="x">ALPN</td><td class="f">h2</td><td class="f">h3</td><td class="g">convention</td><td>QUIC does not constrain ALPN. HTTP/3 registers <code>h3</code>, so browsers send it; other protocols run over QUIC with their own identifiers.</td></tr>
+        <tr><td class="x">extensions</td><td class="f">16</td><td class="f">10</td><td class="g">convention</td><td>The QUIC hello adds <code>quic_transport_parameters</code> (57) and sheds the TLS 1.2 legacy set - no session_ticket, no ec_point_formats, no renegotiation_info.</td></tr>
+      </tbody></table>
+
+      <div class="sec">reading it off the wire</div>
+      <div class="cmd"><span class="c">// everything an observer needs is in the clear or derived from it</span>
+1. read DCID from the long header            <span class="p">cleartext, bytes 6-13</span>
+2. initial_secret = HKDF-Extract(salt, DCID) <span class="p">salt is a constant in RFC 9001</span>
+3. derive client key / iv / hp
+4. remove header protection, decrypt payload
+5. reassemble CRYPTO frames by offset        <span class="p">may span several packets</span>
+6. parse the TLS ClientHello, compute JA4     <span class="p">identical to the TCP case</span></div>
+      <div class="callout hot"><b>"encrypted" does not mean unfingerprintable.</b> QUIC's own key schedule hands out the handshake to anyone on the path. The protection on an Initial packet is integrity, not confidentiality - it stops an off-path attacker injecting a forged ClientHello, and does nothing at all against a passive observer. Any claim that QUIC hides client identity from the network is wrong for the first flight and correct for everything after it.</div>
+      <div class="callout"><b>what actually got harder.</b> After the handshake, QUIC is a real improvement for privacy: the short header exposes only a connection ID and a few bits, packet numbers are masked, and there is no cleartext length field to parse. An observer who missed the handshake cannot even reliably find packet boundaries. So the fingerprinting window is narrow and early - which is an argument for capturing at connection start, and for <a href="../ebpf/ebpf-networking.html">eBPF</a> sensors that see the first datagram rather than proxies that see a parsed struct. See also <a href="../tls/tls13-handshake.html">TLS 1.3 handshake</a> for the hello being parsed here, and <a href="../attacks/attack-anatomy.html">Attack &amp; Mitigation</a> for what gets done with the result.</div>
+    </div>
+
+  </div>
+
+  <footer><span>protocols-fun / QUIC and HTTP/3</span><span>RFC 9000 &middot; 9001 &middot; 9002 &middot; 9114 &middot; 9204</span><span><a href="../ja4/ja4plus-breakdown.html">ja4+</a> &middot; <a href="../tls/tls13-handshake.html">tls 1.3</a> &middot; <a href="../ebpf/ebpf-networking.html">ebpf</a> &middot; <a href="../attacks/attack-anatomy.html">attacks</a> &middot; <a href="../index.html">the map</a></span></footer>
+</div>
+
+<script>
+(function(){
+  var KINDS={sync:"structural",enum:"value",flag:"flag / grease",rsv:"legacy / pad"};
+  function hx(b){return b.toString(16).toUpperCase().padStart(2,"0");}
+
+  function build(mountId, unit, bytes, fields){
+    var mount=document.getElementById(mountId);
+    var N = unit==="bit" ? bytes.length*8 : bytes.length;
+    var owner=new Array(N);
+    fields.forEach(function(f,fi){ for(var i=f.r[0];i<=f.r[1];i++) owner[i]=fi; });
+    var diagram=document.createElement("div");
+    diagram.className="dbytes";
+    bytes.forEach(function(b,i){
+      var f=fields[owner[i]];
+      var col=document.createElement("div"); col.className="bcol";
+      var off=document.createElement("div"); off.className="off"; off.textContent=i; col.appendChild(off);
+      var cell=document.createElement("div"); cell.className="bcell k-"+f.k; cell.dataset.idx=i;
+      if(i===f.r[0]) cell.classList.add("fstart");
+      cell.textContent=hx(b); col.appendChild(cell); diagram.appendChild(col);
+    });
+    var list=document.createElement("div"); list.className="fields";
+    var aside=document.createElement("aside"); aside.className="detail";
+    aside.innerHTML="<div class='dl'><span>field detail</span><span class='kind'></span></div>"+
+      "<h3>Hover a field or byte</h3><div class='dc'>"+bytes.length+" bytes</div>"+
+      "<p>Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.</p><div class='dn'></div>";
+    var det={t:aside.querySelector("h3"),c:aside.querySelector(".dc"),b:aside.querySelector("p"),n:aside.querySelector(".dn"),kind:aside.querySelector(".kind")};
+    var cells=[].slice.call(diagram.querySelectorAll("[data-idx]"));
+    var rows=[];
+    function light(a,b){cells.forEach(function(c){var i=+c.dataset.idx;c.classList.toggle("hi",i>=a&&i<=b);});}
+    function clearHi(){cells.forEach(function(c){c.classList.remove("hi");});}
+    function rl(f){ return "bytes "+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:""); }
+    function show(f){det.t.textContent=f.label;det.c.textContent=rl(f)+"  =  "+f.val;
+      det.b.textContent=f.body||"";det.n.textContent=f.note||"";det.kind.textContent=KINDS[f.k];}
+    function activeRow(){return list.querySelector(".field.active");}
+    function cue(fi){rows.forEach(function(r){r.classList.remove("cued");});rows[fi].classList.add("cued");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    function restore(){rows.forEach(function(r){r.classList.remove("cued");});var a=activeRow();if(a){var fi=+a.dataset.fi;light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}else clearHi();}
+    function pin(fi){var was=rows[fi].classList.contains("active");rows.forEach(function(r){r.classList.remove("active");});if(was){clearHi();return;}rows[fi].classList.add("active");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    fields.forEach(function(f,fi){
+      var row=document.createElement("div"); row.className="field"; row.dataset.fi=fi; if(f.branch) row.dataset.branch="1";
+      var lab = f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"");
+      row.innerHTML="<span class='fb'>"+lab+"</span><span class='fn'>"+f.label+"</span><span class='fv k-"+f.k+"'>"+f.val+"</span>";
+      if(f.branch){
+        var bw=document.createElement("div"); bw.className="branch";
+        bw.innerHTML="<table>"+f.branch.map(function(p,i){return "<tr class='"+(i===f.sel?"sel":"")+"'><td class='k'>"+p[0]+"</td><td>"+p[1]+"</td></tr>";}).join("")+"</table>";
+        row.appendChild(bw);
+      }
+      row.addEventListener("mouseenter",function(){cue(fi);});
+      row.addEventListener("click",function(){pin(fi);});
+      rows.push(row); list.appendChild(row);
+    });
+    cells.forEach(function(c){
+      var fi=owner[+c.dataset.idx];
+      c.addEventListener("mouseenter",function(){cue(fi);});
+      c.addEventListener("click",function(){pin(fi);});
+    });
+    var left=document.createElement("div"); left.className="left";
+    left.appendChild(diagram); left.appendChild(list);
+    var dcol=document.createElement("div"); dcol.className="detailcol"; dcol.appendChild(aside);
+    var block=document.createElement("div"); block.className="block";
+    block.appendChild(left); block.appendChild(dcol);
+    block.addEventListener("mouseleave",restore);
+    mount.appendChild(block);
+    var maxH=aside.scrollHeight;
+    fields.forEach(function(f){ show(f); if(aside.scrollHeight>maxH) maxH=aside.scrollHeight; });
+    det.t.textContent="Hover a field or byte";
+    det.c.textContent=bytes.length+" bytes";
+    det.b.textContent="Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.";
+    det.n.textContent="";
+    dcol.style.minHeight=(maxH+6)+"px";
+  }
+
+
+  /* ---- byte arrays: generated, every length field computed ---- */
+  var B_INIT = [0xC3,0x00,0x00,0x00,0x01,0x08,0x83,0x94,0xC8,0xF0,0x3E,0x51,0x57,0x08,0x00,0x00,
+         0x44,0x9E,0x00,0x00,0x00,0x02]; // 22 bytes
+
+  var B_PROT = [0xC0,0x00,0x00,0x00,0x01,0x08,0x83,0x94,0xC8,0xF0,0x3E,0x51,0x57,0x08,0x00,0x00,
+         0x44,0x9E,0x7B,0x9A,0xEC,0x34]; // 22 bytes
+
+  var B_SHORT = [0x41,0x83,0x94,0xC8,0xF0,0x3E,0x51,0x57,0x08,0x00,0x02]; // 11 bytes
+
+  var B_RETRY = [0xFF,0x00,0x00,0x00,0x01,0x00,0x08,0xF0,0x67,0xA5,0x50,0x2A,0x42,0x62,0xB5,0x74,
+         0x6F,0x6B,0x65,0x6E,0x04,0xA2,0x65,0xBA,0x2E,0xFF,0x4D,0x82,0x90,0x58,0xFB,0x3F,
+         0x0F,0x24,0x96,0xBA]; // 36 bytes
+
+  var B_VN = [0xCB,0x00,0x00,0x00,0x00,0x08,0x83,0x94,0xC8,0xF0,0x3E,0x51,0x57,0x08,0x08,0xF0,
+         0x67,0xA5,0x50,0x2A,0x42,0x62,0xB5,0x00,0x00,0x00,0x01,0x6B,0x33,0x43,0xCF,0x0A,
+         0x0A,0x0A,0x0A]; // 35 bytes
+
+  var B_VARINT = [0xC2,0x19,0x7C,0x5E,0xFF,0x14,0xE8,0x8C,0x9D,0x7F,0x3E,0x7D,0x7B,0xBD,0x25]; // 15 bytes
+
+  var B_CRYPTO = [0x06,0x00,0x10,0x01,0x00,0x01,0xFC,0x03,0x03,0x9D,0x2F,0x4C,0x81,0xB0,0x7A,0x3E,
+         0x6F,0x15,0xC8]; // 19 bytes
+
+  var B_STREAM = [0x0F,0x00,0x00,0x05,0x68,0x65,0x6C,0x6C,0x6F]; // 9 bytes
+
+  var B_ACK = [0x02,0x0A,0x41,0x00,0x01,0x02,0x01,0x02]; // 8 bytes
+
+  var B_TP = [0x00,0x39,0x00,0x1D,0x01,0x04,0x80,0x00,0x75,0x30,0x04,0x04,0x80,0x10,0x00,0x00,
+         0x08,0x02,0x40,0x64,0x0E,0x01,0x04,0x0F,0x08,0xF0,0x67,0xA5,0x50,0x2A,0x42,0x62,
+         0xB5]; // 33 bytes
+
+  var B_H3H = [0x01,0x12,0x00,0x00,0xD1,0xD7,0xC1,0x50,0x0B,0x65,0x78,0x61,0x6D,0x70,0x6C,0x65,
+         0x2E,0x63,0x6F,0x6D]; // 20 bytes
+
+  var B_H3S = [0x04,0x0B,0x01,0x50,0x00,0x06,0x80,0x00,0x40,0x00,0x07,0x40,0x64]; // 13 bytes
+
+  var LONGTYPE=[["0x00","Initial - carries the ClientHello"],["0x01","0-RTT - early application data"],
+                ["0x02","Handshake - the rest of the TLS handshake"],["0x03","Retry - address validation"]];
+  var FRAMES=[["0x00","PADDING"],["0x01","PING"],["0x02-03","ACK"],["0x06","CRYPTO"],["0x07","NEW_TOKEN"],
+              ["0x08-0f","STREAM"],["0x10","MAX_DATA"],["0x18","NEW_CONNECTION_ID"],
+              ["0x1a-1b","PATH_CHALLENGE / PATH_RESPONSE"],["0x1c-1d","CONNECTION_CLOSE"],["0x1e","HANDSHAKE_DONE"]];
+  var STREAMBITS=[["0x08","base - no offset, no length, no fin"],["0x09","FIN"],["0x0a","LEN"],["0x0b","LEN + FIN"],
+                  ["0x0c","OFF"],["0x0d","OFF + FIN"],["0x0e","OFF + LEN"],["0x0f","OFF + LEN + FIN"]];
+  var STREAMID=[["0x00","client-initiated bidirectional"],["0x01","server-initiated bidirectional"],
+                ["0x02","client-initiated unidirectional"],["0x03","server-initiated unidirectional"]];
+  var VERSIONS=[["0x00000000","Version Negotiation"],["0x00000001","QUIC v1 (RFC 9000)"],
+                ["0x6b3343cf","QUIC v2 (RFC 9369)"],["0x?a?a?a?a","reserved - forces negotiation"]];
+  var TPARAMS=[["0x01","max_idle_timeout"],["0x03","max_udp_payload_size"],["0x04","initial_max_data"],
+               ["0x05","initial_max_stream_data_bidi_local"],["0x08","initial_max_streams_bidi"],
+               ["0x09","initial_max_streams_uni"],["0x0c","disable_active_migration"],
+               ["0x0e","active_connection_id_limit"],["0x0f","initial_source_connection_id"],
+               ["0x00","original_destination_connection_id"]];
+  var H3FRAMES=[["0x00","DATA"],["0x01","HEADERS"],["0x03","CANCEL_PUSH"],["0x04","SETTINGS"],
+                ["0x05","PUSH_PROMISE"],["0x07","GOAWAY"],["0x0d","MAX_PUSH_ID"],
+                ["0x02 0x06 0x08 0x09","reserved - h2 codepoints, connection error"]];
+  var H3SET=[["0x01","QPACK_MAX_TABLE_CAPACITY"],["0x06","MAX_FIELD_SECTION_SIZE"],
+             ["0x07","QPACK_BLOCKED_STREAMS"],["0x08","ENABLE_CONNECT_PROTOCOL"]];
+  var STATIC=[["1",":path /"],["17",":method GET"],["20",":method POST"],["23",":scheme https"],
+              ["25",":status 200"],["0",":authority (empty value)"]];
+
+  var SPECS={
+    "block-init":["byte", B_INIT, [
+      {label:"first byte",k:"flag",r:[0,0],val:"0xc3 Initial, PN len 4",sel:0,branch:LONGTYPE,
+        body:"1 header form (long), 1 fixed bit, 00 packet type (Initial), 00 reserved, 11 packet number length minus one. So 0xc3 means a 4-byte packet number. On the wire the low 4 bits are masked by header protection - see the Initial & Keys tab.",
+        note:"11 000011 -> long, fixed, Initial, 4-byte PN"},
+      {label:"version",k:"enum",r:[1,4],val:"0x00000001 QUIC v1",sel:1,branch:VERSIONS,
+        body:"Only present in long headers. A zero here is not a version, it is a Version Negotiation packet. RFC 8999 pins this field's position across all future versions - it is the one part of QUIC that can never move."},
+      {label:"destination CID length",k:"sync",r:[5,5],val:"8",
+        body:"A plain byte, not a varint, and capped at 20. Long headers carry an explicit length because a receiver may not have any state for this connection yet."},
+      {label:"destination connection ID",k:"enum",r:[6,13],val:"0x8394c8f03e515708",
+        body:"Chosen at random by the client for its very first packet. It is never used to route anything - its only real job is to be the input to the Initial key derivation, after which the server replaces it with a CID of its own choosing.",
+        note:"this exact value keys the Initial packet"},
+      {label:"source CID length",k:"sync",r:[14,14],val:"0 (empty)",
+        body:"Zero, so no source connection ID bytes follow at all. The client is telling the server to send packets back with an empty destination CID - legal for a client that never expects to migrate. A server always uses a non-empty one."},
+      {label:"token length",k:"sync",r:[15,15],val:"0",
+        body:"A varint. Non-zero only when the client is echoing a token from a previous Retry or NEW_TOKEN frame, which lets the server skip address validation."},
+      {label:"length",k:"sync",r:[16,17],val:"1182 bytes",
+        body:"Varint covering the packet number plus the protected payload - not the header. This is what allows several QUIC packets to be coalesced into one UDP datagram: the receiver knows where this packet ends and the next begins.",
+        note:"0x449e -> 2-byte varint, value 1182"},
+      {label:"packet number",k:"enum",r:[18,21],val:"2",
+        body:"Truncated to the fewest bytes that let the peer reconstruct it from the largest packet number it has acknowledged. Numbers are per packet number space, start at 0, and are never reused - not even on retransmission.",
+        note:"protected on the wire: becomes 7b9aec34"}
+    ]],
+    "block-prot":["byte", B_PROT, [
+      {label:"protected first byte",k:"flag",r:[0,0],val:"0xc0 (was 0xc3)",
+        body:"The low 4 bits were XORed with the low 4 bits of the mask. Packet type and reserved bits are hidden along with the packet number length, so an observer cannot even tell how long the packet number field is.",
+        note:"c3 ^ (43 & 0f) = c0"},
+      {label:"version",k:"rsv",r:[1,4],val:"cleartext",
+        body:"Never protected. Version must be readable by a receiver that does not support it, otherwise Version Negotiation could not work."},
+      {label:"destination CID length",k:"rsv",r:[5,5],val:"cleartext"},
+      {label:"destination connection ID",k:"rsv",r:[6,13],val:"cleartext",
+        body:"Necessarily in the clear - it is how the packet is routed to the right endpoint, and in the Initial case it is also the key material. This field is the single largest privacy surface QUIC has, which is why RFC 9000 section 9.5 requires rotating it on migration."},
+      {label:"source CID length",k:"rsv",r:[14,14],val:"cleartext"},
+      {label:"token length",k:"rsv",r:[15,15],val:"cleartext"},
+      {label:"length",k:"rsv",r:[16,17],val:"cleartext",
+        body:"Long headers keep a cleartext length so packets can be coalesced. Short headers have no length field at all, which is a real reduction in what an observer can parse."},
+      {label:"protected packet number",k:"flag",r:[18,21],val:"7b9aec34 (was 00000002)",
+        body:"XORed with mask bytes 1 through 4. Without this, packet numbers would be a trivially linkable counter across a migration - an observer could follow a connection from one IP to another just by watching the sequence continue.",
+        note:"00000002 ^ 7b9aec36 = 7b9aec34"}
+    ]],
+    "block-short":["byte", B_SHORT, [
+      {label:"first byte",k:"flag",r:[0,0],val:"0x41",
+        body:"0 header form (short), 1 fixed bit, 0 spin bit, 00 reserved, 0 key phase, 01 packet number length minus one. Header protection masks the low 5 bits here rather than 4, because the key phase bit must be hidden too.",
+        note:"01 0 00 0 01 -> short, fixed, spin 0, KP 0, 2-byte PN"},
+      {label:"destination connection ID",k:"enum",r:[1,8],val:"0x8394c8f03e515708",
+        body:"No length field precedes it. The receiver chose this CID and therefore already knows how long it is; anyone else has to guess. This is the main reason a mid-stream observer cannot parse QUIC."},
+      {label:"packet number",k:"enum",r:[9,10],val:"2",
+        body:"One to four bytes, length given by the (protected) first byte. After this comes the payload, running to the end of the UDP datagram - there is no length field to say where it stops."}
+    ]],
+    "block-vn":["byte", B_VN, [
+      {label:"first byte",k:"flag",r:[0,0],val:"0xcb - only bit 0 matters",
+        body:"A server sets the unused bits to an arbitrary value. Only the header form bit is meaningful, because a Version Negotiation packet is not really a QUIC packet - it has no version to define its own format."},
+      {label:"version",k:"enum",r:[1,4],val:"0x00000000",sel:0,branch:VERSIONS,
+        body:"Zero is the signal. There is no packet number, no protection, and no acknowledgement of any kind."},
+      {label:"destination CID length",k:"sync",r:[5,5],val:"8"},
+      {label:"destination connection ID",k:"enum",r:[6,13],val:"the client's source CID",
+        body:"The two connection IDs are swapped relative to the packet that triggered this, so the client can match it to its own attempt."},
+      {label:"source CID length",k:"sync",r:[14,14],val:"8"},
+      {label:"source connection ID",k:"enum",r:[15,22],val:"the client's destination CID"},
+      {label:"supported version",k:"enum",r:[23,26],val:"0x00000001 v1"},
+      {label:"supported version",k:"enum",r:[27,30],val:"0x6b3343cf v2",
+        body:"QUIC v2, RFC 9369. Deliberately not a small increment of v1 - the value is arbitrary so that nothing can pattern-match on version numbers being sequential."},
+      {label:"reserved version",k:"flag",r:[31,34],val:"0x0a0a0a0a",
+        body:"A GREASE version. A server includes one it does not implement, so that a client which mishandles unknown versions fails during testing rather than blocking a future real version.",
+        note:"any 0x?a?a?a?a value"}
+    ]],
+    "block-retry":["byte", B_RETRY, [
+      {label:"first byte",k:"flag",r:[0,0],val:"0xff Retry",sel:3,branch:LONGTYPE,
+        body:"Long header, type 0x03. The low 4 bits are unused and unprotected - a Retry has no packet number to hide, so there is no header protection at all."},
+      {label:"version",k:"enum",r:[1,4],val:"0x00000001 QUIC v1"},
+      {label:"destination CID length",k:"sync",r:[5,5],val:"0 (empty)",
+        body:"Echoes the client's source CID, which was empty in this example, so no bytes follow."},
+      {label:"source CID length",k:"sync",r:[6,6],val:"8"},
+      {label:"source connection ID",k:"enum",r:[7,14],val:"0xf067a5502a4262b5",
+        body:"A new CID chosen by the server. The client must use it as the destination on its retried Initial - and because the DCID changed, the Initial keys change with it and must be re-derived."},
+      {label:"retry token",k:"enum",r:[15,19],val:"\"token\"",
+        body:"Opaque to the client, which echoes it in the token field of its next Initial. The server encodes the client's address and a timestamp into it, so it can verify the address without keeping per-connection state - the same trick as a TCP SYN cookie.",
+        note:"runs to 16 bytes before the end - there is no length field"},
+      {label:"retry integrity tag",k:"flag",r:[20,35],val:"16 bytes, AES-GCM",
+        body:"AES-128-GCM over a pseudo-packet that prepends the original destination connection ID, keyed by a constant published in RFC 9001 section 5.8. Anyone can compute it, so it proves only that the packet was not corrupted and was written by someone who had seen the original CID. Real anti-forgery comes later, when the server echoes original_destination_connection_id inside the encrypted handshake.",
+        note:"these 16 bytes are RFC 9001 A.4's published value, reproduced - not recomputed for this page"}
+    ]],
+    "block-varint":["byte", B_VARINT, [
+      {label:"8-byte form",k:"enum",r:[0,7],val:"151288809941952652",
+        body:"First byte 0xc2: top bits 11, so 8 bytes total and 62 usable bits. Mask off the two length bits and read the rest big-endian.",
+        note:"0xc2197c5eff14e88c"},
+      {label:"4-byte form",k:"enum",r:[8,11],val:"494878333",
+        body:"First byte 0x9d: top bits 10, so 4 bytes and 30 usable bits.",
+        note:"0x9d7f3e7d"},
+      {label:"2-byte form",k:"enum",r:[12,13],val:"15293",
+        body:"First byte 0x7b: top bits 01, so 2 bytes and 14 usable bits.",
+        note:"0x7bbd"},
+      {label:"1-byte form",k:"enum",r:[14,14],val:"37",
+        body:"Top bits 00: one byte, 6 usable bits, values 0 to 63. The same value could legally be sent as 0x4025 in two bytes - RFC 9000 section 16 permits non-minimal encodings, so never compare encoded bytes.",
+        note:"0x25, and 0x4025 is equally valid"}
+    ]],
+    "block-crypto":["byte", B_CRYPTO, [
+      {label:"frame type",k:"flag",r:[0,0],val:"0x06 CRYPTO",sel:3,branch:FRAMES,
+        body:"Frame types are varints, so the space extends past 63 without any flag day. CRYPTO is allowed in Initial, Handshake and 1-RTT packets, but never in 0-RTT."},
+      {label:"offset",k:"sync",r:[1,1],val:"0",
+        body:"Byte offset within the handshake stream for this packet number space. Handshake data can arrive out of order and is reassembled by offset, exactly like a stream - but there is no stream ID, no flow control, and no way to reset it."},
+      {label:"length",k:"sync",r:[2,2],val:"16 bytes"},
+      {label:"crypto data",k:"enum",r:[3,18],val:"the TLS ClientHello",
+        body:"Raw TLS handshake bytes with no record layer: 0x01 client_hello, a 3-byte length of 0x0001fc, then legacy_version 0x0303 and the start of the random. Byte-identical to the message decoded on the TLS 1.3 page - QUIC just deleted the 5-byte record header that used to wrap it.",
+        note:"same bytes as tls13-handshake.html, minus the record layer"}
+    ]],
+    "block-stream":["byte", B_STREAM, [
+      {label:"frame type",k:"flag",r:[0,0],val:"0x0f OFF+LEN+FIN",sel:7,branch:STREAMBITS,
+        body:"The three low bits are flags, not a type: 0x04 an Offset field follows, 0x02 a Length field follows, 0x01 this is the last data on the stream. All three are set here."},
+      {label:"stream ID",k:"enum",r:[1,1],val:"0",sel:0,branch:STREAMID,
+        body:"A varint whose low two bits say who opened the stream and whether it is bidirectional. Zero means client-initiated bidirectional stream 0 - in HTTP/3, the first request."},
+      {label:"offset",k:"sync",r:[2,2],val:"0",
+        body:"Byte offset of this data within the stream. Present only because the OFF bit is set; a frame at offset zero usually omits it."},
+      {label:"length",k:"sync",r:[3,3],val:"5",
+        body:"Present only because the LEN bit is set. A sender normally clears LEN on the last frame in a packet so the frame runs to the end of the packet and the length costs nothing."},
+      {label:"stream data",k:"enum",r:[4,8],val:"\"hello\"",
+        body:"With FIN set, this closes the sending direction of stream 0. The other direction stays open until the peer sends its own FIN."}
+    ]],
+    "block-ack":["byte", B_ACK, [
+      {label:"frame type",k:"flag",r:[0,0],val:"0x02 ACK",sel:2,branch:FRAMES,
+        body:"0x03 is the same frame with three extra ECN counters appended."},
+      {label:"largest acknowledged",k:"enum",r:[1,1],val:"10",
+        body:"The highest packet number being acknowledged in this space. Ranges are listed downwards from here."},
+      {label:"ACK delay",k:"enum",r:[2,3],val:"256 -> 2048 microseconds",
+        body:"How long the receiver held the ACK before sending it, so the peer can subtract it from the RTT sample. Scaled by 2^ack_delay_exponent, default 3.",
+        note:"0x4100 -> 2-byte varint, 256; 256 << 3 = 2048 us"},
+      {label:"ACK range count",k:"sync",r:[4,4],val:"1",
+        body:"How many additional ranges follow the first one."},
+      {label:"first ACK range",k:"enum",r:[5,5],val:"2 -> packets 8 to 10",
+        body:"Count of contiguous packets below Largest Acknowledged that are also acked. Smallest in this range = 10 - 2 = 8."},
+      {label:"gap",k:"enum",r:[6,6],val:"1 -> next largest is 5",
+        body:"Unacked packets between ranges, encoded one less than the true count. Next largest = previous smallest - gap - 2 = 8 - 1 - 2 = 5."},
+      {label:"ACK range length",k:"enum",r:[7,7],val:"2 -> packets 3 to 5",
+        body:"Contiguous acked packets in this range, again one less than the true count. So this frame acknowledges 8-10 and 3-5, and says nothing about 6 and 7 - which are presumed lost once enough later packets are acked."}
+    ]],
+    "block-tp":["byte", B_TP, [
+      {label:"extension type",k:"flag",r:[0,1],val:"57 quic_transport_parameters",
+        body:"A normal TLS extension in the ClientHello, defined by RFC 9001 section 8.2. Present on every QUIC connection and on no TCP one, which alone separates the two in a fingerprint."},
+      {label:"extension length",k:"sync",r:[2,3],val:"29 bytes"},
+      {label:"max_idle_timeout",k:"enum",r:[4,9],val:"30000 ms",sel:0,branch:TPARAMS,
+        body:"Id 0x01, length 4, then a 4-byte varint. Each side states its own timeout and the effective value is the minimum of the two. Zero means no timeout.",
+        note:"01 04 80007530"},
+      {label:"initial_max_data",k:"enum",r:[10,15],val:"1048576 bytes",
+        body:"Connection-level flow control credit. QUIC has two layers of flow control - per connection and per stream - and the connection limit caps the sum of all streams.",
+        note:"04 04 80100000"},
+      {label:"initial_max_streams_bidi",k:"enum",r:[16,19],val:"100",
+        body:"How many bidirectional streams the peer may open. In HTTP/3 this is the concurrent request limit, raised over time with MAX_STREAMS frames.",
+        note:"08 02 4064"},
+      {label:"active_connection_id_limit",k:"enum",r:[20,22],val:"4",
+        body:"How many connection IDs the peer must be prepared to store. It bounds how many spare CIDs are available for migration, so a low value quietly limits how often a client can rotate identity.",
+        note:"0e 01 04"},
+      {label:"initial_source_connection_id",k:"enum",r:[23,32],val:"0xf067a5502a4262b5",
+        body:"The CID this endpoint used as its source in its first packet, echoed inside the encrypted handshake. The peer checks it against what it actually received - which is what stops an attacker rewriting connection IDs in the cleartext header.",
+        note:"0f 08 f067a5502a4262b5"}
+    ]],
+    "block-h3h":["byte", B_H3H, [
+      {label:"frame type",k:"flag",r:[0,0],val:"0x01 HEADERS",sel:1,branch:H3FRAMES,
+        body:"HTTP/3 frames are type and length varints followed by a payload. There is no stream ID in the frame - the QUIC stream it arrives on is the stream."},
+      {label:"frame length",k:"sync",r:[1,1],val:"18 bytes"},
+      {label:"required insert count",k:"sync",r:[2,2],val:"0 - never blocks",
+        body:"Zero means this field section references no dynamic table entries, so it can be decoded the instant it arrives regardless of what else is in flight. This is the safe default every encoder starts from."},
+      {label:"delta base",k:"sync",r:[3,3],val:"0",
+        body:"Sets the base for relative dynamic references. Irrelevant here because there are none."},
+      {label:":method GET",k:"enum",r:[4,4],val:"0xd1 indexed, static 17",sel:1,branch:STATIC,
+        body:"Pattern 1Txxxxxx: 1 indexed, T=1 static table, index 010001 = 17. A complete header field in one byte, because the static table holds the value as well as the name.",
+        note:"11 010001"},
+      {label:":scheme https",k:"enum",r:[5,5],val:"0xd7 indexed, static 23",
+        body:"Index 23. There is a separate entry 22 for :scheme http.",
+        note:"11 010111"},
+      {label:":path /",k:"enum",r:[6,6],val:"0xc1 indexed, static 1",
+        body:"Index 1. Any other path needs a literal representation with a name reference to this entry.",
+        note:"11 000001"},
+      {label:":authority, name ref",k:"enum",r:[7,7],val:"0x50 literal, static 0",
+        body:"Pattern 01NTxxxx: literal with a name reference, N=0 so it may be indexed later, T=1 static, index 0000 = 0 (:authority). Only the value is sent inline.",
+        note:"0101 0000"},
+      {label:"value length",k:"sync",r:[8,8],val:"11, not Huffman",
+        body:"A 7-bit prefix integer with the top bit flagging Huffman coding. 0x0b is 11 with the H bit clear, so the value follows as literal ASCII. An encoder is free to Huffman-code it instead; that is a per-encoder choice, not a rule."},
+      {label:"value",k:"enum",r:[9,19],val:"\"example.com\"",
+        body:"The authority, in the clear inside the encrypted stream. Together the four fields encode GET https://example.com/ in 18 bytes."}
+    ]],
+    "block-h3s":["byte", B_H3S, [
+      {label:"frame type",k:"flag",r:[0,0],val:"0x04 SETTINGS",sel:3,branch:H3FRAMES,
+        body:"Must be the first frame on the control stream, and may be sent only once. Unlike HTTP/2 there is no SETTINGS acknowledgement. Settings identifiers of the form 0x1f * N + 0x21 are reserved and must be ignored, so an endpoint can advertise nonsense to keep peers tolerant."},
+      {label:"frame length",k:"sync",r:[1,1],val:"11 bytes"},
+      {label:"QPACK_MAX_TABLE_CAPACITY",k:"enum",r:[2,4],val:"4096",sel:0,branch:H3SET,
+        body:"How large a dynamic table this endpoint will maintain as a decoder. Zero is the default, and disables the dynamic table entirely - a choice many deployments make deliberately, paying in bytes for immunity from QPACK head-of-line blocking.",
+        note:"01 5000"},
+      {label:"MAX_FIELD_SECTION_SIZE",k:"enum",r:[5,9],val:"16384",
+        body:"The largest field section this endpoint will accept, measured uncompressed: the sum over all fields of name length + value length + 32. The constant 32 charges for per-field overhead so a flood of tiny headers cannot slip under the limit. This is the HTTP/3 defence against a compression bomb - a small compressed section that expands enormously. The default is unlimited.",
+        note:"06 80004000"},
+      {label:"QPACK_BLOCKED_STREAMS",k:"enum",r:[10,12],val:"100",
+        body:"How many streams may be blocked waiting on dynamic table insertions at once. Setting it to zero means the encoder must never emit a field section that could block, which trades compression ratio for guaranteed latency.",
+        note:"07 4064"}
+    ]]
+  };
+
+  var built={};
+  function buildPanel(name){
+    var panel=document.querySelector('[data-panel="'+name+'"]'); if(!panel) return;
+    panel.querySelectorAll("[data-build]").forEach(function(m){
+      if(built[m.id]) return; built[m.id]=1;
+      var spec=SPECS[m.id]; if(spec) build(m.id, spec[0], spec[1], spec[2]);
+    });
+  }
+
+  /* ---- JA4q string decoder ---- */
+  var SEG=[
+    {t:"q",k:"sync",n:"protocol",v:"q = QUIC",d:"The only change to the algorithm. The ClientHello it reads is recovered from CRYPTO frames inside an Initial packet, whose keys derive from the cleartext destination connection ID."},
+    {t:"13",k:"sync",n:"TLS version",v:"1.3",d:"Always 13 on QUIC. RFC 9001 section 4.2 permits no version below TLS 1.3, so unlike a TCP hello this segment carries no information at all."},
+    {t:"d",k:"flag",n:"SNI",v:"present",d:"d = server_name present. Still plaintext inside the Initial, and still the field that filtering keys on - QUIC changed nothing here."},
+    {t:"03",k:"enum",n:"cipher count",v:"3",d:"The tell, though it is a convention rather than a rule. RFC 9001 permits every TLS 1.3 suite except TLS_AES_128_CCM_8_SHA256, so four are legal; browsers offer the three AEAD suites and nothing else. A TCP browser hello reads 15 because it must still carry TLS 1.2 suites, which QUIC has no use for."},
+    {t:"10",k:"enum",n:"extension count",v:"10",d:"Ten non-GREASE extensions in this sample. The set differs from a TCP hello: quic_transport_parameters (57) is added, and the TLS 1.2 legacy extensions - session_ticket, ec_point_formats, renegotiation_info - fall away because nothing in a QUIC handshake can use them."},
+    {t:"h3",k:"flag",n:"ALPN",v:"h3",d:"First and last character of the first ALPN value. HTTP/3 registers h3 (RFC 9114), so that is what a browser offers - but ALPN is not constrained by QUIC itself, and other protocols run over QUIC with their own identifiers."},
+    {sep:"_"},
+    {t:"55b375c5d22e",k:"enum",n:"cipher hash",v:"sha256[:12]",d:"The three non-GREASE suites sorted and hashed, exactly as in the TCP case. With only three possible values this hash has very little entropy on QUIC - the extension hash does the discriminating."},
+    {sep:"_"},
+    {t:"cd85d2d88918",k:"sync",n:"extension + sigalg hash",v:"sha256[:12]",d:"Sorted extensions with SNI and ALPN removed, then an underscore and the signature algorithms in wire order. Same rule as TCP: canonicalise what an evader can shuffle, preserve what the stack fixes."}
+  ];
+  var jstrEl=document.getElementById("jstr"), det=document.getElementById("jdetail");
+  var dl=det.querySelector(".dl"), h3=det.querySelector("h3"), dv=det.querySelector(".dv"), pp=det.querySelector("p");
+  var segs=[];
+  SEG.forEach(function(s){
+    if(s.sep){ var sp=document.createElement("span"); sp.className="jsep"; sp.textContent=s.sep; jstrEl.appendChild(sp); return; }
+    var el=document.createElement("span"); el.className="jseg k-"+s.k; el.textContent=s.t;
+    function show(){ segs.forEach(function(x){x.classList.remove("on");}); el.classList.add("on");
+      dl.textContent=s.n; h3.textContent=s.t; dv.textContent=s.v; pp.textContent=s.d; }
+    el.addEventListener("mouseenter",show); el.addEventListener("click",show);
+    jstrEl.appendChild(el); segs.push(el);
+  });
+
+  /* ---- tabs ---- */
+  var tabs=[].slice.call(document.querySelectorAll(".tab"));
+  var panels=[].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    tabs.forEach(function(t){t.classList.toggle("on",t.dataset.p===name);});
+    panels.forEach(function(p){p.classList.toggle("on",p.dataset.panel===name);});
+    buildPanel(name);
+  }
+  tabs.forEach(function(t){t.addEventListener("click",function(){
+    activate(t.dataset.p);
+    if(history.replaceState) history.replaceState(null,"","#"+t.dataset.p);
+  });});
+  var initial=(location.hash||"").replace("#","");
+  if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
+  else buildPanel("packets");
+})();
+</script>
+<script src="../assets/protofun-toggle.js"></script>
+</body>
+</html>
