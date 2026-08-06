@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>protocols-fun / packet fate</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  --paper:#E6EBEE; --panel:#EFF3F5; --ink:#10171C; --soft:#46545E;
+  --faint:#7A8790; --line:#C1CDD3; --hair:#D6E0E4;
+  --enum:#0E7A8C; --enum-soft:#D1E7EA;
+  --flag:#C1501A; --flag-soft:#F0DACB;
+  --sync:#34507E; --sync-soft:#DCE3EE;
+  --rsv:#838E96;  --rsv-soft:rgba(16,23,28,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#0a0f0d;--panel:#0f1613;--ink:#c6f0d0;--soft:#7fae90;--faint:#4f6a5c;--line:#22302a;--hair:#151d19;--enum:#2fe38a;--enum-soft:#0e2a1d;--flag:#e0a92e;--flag-soft:#2c2410;--sync:#4fb8d6;--sync-soft:#0f2630;--rsv:#6f8f7f;--rsv-soft:rgba(198,240,208,0.05);}
+:root[data-theme="amber"]{--paper:#120c00;--panel:#1c1400;--ink:#ffb000;--soft:#c08a2a;--faint:#8a6a20;--line:#3a2a00;--hair:#241900;--enum:#ffb000;--enum-soft:#2a1d00;--flag:#ffd27a;--flag-soft:#332400;--sync:#d98a1a;--sync-soft:#241a00;--rsv:#9a7524;--rsv-soft:rgba(255,176,0,0.05);}
+:root[data-theme="vapor"]{--paper:#f4efe0;--panel:#ece4d0;--ink:#123b37;--soft:#3f605b;--faint:#8a9a90;--line:#e5457f;--hair:#ddd3bd;--enum:#e5457f;--enum-soft:#f8d9e4;--flag:#e0982f;--flag-soft:#f5e6c6;--sync:#0e9c90;--sync-soft:#cbe9e3;--rsv:#8a9a90;--rsv-soft:rgba(18,59,55,0.05);}
+/* house modes: the site-wide Deep Dive skins (warm cream / neutral dark, house teal+orange) */
+:root[data-theme="house-light"]{--paper:#F2F1EE;--panel:#FBFAF6;--ink:#17150F;--soft:#4A4744;--faint:#8C877E;--line:#C9C5BB;--hair:#E4E0D7;--enum:#007870;--enum-soft:#D8E7E5;--flag:#E85000;--flag-soft:#F6E1D4;--sync:#33518C;--sync-soft:#DEE3EF;--rsv:#8C877E;--rsv-soft:rgba(23,21,15,0.04);}
+:root[data-theme="house-dark"]{--paper:#121213;--panel:#1c1c1e;--ink:#ececea;--soft:#a9a9a4;--faint:#6f6f6b;--line:#313135;--hair:#26262a;--enum:#08F9DF;--enum-soft:#0e2a29;--flag:#FF4D00;--flag-soft:#2c1a10;--sync:#7fb2e0;--sync-soft:#16232f;--rsv:#8b8b88;--rsv-soft:rgba(236,236,234,0.05);}
+/* house modes: RJ wears teal and flips to orange on hover; a couple of subtle orange touches in the head */
+:root[data-theme="house-light"] .head .title protofun-toggle{color:var(--flag)}
+:root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
+:root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
+:root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
+:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
+:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
+:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
+.head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem}
+.head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
+.head .title protofun-toggle:hover{color:var(--enum)}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500}
+.lede a{color:var(--enum)}
+.intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
+.intro .lede{margin-bottom:0}
+.sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
+.sig .legrows{display:flex;flex-direction:column;gap:0.42rem}
+.sig .siglabel{writing-mode:vertical-rl;text-orientation:mixed;align-self:stretch;display:flex;align-items:center;justify-content:center;font-size:0.5rem;letter-spacing:0.34em;text-transform:uppercase;color:var(--faint);padding-left:0.9rem;border-left:1px solid var(--hair)}
+.sig .row{display:flex;align-items:center;gap:0.4rem;font-size:0.68rem;color:var(--soft);letter-spacing:0.02em;white-space:nowrap}
+.sig .swsep{color:var(--faint);font-size:0.62rem}
+.sig .sw{display:inline-flex;align-items:center;justify-content:center;width:6.1rem;height:1.45rem;padding:0;font-size:0.58rem;letter-spacing:0.1em;text-transform:lowercase;flex-shrink:0}
+.sig .sw.dark{color:var(--paper)}
+.sig .sw.light{color:var(--ink);border:1px solid var(--hair)}
+.sig .sw.dark.k-enum{background:var(--enum)} .sig .sw.light.k-enum{background:var(--enum-soft)}
+.sig .sw.dark.k-flag{background:var(--flag)} .sig .sw.light.k-flag{background:var(--flag-soft)}
+.sig .sw.dark.k-sync{background:var(--sync)} .sig .sw.light.k-sync{background:var(--sync-soft)}
+.sig .sw.dark.k-rsv{background:var(--faint)} .sig .sw.light.k-rsv{background:var(--rsv-soft)}
+@media(max-width:820px){.intro{display:block}.sig{display:none}}
+.k-en{color:var(--enum)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:2.2rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:78ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.2rem 0 0.4rem;max-width:82ch}
+.callout b{color:var(--ink);font-weight:500} .callout a{color:var(--enum)}
+.callout.hot{border-left-color:var(--enum)}
+code{font-family:var(--ff);color:var(--enum);font-size:0.92em;background:var(--rsv-soft);padding:0.02rem 0.28rem;border-radius:2px;white-space:nowrap}
+.atable{width:100%;border-collapse:collapse;font-size:0.74rem;margin:0.4rem 0 1.3rem}
+.atable th,.atable td{text-align:left;padding:0.38rem 0.7rem;border-bottom:1px solid var(--hair);vertical-align:top}
+.atable th{font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+.atable td.x{font-family:var(--ff);color:var(--enum);white-space:nowrap;font-size:0.72rem}
+.atable td.f{color:var(--ink);font-weight:500;white-space:nowrap}
+.atable td.g{color:var(--faint)}
+.kv{font-size:0.78rem;margin:0.3rem 0 1.1rem}
+.kv div{display:grid;grid-template-columns:9.5rem 1fr;gap:1rem;padding:0.3rem 0;border-bottom:1px solid var(--hair)}
+.kv div:last-child{border-bottom:none}
+.kv .k{color:var(--enum)} .kv .v{color:var(--soft)}
+.cmd{font-family:var(--ff);font-size:0.76rem;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--enum);padding:0.6rem 0.85rem;margin:0.5rem 0 1.2rem;overflow-x:auto;white-space:pre;color:var(--ink);line-height:1.7}
+.cmd .p{color:var(--faint)} .cmd .c{color:var(--faint);font-style:italic}
+
+/* byte inspector (shared engine with the anatomy pages) */
+.dbytes{display:flex;flex-wrap:wrap;gap:4px;margin:0.6rem 0 1.4rem}
+.bcol{display:flex;flex-direction:column;align-items:center}
+.bcol .off{font-size:0.5rem;color:var(--faint);margin-bottom:2px;letter-spacing:0.02em}
+.bcell{width:2.5rem;height:1.9rem;display:flex;align-items:center;justify-content:center;font-size:0.78rem;border:1px solid var(--hair);color:var(--soft);transition:background .12s,color .12s;cursor:pointer}
+.bcell.k-sync{background:var(--sync-soft)} .bcell.k-enum{background:var(--enum-soft)}
+.bcell.k-flag{background:var(--flag-soft)} .bcell.k-rsv{background:var(--rsv-soft)}
+.bcell.fstart{border-left:2px solid var(--line)}
+.bcell.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+.block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
+.left{min-width:0}
+.detailcol{position:relative}
+@media(max-width:820px){.block{grid-template-columns:1fr}.detailcol{position:static}}
+.fields{border-top:1px solid var(--line)}
+.field{display:grid;grid-template-columns:5.4rem 1fr auto;gap:0.8rem;align-items:baseline;padding:0.46rem 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.field:hover,.field.active,.field.cued{background:var(--panel)}
+.field .fb{font-size:0.6rem;color:var(--faint)} .field .fn{font-size:0.82rem;color:var(--ink)}
+.field[data-branch] .fn::after{content:"+";margin-left:0.4rem;color:var(--enum);font-weight:500}
+.field.active[data-branch] .fn::after{content:"\2212"}
+.fv{font-size:0.76rem;text-align:right}
+.fv.k-sync{color:var(--sync)} .fv.k-enum{color:var(--enum)} .fv.k-flag{color:var(--flag)} .fv.k-rsv{color:var(--faint)}
+.branch{grid-column:1 / -1;display:none;padding:0.5rem 0 0.2rem 6.2rem}
+.field.active .branch{display:block}
+.branch table{border-collapse:collapse;font-size:0.7rem;width:100%;max-width:30rem}
+.branch td{padding:1px 10px 1px 0;color:var(--soft)} .branch td.k{color:var(--faint);width:4.2rem;text-align:right}
+.branch tr.sel td{color:var(--ink)} .branch tr.sel td.k{color:var(--enum);font-weight:500}
+.detail{position:absolute;inset:0;border:1px solid var(--line);background:var(--panel);padding:1rem 1.05rem;overflow-y:auto}
+@media(max-width:820px){.detail{position:static;height:16rem}}
+.detail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
+.detail .dl .kind{color:var(--soft)}
+.detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
+.detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
+.detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
+
+/* handshake flight ladder */
+.flow{border:1px solid var(--line);background:var(--panel);margin:0.6rem 0 1.3rem}
+.flow .fhead{display:grid;grid-template-columns:1fr 4.6rem 1fr;border-bottom:1px solid var(--line);font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint)}
+.flow .fhead span{padding:0.5rem 0.9rem}
+.flow .fhead span:nth-child(2){text-align:center}
+.flow .fhead span:nth-child(3){text-align:right}
+.flow .step{display:grid;grid-template-columns:1fr 4.6rem 1fr;align-items:stretch;border-bottom:1px solid var(--hair)}
+.flow .step:last-child{border-bottom:none}
+.flow .m{padding:0.5rem 0.9rem;font-size:0.76rem;color:var(--ink);min-width:0;overflow-wrap:anywhere}
+.flow .m.srv{text-align:right}
+.flow .m em{font-style:normal;color:var(--faint);display:block;font-size:0.63rem;letter-spacing:0.02em;line-height:1.5}
+.flow .dir{display:flex;align-items:center;justify-content:center;color:var(--enum);font-size:0.85rem;border-left:1px solid var(--hair);border-right:1px solid var(--hair)}
+.flow .mark{grid-column:1 / -1;border-top:1px dashed var(--line);background:var(--rsv-soft);padding:0.3rem 0.9rem;font-size:0.56rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--flag);text-align:center}
+.pk{display:inline-block;font-size:0.5rem;letter-spacing:0.1em;text-transform:uppercase;padding:0 0.3rem;margin-left:0.35rem;border:1px solid currentColor;vertical-align:1px;white-space:nowrap}
+.flow .m.srv .pk{margin-left:0;margin-right:0.35rem}
+.pk.p0{color:var(--faint)} .pk.p1{color:var(--flag)} .pk.p2{color:var(--enum)} .pk.p3{color:var(--sync)}
+
+/* key schedule tree */
+.tree{font-size:0.72rem;line-height:1.7;white-space:pre;overflow-x:auto;border:1px solid var(--line);border-left:2px solid var(--enum);background:var(--panel);padding:0.9rem 1rem;margin:0.5rem 0 1.2rem;color:var(--faint)}
+.tree b{color:var(--ink);font-weight:500}
+.tree i{color:var(--enum);font-style:normal}
+.tree u{color:var(--flag);text-decoration:none}
+.tree s{color:var(--sync);text-decoration:none}
+
+/* JA4 string decoder (same widget as the JA4+ breakdown) */
+.decoder{display:grid;grid-template-columns:1fr 320px;gap:1.4rem;align-items:start;margin:0.4rem 0 1.2rem}
+@media(max-width:820px){.decoder{grid-template-columns:1fr}}
+.jstr{font-size:1.15rem;letter-spacing:0.02em;line-height:2.4;word-break:break-all;user-select:none}
+.jseg{padding:0.15rem 0.1rem;border-bottom:2px solid transparent;cursor:pointer;transition:background .12s}
+.jseg.k-enum{color:var(--enum)} .jseg.k-flag{color:var(--flag)} .jseg.k-sync{color:var(--sync)}
+.jseg:hover,.jseg.on{background:var(--panel);border-bottom-color:currentColor}
+.jsep{color:var(--faint)}
+.jdetail{border:1px solid var(--line);background:var(--panel);padding:0.9rem 1rem;min-height:9rem;position:sticky;top:1rem}
+.jdetail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.45rem;margin-bottom:0.55rem}
+.jdetail h3{font-weight:500;font-size:0.95rem;color:var(--ink)} .jdetail .dv{font-size:0.72rem;color:var(--enum);margin:0.2rem 0 0.55rem}
+.jdetail p{font-size:0.76rem;color:var(--soft);line-height:1.6}
+.ja4{border:1px solid var(--line);background:var(--panel);padding:0.7rem 0.9rem;margin:0.3rem 0 0.9rem;font-size:0.95rem;letter-spacing:0.02em;overflow-x:auto}
+.ja4 .s1{color:var(--sync)} .ja4 .s2{color:var(--enum)} .ja4 .s3{color:var(--flag)}
+
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none}
+.tab{padding:0.55rem 0.85rem;font-size:0.63rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:last-child{border-right:none}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.06em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none} .panel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+.plede{color:var(--soft);max-width:82ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
+.plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em} .plede a{color:var(--enum)}
+footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+/* --- secret themes: amber CRT + vaporwave --- */
+:root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.32)}
+:root[data-theme="amber"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 3px)}
+:root[data-theme="vapor"] body{background:url(../assets/sakura-tile.webp) repeat, linear-gradient(160deg,#4fdfba 0%,#3fc8a4 60%,#57e3c0 100%);background-size:320px auto, cover;background-attachment:fixed}
+:root[data-theme="vapor"] .sheet{background:#f4efe0;box-shadow:0 0 0 3px #2ec6b9,0 14px 46px rgba(0,0,0,.28);border-radius:3px}
+:root[data-theme="vapor"] .head{border-color:#0e9c90}
+:root[data-theme="vapor"] .head .title protofun-toggle{color:#e5457f}
+:root[data-theme="vapor"] .bcell{box-shadow:inset 1px 1px rgba(255,255,255,.7),inset -1px -1px rgba(18,59,55,.16)}
+:root[data-theme="vapor"] .tab.on{box-shadow:inset 0 -2px #e5457f}
+/* --- mobile / narrow screens --- */
+@media(max-width:560px){
+  body{font-size:13px}
+  .sheet{padding-left:1rem;padding-right:1rem}
+  .head .row{grid-template-columns:1fr}
+  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
+  .head .strip{grid-template-columns:1fr}
+  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
+  .head .strip div:last-child{border-bottom:none}
+  .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
+  .branch{padding-left:0.4rem}
+  .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
+  code{white-space:normal;overflow-wrap:anywhere}
+  .flow .fhead,.flow .step{grid-template-columns:1fr 2.4rem 1fr}
+  .flow .m{padding:0.45rem 0.5rem;font-size:0.68rem}
+}
+
+/* the hook path: a linear ladder, one row per hook or priority slot */
+.path{border:1px solid var(--line);background:var(--panel);margin:0.6rem 0 1.3rem;font-size:0.74rem}
+.path .node{display:grid;grid-template-columns:11.5rem 1fr;border-bottom:1px solid var(--hair)}
+.path .node:last-child{border-bottom:none}
+.path .nm{padding:0.42rem 0.9rem;border-right:1px solid var(--hair);color:var(--soft);display:flex;align-items:center;gap:0.45rem;white-space:nowrap}
+.path .nd{padding:0.42rem 0.9rem;color:var(--soft);min-width:0;overflow-wrap:anywhere}
+.path .nd b{color:var(--ink);font-weight:500}
+.path .nd a{color:var(--enum)}
+.path .nd code{font-size:0.9em}
+.path .hook .nm{color:var(--enum);font-weight:500;background:var(--enum-soft)}
+.path .dec .nm{color:var(--flag);font-weight:500;background:var(--flag-soft)}
+.path .pri .nm{color:var(--faint);font-size:0.66rem;padding-left:2.1rem}
+.path .edge .nm{color:var(--faint);font-size:0.66rem}
+.path .out .nm{color:var(--sync);font-weight:500;background:var(--sync-soft)}
+@media(max-width:560px){.path .node{grid-template-columns:1fr}.path .nm{border-right:none;border-bottom:1px solid var(--hair)}}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . FIREWALL PATH</div><h1>Packet Fate</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
+      <div class="stamp"><b>netfilter &middot; conntrack</b><br>rev 2026.08</div>
+    </div>
+    <div class="strip">
+      <div>verdicts <b>accept &middot; drop &middot; reject</b></div>
+      <div>hooks <b>five, in a fixed order</b></div>
+      <div>the question <b>who sent the RST</b></div>
+    </div>
+  </div>
+
+  <div class="intro">
+  <p class="lede">Every other page here is an <b>anatomy</b>: a header, a field list, the bytes. This one is a <b>path</b>. That is why it never fit the shape - a firewall is not a protocol, it is the thing that happens to every protocol, in between the pages. A packet arrives and something decides its fate, and the decision is invisible in the packet itself. So the recurring question is not "what do these bytes mean" but <b>"which box did this, and why did it not tell me"</b>. Start with the one everybody has lost an afternoon to: <code>connection reset by peer</code>, where the peer swears it sent nothing. Every packet below is real, with every checksum computed. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <aside class="sig" aria-label="color key">
+    <div class="legrows">
+    <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
+    <div class="row"><span class="sw dark k-flag">amber</span><span class="swsep">&#8594;</span><span class="sw light k-flag">the tell</span></div>
+    <div class="row"><span class="sw dark k-sync">steel</span><span class="swsep">&#8594;</span><span class="sw light k-sync">structural</span></div>
+    <div class="row"><span class="sw dark k-rsv">faint</span><span class="swsep">&#8594;</span><span class="sw light k-rsv">unused</span></div>
+    </div>
+    <div class="siglabel">color key</div>
+  </aside>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="rst">Who Sent the RST<small>six suspects</small></button>
+    <button class="tab" data-p="dropreject">Drop vs Reject<small>hang or fail</small></button>
+    <button class="tab" data-p="hooks">The Hook Path<small>where it happens</small></button>
+    <button class="tab" data-p="conntrack">Conntrack<small>state, not memory</small></button>
+    <button class="tab" data-p="nat">NAT<small>first packet only</small></button>
+    <button class="tab" data-p="rules">A Rule, Dissected<small>iptables + nft</small></button>
+    <button class="tab" data-p="trace">Finding Out<small>counters + trace</small></button>
+    <button class="tab" data-p="guide">Field Guide<small>symptom to cause</small></button>
+  </div>
+  <div class="panelwrap">
+
+    <!-- ================= RST ================= -->
+    <div class="panel on" data-panel="rst">
+      <div class="pfacts"><span>symptom<b>ECONNRESET</b></span><span>message<b>connection reset by peer</b></span><span>truth<b>often not the peer</b></span></div>
+      <p class="plede">The error names the peer. The peer is frequently innocent. A RST is four bytes of flag in a header anyone on the path can write, the source address is trivially forged, and nothing in the packet records who really produced it. Six things send resets, and they are distinguishable on the wire.</p>
+
+      <div class="sec">the six suspects</div>
+      <table class="atable"><thead><tr><th>source</th><th>when</th><th>what it looks like</th></tr></thead><tbody>
+        <tr><td class="f">the peer's kernel</td><td>Nothing is listening on the port.</td><td>RST+ACK, one RTT after your SYN, TTL consistent with the peer's other packets. The honest case.</td></tr>
+        <tr><td class="f">the peer's application</td><td><code>SO_LINGER</code> with <code>l_linger=0</code>, or <code>close()</code> called with unread data still in the receive queue.</td><td>RST mid-conversation instead of FIN. TTL still matches the peer. Common in proxies avoiding TIME_WAIT.</td></tr>
+        <tr><td class="f">a REJECT rule</td><td><code>-j REJECT --reject-with tcp-reset</code> on the peer host or a firewall in front of it.</td><td>Immediate, and it answers the SYN. TTL matches whichever box holds the rule, which may be several hops short of the peer.</td></tr>
+        <tr><td class="f">an injected RST</td><td>A DPI or censorship middlebox that wants the connection dead.</td><td>Source address forged as the peer. <b>TTL is wrong.</b> Often arrives before the peer's real reply, and the peer keeps talking afterwards.</td></tr>
+        <tr><td class="f">conntrack or NAT</td><td>The flow sat idle past a middlebox timeout and the state entry was evicted.</td><td>Dies after a consistent idle period. The next packet either draws a RST or vanishes entirely.</td></tr>
+        <tr><td class="f">a load balancer</td><td>Idle timeout, backend health check failure, or connection draining during a deploy.</td><td>RST rather than a graceful FIN, often in bursts correlated with a rollout.</td></tr>
+      </tbody></table>
+
+      <div class="sec">an injected RST, byte by byte</div>
+      <p class="note">A middlebox three hops from the client, forging <code>203.0.113.5:443</code>. Every field is what the client actually sees. <b>Byte 8 is the one that gives it away.</b></p>
+      <div id="block-rst" data-build></div>
+
+      <div class="callout hot"><b>the TTL is wrong because the packet was born closer.</b> The real peer is 12 hops away, so its packets arrive with TTL 52 - they left with 64 and lost one per router. The injector sits 3 hops out, so its forged RST arrives with <b>61</b>. It can spoof the source address perfectly and still not fix this, because the hop count is applied by the routers in between, not by the sender. Compare the RST's TTL against a packet you know came from the real peer, in the same capture: <code>tcpdump -nnvvi any 'host 203.0.113.5'</code> and read the <code>ttl</code> field on each. A gap of several is the tell.</div>
+      <div class="callout"><b>the caveats that keep this honest.</b> Compare against <i>the same peer in the same capture</i>, never an absolute: initial TTL is 64 on Linux and macOS, 128 on Windows, 255 on a lot of network gear, so an unfamiliar value alone means nothing. A route change mid-connection moves the real TTL too. A careful injector can copy the TTL from the flow it is watching, and some do. The stronger signal is <b>duplication</b>: if the peer's genuine response arrives after the RST, or the connection keeps producing traffic the RST should have ended, nothing on the peer sent that reset.</div>
+      <div class="callout"><b>blind injection got hard, on-path injection did not.</b> <a href="https://www.rfc-editor.org/rfc/rfc5961">RFC 5961</a> tightened acceptance: an in-window RST that is not exactly <code>RCV.NXT</code> no longer kills the connection, it draws a challenge ACK instead. An off-path attacker now has to guess the exact sequence number rather than land anywhere in the window. None of that helps against a box that can <i>see</i> the flow, which is what a DPI middlebox is - it reads the real sequence numbers off the wire and writes a perfectly acceptable reset.</div>
+      <div class="callout"><b>a reset is never answered with a reset.</b> <a href="https://www.rfc-editor.org/rfc/rfc9293">RFC 9293</a> &sect;3.5.2 forbids it, which is the only reason a forged RST between two hosts does not become a packet storm. The same section fixes the sequence arithmetic used above: an incoming segment with no ACK bit draws a reset carrying <b>sequence zero</b>, with the ACK field set to the incoming sequence number plus the segment length. A SYN counts as one byte, which is why this RST acknowledges <code>0x12345679</code> against a SYN of <code>0x12345678</code>.</div>
+    </div>
+
+    <!-- ================= DROP vs REJECT ================= -->
+    <div class="panel" data-panel="dropreject">
+      <div class="pfacts"><span>DROP<b>silence, then a timeout</b></span><span>REJECT<b>an error, immediately</b></span></div>
+      <p class="plede">This is the difference between "my app hung for two minutes" and "my app failed instantly with a clear error", and it is one word in one firewall rule. DROP discards the packet and sends nothing, so the client learns only when its own retransmit timer gives up. REJECT sends an explicit refusal, so the client fails on the next round trip.</p>
+
+      <div class="sec">DROP: the client talks to nobody</div>
+      <p class="note">There is no packet to inspect, which is the entire problem. The capture shows only your own SYNs leaving, on a doubling timer.</p>
+      <div class="cmd"><span class="c">// tcpdump on the client. nothing comes back, ever.</span>
+09:14:02.001  192.0.2.10.51234 &gt; 203.0.113.5.443: Flags [S], seq 305419896
+09:14:03.002  192.0.2.10.51234 &gt; 203.0.113.5.443: Flags [S], seq 305419896   <span class="p">+1s</span>
+09:14:05.006  192.0.2.10.51234 &gt; 203.0.113.5.443: Flags [S], seq 305419896   <span class="p">+2s</span>
+09:14:09.014  192.0.2.10.51234 &gt; 203.0.113.5.443: Flags [S], seq 305419896   <span class="p">+4s</span>
+09:14:17.030  192.0.2.10.51234 &gt; 203.0.113.5.443: Flags [S], seq 305419896   <span class="p">+8s</span>
+09:14:33.062  192.0.2.10.51234 &gt; 203.0.113.5.443: Flags [S], seq 305419896   <span class="p">+16s</span>
+09:15:05.126  192.0.2.10.51234 &gt; 203.0.113.5.443: Flags [S], seq 305419896   <span class="p">+32s</span>
+                                                    <span class="c">// +64s of waiting, then ETIMEDOUT</span></div>
+      <div class="kv">
+        <div><span class="k">connect timeout</span><span class="v"><code>net.ipv4.tcp_syn_retries</code>, default <b>6</b>. Backoff doubles: 1, 2, 4, 8, 16, 32, 64 seconds, so the total is <b>127 seconds</b> before <code>connect()</code> returns ETIMEDOUT. If your hang is always roughly two minutes, this is why, and something is dropping your SYN.</span></div>
+        <div><span class="k">mid-stream timeout</span><span class="v"><code>net.ipv4.tcp_retries2</code>, default <b>15</b>, on an already established connection. Roughly <b>924 seconds</b>, about 15 minutes, before the kernel gives up. If a connection wedges for a quarter of an hour and then errors, packets stopped getting through and nobody said so.</span></div>
+        <div><span class="k">why anyone drops</span><span class="v">A DROP gives a scanner nothing: no reply distinguishes a filtered port from an unrouted address. That is the whole argument for it, and the price is paid by legitimate clients who wait out the full timer.</span></div>
+      </div>
+
+      <div class="sec">REJECT: an ICMP refusal, byte by byte</div>
+      <p class="note">The default for <code>-j REJECT</code> is <code>icmp-port-unreachable</code>: ICMP type 3, code 3. It quotes the packet that caused it, and the quote is more useful than the error.</p>
+      <div id="block-icmp" data-build></div>
+      <div class="callout hot"><b>the quoted TTL is a free hop count.</b> An ICMP error carries the original IP header <i>as the rejecting host received it</i>, so its TTL has already been decremented by every router in between. You sent 64. Byte 36 says <b>52</b>. The box that refused you is therefore <b>12 hops away</b> - and if that does not match where you think your firewall is, the rule is not where you think it is. The quoted source and destination addresses also survive NAT in a way your own capture does not, so this is often the only place you can see what a middlebox rewrote.</div>
+      <div class="callout"><b>eight bytes of transport is exactly enough, and no accident.</b> The quote carries the original IP header plus the first 8 bytes after it, which for TCP is source port, destination port, and sequence number. That is precisely the four-tuple plus enough sequence context for the kernel to find the socket and fail the right <code>connect()</code>. It is also why an ICMP error cannot be validated deeply: 8 bytes is not enough to prove the sender saw the whole segment, which is what made blind ICMP attacks against TCP practical enough for <a href="https://www.rfc-editor.org/rfc/rfc5927">RFC 5927</a> to exist.</div>
+
+      <div class="sec">the packet that provoked it</div>
+      <p class="note">The client's SYN, shown without options for clarity - a real one carries MSS, SACK-permitted, timestamps and window scale. Bytes 0 through 19 here are what get quoted back inside the ICMP above, with only the TTL and checksum differing.</p>
+      <div id="block-syn" data-build></div>
+
+      <div class="sec">what REJECT can send</div>
+      <table class="atable"><thead><tr><th>--reject-with</th><th>on the wire</th><th>use</th></tr></thead><tbody>
+        <tr><td class="x">icmp-port-unreachable</td><td class="f">type 3 code 3</td><td>The default. Indistinguishable from a host with nothing listening, which is usually what you want.</td></tr>
+        <tr><td class="x">icmp-host-unreachable</td><td class="f">type 3 code 1</td><td>Claims the host is gone. Clients may cache this and back off harder.</td></tr>
+        <tr><td class="x">icmp-net-unreachable</td><td class="f">type 3 code 0</td><td>Claims the whole network is unreachable. Rarely appropriate from a host firewall.</td></tr>
+        <tr><td class="x">icmp-proto-unreachable</td><td class="f">type 3 code 2</td><td>The protocol number is not supported at all.</td></tr>
+        <tr><td class="x">icmp-admin-prohibited</td><td class="f">type 3 code 13</td><td>Says out loud that a policy blocked this. Honest, and tells a scanner a firewall exists.</td></tr>
+        <tr><td class="x">tcp-reset</td><td class="f">a TCP RST</td><td>TCP only. Looks exactly like a closed port - and is suspect number three on the previous tab.</td></tr>
+      </tbody></table>
+      <p class="note">The ip6tables spelling differs: ICMPv6 type 1 code 4 is <code>icmp6-port-unreachable</code>, and the default there is the same idea with different numbers. nftables writes all of this as <code>reject with icmp type port-unreachable</code> or <code>reject with tcp reset</code>, and a bare <code>reject</code> picks the family-appropriate default.</p>
+      <div class="callout"><b>REJECT is a target, not a verdict.</b> It generates a packet and <i>then</i> drops the original, so it is terminal in the same way DROP is - nothing after it in the chain runs. It also cannot be used everywhere: the generated reply has to be routable back, so REJECT is unavailable in POSTROUTING, and <code>--reject-with tcp-reset</code> is rejected outright unless the rule already matched <code>-p tcp</code>.</div>
+      <div class="callout hot"><b>the one ICMP you must never drop: type 3 code 4.</b> Fragmentation-needed-and-DF-set is how Path MTU Discovery works, and its last four bytes carry the next-hop MTU (<a href="https://www.rfc-editor.org/rfc/rfc1191">RFC 1191</a>). Blanket-blocking ICMP kills it, and the failure is diabolical: the handshake succeeds, small requests succeed, and anything large hangs forever, because the sender never learns to send smaller packets. If small requests work and big ones stall, you are looking at a PMTU black hole, not a firewall rule about port 443.</div>
+    </div>
+
+    <!-- ================= HOOKS ================= -->
+    <div class="panel" data-panel="hooks">
+      <div class="pfacts"><span>hooks<b>5</b></span><span>ordering<b>signed integer priority</b></span><span>tables<b>a naming convention</b></span></div>
+      <p class="plede">Netfilter is five points in the IP stack where registered functions get to look at a packet and return a verdict. Everything else - tables, chains, conntrack, NAT - is code registered at one of those five points with a priority number that decides who runs first. Read the path downward; a packet enters at the top and takes one branch at the routing decision.</p>
+
+      <div class="sec">the path an inbound packet takes</div>
+      <div class="path">
+        <div class="node edge"><div class="nm">NIC / driver</div><div class="nd">Interrupt, then NAPI poll into an <code>sk_buff</code>. Nothing filterable yet.</div></div>
+        <div class="node edge"><div class="nm">XDP</div><div class="nd">Earliest possible drop, before the skb exists. <a href="../ebpf/ebpf-networking.html">eBPF</a> territory, not netfilter.</div></div>
+        <div class="node edge"><div class="nm">tc ingress</div><div class="nd">Classifier and action hooks. Still ahead of netfilter.</div></div>
+        <div class="node hook"><div class="nm">PREROUTING</div><div class="nd"><b>NF_INET_PRE_ROUTING</b>. Every arriving packet, before any routing decision has been made.</div></div>
+        <div class="node pri"><div class="nm">-400</div><div class="nd">conntrack defragmentation. IPv4 fragments are reassembled here so later rules see whole headers.</div></div>
+        <div class="node pri"><div class="nm">-300</div><div class="nd"><b>raw</b> table. The only place early enough to set <code>NOTRACK</code> and skip conntrack entirely.</div></div>
+        <div class="node pri"><div class="nm">-200</div><div class="nd"><b>conntrack</b> looks the packet up and attaches state: NEW, ESTABLISHED, RELATED or INVALID.</div></div>
+        <div class="node pri"><div class="nm">-150</div><div class="nd"><b>mangle</b> table. TOS, TTL, marks.</div></div>
+        <div class="node pri"><div class="nm">-100</div><div class="nd"><b>nat</b> table, <b>DNAT</b>. Destination rewritten <i>before</i> routing, which is the only reason port forwarding can work.</div></div>
+        <div class="node dec"><div class="nm">routing decision</div><div class="nd">Is the destination address local? The answer picks the branch below. DNAT already happened, so this routes on the <i>new</i> destination.</div></div>
+        <div class="node hook"><div class="nm">INPUT</div><div class="nd"><b>NF_INET_LOCAL_IN</b>, for packets addressed to this host. <b>filter</b> at priority 0 is where a host firewall lives. Then the socket, then userspace.</div></div>
+        <div class="node hook"><div class="nm">FORWARD</div><div class="nd"><b>NF_INET_FORWARD</b>, for packets routed through this host. Requires <code>net.ipv4.ip_forward=1</code>. <b>filter</b> at priority 0.</div></div>
+        <div class="node hook"><div class="nm">POSTROUTING</div><div class="nd"><b>NF_INET_POST_ROUTING</b>. Everything leaving, forwarded or locally generated.</div></div>
+        <div class="node pri"><div class="nm">+100</div><div class="nd"><b>nat</b> table, <b>SNAT</b> and <code>MASQUERADE</code>. Source rewritten <i>after</i> routing, so the rule can know which interface was chosen.</div></div>
+        <div class="node pri"><div class="nm">INT_MAX</div><div class="nd">conntrack <b>confirm</b>. The new entry is only committed to the table here, at the very last moment, once the packet has survived everything.</div></div>
+        <div class="node edge"><div class="nm">tc egress, NIC</div><div class="nd">Queueing discipline, then the wire.</div></div>
+      </div>
+      <p class="note">Locally generated traffic skips the first half: the socket routes first, then hits <b>OUTPUT</b> (<code>NF_INET_LOCAL_OUT</code>, with raw, conntrack, mangle and DNAT all registered there too), then joins the same POSTROUTING as everything else.</p>
+
+      <div class="sec">priorities, which are the real ordering</div>
+      <p class="note">From <code>include/uapi/linux/netfilter_ipv4.h</code>. Lower runs first. nftables lets you write these names directly in a base chain declaration.</p>
+      <table class="atable"><thead><tr><th>constant</th><th>value</th><th>nft name</th><th>what registers there</th></tr></thead><tbody>
+        <tr><td class="x">NF_IP_PRI_CONNTRACK_DEFRAG</td><td class="f">-400</td><td class="g">-</td><td>IPv4 defragmentation for conntrack</td></tr>
+        <tr><td class="x">NF_IP_PRI_RAW</td><td class="f">-300</td><td class="x">raw</td><td>the raw table; NOTRACK</td></tr>
+        <tr><td class="x">NF_IP_PRI_CONNTRACK</td><td class="f">-200</td><td class="g">-</td><td>state lookup and assignment</td></tr>
+        <tr><td class="x">NF_IP_PRI_MANGLE</td><td class="f">-150</td><td class="x">mangle</td><td>the mangle table</td></tr>
+        <tr><td class="x">NF_IP_PRI_NAT_DST</td><td class="f">-100</td><td class="x">dstnat</td><td>DNAT, at PREROUTING and OUTPUT</td></tr>
+        <tr><td class="x">NF_IP_PRI_FILTER</td><td class="f">0</td><td class="x">filter</td><td>the filter table; almost every rule you write</td></tr>
+        <tr><td class="x">NF_IP_PRI_SECURITY</td><td class="f">50</td><td class="x">security</td><td>SELinux and friends</td></tr>
+        <tr><td class="x">NF_IP_PRI_NAT_SRC</td><td class="f">100</td><td class="x">srcnat</td><td>SNAT and MASQUERADE, at POSTROUTING</td></tr>
+        <tr><td class="x">NF_IP_PRI_CONNTRACK_CONFIRM</td><td class="f">INT_MAX</td><td class="g">-</td><td>commit the conntrack entry, last of all</td></tr>
+      </tbody></table>
+      <div class="callout hot"><b>"tables" are a naming convention over these integers.</b> There is no mechanism in the kernel that makes raw run before mangle - raw is registered at -300 and mangle at -150, and that is the whole of it. iptables hides the numbers and gives you five fixed table names; nftables exposes them, which is why an nft base chain must state its hook and priority explicitly and why you can slot a chain between any two of the rows above. Same engine, and since <b>iptables-nft</b> the same backend: on a current distro <code>iptables</code> is a compatibility front end writing nftables rules.</div>
+      <div class="callout"><b>the kernel and the tool disagree about the names.</b> The hook constants are <code>NF_INET_LOCAL_IN</code> and <code>NF_INET_LOCAL_OUT</code>; iptables calls the same two hooks <b>INPUT</b> and <b>OUTPUT</b>. Kernel traces, <code>nft monitor trace</code> output and the tunables reference all use the LOCAL_ spelling, so the two vocabularies collide exactly when you are debugging. They are the same hook.</div>
+      <div class="callout"><b>a packet you dropped in FORWARD never reaches INPUT.</b> The branch at the routing decision is exclusive: local delivery goes to INPUT, transit goes to FORWARD, and nothing visits both. Rules written in the wrong one of the two are the most common reason a ruleset "does nothing" - on a router, traffic <i>through</i> the box is never seen by INPUT.</div>
+    </div>
+
+    <!-- ================= CONNTRACK ================= -->
+    <div class="panel" data-panel="conntrack">
+      <div class="pfacts"><span>module<b>nf_conntrack</b></span><span>keyed on<b>a tuple pair</b></span><span>states<b>4, plus untracked</b></span></div>
+      <p class="plede">Conntrack is what turns a packet filter into a stateful firewall: it remembers flows so a rule can say "replies to things we started" without enumerating them. It also introduces a table that can fill, entries that can expire, and a vocabulary that looks like TCP's but is not.</p>
+
+      <div class="sec">the four states</div>
+      <table class="atable"><thead><tr><th>ctstate</th><th>means</th><th>gotcha</th></tr></thead><tbody>
+        <tr><td class="f">NEW</td><td>A packet conntrack has no entry for, that looks like the start of a flow.</td><td>Not the same as "has the SYN bit". A stray mid-stream ACK for a flow conntrack forgot is also NEW, which is why loose rulesets accept things they did not mean to.</td></tr>
+        <tr><td class="f">ESTABLISHED</td><td>Traffic has been seen in <i>both</i> directions on this tuple.</td><td><b>Nothing to do with TCP ESTABLISHED.</b> A UDP flow becomes conntrack-ESTABLISHED the moment one reply comes back, and TCP is ESTABLISHED here well before the three-way handshake finishes.</td></tr>
+        <tr><td class="f">RELATED</td><td>A new flow that an existing entry expects: an ICMP error quoting a tracked flow, or an FTP data channel opened by the helper.</td><td>Helpers parse application payloads in the kernel to predict these. That is exactly as dangerous as it sounds, and why <code>nf_conntrack_helper</code> now defaults to off.</td></tr>
+        <tr><td class="f">INVALID</td><td>Cannot be associated with anything: out-of-window TCP, malformed headers, ICMP errors for flows conntrack never saw.</td><td>Drop these explicitly. Left unhandled they can slip through a rule that only tests for NEW, and they pollute captures during debugging.</td></tr>
+        <tr><td class="f">UNTRACKED</td><td>Deliberately exempted with <code>-j NOTRACK</code> in the raw table.</td><td>Costs you all stateful matching for that traffic. Used on very high rate flows to keep the table from filling.</td></tr>
+      </tbody></table>
+
+      <div class="sec">what an entry actually holds</div>
+      <div class="cmd"><span class="c">// conntrack -L, one flow, wrapped for width</span>
+tcp  6  431997 ESTABLISHED
+     src=192.0.2.10   dst=203.0.113.5  sport=51234 dport=443   <span class="p">original tuple</span>
+     src=203.0.113.5  dst=192.0.2.10   sport=443   dport=51234 <span class="p">reply tuple, inverted</span>
+     [ASSURED] mark=0 use=1
+        <span class="c">// 431997 = seconds left. ASSURED = traffic seen both ways, so this entry</span>
+        <span class="c">// survives table pressure that would evict an unassured one.</span></div>
+      <p class="note">The entry stores <b>two</b> tuples, not one. The reply tuple is what NAT rewrites, and it is how a translated packet finds its way back: the return traffic is matched against the reply tuple and un-translated automatically. That is why NAT only has to run once per flow.</p>
+
+      <div class="sec">timeouts, and the one that bites</div>
+      <table class="atable"><thead><tr><th>sysctl</th><th>default</th><th>note</th></tr></thead><tbody>
+        <tr><td class="x">nf_conntrack_tcp_timeout_established</td><td class="f">432000</td><td>Five days. Generous on purpose, and almost never what the middleboxes between you and the peer use.</td></tr>
+        <tr><td class="x">nf_conntrack_tcp_timeout_syn_sent</td><td class="f">120</td><td>Matches the client's own 127-second connect timeout closely enough to be confusing.</td></tr>
+        <tr><td class="x">nf_conntrack_tcp_timeout_time_wait</td><td class="f">120</td><td></td></tr>
+        <tr><td class="x">nf_conntrack_tcp_timeout_close_wait</td><td class="f">60</td><td></td></tr>
+        <tr><td class="x">nf_conntrack_udp_timeout</td><td class="f">30</td><td>Rises to 120 once the flow is assured. This is why long-lived UDP needs keepalives.</td></tr>
+        <tr><td class="x">nf_conntrack_max</td><td class="f">RAM-sized</td><td>Often around 256K. When it fills, new flows are dropped and <code>dmesg</code> says <code>nf_conntrack: table full, dropping packet</code>.</td></tr>
+      </tbody></table>
+      <div class="callout hot"><b>the five-day default is a trap, because you are not the one who forgets.</b> Your kernel will hold an idle SSH session for days. The NAT gateway, cloud load balancer or corporate firewall in the middle typically evicts at 5 to 60 minutes, and when it does, the next packet in either direction matches nothing. What happens next is the middlebox's choice: silence, and your connection wedges until <code>tcp_retries2</code> expires 15 minutes later; or a RST, and you get suspect number five from the first tab. The fix is not a firewall rule, it is <code>TCPKeepAlive</code> or an application-level ping under the shortest timeout on the path. The signature is that it always dies after the same idle interval.</div>
+      <div class="callout"><b>conntrack is stateful, and state is a resource.</b> Every tracked flow is memory, and the table is the target of the cheapest attack in the book: open flows, never complete them, walk away. <code>conntrack -S</code> reports per-CPU <code>insert_failed</code> and <code>drop</code>; those counters moving is the difference between "the network is slow" and "we are out of table". See <a href="../attacks/attack-anatomy.html">Attack &amp; Mitigation</a> for the flood side of this, and the <a href="https://hed0rah.github.io/linux_network_stack/">Linux network stack tunables</a> for <code>nf_conntrack_max</code> and its hashsize.</div>
+    </div>
+
+    <!-- ================= NAT ================= -->
+    <div class="panel" data-panel="nat">
+      <div class="pfacts"><span>DNAT<b>PREROUTING, before routing</b></span><span>SNAT<b>POSTROUTING, after routing</b></span><span>runs<b>once per flow</b></span></div>
+      <p class="plede">The two positions are not arbitrary and are worth memorising, because every confusing NAT bug follows from them. Destination translation has to happen before the routing decision, or the packet would be routed to the address you are trying to change. Source translation has to happen after it, or the rule could not know which interface, and therefore which source address, was selected.</p>
+
+      <div class="path">
+        <div class="node hook"><div class="nm">PREROUTING</div><div class="nd">priority -100: <b>DNAT</b>, <code>REDIRECT</code>. Rewrites the destination. Port forwarding and load balancing live here.</div></div>
+        <div class="node dec"><div class="nm">routing decision</div><div class="nd">Made on the <b>new</b> destination address. This is why DNAT can send a packet down a completely different path than it was addressed to.</div></div>
+        <div class="node hook"><div class="nm">FORWARD</div><div class="nd">filter sees the <b>post-DNAT</b> destination. A rule written against the original public address will not match here.</div></div>
+        <div class="node hook"><div class="nm">POSTROUTING</div><div class="nd">priority +100: <b>SNAT</b>, <code>MASQUERADE</code>. Rewrites the source, now that the outgoing interface is known.</div></div>
+      </div>
+
+      <div class="kv">
+        <div><span class="k">SNAT</span><span class="v">Rewrites the source to an address you name. Use it when the address is static: it is cheaper, and it survives an interface flap.</span></div>
+        <div><span class="k">MASQUERADE</span><span class="v">SNAT that looks up the outgoing interface's current address per packet. For DHCP or dial-up uplinks. It also <b>drops all conntrack entries for the interface when it goes down</b>, on the assumption the address changed.</span></div>
+        <div><span class="k">DNAT</span><span class="v">Rewrites the destination, optionally to a different port. <code>REDIRECT</code> is the special case that means "to this machine".</span></div>
+        <div><span class="k">the reply</span><span class="v">Never needs a rule. Conntrack stored the inverted reply tuple, so return traffic is un-translated automatically. Writing a second rule for the reverse direction is a classic and harmless mistake, and a sign the mental model is wrong.</span></div>
+      </div>
+
+      <div class="callout hot"><b>NAT runs on the first packet of a flow only.</b> The translation is recorded in the conntrack entry, and every later packet is rewritten from that entry without consulting the nat table again. Two consequences people hit constantly. First: <b>editing a NAT rule does nothing to connections already open</b> - they keep using the mapping recorded when they started, and you have to flush conntrack to see the change. Second: <b>if conntrack loses the entry, the mapping is gone</b>, and the remaining packets of a live connection arrive un-translated and unroutable. Everything on this tab is downstream of the previous one.</div>
+      <div class="callout"><b>filter sees post-DNAT addresses, and that surprises everybody.</b> Port-forward 203.0.113.5:443 to 10.0.0.7:8443 and then write <code>-A FORWARD -d 203.0.113.5 -p tcp --dport 443 -j ACCEPT</code>, and nothing matches: by the time FORWARD runs, the packet is addressed to <code>10.0.0.7:8443</code>. The rule has to be written against the translated address. The only chain that sees the original is PREROUTING itself.</div>
+      <div class="callout"><b>hairpin NAT is the same rule applied twice.</b> A client inside the network reaching the public address of a server also inside it will DNAT correctly and then reply <i>directly</i> to the client, whose kernel drops the answer because it came from an address it never contacted. The fix is an extra SNAT so the server replies via the gateway, which is why hairpinning always looks like one rule too many.</div>
+    </div>
+
+    <!-- ================= RULES ================= -->
+    <div class="panel" data-panel="rules">
+      <div class="pfacts"><span>iptables<b>table implies hook</b></span><span>nftables<b>hook is declared</b></span><span>backend<b>the same since iptables-nft</b></span></div>
+      <p class="plede">One rule, both spellings, token by token. It rejects new inbound connections to 443 with a reset - which is to say, it is the third suspect from the first tab, written out.</p>
+
+      <div class="sec">iptables</div>
+      <div class="cmd">iptables -A INPUT -p tcp --dport 443 -m conntrack --ctstate NEW -j REJECT --reject-with tcp-reset</div>
+      <table class="atable"><thead><tr><th>token</th><th>kind</th><th>does</th></tr></thead><tbody>
+        <tr><td class="x">-A INPUT</td><td class="f">chain</td><td>Append to the INPUT chain. The <b>filter</b> table is implied by omission, and filter+INPUT means <code>NF_INET_LOCAL_IN</code> at priority 0. The hook is never written down.</td></tr>
+        <tr><td class="x">-p tcp</td><td class="f">match</td><td>Protocol number 6. Also unlocks the tcp match extension, without which <code>--dport</code> is a syntax error.</td></tr>
+        <tr><td class="x">--dport 443</td><td class="f">match ext</td><td>Belongs to the implicit tcp extension loaded by <code>-p tcp</code>, not to iptables itself.</td></tr>
+        <tr><td class="x">-m conntrack</td><td class="f">match module</td><td>Loads the conntrack matcher. The older <code>-m state</code> is a deprecated alias.</td></tr>
+        <tr><td class="x">--ctstate NEW</td><td class="f">match ext</td><td>Only flows conntrack has no entry for. Established traffic is unaffected, so this rule cannot break connections already open.</td></tr>
+        <tr><td class="x">-j REJECT</td><td class="f">target</td><td>Terminal. Generates a reply, then drops.</td></tr>
+        <tr><td class="x">--reject-with tcp-reset</td><td class="f">target opt</td><td>Send a RST instead of the default ICMP port-unreachable. Legal only because <code>-p tcp</code> matched.</td></tr>
+      </tbody></table>
+
+      <div class="sec">nftables</div>
+      <div class="cmd"><span class="c">// the base chain declares what iptables leaves implicit</span>
+nft add table inet filter
+nft add chain inet filter input '{ type filter hook input priority filter; policy drop; }'
+nft add rule  inet filter input tcp dport 443 ct state new reject with tcp reset</div>
+      <table class="atable"><thead><tr><th>token</th><th>kind</th><th>does</th></tr></thead><tbody>
+        <tr><td class="x">inet</td><td class="f">family</td><td>One ruleset for IPv4 and IPv6 at once. iptables needs two separate binaries and two rulesets to do this.</td></tr>
+        <tr><td class="x">type filter hook input</td><td class="f">base chain</td><td>The hook, stated. <code>type</code> can also be <code>nat</code> or <code>route</code>.</td></tr>
+        <tr><td class="x">priority filter</td><td class="f">base chain</td><td>The integer from the previous tab, by name: <code>filter</code> is 0. Write <code>-150</code> or <code>mangle</code> and the chain slots in there instead.</td></tr>
+        <tr><td class="x">policy drop</td><td class="f">base chain</td><td>The verdict when no rule matches. Only base chains have one.</td></tr>
+        <tr><td class="x">tcp dport 443</td><td class="f">expression</td><td>No <code>-p tcp</code> needed: the protocol is implied by the header being tested.</td></tr>
+        <tr><td class="x">ct state new</td><td class="f">expression</td><td>Same conntrack state, lowercase. Sets can be inline: <code>ct state { established, related } accept</code>.</td></tr>
+        <tr><td class="x">reject with tcp reset</td><td class="f">verdict</td><td>Same generated packet as above.</td></tr>
+      </tbody></table>
+      <div class="callout"><b>the ordering rule that outranks everything: first match wins, and the chain policy is last.</b> Both syntaxes evaluate top to bottom and stop at the first terminal verdict. A permissive rule above a restrictive one silently wins, which is why <code>-I</code> (insert at the top) and <code>-A</code> (append at the bottom) are the two most consequential characters in the command. If a rule seems to do nothing, check what is above it before you check the rule.</div>
+      <div class="callout hot"><b>they are the same engine now.</b> Since iptables-nft, the <code>iptables</code> command is a translation layer that writes nftables rules into the kernel. <code>iptables -L</code> shows what iptables wrote; <code>nft list ruleset</code> shows everything, including rules from other tools. On a modern box with Docker, Kubernetes or firewalld installed, those two commands routinely disagree - and <code>nft list ruleset</code> is the one telling the truth.</div>
+    </div>
+
+    <!-- ================= TRACE ================= -->
+    <div class="panel" data-panel="trace">
+      <div class="pfacts"><span>question<b>which rule ate it</b></span><span>cheapest answer<b>counters</b></span></div>
+      <p class="plede">Guessing at rulesets is a waste of an afternoon. Every one of these answers a specific question, roughly in order of how much they cost to run.</p>
+
+      <div class="sec">counters: which rule is firing</div>
+      <div class="cmd"><span class="c">// per-rule packet and byte counts. zero them, reproduce, look again.</span>
+iptables -Z ; iptables -L -v -n --line-numbers
+nft reset counters ; nft -a list ruleset      <span class="p">-a shows handles for surgical deletes</span></div>
+      <p class="note">A rule with a moving counter is doing something. A DROP rule whose counter matches your attempts exactly is your answer, and you did not need a packet capture to find it.</p>
+
+      <div class="sec">trace: follow one packet through every hook</div>
+      <div class="cmd"><span class="c">// nftables. mark the traffic, then watch it traverse the whole path.</span>
+nft add rule inet filter prerouting meta nftrace set 1
+nft monitor trace
+
+<span class="c">// iptables equivalent, raw table, then read the kernel ring buffer</span>
+iptables -t raw -A PREROUTING -p tcp --dport 443 -j TRACE
+xtables-monitor --trace          <span class="p">modern; older kernels log to dmesg</span></div>
+      <p class="note">This is the only tool that shows the packet arriving at each hook in order and names the rule that finally decided. Narrow the match first - tracing everything on a busy host produces more output than you can read.</p>
+
+      <div class="sec">conntrack: watch state appear and expire</div>
+      <div class="cmd">conntrack -E                       <span class="p">live event stream: NEW, UPDATE, DESTROY</span>
+conntrack -L -p tcp --dport 443    <span class="p">current entries for one service</span>
+conntrack -S                       <span class="p">per-cpu: insert_failed, invalid, drop</span>
+cat /proc/sys/net/netfilter/nf_conntrack_count</div>
+      <p class="note">A <code>DESTROY</code> event arriving well before your connection failed is the idle-timeout story from the conntrack tab, confirmed rather than guessed.</p>
+
+      <div class="sec">the wire: is anything coming back at all</div>
+      <div class="cmd"><span class="c">// -v prints ttl. that is the whole point on this page.</span>
+tcpdump -nnvvi any 'host 203.0.113.5 and (tcp[tcpflags] &amp; tcp-rst != 0)'
+tcpdump -nnvi any 'icmp and icmp[icmptype] == 3'
+ss -tan state syn-sent             <span class="p">stuck outbound handshakes</span>
+nstat -az | grep -iE 'listendrops|listenoverflows|retrans'</div>
+      <div class="callout hot"><b>run the capture on both ends.</b> This is the single highest-value move on this whole page. If the client sees a RST and the server's capture shows it never sent one, the argument is over: something in between wrote that packet. If the server never saw the SYN at all, nothing on the server is at fault and the problem is upstream. Almost every "connection reset by peer" ticket is settled by two simultaneous captures and nothing else.</div>
+      <div class="callout"><b>check the counters you did not think to check.</b> <code>nstat</code> and <code>netstat -s</code> expose drops that no firewall rule accounts for: <code>ListenOverflows</code> means the accept queue filled and the kernel silently discarded a completed handshake, which looks exactly like a firewall drop from the client. <code>net.ipv4.conf.*.rp_filter</code> in strict mode drops packets whose source would not route back out the arriving interface, which looks like a firewall drop and appears in no ruleset at all - the classic asymmetric-routing false alarm.</div>
+    </div>
+
+    <!-- ================= GUIDE ================= -->
+    <div class="panel" data-panel="guide">
+      <div class="pfacts"><span>use<b>symptom first</b></span><span>then<b>the tab that explains it</b></span></div>
+      <p class="plede">What the failure looks like from the application, and where to go next.</p>
+
+      <table class="atable"><thead><tr><th>symptom</th><th>most likely</th><th>check</th></tr></thead><tbody>
+        <tr><td class="f">Hangs about 127 seconds, then ETIMEDOUT</td><td>Your SYN is being DROPped, somewhere.</td><td><code>tcp_syn_retries</code> arithmetic on the Drop tab. Capture both ends: did the SYN arrive?</td></tr>
+        <tr><td class="f">Instant "connection refused"</td><td>Nothing listening, or a REJECT rule. Both look identical to the client.</td><td><code>ss -ltn</code> on the server. If a listener exists, a rule sent that.</td></tr>
+        <tr><td class="f">"Connection reset by peer", peer denies it</td><td>Injected RST, or a REJECT rule short of the peer.</td><td>TTL of the RST versus the peer's other packets. Capture both ends.</td></tr>
+        <tr><td class="f">Dies after a fixed idle period, every time</td><td>Conntrack or NAT state expiry in the middle.</td><td>The interval is the middlebox's timeout. Add keepalives below it.</td></tr>
+        <tr><td class="f">Handshake fine, large transfers hang</td><td>PMTU black hole: ICMP type 3 code 4 is being filtered.</td><td>Stop dropping ICMP. Test with <code>ping -M do -s 1472</code>.</td></tr>
+        <tr><td class="f">Wedges roughly 15 minutes, then errors</td><td>An established flow stopped getting through mid-stream.</td><td><code>tcp_retries2</code>. Something changed on the path after the connection opened.</td></tr>
+        <tr><td class="f">Works to the host, not through it</td><td>Rules written in INPUT on a box that forwards.</td><td>The routing-decision branch on the Hook Path tab. Transit never visits INPUT.</td></tr>
+        <tr><td class="f">Port forward reaches nothing</td><td>FORWARD rule written against the pre-DNAT address.</td><td>filter sees post-DNAT addresses. See the NAT tab.</td></tr>
+        <tr><td class="f">Changed a NAT rule, nothing changed</td><td>Open flows still use the mapping recorded at their first packet.</td><td>Flush conntrack, or test with a brand new connection.</td></tr>
+        <tr><td class="f">Intermittent drops under load, no rule matches</td><td>Conntrack table full, or accept-queue overflow.</td><td><code>conntrack -S</code>, <code>dmesg | grep conntrack</code>, <code>nstat | grep -i overflow</code>.</td></tr>
+        <tr><td class="f">One direction works, the other silently fails</td><td>Strict <code>rp_filter</code> with asymmetric routing.</td><td>Appears in no ruleset. <code>sysctl net.ipv4.conf.all.rp_filter</code>.</td></tr>
+        <tr><td class="f">iptables looks empty, traffic still blocked</td><td>Rules written by another tool through nftables.</td><td><code>nft list ruleset</code>, not <code>iptables -L</code>.</td></tr>
+      </tbody></table>
+
+      <div class="sec">the page between the pages</div>
+      <div class="callout hot"><b>the bytes are documented; the fate is not.</b> Every other breakdown here can tell you what a field means, because the meaning is written in an RFC. Nothing can tell you from the packet alone why it stopped, because the decision was made by a ruleset on a machine you may not own and left no trace in the packet. That asymmetry is the whole reason this page exists: the RST bit is fully specified on the <a href="../tcp/tcp-anatomy.html">TCP page</a>, and none of that specification tells you who set it. The answer is always the same shape - <b>capture at both ends and compare</b>, then use the TTL, the ICMP quote, and the counters to place the decision on a specific box.</div>
+      <div class="callout"><b>where to go from here.</b> The <a href="../tcp/tcp-anatomy.html">RST bit</a> in its header, the <a href="../icmpv4/icmpv4-anatomy.html">ICMP unreachable</a> message in full, the <a href="../ipv4/ipv4-anatomy.html">TTL field</a> this page leans on so hard, <a href="../ebpf/ebpf-networking.html">eBPF</a> for the hooks that run before netfilter gets a say, <a href="../attacks/attack-anatomy.html">Attack &amp; Mitigation</a> for what happens when the flood is deliberate, and the <a href="https://hed0rah.github.io/linux_network_stack/">Linux network stack tunables</a> for every sysctl named here.</div>
+    </div>
+
+  </div>
+
+  <footer><span>protocols-fun / packet fate</span><span>netfilter &middot; nf_conntrack &middot; RFC 9293 &middot; 792 &middot; 5961</span><span><a href="../tcp/tcp-anatomy.html">tcp</a> &middot; <a href="../icmpv4/icmpv4-anatomy.html">icmpv4</a> &middot; <a href="../ipv4/ipv4-anatomy.html">ipv4</a> &middot; <a href="../ebpf/ebpf-networking.html">ebpf</a> &middot; <a href="../attacks/attack-anatomy.html">attacks</a> &middot; <a href="../index.html">the map</a></span></footer>
+</div>
+
+<script>
+(function(){
+  var KINDS={sync:"structural",enum:"value",flag:"the tell",rsv:"unused"};
+  function hx(b){return b.toString(16).toUpperCase().padStart(2,"0");}
+
+  function build(mountId, unit, bytes, fields){
+    var mount=document.getElementById(mountId);
+    var N = unit==="bit" ? bytes.length*8 : bytes.length;
+    var owner=new Array(N);
+    fields.forEach(function(f,fi){ for(var i=f.r[0];i<=f.r[1];i++) owner[i]=fi; });
+    var diagram=document.createElement("div");
+    diagram.className="dbytes";
+    bytes.forEach(function(b,i){
+      var f=fields[owner[i]];
+      var col=document.createElement("div"); col.className="bcol";
+      var off=document.createElement("div"); off.className="off"; off.textContent=i; col.appendChild(off);
+      var cell=document.createElement("div"); cell.className="bcell k-"+f.k; cell.dataset.idx=i;
+      if(i===f.r[0]) cell.classList.add("fstart");
+      cell.textContent=hx(b); col.appendChild(cell); diagram.appendChild(col);
+    });
+    var list=document.createElement("div"); list.className="fields";
+    var aside=document.createElement("aside"); aside.className="detail";
+    aside.innerHTML="<div class='dl'><span>field detail</span><span class='kind'></span></div>"+
+      "<h3>Hover a field or byte</h3><div class='dc'>"+bytes.length+" bytes</div>"+
+      "<p>Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.</p><div class='dn'></div>";
+    var det={t:aside.querySelector("h3"),c:aside.querySelector(".dc"),b:aside.querySelector("p"),n:aside.querySelector(".dn"),kind:aside.querySelector(".kind")};
+    var cells=[].slice.call(diagram.querySelectorAll("[data-idx]"));
+    var rows=[];
+    function light(a,b){cells.forEach(function(c){var i=+c.dataset.idx;c.classList.toggle("hi",i>=a&&i<=b);});}
+    function clearHi(){cells.forEach(function(c){c.classList.remove("hi");});}
+    function rl(f){ return "bytes "+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:""); }
+    function show(f){det.t.textContent=f.label;det.c.textContent=rl(f)+"  =  "+f.val;
+      det.b.textContent=f.body||"";det.n.textContent=f.note||"";det.kind.textContent=KINDS[f.k];}
+    function activeRow(){return list.querySelector(".field.active");}
+    function cue(fi){rows.forEach(function(r){r.classList.remove("cued");});rows[fi].classList.add("cued");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    function restore(){rows.forEach(function(r){r.classList.remove("cued");});var a=activeRow();if(a){var fi=+a.dataset.fi;light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}else clearHi();}
+    function pin(fi){var was=rows[fi].classList.contains("active");rows.forEach(function(r){r.classList.remove("active");});if(was){clearHi();return;}rows[fi].classList.add("active");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    fields.forEach(function(f,fi){
+      var row=document.createElement("div"); row.className="field"; row.dataset.fi=fi; if(f.branch) row.dataset.branch="1";
+      var lab = f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"");
+      row.innerHTML="<span class='fb'>"+lab+"</span><span class='fn'>"+f.label+"</span><span class='fv k-"+f.k+"'>"+f.val+"</span>";
+      if(f.branch){
+        var bw=document.createElement("div"); bw.className="branch";
+        bw.innerHTML="<table>"+f.branch.map(function(p,i){return "<tr class='"+(i===f.sel?"sel":"")+"'><td class='k'>"+p[0]+"</td><td>"+p[1]+"</td></tr>";}).join("")+"</table>";
+        row.appendChild(bw);
+      }
+      row.addEventListener("mouseenter",function(){cue(fi);});
+      row.addEventListener("click",function(){pin(fi);});
+      rows.push(row); list.appendChild(row);
+    });
+    cells.forEach(function(c){
+      var fi=owner[+c.dataset.idx];
+      c.addEventListener("mouseenter",function(){cue(fi);});
+      c.addEventListener("click",function(){pin(fi);});
+    });
+    var left=document.createElement("div"); left.className="left";
+    left.appendChild(diagram); left.appendChild(list);
+    var dcol=document.createElement("div"); dcol.className="detailcol"; dcol.appendChild(aside);
+    var block=document.createElement("div"); block.className="block";
+    block.appendChild(left); block.appendChild(dcol);
+    block.addEventListener("mouseleave",restore);
+    mount.appendChild(block);
+    var maxH=aside.scrollHeight;
+    fields.forEach(function(f){ show(f); if(aside.scrollHeight>maxH) maxH=aside.scrollHeight; });
+    det.t.textContent="Hover a field or byte";
+    det.c.textContent=bytes.length+" bytes";
+    det.b.textContent="Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.";
+    det.n.textContent="";
+    dcol.style.minHeight=(maxH+6)+"px";
+  }
+
+
+  /* ---- byte arrays: generated, every checksum computed ---- */
+  var B_SYN = [0x45,0x00,0x00,0x28,0x1C,0x46,0x40,0x00,0x40,0x06,0x20,0x7A,0xC0,0x00,0x02,0x0A,
+         0xCB,0x00,0x71,0x05,0xC8,0x22,0x01,0xBB,0x12,0x34,0x56,0x78,0x00,0x00,0x00,0x00,
+         0x50,0x02,0xFA,0xF0,0x84,0x57,0x00,0x00]; // 40 bytes
+
+  var B_RST = [0x45,0x00,0x00,0x28,0x00,0x00,0x00,0x00,0x3D,0x06,0x7F,0xC0,0xCB,0x00,0x71,0x05,
+         0xC0,0x00,0x02,0x0A,0x01,0xBB,0xC8,0x22,0x00,0x00,0x00,0x00,0x12,0x34,0x56,0x79,
+         0x50,0x14,0x00,0x00,0x7F,0x35,0x00,0x00]; // 40 bytes
+
+  var B_ICMP = [0x45,0x00,0x00,0x38,0x7A,0x3B,0x00,0x00,0x40,0x01,0x02,0x7A,0xCB,0x00,0x71,0x05,
+         0xC0,0x00,0x02,0x0A,0x03,0x03,0xCA,0x72,0x00,0x00,0x00,0x00,0x45,0x00,0x00,0x28,
+         0x1C,0x46,0x40,0x00,0x34,0x06,0x2C,0x7A,0xC0,0x00,0x02,0x0A,0xCB,0x00,0x71,0x05,
+         0xC8,0x22,0x01,0xBB,0x12,0x34,0x56,0x78]; // 56 bytes
+
+  var PROTOS=[["1","ICMP"],["6","TCP"],["17","UDP"],["47","GRE"],["50","ESP"],["132","SCTP"]];
+  var FLAGS=[["0x02","SYN - open a connection"],["0x12","SYN+ACK - accept it"],["0x10","ACK"],
+             ["0x14","RST+ACK - refuse, acknowledging what arrived"],["0x04","RST - abort, nothing to ack"],
+             ["0x11","FIN+ACK - graceful close"],["0x18","PSH+ACK - data"]];
+  var TTLS=[["64","Linux, macOS, most BSD"],["128","Windows"],["255","routers, switches, many appliances"],
+            ["61","what this packet carries: 64 minus 3 hops"],["52","what the real peer's packets carry: 64 minus 12"]];
+  var ICMPCODE=[["0","net unreachable"],["1","host unreachable"],["2","protocol unreachable"],
+                ["3","port unreachable - the REJECT default"],["4","fragmentation needed, DF set - PMTUD, never drop this"],
+                ["9","net administratively prohibited"],["10","host administratively prohibited"],
+                ["13","communication administratively prohibited"]];
+
+  var SPECS={
+    /* ---------------- the injected RST ---------------- */
+    "block-rst":["byte", B_RST, [
+      {label:"version + IHL",k:"sync",r:[0,0],val:"IPv4, 20-byte header",
+        body:"0x45: version 4 in the high nibble, header length 5 words in the low nibble. No IP options."},
+      {label:"DSCP + ECN",k:"rsv",r:[1,1],val:"0"},
+      {label:"total length",k:"sync",r:[2,3],val:"40 bytes",
+        body:"20 bytes of IP header plus 20 of TCP. A bare RST carries no payload and no options, which is itself mildly interesting: a real peer's stack often emits resets with timestamps if the connection had them negotiated."},
+      {label:"identification",k:"rsv",r:[4,5],val:"0",
+        body:"Zero here. Linux sets this to zero on packets with DF set, so a zero ID is unremarkable - but an injector that emits a predictable or repeating ID across many forged resets is leaving a second fingerprint."},
+      {label:"flags + fragment offset",k:"rsv",r:[6,7],val:"0 - no DF",
+        body:"No Don't Fragment bit. The peer's real stack sets DF on essentially everything; a reset without it is another small inconsistency worth noticing, though not proof on its own."},
+      {label:"TTL",k:"flag",r:[8,8],val:"61 - THE TELL",sel:3,branch:TTLS,
+        body:"Time to live: decremented by every router the packet crosses. It left the injector at 64 and crossed 3 routers to reach the client, arriving at 61. The real peer is 12 hops away, so its packets arrive at 52. The source address can be forged perfectly; this number cannot, because the routers in between write it.",
+        note:"compare against a packet you know came from the real peer"},
+      {label:"protocol",k:"enum",r:[9,9],val:"6 TCP",sel:1,branch:PROTOS},
+      {label:"header checksum",k:"sync",r:[10,11],val:"0x7FC0",
+        body:"Covers the IP header only. Computed for this page and verified: summing the finished 20-byte header gives 0xFFFF, as it must."},
+      {label:"source address",k:"flag",r:[12,15],val:"203.0.113.5 - forged",
+        body:"Claims to be the peer. Writing this field is free - there is nothing in IPv4 that authenticates a source address, which is the root of the entire problem this page is about."},
+      {label:"destination address",k:"enum",r:[16,19],val:"192.0.2.10"},
+      {label:"source port",k:"enum",r:[20,21],val:"443",
+        body:"Has to match the peer's listening port or the client's kernel would not associate the reset with the socket."},
+      {label:"destination port",k:"enum",r:[22,23],val:"51234",
+        body:"The client's ephemeral port. An off-path attacker has to guess this; an on-path box simply reads it."},
+      {label:"sequence number",k:"enum",r:[24,27],val:"0",
+        body:"Zero, per RFC 9293 section 3.5.2: a reset answering a segment that carried no ACK bit takes sequence number zero. If it had been answering an ACK-carrying segment, it would have used that segment's acknowledgment number instead."},
+      {label:"acknowledgment number",k:"enum",r:[28,31],val:"0x12345679",
+        body:"The incoming sequence number plus the segment length. The SYN's sequence was 0x12345678 and a SYN counts as one byte, so this is 0x12345679. Getting this arithmetic right is what makes the reset acceptable to the client's kernel.",
+        note:"0x12345678 + 1"},
+      {label:"data offset + reserved",k:"sync",r:[32,32],val:"5 (20 bytes)",
+        body:"0x50: five 32-bit words, so no TCP options."},
+      {label:"flags",k:"flag",r:[33,33],val:"0x14 RST+ACK",sel:3,branch:FLAGS,
+        body:"RST and ACK together. ACK is set because the acknowledgment field is meaningful. RFC 9293 forbids sending a reset in response to a reset, which is the only thing keeping forged resets from becoming a loop between two hosts."},
+      {label:"window",k:"rsv",r:[34,35],val:"0",
+        body:"Zero, and meaningless on a reset - the connection is over. Some injectors leave a plausible-looking window here instead, which is another small inconsistency against a real stack."},
+      {label:"checksum",k:"sync",r:[36,37],val:"0x7F35",
+        body:"Covers a pseudo-header of source, destination, protocol and TCP length, plus the TCP header. Computed and verified for this page. An injector must get this right or the client discards the packet silently, so a wrong checksum is not a thing you will see."},
+      {label:"urgent pointer",k:"rsv",r:[38,39],val:"0"}
+    ]],
+
+    /* ---------------- the ICMP rejection ---------------- */
+    "block-icmp":["byte", B_ICMP, [
+      {label:"version + IHL",k:"sync",r:[0,0],val:"IPv4, 20-byte header"},
+      {label:"DSCP + ECN",k:"rsv",r:[1,1],val:"0"},
+      {label:"total length",k:"sync",r:[2,3],val:"56 bytes",
+        body:"20 IP + 8 ICMP + 28 quoted. The quote is exactly the original IP header plus 8 bytes, which is the RFC 792 minimum and what almost everything sends."},
+      {label:"identification",k:"rsv",r:[4,5],val:"0x7A3B"},
+      {label:"flags + fragment offset",k:"rsv",r:[6,7],val:"0"},
+      {label:"TTL",k:"enum",r:[8,8],val:"64 - the reply's own",sel:0,branch:TTLS,
+        body:"This is the TTL of the ICMP error itself, leaving the rejecting host. Do not confuse it with the quoted TTL at byte 36, which is the one that tells you something."},
+      {label:"protocol",k:"enum",r:[9,9],val:"1 ICMP",sel:0,branch:PROTOS},
+      {label:"header checksum",k:"sync",r:[10,11],val:"0x027A"},
+      {label:"source address",k:"enum",r:[12,15],val:"203.0.113.5",
+        body:"Whichever box holds the REJECT rule. If this is not the address you were connecting to, you have just found an unexpected middlebox - and that alone is worth the capture."},
+      {label:"destination address",k:"enum",r:[16,19],val:"192.0.2.10"},
+      {label:"ICMP type",k:"flag",r:[20,20],val:"3 destination unreachable",
+        body:"Type 3 covers every flavour of 'it did not get there', with the code byte carrying the actual reason."},
+      {label:"ICMP code",k:"flag",r:[21,21],val:"3 port unreachable",sel:3,branch:ICMPCODE,
+        body:"Port unreachable: the default for -j REJECT, and exactly what a host with nothing listening would send by itself. That indistinguishability is the point.",
+        note:"code 4 is fragmentation-needed - never filter it"},
+      {label:"ICMP checksum",k:"sync",r:[22,23],val:"0xCA72",
+        body:"Covers the ICMP message and everything quoted after it. No pseudo-header, unlike TCP and unlike ICMPv6."},
+      {label:"unused",k:"rsv",r:[24,27],val:"0",
+        body:"Four bytes, zero for destination-unreachable. Two exceptions worth knowing: for code 4 the last two bytes carry the next-hop MTU (RFC 1191), which is how Path MTU Discovery actually works, and RFC 4884 later reclaimed one byte as a length field for multi-part messages."},
+      {label:"quoted IP header",k:"sync",r:[28,35],val:"the original, as received",
+        body:"From here to byte 55 is a verbatim copy of the packet that caused the error. This is the useful half of an ICMP error: it survives NAT, so it shows you what the middlebox thought it was handling."},
+      {label:"quoted TTL",k:"flag",r:[36,36],val:"52 - you sent 64",
+        body:"The original TTL as it arrived at the rejecting host. You sent 64; 12 routers decremented it. That difference is a free hop count to whatever refused you, and if it does not match where you believe your firewall sits, the rule is somewhere you did not expect.",
+        note:"64 - 52 = 12 hops to the box that rejected you"},
+      {label:"quoted protocol",k:"enum",r:[37,37],val:"6 TCP",sel:1,branch:PROTOS},
+      {label:"quoted checksum",k:"sync",r:[38,39],val:"0x2C7A",
+        body:"Recomputed against the decremented TTL, because it is a copy of the header as it arrived, not as it was sent."},
+      {label:"quoted source",k:"enum",r:[40,43],val:"192.0.2.10 - you",
+        body:"Your own address, echoed back. If it is not what you expected, something SNATed you on the way out."},
+      {label:"quoted destination",k:"enum",r:[44,47],val:"203.0.113.5",
+        body:"Where you were headed. Behind DNAT this may show the translated address, which is often the fastest way to confirm a port forward is firing at all."},
+      {label:"quoted source port",k:"enum",r:[48,49],val:"51234"},
+      {label:"quoted dest port",k:"enum",r:[50,51],val:"443"},
+      {label:"quoted sequence",k:"enum",r:[52,55],val:"0x12345678",
+        body:"The last of the 8 quoted transport bytes. Ports plus sequence is exactly enough for the client kernel to identify the socket and fail the right connect() call - and it is also all an attacker forging an ICMP error would need to guess, which is why RFC 5927 exists.",
+        note:"8 bytes: the four-tuple plus sequence"}
+    ]],
+
+    /* ---------------- the SYN that provoked it ---------------- */
+    "block-syn":["byte", B_SYN, [
+      {label:"version + IHL",k:"sync",r:[0,0],val:"IPv4, 20-byte header"},
+      {label:"DSCP + ECN",k:"rsv",r:[1,1],val:"0"},
+      {label:"total length",k:"sync",r:[2,3],val:"40 bytes",
+        body:"Shown without TCP options for clarity. A real modern SYN carries MSS, SACK-permitted, timestamps and window scale, taking it to 60 bytes - those are decoded on the TCP page."},
+      {label:"identification",k:"rsv",r:[4,5],val:"0x1C46"},
+      {label:"flags + fragment offset",k:"flag",r:[6,7],val:"0x4000 DF set",
+        body:"Don't Fragment. Set on essentially all modern TCP, and the reason Path MTU Discovery is needed at all: a router that cannot forward this must reply with ICMP type 3 code 4 rather than fragment it."},
+      {label:"TTL",k:"flag",r:[8,8],val:"64 - as sent",sel:0,branch:TTLS,
+        body:"The initial value. Compare with byte 36 of the ICMP error, where this same field arrives as 52 after 12 hops.",
+        note:"arrives at the server as 52"},
+      {label:"protocol",k:"enum",r:[9,9],val:"6 TCP",sel:1,branch:PROTOS},
+      {label:"header checksum",k:"sync",r:[10,11],val:"0x207A"},
+      {label:"source address",k:"enum",r:[12,15],val:"192.0.2.10"},
+      {label:"destination address",k:"enum",r:[16,19],val:"203.0.113.5"},
+      {label:"source port",k:"enum",r:[20,21],val:"51234",
+        body:"Ephemeral, from net.ipv4.ip_local_port_range. Quoted back at bytes 48-49 of the ICMP error."},
+      {label:"destination port",k:"enum",r:[22,23],val:"443"},
+      {label:"sequence number",k:"enum",r:[24,27],val:"0x12345678",
+        body:"The client's initial sequence number. The RST on the previous tab acknowledges this value plus one; the ICMP error quotes it verbatim."},
+      {label:"acknowledgment number",k:"rsv",r:[28,31],val:"0 - no ACK bit",
+        body:"Meaningless on a SYN. Its absence is exactly what makes a reset answering this packet carry sequence zero rather than an echoed acknowledgment."},
+      {label:"data offset + reserved",k:"sync",r:[32,32],val:"5 (20 bytes)"},
+      {label:"flags",k:"flag",r:[33,33],val:"0x02 SYN",sel:0,branch:FLAGS,
+        body:"The connection attempt. Everything on the Drop vs Reject tab is about what does or does not come back after this byte goes out."},
+      {label:"window",k:"enum",r:[34,35],val:"64240"},
+      {label:"checksum",k:"sync",r:[36,37],val:"0x8457"},
+      {label:"urgent pointer",k:"rsv",r:[38,39],val:"0"}
+    ]]
+  };
+
+  var built={};
+  function buildPanel(name){
+    var panel=document.querySelector('[data-panel="'+name+'"]'); if(!panel) return;
+    panel.querySelectorAll("[data-build]").forEach(function(m){
+      if(built[m.id]) return; built[m.id]=1;
+      var spec=SPECS[m.id]; if(spec) build(m.id, spec[0], spec[1], spec[2]);
+    });
+  }
+
+  /* ---- tabs ---- */
+  var tabs=[].slice.call(document.querySelectorAll(".tab"));
+  var panels=[].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    tabs.forEach(function(t){t.classList.toggle("on",t.dataset.p===name);});
+    panels.forEach(function(p){p.classList.toggle("on",p.dataset.panel===name);});
+    buildPanel(name);
+  }
+  tabs.forEach(function(t){t.addEventListener("click",function(){
+    activate(t.dataset.p);
+    if(history.replaceState) history.replaceState(null,"","#"+t.dataset.p);
+  });});
+  var initial=(location.hash||"").replace("#","");
+  if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
+  else buildPanel("rst");
+})();
+</script>
+<script src="../assets/protofun-toggle.js"></script>
+</body>
+</html>
