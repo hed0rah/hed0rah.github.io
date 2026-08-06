@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>protocols-fun / encrypted clienthello</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  --paper:#E6EBEE; --panel:#EFF3F5; --ink:#10171C; --soft:#46545E;
+  --faint:#7A8790; --line:#C1CDD3; --hair:#D6E0E4;
+  --enum:#0E7A8C; --enum-soft:#D1E7EA;
+  --flag:#C1501A; --flag-soft:#F0DACB;
+  --sync:#34507E; --sync-soft:#DCE3EE;
+  --rsv:#838E96;  --rsv-soft:rgba(16,23,28,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#0a0f0d;--panel:#0f1613;--ink:#c6f0d0;--soft:#7fae90;--faint:#4f6a5c;--line:#22302a;--hair:#151d19;--enum:#2fe38a;--enum-soft:#0e2a1d;--flag:#e0a92e;--flag-soft:#2c2410;--sync:#4fb8d6;--sync-soft:#0f2630;--rsv:#6f8f7f;--rsv-soft:rgba(198,240,208,0.05);}
+:root[data-theme="amber"]{--paper:#120c00;--panel:#1c1400;--ink:#ffb000;--soft:#c08a2a;--faint:#8a6a20;--line:#3a2a00;--hair:#241900;--enum:#ffb000;--enum-soft:#2a1d00;--flag:#ffd27a;--flag-soft:#332400;--sync:#d98a1a;--sync-soft:#241a00;--rsv:#9a7524;--rsv-soft:rgba(255,176,0,0.05);}
+:root[data-theme="vapor"]{--paper:#f4efe0;--panel:#ece4d0;--ink:#123b37;--soft:#3f605b;--faint:#8a9a90;--line:#e5457f;--hair:#ddd3bd;--enum:#e5457f;--enum-soft:#f8d9e4;--flag:#e0982f;--flag-soft:#f5e6c6;--sync:#0e9c90;--sync-soft:#cbe9e3;--rsv:#8a9a90;--rsv-soft:rgba(18,59,55,0.05);}
+/* house modes: the site-wide Deep Dive skins (warm cream / neutral dark, house teal+orange) */
+:root[data-theme="house-light"]{--paper:#F2F1EE;--panel:#FBFAF6;--ink:#17150F;--soft:#4A4744;--faint:#8C877E;--line:#C9C5BB;--hair:#E4E0D7;--enum:#007870;--enum-soft:#D8E7E5;--flag:#E85000;--flag-soft:#F6E1D4;--sync:#33518C;--sync-soft:#DEE3EF;--rsv:#8C877E;--rsv-soft:rgba(23,21,15,0.04);}
+:root[data-theme="house-dark"]{--paper:#121213;--panel:#1c1c1e;--ink:#ececea;--soft:#a9a9a4;--faint:#6f6f6b;--line:#313135;--hair:#26262a;--enum:#08F9DF;--enum-soft:#0e2a29;--flag:#FF4D00;--flag-soft:#2c1a10;--sync:#7fb2e0;--sync-soft:#16232f;--rsv:#8b8b88;--rsv-soft:rgba(236,236,234,0.05);}
+/* house modes: RJ wears teal and flips to orange on hover; a couple of subtle orange touches in the head */
+:root[data-theme="house-light"] .head .title protofun-toggle{color:var(--flag)}
+:root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
+:root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
+:root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
+:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
+:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
+:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
+.head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem}
+.head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
+.head .title protofun-toggle:hover{color:var(--enum)}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500}
+.lede a{color:var(--enum)}
+.intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
+.intro .lede{margin-bottom:0}
+.sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
+.sig .legrows{display:flex;flex-direction:column;gap:0.42rem}
+.sig .siglabel{writing-mode:vertical-rl;text-orientation:mixed;align-self:stretch;display:flex;align-items:center;justify-content:center;font-size:0.5rem;letter-spacing:0.34em;text-transform:uppercase;color:var(--faint);padding-left:0.9rem;border-left:1px solid var(--hair)}
+.sig .row{display:flex;align-items:center;gap:0.4rem;font-size:0.68rem;color:var(--soft);letter-spacing:0.02em;white-space:nowrap}
+.sig .swsep{color:var(--faint);font-size:0.62rem}
+.sig .sw{display:inline-flex;align-items:center;justify-content:center;width:6.1rem;height:1.45rem;padding:0;font-size:0.58rem;letter-spacing:0.1em;text-transform:lowercase;flex-shrink:0}
+.sig .sw.dark{color:var(--paper)}
+.sig .sw.light{color:var(--ink);border:1px solid var(--hair)}
+.sig .sw.dark.k-enum{background:var(--enum)} .sig .sw.light.k-enum{background:var(--enum-soft)}
+.sig .sw.dark.k-flag{background:var(--flag)} .sig .sw.light.k-flag{background:var(--flag-soft)}
+.sig .sw.dark.k-sync{background:var(--sync)} .sig .sw.light.k-sync{background:var(--sync-soft)}
+.sig .sw.dark.k-rsv{background:var(--faint)} .sig .sw.light.k-rsv{background:var(--rsv-soft)}
+@media(max-width:820px){.intro{display:block}.sig{display:none}}
+.k-en{color:var(--enum)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:2.2rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.5rem 0 1.1rem;max-width:78ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.2rem 0 0.4rem;max-width:82ch}
+.callout b{color:var(--ink);font-weight:500} .callout a{color:var(--enum)}
+.callout.hot{border-left-color:var(--enum)}
+code{font-family:var(--ff);color:var(--enum);font-size:0.92em;background:var(--rsv-soft);padding:0.02rem 0.28rem;border-radius:2px;white-space:nowrap}
+.atable{width:100%;border-collapse:collapse;font-size:0.74rem;margin:0.4rem 0 1.3rem}
+.atable th,.atable td{text-align:left;padding:0.38rem 0.7rem;border-bottom:1px solid var(--hair);vertical-align:top}
+.atable th{font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+.atable td.x{font-family:var(--ff);color:var(--enum);white-space:nowrap;font-size:0.72rem}
+.atable td.f{color:var(--ink);font-weight:500;white-space:nowrap}
+.atable td.g{color:var(--faint)}
+.kv{font-size:0.78rem;margin:0.3rem 0 1.1rem}
+.kv div{display:grid;grid-template-columns:9.5rem 1fr;gap:1rem;padding:0.3rem 0;border-bottom:1px solid var(--hair)}
+.kv div:last-child{border-bottom:none}
+.kv .k{color:var(--enum)} .kv .v{color:var(--soft)}
+.cmd{font-family:var(--ff);font-size:0.76rem;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--enum);padding:0.6rem 0.85rem;margin:0.5rem 0 1.2rem;overflow-x:auto;white-space:pre;color:var(--ink);line-height:1.7}
+.cmd .p{color:var(--faint)} .cmd .c{color:var(--faint);font-style:italic}
+
+/* byte inspector (shared engine with the anatomy pages) */
+.dbytes{display:flex;flex-wrap:wrap;gap:4px;margin:0.6rem 0 1.4rem}
+.bcol{display:flex;flex-direction:column;align-items:center}
+.bcol .off{font-size:0.5rem;color:var(--faint);margin-bottom:2px;letter-spacing:0.02em}
+.bcell{width:2.5rem;height:1.9rem;display:flex;align-items:center;justify-content:center;font-size:0.78rem;border:1px solid var(--hair);color:var(--soft);transition:background .12s,color .12s;cursor:pointer}
+.bcell.k-sync{background:var(--sync-soft)} .bcell.k-enum{background:var(--enum-soft)}
+.bcell.k-flag{background:var(--flag-soft)} .bcell.k-rsv{background:var(--rsv-soft)}
+.bcell.fstart{border-left:2px solid var(--line)}
+.bcell.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+.block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
+.left{min-width:0}
+.detailcol{position:relative}
+@media(max-width:820px){.block{grid-template-columns:1fr}.detailcol{position:static}}
+.fields{border-top:1px solid var(--line)}
+.field{display:grid;grid-template-columns:5.4rem 1fr auto;gap:0.8rem;align-items:baseline;padding:0.46rem 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.field:hover,.field.active,.field.cued{background:var(--panel)}
+.field .fb{font-size:0.6rem;color:var(--faint)} .field .fn{font-size:0.82rem;color:var(--ink)}
+.field[data-branch] .fn::after{content:"+";margin-left:0.4rem;color:var(--enum);font-weight:500}
+.field.active[data-branch] .fn::after{content:"\2212"}
+.fv{font-size:0.76rem;text-align:right}
+.fv.k-sync{color:var(--sync)} .fv.k-enum{color:var(--enum)} .fv.k-flag{color:var(--flag)} .fv.k-rsv{color:var(--faint)}
+.branch{grid-column:1 / -1;display:none;padding:0.5rem 0 0.2rem 6.2rem}
+.field.active .branch{display:block}
+.branch table{border-collapse:collapse;font-size:0.7rem;width:100%;max-width:30rem}
+.branch td{padding:1px 10px 1px 0;color:var(--soft)} .branch td.k{color:var(--faint);width:4.2rem;text-align:right}
+.branch tr.sel td{color:var(--ink)} .branch tr.sel td.k{color:var(--enum);font-weight:500}
+.detail{position:absolute;inset:0;border:1px solid var(--line);background:var(--panel);padding:1rem 1.05rem;overflow-y:auto}
+@media(max-width:820px){.detail{position:static;height:16rem}}
+.detail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
+.detail .dl .kind{color:var(--soft)}
+.detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
+.detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
+.detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
+
+/* handshake flight ladder */
+.flow{border:1px solid var(--line);background:var(--panel);margin:0.6rem 0 1.3rem}
+.flow .fhead{display:grid;grid-template-columns:1fr 4.6rem 1fr;border-bottom:1px solid var(--line);font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint)}
+.flow .fhead span{padding:0.5rem 0.9rem}
+.flow .fhead span:nth-child(2){text-align:center}
+.flow .fhead span:nth-child(3){text-align:right}
+.flow .step{display:grid;grid-template-columns:1fr 4.6rem 1fr;align-items:stretch;border-bottom:1px solid var(--hair)}
+.flow .step:last-child{border-bottom:none}
+.flow .m{padding:0.5rem 0.9rem;font-size:0.76rem;color:var(--ink);min-width:0;overflow-wrap:anywhere}
+.flow .m.srv{text-align:right}
+.flow .m em{font-style:normal;color:var(--faint);display:block;font-size:0.63rem;letter-spacing:0.02em;line-height:1.5}
+.flow .dir{display:flex;align-items:center;justify-content:center;color:var(--enum);font-size:0.85rem;border-left:1px solid var(--hair);border-right:1px solid var(--hair)}
+.flow .mark{grid-column:1 / -1;border-top:1px dashed var(--line);background:var(--rsv-soft);padding:0.3rem 0.9rem;font-size:0.56rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--flag);text-align:center}
+.pk{display:inline-block;font-size:0.5rem;letter-spacing:0.1em;text-transform:uppercase;padding:0 0.3rem;margin-left:0.35rem;border:1px solid currentColor;vertical-align:1px;white-space:nowrap}
+.flow .m.srv .pk{margin-left:0;margin-right:0.35rem}
+.pk.p0{color:var(--faint)} .pk.p1{color:var(--flag)} .pk.p2{color:var(--enum)} .pk.p3{color:var(--sync)}
+
+/* key schedule tree */
+.tree{font-size:0.72rem;line-height:1.7;white-space:pre;overflow-x:auto;border:1px solid var(--line);border-left:2px solid var(--enum);background:var(--panel);padding:0.9rem 1rem;margin:0.5rem 0 1.2rem;color:var(--faint)}
+.tree b{color:var(--ink);font-weight:500}
+.tree i{color:var(--enum);font-style:normal}
+.tree u{color:var(--flag);text-decoration:none}
+.tree s{color:var(--sync);text-decoration:none}
+
+/* JA4 string decoder (same widget as the JA4+ breakdown) */
+.decoder{display:grid;grid-template-columns:1fr 320px;gap:1.4rem;align-items:start;margin:0.4rem 0 1.2rem}
+@media(max-width:820px){.decoder{grid-template-columns:1fr}}
+.jstr{font-size:1.15rem;letter-spacing:0.02em;line-height:2.4;word-break:break-all;user-select:none}
+.jseg{padding:0.15rem 0.1rem;border-bottom:2px solid transparent;cursor:pointer;transition:background .12s}
+.jseg.k-enum{color:var(--enum)} .jseg.k-flag{color:var(--flag)} .jseg.k-sync{color:var(--sync)}
+.jseg:hover,.jseg.on{background:var(--panel);border-bottom-color:currentColor}
+.jsep{color:var(--faint)}
+.jdetail{border:1px solid var(--line);background:var(--panel);padding:0.9rem 1rem;min-height:9rem;position:sticky;top:1rem}
+.jdetail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.45rem;margin-bottom:0.55rem}
+.jdetail h3{font-weight:500;font-size:0.95rem;color:var(--ink)} .jdetail .dv{font-size:0.72rem;color:var(--enum);margin:0.2rem 0 0.55rem}
+.jdetail p{font-size:0.76rem;color:var(--soft);line-height:1.6}
+.ja4{border:1px solid var(--line);background:var(--panel);padding:0.7rem 0.9rem;margin:0.3rem 0 0.9rem;font-size:0.95rem;letter-spacing:0.02em;overflow-x:auto}
+.ja4 .s1{color:var(--sync)} .ja4 .s2{color:var(--enum)} .ja4 .s3{color:var(--flag)}
+
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none}
+.tab{padding:0.55rem 0.85rem;font-size:0.63rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:last-child{border-right:none}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.06em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none} .panel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+.plede{color:var(--soft);max-width:82ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
+.plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em} .plede a{color:var(--enum)}
+footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+/* --- secret themes: amber CRT + vaporwave --- */
+:root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.32)}
+:root[data-theme="amber"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 3px)}
+:root[data-theme="vapor"] body{background:url(../assets/sakura-tile.webp) repeat, linear-gradient(160deg,#4fdfba 0%,#3fc8a4 60%,#57e3c0 100%);background-size:320px auto, cover;background-attachment:fixed}
+:root[data-theme="vapor"] .sheet{background:#f4efe0;box-shadow:0 0 0 3px #2ec6b9,0 14px 46px rgba(0,0,0,.28);border-radius:3px}
+:root[data-theme="vapor"] .head{border-color:#0e9c90}
+:root[data-theme="vapor"] .head .title protofun-toggle{color:#e5457f}
+:root[data-theme="vapor"] .bcell{box-shadow:inset 1px 1px rgba(255,255,255,.7),inset -1px -1px rgba(18,59,55,.16)}
+:root[data-theme="vapor"] .tab.on{box-shadow:inset 0 -2px #e5457f}
+/* --- mobile / narrow screens --- */
+@media(max-width:560px){
+  body{font-size:13px}
+  .sheet{padding-left:1rem;padding-right:1rem}
+  .head .row{grid-template-columns:1fr}
+  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
+  .head .strip{grid-template-columns:1fr}
+  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
+  .head .strip div:last-child{border-bottom:none}
+  .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
+  .branch{padding-left:0.4rem}
+  .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
+  code{white-space:normal;overflow-wrap:anywhere}
+  .flow .fhead,.flow .step{grid-template-columns:1fr 2.4rem 1fr}
+  .flow .m{padding:0.45rem 0.5rem;font-size:0.68rem}
+}
+
+/* outer vs inner ClientHello, side by side */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:0.6rem 0 1.3rem}
+@media(max-width:820px){.split{grid-template-columns:1fr}}
+.split .col{border:1px solid var(--line);background:var(--panel);min-width:0}
+.split .ch{padding:0.5rem 0.85rem;border-bottom:1px solid var(--line);font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase}
+.split .col.outer .ch{color:var(--flag)}
+.split .col.inner .ch{color:var(--enum)}
+.split .r{display:grid;grid-template-columns:8.5rem 1fr;gap:0.6rem;padding:0.36rem 0.85rem;border-bottom:1px solid var(--hair);font-size:0.72rem}
+.split .r:last-child{border-bottom:none}
+.split .k{color:var(--faint)}
+.split .v{color:var(--soft);min-width:0;overflow-wrap:anywhere}
+.split .v b{color:var(--ink);font-weight:500}
+.split .col.outer .r.hot .v b{color:var(--flag)}
+.split .col.inner .r.hot .v b{color:var(--enum)}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . ECH</div><h1>Encrypted ClientHello</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
+      <div class="stamp"><b>RFC 9849</b><br>rev 2026.08</div>
+    </div>
+    <div class="strip">
+      <div>hides <b>the destination</b></div>
+      <div>not <b>the client</b></div>
+      <div>needs <b>DNS and a crowd</b></div>
+    </div>
+  </div>
+
+  <div class="intro">
+  <p class="lede">This is the wire fighting back. The <a href="../ja4/ja4plus-breakdown.html">JA4+</a>, <a href="../tls/tls13-handshake.html">TLS 1.3</a> and <a href="../quic/quic-http3-breakdown.html">QUIC</a> pages all rest on the same fact: the ClientHello is plaintext, so the SNI names where you are going and the extension shape names what you are. ECH is the countermove. It HPKE-seals the sensitive half of the ClientHello under a key fetched from DNS, and an on-path observer loses the hostname. <b>It is a partial countermove and the page says so out loud.</b> The outer ClientHello still has a JA4, the <code>encrypted_client_hello</code> extension is itself a fingerprintable feature, and the transport below is untouched. ECH hides the destination, not the client. Every struct below is built from <a href="https://www.rfc-editor.org/rfc/rfc9849">RFC 9849</a> with every length computed. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <aside class="sig" aria-label="color key">
+    <div class="legrows">
+    <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
+    <div class="row"><span class="sw dark k-flag">amber</span><span class="swsep">&#8594;</span><span class="sw light k-flag">sealed</span></div>
+    <div class="row"><span class="sw dark k-sync">steel</span><span class="swsep">&#8594;</span><span class="sw light k-sync">structural</span></div>
+    <div class="row"><span class="sw dark k-rsv">faint</span><span class="swsep">&#8594;</span><span class="sw light k-rsv">padding</span></div>
+    </div>
+    <div class="siglabel">color key</div>
+  </aside>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-p="split">Outer vs Inner<small>two hellos</small></button>
+    <button class="tab" data-p="extension">The Extension<small>0xfe0d</small></button>
+    <button class="tab" data-p="hpke">HPKE Sealing<small>how it closes</small></button>
+    <button class="tab" data-p="dns">The HTTPS Record<small>where the key lives</small></button>
+    <button class="tab" data-p="grease">GREASE ECH<small>hiding the hiding</small></button>
+    <button class="tab" data-p="retry">Reject &amp; Retry<small>stale configs</small></button>
+    <button class="tab" data-p="ja4">What It Does Not Hide<small>the honest part</small></button>
+    <button class="tab" data-p="deploy">In the Wild<small>what breaks</small></button>
+  </div>
+  <div class="panelwrap">
+
+    <!-- ================= SPLIT ================= -->
+    <div class="panel on" data-panel="split">
+      <div class="pfacts"><span>spec<b>RFC 9849, March 2026</b></span><span>was<b>draft-ietf-tls-esni, 25 revisions</b></span></div>
+      <p class="plede">A client using ECH builds <b>two</b> ClientHellos. The outer one goes on the wire in the clear and is deliberately boring: it names a generic <code>public_name</code> that the whole provider shares. The inner one carries the truth, gets sealed with HPKE, and travels as the payload of one extension inside the outer. The server decrypts it and answers the inner hello as though the outer never existed.</p>
+
+      <div class="sec">the same connection, two hellos</div>
+      <div class="split">
+        <div class="col outer">
+          <div class="ch">ClientHelloOuter &middot; plaintext, on the wire</div>
+          <div class="r hot"><span class="k">server_name</span><span class="v"><b>public.example.net</b> - the ECHConfig's public_name, shared by every origin behind this provider</span></div>
+          <div class="r"><span class="k">cipher_suites</span><span class="v">a generic list. It still fingerprints the client library.</span></div>
+          <div class="r"><span class="k">key_share</span><span class="v">a real share. The handshake must complete even if ECH fails.</span></div>
+          <div class="r"><span class="k">ALPN</span><span class="v">present and readable. Only the <i>inner</i> ALPN is hidden.</span></div>
+          <div class="r hot"><span class="k">ech (0xfe0d)</span><span class="v">type <b>outer</b>: cipher suite, config_id, <code>enc</code>, and the sealed inner hello</span></div>
+          <div class="r"><span class="k">legacy_session_id</span><span class="v">32 bytes. The inner reuses this exact value.</span></div>
+        </div>
+        <div class="col inner">
+          <div class="ch">ClientHelloInner &middot; sealed, never on the wire</div>
+          <div class="r hot"><span class="k">server_name</span><span class="v"><b>secret.example.com</b> - the name you are actually asking for</span></div>
+          <div class="r"><span class="k">cipher_suites</span><span class="v">may differ from the outer. Usually does not.</span></div>
+          <div class="r"><span class="k">key_share</span><span class="v">its own share. This is the one that keys the session.</span></div>
+          <div class="r"><span class="k">ALPN</span><span class="v">the real one. Hidden from the path.</span></div>
+          <div class="r hot"><span class="k">ech (0xfe0d)</span><span class="v">type <b>inner</b>: a single byte, and nothing else</span></div>
+          <div class="r"><span class="k">supported_versions</span><span class="v"><b>TLS 1.3 only.</b> The inner hello may not offer anything older.</span></div>
+        </div>
+      </div>
+
+      <div class="callout hot"><b>the inner hello wins, completely.</b> If the server decrypts successfully, the handshake proceeds against ClientHelloInner and the outer is discarded - the certificate is for <code>secret.example.com</code>, the transcript uses the inner, and the outer exists only as a carrier and as AEAD associated data. The outer's <code>public_name</code> is never authenticated in a successful handshake. It matters in exactly one case, on the Reject &amp; Retry tab, where it becomes the identity the server proves instead.</div>
+      <div class="callout"><b>both hellos share one session id, and the encoding drops it.</b> ClientHelloInner carries the same <code>legacy_session_id</code> as the outer, but the <i>encoded</i> form that actually gets sealed sets it to the empty string, and the server copies the outer's value back in during decoding. That saves 33 bytes of ciphertext for a field that is already visible, which is the same instinct behind the extension compression on the HPKE tab.</div>
+      <div class="callout"><b>this only works because someone else is standing next to you.</b> ECH moves the hostname out of the handshake; it does nothing about the destination IP address, which is in every packet. If <code>secret.example.com</code> resolves to an address that only it uses, an observer reads the name off the routing table and ECH has bought nothing. The privacy comes from the <code>public_name</code> naming a pool that thousands of origins share. ECH is a CDN-shaped mechanism, and that is a structural property, not a deployment detail.</div>
+    </div>
+
+    <!-- ================= EXTENSION ================= -->
+    <div class="panel" data-panel="extension">
+      <div class="pfacts"><span>codepoint<b>0xfe0d</b></span><span>outer<b>190 bytes here</b></span><span>inner<b>5 bytes, always</b></span></div>
+      <p class="plede">One extension type, two shapes, chosen by the first byte of its body. This is the whole of ECH on the wire.</p>
+
+      <div class="sec">the outer form, inside ClientHelloOuter</div>
+      <p class="note">A deliberately minimal example so every byte stays on screen. A real browser's payload runs roughly 200 to 300 bytes, because a real inner hello is bigger before padding.</p>
+      <div id="block-ech" data-build></div>
+
+      <div class="sec">the inner form, inside ClientHelloInner</div>
+      <p class="note">Five bytes, and four of them are the extension header. The inner hello has to carry this so the server can tell, after decryption, that it is looking at an inner hello and not a replayed outer one.</p>
+      <div id="block-inner" data-build></div>
+
+      <div class="callout hot"><b><code>config_id</code> is one byte and it is a tracking surface.</b> It exists so a server holding several keys can pick the right one without trial decryption. It is chosen by the operator and published in the ECHConfig, so every client using that config sends the same byte - which is fine, and is the point. It goes wrong when an operator issues <i>per-client</i> configs: the config_id then becomes a one-byte cookie in the clear, visible to exactly the observer ECH was meant to defeat. RFC 9849 warns about this directly, and it is the reason config_id should identify a key, never a user.</div>
+      <div class="callout"><b>the payload length is a side channel, and padding is the answer.</b> Ciphertext length tracks plaintext length, so an unpadded ECH would leak roughly how long the hidden hostname is. That is why the encoded inner hello is padded before sealing, using <code>maximum_name_length</code> from the config - the arithmetic is on the HPKE tab. It is also why the outer hello should be built to a similar shape whether or not ECH is real, which is what the GREASE tab is about.</div>
+    </div>
+
+    <!-- ================= HPKE ================= -->
+    <div class="panel" data-panel="hpke">
+      <div class="pfacts"><span>primitive<b>HPKE, RFC 9180</b></span><span>mode<b>mode_base</b></span><span>seal<b>single shot</b></span></div>
+      <p class="plede">Hybrid Public Key Encryption: an ephemeral KEM encapsulation to the server's public key, then an AEAD seal under the derived secret. The client sends the encapsulation as <code>enc</code> and the sealed hello as <code>payload</code>. No round trip, no forward secrecy for the config key itself.</p>
+
+      <div class="sec">the pipeline</div>
+      <div class="cmd"><span class="c">// 1. build the encoded inner hello</span>
+EncodedClientHelloInner = ClientHelloInner
+    with legacy_session_id  = ""                      <span class="p">server restores it from the outer</span>
+    with duplicated exts    -&gt; ech_outer_extensions   <span class="p">0xfd00, see below</span>
+    with padding appended                             <span class="p">see the arithmetic</span>
+
+<span class="c">// 2. set up HPKE against the config's public key</span>
+info    = "tls ech" || 0x00 || ECHConfig              <span class="p">the WHOLE config, verbatim</span>
+enc, ctx = SetupBaseS(pkR, info)                      <span class="p">mode_base, no PSK, no sender auth</span>
+
+<span class="c">// 3. seal, binding the outer hello as associated data</span>
+ClientHelloOuterAAD = ClientHelloOuter with the ech payload field
+                      overwritten by zeros of the same length
+payload = ctx.Seal(ClientHelloOuterAAD, EncodedClientHelloInner)</div>
+
+      <div class="sec">the padding arithmetic, byte for byte</div>
+      <p class="note">RFC 9849 &sect;6.1.3, worked for the extension on the previous tab. <code>M</code> is <code>maximum_name_length</code> from the config, <code>D</code> the length of the inner hostname.</p>
+      <div class="kv">
+        <div><span class="k">encoded inner</span><span class="v">74 bytes before any padding</span></div>
+        <div><span class="k">name padding</span><span class="v"><code>max(0, M - D)</code> = <code>max(0, 64 - 18)</code> = <b>46</b>, because <code>secret.example.com</code> is 18 characters. A shorter name gets more padding, so every name up to <code>M</code> produces the same length. <b>74 + 46 = 120</b></span></div>
+        <div><span class="k">no name at all</span><span class="v">If the inner hello omits <code>server_name</code>, the client adds <code>M + 9</code> instead - the 9 covers the header of the extension that is not there, so its absence does not show either.</span></div>
+        <div><span class="k">round up</span><span class="v"><code>N = 31 - ((L - 1) mod 32)</code> = <code>31 - (119 mod 32)</code> = <code>31 - 23</code> = <b>8</b>. <b>120 + 8 = 128</b>, a multiple of 32.</span></div>
+        <div><span class="k">AEAD tag</span><span class="v">+16 bytes. <b>payload = 144</b>, which is the length field at bytes 44-45 of the extension.</span></div>
+      </div>
+
+      <div class="sec">extension compression</div>
+      <p class="note">The inner hello would otherwise repeat every large extension the outer already carries. <code>ech_outer_extensions</code> (0xfd00) replaces them with a list of codepoints.</p>
+      <div class="cmd"><span class="c">// inside EncodedClientHelloInner, in place of the real extensions</span>
+fd 00              <span class="p">ech_outer_extensions</span>
+00 09              <span class="p">extension_data length</span>
+08                 <span class="p">OuterExtensions list length in bytes</span>
+00 0a 00 0d        <span class="p">supported_groups, signature_algorithms</span>
+00 33 00 2b        <span class="p">key_share, supported_versions</span>
+       <span class="c">// the server splices the real extensions back in from ClientHelloOuter</span></div>
+      <div class="callout"><b>the compression has rules, and they are security rules.</b> The referenced extensions must appear contiguously in the inner hello and in the <i>same relative order</i> in the outer; no extension may be referenced twice; and <code>encrypted_client_hello</code> may never be referenced at all. That last one is not an optimisation detail - allowing it would let the inner hello point at itself and give a decoder somewhere interesting to recurse. A server that finds any of these violated must abort rather than guess.</div>
+      <div class="callout hot"><b>the AAD is what stops the outer hello being rewritten.</b> The seal covers the entire ClientHelloOuter, with only the payload field blanked to zeros. So a middlebox cannot edit a single byte of the outer hello - not the cipher list, not the ALPN, not the <code>public_name</code> - without the server's decryption failing. This is why ECH resists tampering as well as observation: the visible half is cryptographically bound to the hidden half, and the only reason the payload itself is excluded is the obvious circularity.</div>
+      <div class="callout"><b>no forward secrecy on the config key.</b> HPKE gives the <i>session</i> forward secrecy through the TLS key schedule, but the seal on the inner hello is to a long-lived published key. Anyone who records handshakes today and later obtains that private key can decrypt the inner hellos and recover the hostnames retroactively. This is the argument for rotating ECH keys often, which servers do - hourly rotation is normal, and it is also what makes the stale-config path on the Reject tab a routine event rather than an error case.</div>
+    </div>
+
+    <!-- ================= DNS ================= -->
+    <div class="panel" data-panel="dns">
+      <div class="pfacts"><span>record<b>HTTPS RR, RFC 9460</b></span><span>SvcParamKey<b>5 = ech</b></span></div>
+      <p class="plede">The client needs the server's public key before it sends its first byte, which makes ECH a DNS problem as much as a TLS one. The key rides in the same <a href="../dns/dns-anatomy.html">HTTPS resource record</a> that already carries ALPN and address hints, so a client that is doing SVCB lookups gets it for free.</p>
+
+      <div class="sec">what dig shows you</div>
+      <div class="cmd">$ dig +short secret.example.com HTTPS
+1 . alpn="h3,h2" ipv4hint=192.0.2.1 ech="AEn+DQBFWwAgACCn8cDZTjtiWA+hx9MEnmslj
+DD5eh1uSwOS/Fpx6NQCYwAIAAEAAQABAANAEnB1YmxpYy5leGFtcGxlLm5ldAAA" ipv6hint=2001:db8::1</div>
+      <p class="note">The <code>ech=</code> value is a base64 ECHConfigList. Below is the same record as RDATA on the wire, with that list decoded in place.</p>
+
+      <div class="sec">the record, byte by byte</div>
+      <div id="block-https" data-build></div>
+
+      <div class="callout hot"><b>the bootstrap problem: ECH over plaintext DNS is theatre.</b> To learn the key for <code>secret.example.com</code>, the client asks DNS for <code>secret.example.com</code>. If that query is in the clear, the observer you are hiding from just read the name a few milliseconds before the handshake it can no longer read. ECH is only meaningful behind DoH, DoT or DoQ, and browsers wire the two together deliberately - Firefox will not use ECH unless DNS-over-HTTPS is active. The two features are one feature.</div>
+      <div class="callout"><b>SvcParams are ordered, and that is checkable.</b> RFC 9460 requires keys in strictly increasing numeric order: <code>alpn</code> 1, <code>ipv4hint</code> 4, <code>ech</code> 5, <code>ipv6hint</code> 6 in the record above. A resolver or middlebox that reorders them produces a record a strict client will reject. The mandatory ordering also means a parser can stop early, and that an observer can spot an <code>ech</code> key by position without decoding it.</div>
+      <div class="callout"><b>the address hints are a privacy feature too, quietly.</b> <code>ipv4hint</code> and <code>ipv6hint</code> let the client connect without a second A/AAAA lookup, which removes another plaintext query naming the host. They are hints, not authority - a client still validates the connection through the certificate - but skipping the extra lookup closes one more leak in the same window ECH is trying to protect.</div>
+    </div>
+
+    <!-- ================= GREASE ================= -->
+    <div class="panel" data-panel="grease">
+      <div class="pfacts"><span>spec<b>RFC 9849 &sect;6.2</b></span><span>purpose<b>merge two populations</b></span></div>
+      <p class="plede">A client with no ECHConfig sends a fake one anyway: random <code>config_id</code>, a random string of the right length for <code>enc</code>, and a random payload of plausible size. The server cannot decrypt it, which is exactly what would happen with a stale real config, so it behaves identically.</p>
+
+      <div class="sec">why bother</div>
+      <div class="kv">
+        <div><span class="k">the problem</span><span class="v">If only ECH users send extension <code>0xfe0d</code>, then sending it marks you. The set of people hiding their destination is smaller and more interesting than the set of everyone, and membership in it is visible in the clear.</span></div>
+        <div><span class="k">the fix</span><span class="v">Everyone sends it. A client with a config sends a real one; a client without sends noise. The extension stops discriminating because its presence no longer correlates with anything.</span></div>
+        <div><span class="k">what it costs</span><span class="v">A couple of hundred wasted bytes per handshake, and a server-side decryption failure it was already built to handle.</span></div>
+        <div><span class="k">the giveaway to avoid</span><span class="v">A GREASE payload of a distinctive length, or a config_id drawn from a small set, re-separates the populations. The whole value depends on the fake being shaped like the real thing.</span></div>
+      </div>
+
+      <div class="callout hot"><b>this is the same instinct as GREASE everywhere else, aimed at a different target.</b> <a href="https://www.rfc-editor.org/rfc/rfc8701">RFC 8701</a> GREASE exists to stop <i>middleboxes ossifying</i> on unknown values - send garbage so implementations stay tolerant. ECH GREASE exists to stop <i>observers classifying</i> on a known value - send garbage so the signal carries no information. Same mechanism, opposite adversary: one is aimed at broken software, the other at working surveillance.</div>
+      <div class="callout"><b>a client that is GREASEing must ignore what comes back.</b> The server will often answer an undecryptable ECH with <code>retry_configs</code>, because it cannot tell GREASE from a stale config - that indistinguishability is the point. A GREASEing client must discard them and carry on, because acting on them would prove it was not really using ECH, and would reintroduce exactly the distinction GREASE was added to erase.</div>
+    </div>
+
+    <!-- ================= RETRY ================= -->
+    <div class="panel" data-panel="retry">
+      <div class="pfacts"><span>alert<b>ech_required(121)</b></span><span>carrier<b>EncryptedExtensions</b></span></div>
+      <p class="plede">Keys rotate, caches go stale, and a client will regularly present a <code>config_id</code> the server no longer holds. This is expected traffic, not an error, so ECH has a defined path through it that leaks as little as possible.</p>
+
+      <div class="sec">the rejection path</div>
+      <div class="flow">
+        <div class="fhead"><span>client</span><span>&nbsp;</span><span>server</span></div>
+        <div class="step">
+          <div class="m">ClientHelloOuter + sealed inner<em>config_id the server no longer has</em><span class="pk p0">cleartext</span></div>
+          <div class="dir">&rarr;</div><div class="m srv"></div>
+        </div>
+        <div class="step">
+          <div class="m"></div><div class="dir">&larr;</div>
+          <div class="m srv"><span class="pk p0">cleartext</span>ServerHello<em>random's last 8 bytes are NOT the accept signal</em></div>
+        </div>
+        <div class="step">
+          <div class="m"></div><div class="dir">&larr;</div>
+          <div class="m srv"><span class="pk p1">handshake keys</span>{EncryptedExtensions + ech retry_configs}<br>{Certificate for <b>public.example.net</b>}<br>{CertificateVerify}{Finished}</div>
+        </div>
+        <div class="step">
+          <div class="m">verify the cert against the <b>public_name</b><br>then abort: <b>ech_required(121)</b><em>the real request is never sent on this connection</em><span class="pk p1">handshake keys</span></div>
+          <div class="dir">&rarr;</div><div class="m srv"></div>
+        </div>
+        <div class="mark">reconnect with the fresh config from retry_configs</div>
+      </div>
+      <p class="note">The handshake completes before it is thrown away. That is deliberate: the client must authenticate the <code>retry_configs</code> it just received, and the only way to do that is to finish the handshake and check the certificate covers <code>public_name</code>. Configs from an unauthenticated connection would let anyone hand a client a key they control.</p>
+
+      <div class="sec">the acceptance signal is hidden in plain sight</div>
+      <div class="cmd"><span class="c">// RFC 9849 7.2 - the last 8 bytes of ServerHello.random</span>
+accept_confirmation = HKDF-Expand-Label(
+        HKDF-Extract(0, ClientHelloInner.random),
+        <span class="p">"ech accept confirmation"</span>,
+        transcript_ech_conf,
+        8)
+
+<span class="c">// transcript_ech_conf = ClientHelloInner..ServerHello, with those</span>
+<span class="c">// same 8 bytes zeroed first. HelloRetryRequest uses the label</span>
+<span class="c">// "hrr ech accept confirmation" instead.</span></div>
+      <div class="callout hot"><b>acceptance and rejection look identical to anyone watching.</b> The server does not send a flag saying "ECH worked". It derives 8 bytes from a secret only a client holding the inner hello can compute, and writes them over the tail of <code>ServerHello.random</code> - a field that is supposed to be random, so it still looks random. An observer cannot tell a successful ECH handshake from a rejected one, which means it cannot tell which connections are worth attacking to force a downgrade. Rejection would otherwise be a very loud signal that the next connection is about to carry a real hostname.</div>
+      <div class="callout"><b>the public_name is the only identity a rejected handshake proves.</b> On rejection the certificate is for <code>public.example.net</code>, not for the site you wanted, and the client must validate it as such. It must then abandon the connection - sending the real request over it would deliver the hostname to whoever holds the public_name certificate. <code>ech_required(121)</code> is the alert that says "I will not continue without ECH", and a client that treats rejection as a soft failure has built the downgrade attack itself.</div>
+    </div>
+
+    <!-- ================= JA4 ================= -->
+    <div class="panel" data-panel="ja4">
+      <div class="pfacts"><span>hides<b>the destination</b></span><span>does not hide<b>the client</b></span><span>see<b><a href="../ja4/ja4plus-breakdown.html" style="color:var(--enum)">JA4+ breakdown</a></b></span></div>
+      <p class="plede">ECH removes one field from one layer. That field happens to be the most valuable one for censorship, which is why it matters - and it is not the field most fingerprinting actually depends on.</p>
+
+      <div class="sec">what survives ECH, layer by layer</div>
+      <table class="atable"><thead><tr><th>signal</th><th>hidden?</th><th>why</th></tr></thead><tbody>
+        <tr><td class="f">SNI hostname</td><td class="x">yes</td><td>Moved into the sealed inner hello. This is the whole point and it works.</td></tr>
+        <tr><td class="f">inner ALPN, sigalgs, key_share</td><td class="x">yes</td><td>Sealed with it, so the negotiated protocol is no longer readable client-side either.</td></tr>
+        <tr><td class="f">JA4 of the outer hello</td><td class="x" style="color:var(--flag)">no</td><td>The outer hello has its own cipher list, extension list, versions and sigalgs. JA4 computes over it exactly as before and still identifies the client stack.</td></tr>
+        <tr><td class="f">that ECH is in use</td><td class="x" style="color:var(--flag)">no</td><td>Extension <code>0xfe0d</code> is right there in the clear. GREASE mitigates the population split, it does not remove the field.</td></tr>
+        <tr><td class="f">destination IP</td><td class="x" style="color:var(--flag)">no</td><td>In every packet, below TLS. Only useful privacy if the address is shared by many origins.</td></tr>
+        <tr><td class="f">JA4T, JA4L</td><td class="x" style="color:var(--flag)">no</td><td>The TCP SYN and the round-trip time are below TLS entirely. ECH cannot reach them.</td></tr>
+        <tr><td class="f">sizes and timing</td><td class="x" style="color:var(--flag)">no</td><td>Record lengths and inter-packet timing are unchanged. Traffic analysis is unaffected.</td></tr>
+        <tr><td class="f">the DNS query</td><td class="x">only with DoH</td><td>The HTTPS RR lookup names the host. Plaintext DNS leaks it before the handshake starts.</td></tr>
+      </tbody></table>
+
+      <div class="callout hot"><b>turning ECH on changes your JA4, which is the sharpest irony on this page.</b> <code>0xfe0d</code> is an ordinary extension: not GREASE, and not one of the two JA4 strips. So it is <b>counted</b> in the extension count and <b>hashed</b> into the <code>c</code> segment. An ECH-enabled build of a browser therefore has a different JA4 from the same build with ECH off - the privacy feature is itself a fingerprint bit. GREASE ECH is the answer, and it is a real one: if every client emits something at <code>0xfe0d</code>, the bit stops discriminating. But it only works if the whole population participates, which makes ECH's client-side privacy a function of how many other people turned it on.</div>
+      <div class="callout"><b>the SNI flag does not even flip.</b> JA4's third character is <code>d</code> when <code>server_name</code> is present and <code>i</code> when it is absent. The outer hello still carries a <code>server_name</code> - it names the <code>public_name</code> - so an ECH connection still reads <code>d</code>. Nothing in the JA4 prefix announces that the name is a decoy. What changes is the extension count and the extension hash, not the SNI flag.</div>
+      <div class="callout hot"><b>coherence still wins, and ECH raises its value.</b> The <a href="../ja4/ja4plus-breakdown.html">JA4+ argument</a> is that identity comes from agreement across layers rather than any single hash, and ECH does not touch that argument - it removes one field and leaves the cross-layer picture intact. If the TLS layer says one thing and the SYN says another, that contradiction is exactly as visible as it was before. What ECH genuinely defeats is the specific, cheap, enormously deployed practice of <b>blocking on the hostname in the clear</b>, and that is a real win worth having. It is not anonymity, and the honest framing is worth insisting on: <b>ECH hides where you are going, not who you are.</b></div>
+    </div>
+
+    <!-- ================= DEPLOY ================= -->
+    <div class="panel" data-panel="deploy">
+      <div class="pfacts"><span>status<b>RFC as of March 2026</b></span><span>needs<b>encrypted DNS + a pool</b></span></div>
+      <p class="plede">ECH shipped behind a long tail of preconditions, and most of what goes wrong is one of them being absent rather than the cryptography failing.</p>
+
+      <div class="sec">two server topologies</div>
+      <div class="kv">
+        <div><span class="k">shared mode</span><span class="v">The client-facing server is also the backend. It decrypts the inner hello and serves the request itself. Simple, and the common case for a single origin behind a provider.</span></div>
+        <div><span class="k">split mode</span><span class="v">The client-facing server decrypts and forwards the inner ClientHello to a separate backend, which terminates TLS. The front end never holds the backend's certificate key, so it learns the hostname but not the session. This is how a CDN offers ECH without holding every customer's private key.</span></div>
+      </div>
+
+      <div class="sec">what breaks, and why</div>
+      <table class="atable"><thead><tr><th>symptom</th><th>cause</th></tr></thead><tbody>
+        <tr><td class="f">ECH silently never engages</td><td>No HTTPS RR, or the resolver strips it, or encrypted DNS is off so the client declines to use ECH at all.</td></tr>
+        <tr><td class="f">Constant retries</td><td>Key rotation faster than DNS TTL. The client keeps arriving with a config the server has already retired.</td></tr>
+        <tr><td class="f">Works, then stops on one network</td><td>A middlebox dropping or rewriting the HTTPS RR, or blocking the larger ClientHello. ECH adds a couple of hundred bytes and can push a hello past a size a broken box tolerates.</td></tr>
+        <tr><td class="f">Enterprise inspection breaks</td><td>Working as designed. A TLS-inspecting proxy cannot select a certificate without the SNI, so ECH and SNI-based inspection are mutually exclusive by construction.</td></tr>
+        <tr><td class="f">Blocked by <code>public_name</code></td><td>The countermeasure that actually gets deployed: a censor that cannot see the inner name blocks the shared front-end name or its address instead, taking every origin behind it down together.</td></tr>
+      </tbody></table>
+
+      <div class="callout hot"><b>the endgame is collateral damage, and both sides know it.</b> ECH's defence is that blocking it means blocking the whole pool, and a pool large enough makes that politically expensive. That is not a cryptographic guarantee, it is a hostage-taking argument, and it holds exactly as long as the pool contains something the censor wants to keep. Countries have already blocked entire CDN front-ends rather than lose hostname visibility. ECH raises the price of blocking; it does not make it impossible, and the security model is honest about that.</div>
+      <div class="callout"><b>where this sits.</b> The handshake it modifies is on the <a href="../tls/tls13-handshake.html">TLS 1.3 page</a>, the record that delivers the key is on the <a href="../dns/dns-anatomy.html">DNS page</a>, the same ClientHello rides <a href="../quic/quic-http3-breakdown.html">QUIC's Initial</a> where it is readable by anyone who can derive the Initial keys from a cleartext connection ID, and the fingerprint it complicates but does not remove is the <a href="../ja4/ja4plus-breakdown.html">JA4+ breakdown</a>.</div>
+    </div>
+
+  </div>
+
+  <footer><span>protocols-fun / encrypted clienthello</span><span>RFC 9849 &middot; 9180 &middot; 9460 &middot; 8446</span><span><a href="../ja4/ja4plus-breakdown.html">ja4+</a> &middot; <a href="../tls/tls13-handshake.html">tls 1.3</a> &middot; <a href="../dns/dns-anatomy.html">dns</a> &middot; <a href="../quic/quic-http3-breakdown.html">quic</a> &middot; <a href="../index.html">the map</a></span></footer>
+</div>
+
+<script>
+(function(){
+  var KINDS={sync:"structural",enum:"value",flag:"sealed / grease",rsv:"padding"};
+  function hx(b){return b.toString(16).toUpperCase().padStart(2,"0");}
+
+  function build(mountId, unit, bytes, fields){
+    var mount=document.getElementById(mountId);
+    var N = unit==="bit" ? bytes.length*8 : bytes.length;
+    var owner=new Array(N);
+    fields.forEach(function(f,fi){ for(var i=f.r[0];i<=f.r[1];i++) owner[i]=fi; });
+    var diagram=document.createElement("div");
+    diagram.className="dbytes";
+    bytes.forEach(function(b,i){
+      var f=fields[owner[i]];
+      var col=document.createElement("div"); col.className="bcol";
+      var off=document.createElement("div"); off.className="off"; off.textContent=i; col.appendChild(off);
+      var cell=document.createElement("div"); cell.className="bcell k-"+f.k; cell.dataset.idx=i;
+      if(i===f.r[0]) cell.classList.add("fstart");
+      cell.textContent=hx(b); col.appendChild(cell); diagram.appendChild(col);
+    });
+    var list=document.createElement("div"); list.className="fields";
+    var aside=document.createElement("aside"); aside.className="detail";
+    aside.innerHTML="<div class='dl'><span>field detail</span><span class='kind'></span></div>"+
+      "<h3>Hover a field or byte</h3><div class='dc'>"+bytes.length+" bytes</div>"+
+      "<p>Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.</p><div class='dn'></div>";
+    var det={t:aside.querySelector("h3"),c:aside.querySelector(".dc"),b:aside.querySelector("p"),n:aside.querySelector(".dn"),kind:aside.querySelector(".kind")};
+    var cells=[].slice.call(diagram.querySelectorAll("[data-idx]"));
+    var rows=[];
+    function light(a,b){cells.forEach(function(c){var i=+c.dataset.idx;c.classList.toggle("hi",i>=a&&i<=b);});}
+    function clearHi(){cells.forEach(function(c){c.classList.remove("hi");});}
+    function rl(f){ return "bytes "+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:""); }
+    function show(f){det.t.textContent=f.label;det.c.textContent=rl(f)+"  =  "+f.val;
+      det.b.textContent=f.body||"";det.n.textContent=f.note||"";det.kind.textContent=KINDS[f.k];}
+    function activeRow(){return list.querySelector(".field.active");}
+    function cue(fi){rows.forEach(function(r){r.classList.remove("cued");});rows[fi].classList.add("cued");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    function restore(){rows.forEach(function(r){r.classList.remove("cued");});var a=activeRow();if(a){var fi=+a.dataset.fi;light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}else clearHi();}
+    function pin(fi){var was=rows[fi].classList.contains("active");rows.forEach(function(r){r.classList.remove("active");});if(was){clearHi();return;}rows[fi].classList.add("active");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    fields.forEach(function(f,fi){
+      var row=document.createElement("div"); row.className="field"; row.dataset.fi=fi; if(f.branch) row.dataset.branch="1";
+      var lab = f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"");
+      row.innerHTML="<span class='fb'>"+lab+"</span><span class='fn'>"+f.label+"</span><span class='fv k-"+f.k+"'>"+f.val+"</span>";
+      if(f.branch){
+        var bw=document.createElement("div"); bw.className="branch";
+        bw.innerHTML="<table>"+f.branch.map(function(p,i){return "<tr class='"+(i===f.sel?"sel":"")+"'><td class='k'>"+p[0]+"</td><td>"+p[1]+"</td></tr>";}).join("")+"</table>";
+        row.appendChild(bw);
+      }
+      row.addEventListener("mouseenter",function(){cue(fi);});
+      row.addEventListener("click",function(){pin(fi);});
+      rows.push(row); list.appendChild(row);
+    });
+    cells.forEach(function(c){
+      var fi=owner[+c.dataset.idx];
+      c.addEventListener("mouseenter",function(){cue(fi);});
+      c.addEventListener("click",function(){pin(fi);});
+    });
+    var left=document.createElement("div"); left.className="left";
+    left.appendChild(diagram); left.appendChild(list);
+    var dcol=document.createElement("div"); dcol.className="detailcol"; dcol.appendChild(aside);
+    var block=document.createElement("div"); block.className="block";
+    block.appendChild(left); block.appendChild(dcol);
+    block.addEventListener("mouseleave",restore);
+    mount.appendChild(block);
+    var maxH=aside.scrollHeight;
+    fields.forEach(function(f){ show(f); if(aside.scrollHeight>maxH) maxH=aside.scrollHeight; });
+    det.t.textContent="Hover a field or byte";
+    det.c.textContent=bytes.length+" bytes";
+    det.b.textContent="Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.";
+    det.n.textContent="";
+    dcol.style.minHeight=(maxH+6)+"px";
+  }
+
+
+  /* ---- byte arrays: generated, every length computed ---- */
+  var B_ECH = [0xFE,0x0D,0x00,0xBA,0x00,0x00,0x01,0x00,0x01,0x5B,0x00,0x20,0x3F,0xB2,0x7A,0x1E,
+         0x05,0xC8,0xD4,0x93,0x6E,0xA7,0x0F,0x21,0xBC,0x58,0x4D,0x09,0x76,0xE3,0xA1,0xC0,
+         0x5F,0x2B,0x98,0xD4,0x71,0x3C,0xE6,0x0A,0x8F,0x25,0xB1,0xD7,0x00,0x90,0x0B,0x30,
+         0x55,0x7A,0x9F,0xC4,0xE9,0x0E,0x33,0x58,0x7D,0xA2,0xC7,0xEC,0x11,0x36,0x5B,0x80,
+         0xA5,0xCA,0xEF,0x14,0x39,0x5E,0x83,0xA8,0xCD,0xF2,0x17,0x3C,0x61,0x86,0xAB,0xD0,
+         0xF5,0x1A,0x3F,0x64,0x89,0xAE,0xD3,0xF8,0x1D,0x42,0x67,0x8C,0xB1,0xD6,0xFB,0x20,
+         0x45,0x6A,0x8F,0xB4,0xD9,0xFE,0x23,0x48,0x6D,0x92,0xB7,0xDC,0x01,0x26,0x4B,0x70,
+         0x95,0xBA,0xDF,0x04,0x29,0x4E,0x73,0x98,0xBD,0xE2,0x07,0x2C,0x51,0x76,0x9B,0xC0,
+         0xE5,0x0A,0x2F,0x54,0x79,0x9E,0xC3,0xE8,0x0D,0x32,0x57,0x7C,0xA1,0xC6,0xEB,0x10,
+         0x35,0x5A,0x7F,0xA4,0xC9,0xEE,0x13,0x38,0x5D,0x82,0xA7,0xCC,0xF1,0x16,0x3B,0x60,
+         0x85,0xAA,0xCF,0xF4,0x19,0x3E,0x63,0x88,0xAD,0xD2,0xF7,0x1C,0x41,0x66,0x8B,0xB0,
+         0xD5,0xFA,0x1F,0x44,0x69,0x8E,0xB3,0xD8,0xFD,0x22,0x47,0x6C,0x91,0xB6]; // 190 bytes
+
+  var B_INNER = [0xFE,0x0D,0x00,0x01,0x01]; // 5 bytes
+
+  var B_HTTPS = [0x00,0x01,0x00,0x00,0x01,0x00,0x06,0x02,0x68,0x33,0x02,0x68,0x32,0x00,0x04,0x00,
+         0x04,0xC0,0x00,0x02,0x01,0x00,0x05,0x00,0x4B,0x00,0x49,0xFE,0x0D,0x00,0x45,0x5B,
+         0x00,0x20,0x00,0x20,0xA7,0xF1,0xC0,0xD9,0x4E,0x3B,0x62,0x58,0x0F,0xA1,0xC7,0xD3,
+         0x04,0x9E,0x6B,0x25,0x8C,0x30,0xF9,0x7A,0x1D,0x6E,0x4B,0x03,0x92,0xFC,0x5A,0x71,
+         0xE8,0xD4,0x02,0x63,0x00,0x08,0x00,0x01,0x00,0x01,0x00,0x01,0x00,0x03,0x40,0x12,
+         0x70,0x75,0x62,0x6C,0x69,0x63,0x2E,0x65,0x78,0x61,0x6D,0x70,0x6C,0x65,0x2E,0x6E,
+         0x65,0x74,0x00,0x00,0x00,0x06,0x00,0x10,0x20,0x01,0x0D,0xB8,0x00,0x00,0x00,0x00,
+         0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01]; // 120 bytes
+
+  var KEMS=[["0x0010","DHKEM(P-256, HKDF-SHA256)"],["0x0011","DHKEM(P-384, HKDF-SHA384)"],
+            ["0x0012","DHKEM(P-521, HKDF-SHA512)"],["0x0020","DHKEM(X25519, HKDF-SHA256) - 32-byte keys"],
+            ["0x0021","DHKEM(X448, HKDF-SHA512)"]];
+  var KDFS=[["0x0001","HKDF-SHA256"],["0x0002","HKDF-SHA384"],["0x0003","HKDF-SHA512"]];
+  var AEADS=[["0x0001","AES-128-GCM"],["0x0002","AES-256-GCM"],["0x0003","ChaCha20Poly1305"],
+             ["0xFFFF","Export-only - not usable for ECH"]];
+  var ECHTYPE=[["0","outer - carries the sealed inner hello"],["1","inner - empty body, one byte"]];
+  var SVCKEYS=[["0","mandatory"],["1","alpn"],["2","no-default-alpn"],["3","port"],
+               ["4","ipv4hint"],["5","ech - the ECHConfigList"],["6","ipv6hint"]];
+
+  var SPECS={
+    /* ---------------- the outer ECH extension ---------------- */
+    "block-ech":["byte", B_ECH, [
+      {label:"extension_type",k:"flag",r:[0,1],val:"0xfe0d encrypted_client_hello",
+        body:"The codepoint has been stable since draft-13 and carried through to RFC 9849 unchanged. It is an ordinary extension type, which is exactly why JA4 counts and hashes it - see the last tab.",
+        note:"same value is reused as ECHConfig.version"},
+      {label:"extension_data length",k:"sync",r:[2,3],val:"186 bytes"},
+      {label:"ECHClientHelloType",k:"flag",r:[4,4],val:"0 outer",sel:0,branch:ECHTYPE,
+        body:"One byte selecting the shape of everything after it. In the inner hello this byte is 1 and the struct ends immediately."},
+      {label:"kdf_id",k:"enum",r:[5,6],val:"0x0001 HKDF-SHA256",sel:0,branch:KDFS,
+        body:"Half of the HpkeSymmetricCipherSuite. It must be one of the suites the ECHConfig advertised, and the server rejects anything else."},
+      {label:"aead_id",k:"enum",r:[7,8],val:"0x0001 AES-128-GCM",sel:0,branch:AEADS,
+        body:"The other half. Export-only (0xFFFF) is defined by HPKE but cannot be used here - ECH needs an AEAD that actually seals."},
+      {label:"config_id",k:"flag",r:[9,9],val:"0x5B",
+        body:"Identifies which published key the client used, so a server holding several does not have to trial-decrypt. Chosen by the operator, published in the ECHConfig, and therefore identical for every client using that config. If an operator ever issues per-client configs, this byte becomes a cleartext cookie - RFC 9849 warns against exactly that.",
+        note:"identifies a key, never a user"},
+      {label:"enc length",k:"sync",r:[10,11],val:"32",
+        body:"Determined by the KEM. DHKEM(X25519) encapsulations are 32 bytes; a P-256 config would put 65 here."},
+      {label:"enc",k:"enum",r:[12,43],val:"HPKE encapsulated key",
+        body:"The client's ephemeral KEM output, from SetupBaseS against the config's public key. Fresh per connection, so it carries no cross-connection linkage - unlike config_id, which is stable by design."},
+      {label:"payload length",k:"sync",r:[44,45],val:"144",
+        body:"128 bytes of padded EncodedClientHelloInner plus a 16-byte AEAD tag. The 128 is not a coincidence: the padding rules round the encoded hello to a multiple of 32 so this field cannot leak the hostname length.",
+        note:"see the padding arithmetic on the HPKE tab"},
+      {label:"payload",k:"flag",r:[46,189],val:"the sealed inner ClientHello",
+        body:"HPKE Seal output over the padded EncodedClientHelloInner, with the whole ClientHelloOuter as associated data. Opaque to everyone but the config key holder. A real browser's payload is larger, roughly 200 to 300 bytes, because a real inner hello is bigger before padding."}
+    ]],
+
+    /* ---------------- the inner ECH extension ---------------- */
+    "block-inner":["byte", B_INNER, [
+      {label:"extension_type",k:"flag",r:[0,1],val:"0xfe0d encrypted_client_hello",
+        body:"The same codepoint. Only the body distinguishes the two forms."},
+      {label:"extension_data length",k:"sync",r:[2,3],val:"1",
+        body:"One byte of body, which is the whole struct for the inner case."},
+      {label:"ECHClientHelloType",k:"flag",r:[4,4],val:"1 inner",sel:1,branch:ECHTYPE,
+        body:"An empty struct, present purely as a marker. It tells the server that what it just decrypted is genuinely an inner hello, so a decrypted payload cannot be passed off as a standalone ClientHello and the two roles can never be confused."}
+    ]],
+
+    /* ---------------- the HTTPS RR ---------------- */
+    "block-https":["byte", B_HTTPS, [
+      {label:"SvcPriority",k:"sync",r:[0,1],val:"1 - ServiceMode",
+        body:"Non-zero means ServiceMode: this record carries usable parameters. Zero would mean AliasMode, where the record only points at another name and may carry no SvcParams at all."},
+      {label:"TargetName",k:"sync",r:[2,2],val:"\".\" - the owner name",
+        body:"A single zero byte is the root label, which in ServiceMode means 'use the owner name itself'. An actual target would be an uncompressed domain name here - SVCB forbids DNS name compression in RDATA."},
+      {label:"SvcParamKey: alpn",k:"enum",r:[3,4],val:"1",sel:1,branch:SVCKEYS,
+        body:"SvcParams must appear in strictly increasing key order: 1, 4, 5, 6 in this record. A middlebox that reorders them produces a record a strict client rejects."},
+      {label:"alpn length",k:"sync",r:[5,6],val:"6"},
+      {label:"alpn value",k:"enum",r:[7,12],val:"h3, h2",
+        body:"Length-prefixed protocol names: 02 'h3' 02 'h2'. This is the outer, visible ALPN advertisement - it says what the server supports, not what this client will negotiate inside its sealed inner hello."},
+      {label:"SvcParamKey: ipv4hint",k:"enum",r:[13,14],val:"4",sel:4,branch:SVCKEYS},
+      {label:"ipv4hint length",k:"sync",r:[15,16],val:"4"},
+      {label:"ipv4hint value",k:"enum",r:[17,20],val:"192.0.2.1",
+        body:"Lets the client connect without a separate A lookup, which removes one more plaintext DNS query naming this host. A hint only - the certificate still decides whether the connection is legitimate."},
+      {label:"SvcParamKey: ech",k:"flag",r:[21,22],val:"5",sel:5,branch:SVCKEYS,
+        body:"The key that makes ECH possible. Everything from here to byte 99 is an ECHConfigList."},
+      {label:"ech length",k:"sync",r:[23,24],val:"75 bytes"},
+      {label:"ECHConfigList length",k:"sync",r:[25,26],val:"73",
+        body:"The list may hold several configs, letting a server publish more than one KEM or rotate keys with overlap. The client picks the first one whose parameters it fully supports."},
+      {label:"ECHConfig.version",k:"flag",r:[27,28],val:"0xfe0d",
+        body:"Deliberately the same number as the extension codepoint, so config version and wire format move together. A client must skip any config whose version it does not recognise rather than fail - which is what makes adding a version safe."},
+      {label:"ECHConfig.length",k:"sync",r:[29,30],val:"69",
+        body:"Length of the contents that follow. This is what lets a client skip an unknown version cleanly."},
+      {label:"config_id",k:"flag",r:[31,31],val:"0x5B",
+        body:"The same byte the client will echo in its ECH extension. Compare with byte 9 of the extension on the previous tab - they match, and that is how the server finds the key."},
+      {label:"kem_id",k:"enum",r:[32,33],val:"0x0020 DHKEM(X25519)",sel:3,branch:KEMS,
+        body:"Fixes the shape of both the public key below and the enc field in the extension."},
+      {label:"public_key length",k:"sync",r:[34,35],val:"32"},
+      {label:"public_key",k:"enum",r:[36,67],val:"X25519 public key",
+        body:"The key everything is sealed to. Long-lived relative to a session, which is why operators rotate it often and why the seal on the inner hello has no forward secrecy."},
+      {label:"cipher_suites length",k:"sync",r:[68,69],val:"8 bytes = 2 suites"},
+      {label:"suite 1",k:"enum",r:[70,73],val:"HKDF-SHA256 + AES-128-GCM",
+        body:"An HpkeSymmetricCipherSuite is a KDF id and an AEAD id, four bytes. The client must choose one of these and echo it in the extension."},
+      {label:"suite 2",k:"enum",r:[74,77],val:"HKDF-SHA256 + ChaCha20Poly1305",
+        body:"Offering both lets clients pick by hardware. A client with no AES acceleration takes the ChaCha20 suite."},
+      {label:"maximum_name_length",k:"rsv",r:[78,78],val:"64",
+        body:"The longest backend name behind this config, if the operator knows it. It is the M in the padding arithmetic: every inner hostname up to this length pads to the same size, so the ciphertext length says nothing about which one it was. Publishing 0 means 'unknown' and weakens that guarantee.",
+        note:"M in max(0, M - D)"},
+      {label:"public_name length",k:"sync",r:[79,79],val:"18"},
+      {label:"public_name",k:"flag",r:[80,97],val:"\"public.example.net\"",
+        body:"The name the outer ClientHello will put in its SNI, and the identity the server proves if ECH is rejected. It must be a name the operator holds a certificate for. This is the name a censor blocks when it cannot see past ECH, which is why it is shared by as many origins as possible."},
+      {label:"ECHConfigExtensions length",k:"rsv",r:[98,99],val:"0 - none",
+        body:"An extension point on the config itself, currently unused. Mandatory extensions here are signalled by a high bit in the type, so a client that does not understand one must skip the whole config rather than use it partially."},
+      {label:"SvcParamKey: ipv6hint",k:"enum",r:[100,101],val:"6",sel:6,branch:SVCKEYS},
+      {label:"ipv6hint length",k:"sync",r:[102,103],val:"16"},
+      {label:"ipv6hint value",k:"enum",r:[104,119],val:"2001:db8::1",
+        body:"Same purpose as the v4 hint. Present last because SvcParamKeys must ascend, and 6 is the highest key in this record."}
+    ]]
+  };
+
+  var built={};
+  function buildPanel(name){
+    var panel=document.querySelector('[data-panel="'+name+'"]'); if(!panel) return;
+    panel.querySelectorAll("[data-build]").forEach(function(m){
+      if(built[m.id]) return; built[m.id]=1;
+      var spec=SPECS[m.id]; if(spec) build(m.id, spec[0], spec[1], spec[2]);
+    });
+  }
+
+  /* ---- tabs ---- */
+  var tabs=[].slice.call(document.querySelectorAll(".tab"));
+  var panels=[].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    tabs.forEach(function(t){t.classList.toggle("on",t.dataset.p===name);});
+    panels.forEach(function(p){p.classList.toggle("on",p.dataset.panel===name);});
+    buildPanel(name);
+  }
+  tabs.forEach(function(t){t.addEventListener("click",function(){
+    activate(t.dataset.p);
+    if(history.replaceState) history.replaceState(null,"","#"+t.dataset.p);
+  });});
+  var initial=(location.hash||"").replace("#","");
+  if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
+  else buildPanel("split");
+})();
+</script>
+<script src="../assets/protofun-toggle.js"></script>
+</body>
+</html>
