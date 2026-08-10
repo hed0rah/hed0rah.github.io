@@ -510,7 +510,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   <div class="subtitle">
     <span>Bits · Entropy · Cross-Entropy · KL · Pretraining · Distillation · Compression</span>
   </div>
-  <div class="companion">compression is intelligence, part 2 // why the loss function that trains every language model is the same number that sorts documents by language using nothing but gzip</div>
+  <div class="companion">why the loss function that trains every language model is the same number that sorts documents by language using nothing but gzip</div>
 </div>
 
 <!-- sidebar -->
@@ -696,7 +696,7 @@ svg .drop  { stroke: var(--orange); stroke-width: 1; stroke-dasharray: 3 3; opac
 
   <div class="info-box cy">
     <strong>Fractional bits are real</strong>
-    Usually the probabilities are not clean powers of one half, so <code>-log2(q)</code> is not a whole number and no symbol-to-bitstring table can be optimal. That is not a problem with the theory, it is a problem with the encoding scheme. The information content of a whole message is the sum of its symbols' information contents, and an optimal encoder gets arbitrarily close to that total. Arithmetic coding is the construction that actually achieves it, and it is what the next part of this series is about.
+    Usually the probabilities are not clean powers of one half, so <code>-log2(q)</code> is not a whole number and no symbol-to-bitstring table can be optimal. That is not a problem with the theory, it is a problem with the encoding scheme. The information content of a whole message is the sum of its symbols' information contents, and an optimal encoder gets arbitrarily close to that total. Arithmetic coding is the construction that actually achieves it: it never emits a codeword per symbol at all, it narrows a single interval and writes the result once.
   </div>
 </section>
 
@@ -990,7 +990,7 @@ sharp, and lossy.
   <h2><em class="rd">Measured</em></h2>
   <div class="section-bar rd"></div>
 
-  <p>Everything above is verifiable on a laptop in under a minute. The companion notebook rebuilds the 2002 experiment on the same corpus (UDHR via NLTK's <code>udhr2</code> package), then reruns it with an explicit probability model to show what changes.</p>
+  <p>Everything above is verifiable on a laptop in under a minute. The numbers on this page come from rebuilding the 2002 experiment on the same corpus (UDHR, via NLTK's <code>udhr2</code> package), then rerunning it with an explicit probability model to see what changes.</p>
 
   <p>Setup: 32 languages, 7000 characters of reference per language, a disjoint 1500-character snippet as the probe. Distance is symmetrised KL, and the tree is UPGMA over that matrix. Nearest-neighbour accuracy is scored against ground-truth family labels. The 2002 paper used a normalised distance and Fitch-Margoliash from PHYLIP; the simpler pair here is easier to read and lands in the same place.</p>
 
@@ -1030,7 +1030,7 @@ sharp, and lossy.
 
   <div class="info-box">
     <strong>Running it yourself</strong>
-    The notebook is self-contained: it pulls the corpus over HTTP, verifies the toy arithmetic against the hand calculation, draws the area diagrams and the H(p,q) family, builds both trees, and renders the full cross-entropy matrix as a heatmap. The natural extension is to replace the n-gram model with a real one and compute the same BPC through a local model's logits, which puts your own hardware on the bottom rung of that ladder.
+    Nothing here needs a GPU or a dependency you do not already have. Pull the corpus, take 7000 characters of each language as the reference and the next 1500 as the probe, and the whole gzip half is four lines of Python. The n-gram half is another thirty. The natural extension is to swap the n-gram model for a real one and compute the same BPC from a local model's logits, which puts your own hardware on the bottom rung of that ladder.
   </div>
 </section>
 
@@ -1038,7 +1038,7 @@ sharp, and lossy.
 
 <div class="footer">
   <span>Cross-Entropy Deep Dive</span>
-  <span>hed0rah // after <a href="https://www.youtube.com/watch?v=GlYgs6v2YfU">3Blue1Brown, Compression is Intelligence pt 2</a></span>
+  <span>hed0rah // after <a href="https://www.youtube.com/watch?v=GlYgs6v2YfU">3Blue1Brown, "But what is cross-entropy?"</a></span>
 </div>
 <div class="spine">// zipping · bits · entropy · cross-entropy · minimum · pretraining · distillation · kl · measured //</div>
 
