@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linux Sockets &amp; IPC Deep Dive // fd model, AF_UNIX, epoll, shared memory</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* masthead */
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+.masthead .companion {
+  margin-top: 14px;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 2px;
+}
+
+/* nav */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-brand {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.nav-current {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-current:hover { border-color: var(--orange); color: var(--orange); }
+.nav-current .num { color: var(--orange); }
+.nav-hint { color: var(--dim2); margin-left: 6px; }
+
+/* sidebar */
+.side {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 248px;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  z-index: 150;
+  padding: 26px 0 20px;
+  overflow-y: auto;
+}
+.side-brand {
+  padding: 0 20px 16px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--bright);
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 12px;
+}
+.side-brand span { color: var(--orange); }
+.side a {
+  display: block;
+  padding: 7px 24px 7px 21px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.side a span { color: var(--dim2); margin-right: 7px; }
+.side a:hover { color: var(--orange); }
+.side a.active { color: var(--orange); border-left-color: var(--orange); background: var(--surface); }
+.side a.active span { color: var(--orange); }
+.side-dial {
+  display: block;
+  margin: 16px 20px 0 17px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--border2);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.side-dial:hover { color: var(--orange); border-color: var(--orange); }
+@media (min-width: 1100px) {
+  .side { display: block; }
+  body { padding-left: 248px; }
+  .nav { display: none; }
+}
+
+/* radial dial */
+.radial {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(242, 241, 238, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.radial.open { opacity: 1; pointer-events: auto; }
+body.dial-open { overflow: hidden; }
+.radial-ring {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+}
+.radial-center {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  cursor: pointer;
+}
+.radial-center:hover { color: var(--orange); }
+.radial-item {
+  position: absolute;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--dim);
+  padding: 4px 6px;
+}
+.radial-item span { color: var(--dim2); margin-right: 5px; }
+.radial-item:hover, .radial-item.active { color: var(--orange); }
+.radial-item:hover span, .radial-item.active span { color: var(--orange); }
+.radial-dot {
+  position: absolute;
+  width: 5px; height: 5px;
+  background: var(--dim2);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.radial-dot.active { background: var(--orange); }
+@media (max-width: 620px) {
+  .radial.open { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .radial-ring, .radial-dot, .radial-center { display: none; }
+  .radial-item { position: static !important; transform: none !important; font-size: 12px; padding: 7px; }
+}
+
+/* layout */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+}
+section { padding: 52px 0; display: none; }
+section.active { display: block; }
+section::before {
+  content: attr(data-num) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+/* headings */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--yellow); }
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+.section-bar.yl { background: var(--yellow); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+h3.cy { color: var(--cyan); }
+h3.yl { color: var(--yellow); }
+h3.rd { color: var(--red); }
+h4 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  margin: 20px 0 8px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+
+/* code */
+code {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--bright);
+}
+pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre.yl { border-left-color: var(--yellow); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .flag   { color: #7A7870; }
+
+/* diagrams */
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #8A8880;
+}
+.diagram.cy { border-left-color: var(--cyan); }
+.diagram.yl { border-left-color: var(--yellow); }
+.diagram.rd { border-left-color: var(--red); }
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .acc3 { color: #C8A030; }
+.diagram .dim  { color: #4A4942; }
+.diagram .hi   { color: #CCCBC4; }
+
+/* info boxes */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy    { border-left-color: var(--cyan); }
+.info-box.warn  { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; vertical-align: top; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; white-space: nowrap; }
+td.cy   { color: var(--cyan); }
+td.rd   { color: var(--red); }
+td.yl   { color: var(--yellow); }
+td.meth a { color: inherit; text-decoration: none; border-bottom: 1px dashed currentColor; }
+td.meth a:hover { color: var(--bright); }
+h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
+
+/* two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; align-items: stretch; }
+.two-col > div { display: flex; flex-direction: column; }
+.two-col > div > pre { flex: 1; margin-bottom: 0; }
+
+/* step list */
+.step-list { list-style: none; counter-reset: step; margin: 16px 0; }
+.step-list li {
+  counter-increment: step;
+  position: relative;
+  padding: 10px 0 10px 42px;
+  border-bottom: 1px dashed var(--border2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-list li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  width: 34px;
+}
+.step-list li strong { color: var(--bright); display: block; margin-bottom: 2px; }
+.step-list.cy li::before { color: var(--cyan); }
+.step-list.rd li::before { color: var(--red); }
+
+/* footer */
+.footer {
+  border-top: 1px solid var(--border2);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+.footer a { color: var(--orange); text-decoration: none; }
+
+/* spine */
+.spine {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* responsive */
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .masthead { padding: 40px 20px 28px; }
+}
+@media (max-width: 1280px) { .spine { display: none; } }
+
+/* dark mode -- ink + gunmetal + teal/orange accents */
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:        #121213;
+  --surface:   #0e0e0f;
+  --surface2:  #1c1c1e;
+  --border:    #313135;
+  --border2:   #26262a;
+  --orange:    #FF4D00;
+  --cyan:      #08F9DF;
+  --yellow:    #E0913E;
+  --red:       #E04858;
+  --green:     #4DC26B;
+  --magenta:   #C97FD4;
+  --dim:       #8b8b88;
+  --dim2:      #5a5a5c;
+  --text:      #cbcbc9;
+  --bright:    #ececea;
+}
+:root[data-theme="dark"] ::selection { background: #08F9DF; color: #121213; }
+:root[data-theme="dark"] pre,
+:root[data-theme="dark"] .diagram {
+  background: #0e0e0f;
+  border-top-color: #2b2b30;
+  border-right-color: #2b2b30;
+  border-bottom-color: #2b2b30;
+}
+:root[data-theme="dark"] pre .label { color: #5a5a5e; }
+:root[data-theme="dark"] pre .cm, :root[data-theme="dark"] .diagram .dim { color: #66666b; }
+:root[data-theme="dark"] pre .kw { color: #F56A31; }
+:root[data-theme="dark"] pre .key, :root[data-theme="dark"] .diagram .acc2 { color: #5CD9CE; }
+:root[data-theme="dark"] .radial { background: rgba(18,18,19,0.96); }
+.theme-toggle { white-space: nowrap; }
+</style>
+</head>
+<body>
+<script>
+(function () {
+  const saved = localStorage.getItem('theme');
+  const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+})();
+</script>
+
+<!-- masthead -->
+<div class="masthead">
+  <h1>Linux <em>Sockets</em> &amp; IPC</h1>
+  <div class="subtitle">
+    <span>fd model · AF_UNIX · accept queues · buffers · epoll · shared memory · ss</span>
+  </div>
+  <div class="companion">a socket is a file descriptor with a protocol behind it // one object model, four dispatch tables // local IPC from first principles</div>
+</div>
+
+<!-- sidebar -->
+<nav class="side">
+  <div class="side-brand">Sockets <span>//</span> Deep Dive</div>
+  <a href="#model"><span>01</span>The Object Model</a>
+  <a href="#families"><span>02</span>Families + Types</a>
+  <a href="#arc"><span>03</span>The Syscall Arc</a>
+  <a href="#unix"><span>04</span>Unix Domain Sockets</a>
+  <a href="#buffers"><span>05</span>Buffers + Backpressure</a>
+  <a href="#epoll"><span>06</span>Readiness + epoll</a>
+  <a href="#toolbox"><span>07</span>The IPC Toolbox</a>
+  <a href="#choose"><span>08</span>Choosing a Transport</a>
+  <a href="#debug"><span>09</span>Instrumentation</a>
+  <button class="side-dial" id="sideDial" title="radial section dial">&#9678; dial</button>
+  <button class="side-dial theme-toggle" title="toggle dark mode">&#9680; dark</button>
+</nav>
+
+<!-- nav -->
+<div class="nav">
+  <div class="nav-inner">
+    <span class="nav-brand">Sockets &amp; IPC Deep Dive</span>
+    <span style="display:flex;gap:6px">
+      <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
+        <span class="num" id="navNum">01 //</span> <span id="navLabel">The Object Model</span> <span class="nav-hint">&#9678;</span>
+      </button>
+      <button class="nav-current theme-toggle" title="toggle dark mode">&#9680;</button>
+    </span>
+  </div>
+</div>
+
+<!-- radial dial -->
+<div class="radial" id="radial">
+  <div class="radial-ring" id="radialRing"></div>
+  <button class="radial-center" id="radialCenter" title="close (Esc)">01</button>
+</div>
+
+<div class="container">
+
+<!-- 01 -->
+<section id="model" data-num="01">
+  <h2>The <em class="or">Object Model</em></h2>
+  <div class="section-bar"></div>
+  <p>A socket is not a network thing. It is a file descriptor backed by a protocol state machine. TCP over a NIC, a Unix socket under <code>/run</code>, a netlink channel to the routing table and a vsock to a guest are the same kernel object wearing different <code>ops</code> tables. Three structs stack up: <code>struct file</code> is what your fd indexes, <code>struct socket</code> is the generic VFS-facing layer, and <code>struct sock</code> is the protocol control block holding the queues, timers and wakeup callbacks.</p>
+
+  <pre class="diagram">   <span class="dim">user space              kernel</span>
+   fd 3 <span class="dim">--+</span>
+          <span class="dim">|</span>  fdtable[3] <span class="dim">-&gt;</span> <span class="hi">struct file</span>   f_op = socket_file_ops
+          <span class="dim">+---------------+</span>
+                          <span class="dim">v</span>
+                   <span class="acc">struct socket</span>   VFS view: type, state, .ops
+                          <span class="dim">|</span>        .ops = inet_stream_ops <span class="dim">|</span> unix_stream_ops
+                          <span class="dim">v</span>
+                   <span class="acc2">struct sock</span>     sk_receive_queue, sk_write_queue,
+                          <span class="dim">|</span>        sk_backlog, timers, sk_data_ready
+                          <span class="dim">v</span>
+                   tcp_prot <span class="dim">|</span> udp_prot <span class="dim">|</span> unix_proto <span class="dim">|</span> netlink_proto
+
+   <span class="acc3">one shape, four dispatch tables - the family only changes the bottom row</span></pre>
+
+  <p>Sockets live in <code>sockfs</code>, an internal filesystem, which is why they carry an inode number you can see in <code>ss -e</code> and <code>/proc/net/unix</code> but have no path unless you bind one. Because a socket is a <code>struct file</code>, everything that works on files works on it: <code>dup()</code> shares it, <code>fork()</code> inherits it, epoll watches it beside a timerfd in the same interest set. That uniformity is the actual design win behind "everything is a file descriptor".</p>
+
+  <div class="info-box warn">
+    <strong>close() is a refcount decrement, not a shutdown</strong>
+    It drops one reference to the <code>struct file</code>. If a forked child, a <code>dup</code>, or an fd in flight over <code>SCM_RIGHTS</code> still holds a reference, the connection stays open and the peer never sees EOF. <code>shutdown(fd, SHUT_WR)</code> acts on the socket itself regardless of refcount, which is why graceful protocols send FIN with <code>shutdown</code> and only then <code>close</code>.
+  </div>
+</section>
+
+<!-- 02 -->
+<section id="families" data-num="02">
+  <h2>Families &amp; <em class="cy">Types</em></h2>
+  <div class="section-bar cy"></div>
+  <p>The family picks the namespace and the stack. The type picks the delivery contract. They are orthogonal, and half the confusion in this area comes from treating <code>SOCK_DGRAM</code> as a synonym for UDP.</p>
+
+  <table>
+    <tr><th>Family</th><th>Namespace</th><th>Reaches</th><th>Notes</th></tr>
+    <tr><td class="meth cy">AF_UNIX</td><td>path or abstract name</td><td>this host</td><td>fd passing, peer creds, no checksums</td></tr>
+    <tr><td class="meth cy">AF_INET / AF_INET6</td><td>IP:port</td><td>anything routable, incl. <code>lo</code></td><td>the full TCP or UDP state machine</td></tr>
+    <tr><td class="meth cy">AF_NETLINK</td><td>protocol id + groups</td><td>the kernel</td><td>rtnetlink, nl80211, audit, uevent</td></tr>
+    <tr><td class="meth cy">AF_PACKET</td><td>ifindex</td><td>raw L2 frames</td><td><code>PACKET_MMAP</code> / TPACKET_V3 for capture</td></tr>
+    <tr><td class="meth cy">AF_VSOCK</td><td>(CID, port)</td><td>host to guest</td><td>no network stack in the path</td></tr>
+    <tr><td class="meth cy">AF_XDP</td><td>umem + queue</td><td>a NIC ring</td><td>stack bypass, frames land in shared umem rings</td></tr>
+  </table>
+
+  <table>
+    <tr><th>Type</th><th>Ordered</th><th>Reliable</th><th>Boundaries</th><th>Where</th></tr>
+    <tr><td class="meth">SOCK_STREAM</td><td>yes</td><td>yes</td><td class="rd">no</td><td>TCP, AF_UNIX</td></tr>
+    <tr><td class="meth">SOCK_DGRAM</td><td>over UNIX only</td><td>over UNIX only</td><td>yes</td><td>UDP, AF_UNIX</td></tr>
+    <tr><td class="meth">SOCK_SEQPACKET</td><td>yes</td><td>yes</td><td>yes</td><td>AF_UNIX, SCTP</td></tr>
+    <tr><td class="meth">SOCK_RAW</td><td>no</td><td>no</td><td>yes</td><td>needs CAP_NET_RAW</td></tr>
+  </table>
+
+  <pre class="cy"><span class="label">creation, correctly</span><span class="cm">// OR the flags into type: no fork race between socket() and fcntl()</span>
+<span class="kw">int</span> fd = <span class="fn">socket</span>(<span class="val">AF_UNIX</span>, <span class="val">SOCK_SEQPACKET</span> | <span class="flag">SOCK_NONBLOCK</span> | <span class="flag">SOCK_CLOEXEC</span>, <span class="num">0</span>);
+
+<span class="cm">// same for the accept side - accept4(), never accept() + fcntl()</span>
+<span class="kw">int</span> c = <span class="fn">accept4</span>(lfd, <span class="val">NULL</span>, <span class="val">NULL</span>, <span class="flag">SOCK_NONBLOCK</span> | <span class="flag">SOCK_CLOEXEC</span>);
+
+<span class="cm">// a preconnected bidirectional pair, no namespace at all</span>
+<span class="kw">int</span> sv[<span class="num">2</span>];
+<span class="fn">socketpair</span>(<span class="val">AF_UNIX</span>, <span class="val">SOCK_STREAM</span> | <span class="flag">SOCK_CLOEXEC</span>, <span class="num">0</span>, sv);</pre>
+
+  <div class="info-box danger">
+    <strong>Stream sockets have no messages</strong>
+    A single <code>recv()</code> may return half of one write or three writes concatenated. Framing is your problem: length prefix or delimiter, chosen once and enforced everywhere. Every "worked in testing, corrupted under load" bug in a hand-rolled protocol is a partial read the author assumed could not happen. <code>SOCK_SEQPACKET</code> on AF_UNIX gives you boundaries for free and is the underused answer.
+  </div>
+</section>
+
+<!-- 03 -->
+<section id="arc" data-num="03">
+  <h2>The <em class="or">Syscall Arc</em></h2>
+  <div class="section-bar"></div>
+  <p>The classic sequence hides two queues, and those queues are where a service either sheds load gracefully or falls over silently.</p>
+
+  <pre class="diagram">   <span class="dim">client                          server</span>
+   socket()                       socket() + setsockopt(<span class="hi">SO_REUSEPORT</span>)
+      <span class="dim">|</span>                           bind() + listen(<span class="hi">backlog</span>)
+   connect() <span class="dim">--- SYN ------------&gt;</span>  <span class="acc">[ SYN queue ]</span>   tcp_max_syn_backlog
+      <span class="dim">|</span>     <span class="dim">&lt;-- SYN+ACK ---------</span>       <span class="dim">|</span>
+      <span class="dim">|</span>     <span class="dim">--- ACK -------------&gt;</span>  <span class="acc2">[ accept queue ]</span>  min(backlog, somaxconn)
+   ESTABLISHED                          <span class="dim">|</span>  accept4() pops one
+                                        <span class="dim">+--&gt;</span> connected fd (a NEW struct socket)
+
+   <span class="acc3">accept queue overflow: the ACK is dropped silently, TcpExtListenOverflows++</span></pre>
+
+  <p>Two backlogs, two failure modes. The SYN queue holds half-open <code>request_sock</code>s; its overflow triggers SYN cookies if <code>tcp_syncookies</code> is on. The accept queue holds fully established connections your process has not yet accepted, bounded by <code>min(backlog, net.core.somaxconn)</code>. On overflow the kernel drops the client's ACK <em class="rd">silently</em>, so the client sits in ESTABLISHED sending data to a server that has no idea the connection exists. <code>tcp_abort_on_overflow=1</code> sends an RST instead: honest, but sheds harder. <code>somaxconn</code> was 128 for two decades and moved to 4096 in 5.4, and plenty of running boxes still carry the old value.</p>
+
+  <table>
+    <tr><th>Option</th><th>Does</th><th>Read this way</th></tr>
+    <tr><td class="meth">SO_REUSEADDR</td><td>bind over a lingering TIME_WAIT</td><td>every server sets it, always</td></tr>
+    <tr><td class="meth">SO_REUSEPORT</td><td>N sockets on the identical addr:port, kernel hashes the 4-tuple</td><td>shard the listener per worker: no accept lock, no herd</td></tr>
+    <tr><td class="meth">SO_ATTACH_REUSEPORT_EBPF</td><td>replace that hash with your own program</td><td>pin flows to a core or a cgroup</td></tr>
+    <tr><td class="meth rd">tcp_tw_recycle</td><td>nothing, removed in 4.12</td><td>any guide recommending it is a decade stale</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>Read the LISTEN row of <code>ss -lnt</code> correctly</strong>
+    On a listening socket <code>Recv-Q</code> is the number of established connections waiting to be accepted, and <code>Send-Q</code> is the configured maximum. A <code>Recv-Q</code> that tracks <code>Send-Q</code> under load means your accept loop is the bottleneck, not the network. TIME_WAIT, meanwhile, belongs to whoever closes first and lasts a fixed 60 s on Linux (<code>TCP_TIMEWAIT_LEN</code>, compile time, not a sysctl).
+  </div>
+</section>
+
+<!-- 04 -->
+<section id="unix" data-num="04">
+  <h2>Unix <em class="cy">Domain Sockets</em></h2>
+  <div class="section-bar cy"></div>
+  <p>AF_UNIX is not "TCP over loopback with a shorter path". No IP header, no checksum, no congestion control, no retransmit timer, no port space. A write copies into the peer's receive queue and wakes it. What you give up is routability. What you get back is three capabilities no IP socket has.</p>
+
+  <h3 class="cy">Naming: two namespaces, two scopes</h3>
+  <table>
+    <tr><th>Form</th><th>Address</th><th>Access control</th><th>Scoped by</th><th>Cleanup</th></tr>
+    <tr><td class="meth cy">pathname</td><td><code>/run/svc.sock</code></td><td>filesystem perms on file + dir</td><td>mount namespace</td><td>manual <code>unlink()</code></td></tr>
+    <tr><td class="meth cy">abstract</td><td><code>sun_path[0]=='\0'</code></td><td class="rd">none</td><td>network namespace</td><td>automatic on close</td></tr>
+  </table>
+  <p>That asymmetry decides which one crosses a container boundary: a pathname socket follows the mount namespace (bind-mount it in), an abstract name follows the netns. A stale socket file is the classic restart failure, since <code>bind()</code> returns <code>EADDRINUSE</code> on the leftover inode and a <code>connect()</code> to it returns <code>ECONNREFUSED</code> rather than <code>ENOENT</code>, which reads as a live-but-broken server.</p>
+
+  <h3 class="cy">Passing file descriptors</h3>
+  <p><code>sendmsg</code> with an <code>SCM_RIGHTS</code> control message moves an open fd into another process. The receiver gets a new fd number pointing at the <em>same</em> <code>struct file</code>, sharing the offset and status flags. This is capability passing: a privileged process opens a socket, a device or a <code>memfd</code>, hands it across, drops privileges, and the receiver uses something it could never have opened itself.</p>
+
+  <pre class="diagram">   <span class="dim">proc A</span>                                   <span class="dim">proc B</span>
+   fd 7 <span class="dim">-&gt;</span> <span class="hi">struct file X</span>
+     <span class="dim">|</span>  sendmsg(msg_control = <span class="acc">SCM_RIGHTS</span> [7])
+     <span class="dim">+---------&gt;</span> [ AF_UNIX ] <span class="dim">---------&gt;</span> recvmsg(<span class="acc2">MSG_CMSG_CLOEXEC</span>)
+                                            fd 9 <span class="dim">-&gt;</span> <span class="hi">struct file X</span>  (same offset)
+
+   <span class="acc3">in-flight fds hold a refcount; unix_gc() reaps sockets that only reference each other</span></pre>
+
+  <pre class="cy"><span class="label">SCM_RIGHTS, the whole dance</span><span class="kw">char</span> buf[CMSG_SPACE(<span class="kw">sizeof</span>(<span class="kw">int</span>))] = {<span class="num">0</span>};
+<span class="kw">struct</span> iovec io = { .iov_base = <span class="st">"x"</span>, .iov_len = <span class="num">1</span> };   <span class="cm">// must send >= 1 real byte</span>
+<span class="kw">struct</span> msghdr m = { .msg_iov = &amp;io, .msg_iovlen = <span class="num">1</span>,
+                     .msg_control = buf, .msg_controllen = <span class="kw">sizeof</span> buf };
+
+<span class="kw">struct</span> cmsghdr *c = <span class="fn">CMSG_FIRSTHDR</span>(&amp;m);
+c-&gt;cmsg_level = <span class="val">SOL_SOCKET</span>;
+c-&gt;cmsg_type  = <span class="val">SCM_RIGHTS</span>;
+c-&gt;cmsg_len   = <span class="fn">CMSG_LEN</span>(<span class="kw">sizeof</span>(<span class="kw">int</span>));
+<span class="fn">memcpy</span>(<span class="fn">CMSG_DATA</span>(c), &amp;fd_to_send, <span class="kw">sizeof</span>(<span class="kw">int</span>));
+<span class="fn">sendmsg</span>(sock, &amp;m, <span class="num">0</span>);
+
+<span class="cm">// receiver: ALWAYS MSG_CMSG_CLOEXEC, and check msg_controllen before trusting the count</span>
+<span class="fn">recvmsg</span>(sock, &amp;m, <span class="flag">MSG_CMSG_CLOEXEC</span>);</pre>
+
+  <h3 class="cy">Credentials the kernel vouches for</h3>
+  <table>
+    <tr><th>Option</th><th>Gives</th><th>When</th></tr>
+    <tr><td class="meth cy">SO_PEERCRED</td><td>peer pid, uid, gid</td><td>frozen at <code>connect()</code> time, unforgeable</td></tr>
+    <tr><td class="meth cy">SO_PASSCRED + SCM_CREDENTIALS</td><td>same, per message</td><td>datagram flows</td></tr>
+    <tr><td class="meth cy">SO_PEERSEC</td><td>peer LSM security context</td><td>SELinux / AppArmor policy checks</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>Abstract sockets have no access control</strong>
+    Anything in the same network namespace can connect to an abstract name. If you need authorization, use a pathname socket in a mode-0700 directory, or check <code>SO_PEERCRED</code> on every accept and enforce there. This is exactly why polkit, systemd and the container runtimes speak over AF_UNIX: authentication is structural rather than a token you have to manage.
+  </div>
+</section>
+
+<!-- 05 -->
+<section id="buffers" data-num="05">
+  <h2>Buffers &amp; <em class="or">Backpressure</em></h2>
+  <div class="section-bar"></div>
+  <p>Both directions are bounded queues, and those bounds <em>are</em> the flow control. <code>send()</code> copies into the send buffer and returns; that means the kernel took custody, not that anything was delivered. When the buffer fills, a blocking socket sleeps and a nonblocking one returns <code>EAGAIN</code>. That moment is the only backpressure signal your application ever gets. Ignoring it is how you grow an unbounded userspace queue and turn a slow consumer into an OOM kill.</p>
+
+  <pre class="diagram">   <span class="dim">app</span> <span class="dim">--write()--&gt;</span> <span class="acc">[ sk_write_queue ]</span> <span class="dim">--&gt;</span> qdisc <span class="dim">--&gt;</span> NIC <span class="dim">--&gt;</span> wire
+                       <span class="dim">^ full =</span> <span class="hi">EAGAIN</span> <span class="dim">= the only backpressure you get</span>
+
+   wire <span class="dim">--&gt;</span> NIC <span class="dim">--&gt;</span> softirq <span class="dim">--&gt;</span> <span class="acc2">[ sk_receive_queue ]</span> <span class="dim">--read()--&gt;</span> <span class="dim">app</span>
+                                   <span class="dim">^ full = shrinking advertised window = sender stalls</span>
+
+   <span class="acc3">BDP = rate x RTT   |   10 Gb/s at 30 ms needs ~37.5 MB in flight to fill</span></pre>
+
+  <table>
+    <tr><th>Knob</th><th>Effect</th><th>Gotcha</th></tr>
+    <tr><td class="meth">SO_SNDBUF / SO_RCVBUF</td><td>set the buffer explicitly</td><td>kernel doubles the value for overhead, and setting it <em class="rd">disables autotuning</em></td></tr>
+    <tr><td class="meth">tcp_rmem / tcp_wmem</td><td>min, default, max triples for autotuning</td><td>the max is a ceiling, not a reservation</td></tr>
+    <tr><td class="meth">rmem_max / wmem_max</td><td>hard cap on <code>setsockopt</code></td><td><code>SO_SNDBUFFORCE</code> overrides with CAP_NET_ADMIN</td></tr>
+    <tr><td class="meth">TCP_NODELAY</td><td>disables Nagle</td><td>a fix for framing, not a substitute for batching</td></tr>
+    <tr><td class="meth">TCP_CORK</td><td>hold partial segments until uncorked or 200 ms</td><td>explicit batching beats fighting Nagle</td></tr>
+    <tr><td class="meth">SO_LINGER</td><td><code>close()</code> waits for pending data, or RSTs at timeout 0</td><td>timeout 0 is the "reset now" idiom, use deliberately</td></tr>
+  </table>
+
+  <p>Nagle plus delayed ACK remains the most common self-inflicted latency bug: the sender holds a small trailing segment waiting for an ACK, the receiver holds the ACK waiting for data to piggyback on, and you eat up to 40 ms per exchange. The real fix is writing a complete message with one <code>sendmsg</code> or a <code>writev</code>, so there is no small trailing segment to hold. <code>TCP_NODELAY</code> is the belt to that suspenders.</p>
+
+  <h3>Removing copies, one layer at a time</h3>
+  <table>
+    <tr><th>Mechanism</th><th>Removes</th><th>Cost</th></tr>
+    <tr><td class="meth">sendfile(2)</td><td>the userspace round trip for file to socket</td><td>file source only</td></tr>
+    <tr><td class="meth">splice(2)</td><td>the copy between any two fds, via a pipe conduit</td><td>moves page refs, needs the pipe</td></tr>
+    <tr><td class="meth">MSG_ZEROCOPY</td><td>the send copy, pinning user pages instead</td><td>async completion on <code>MSG_ERRQUEUE</code>; buffer is not reusable until it lands</td></tr>
+    <tr><td class="meth">io_uring send zc</td><td>same, folded into the completion ring</td><td>registered buffers, io_uring availability</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>Measure the copy before you remove it</strong>
+    Zero copy trades a <code>memcpy</code> for page pinning, TLB work and a completion protocol. Below roughly 10 KB per operation the accounting costs more than the copy it saves.
+  </div>
+</section>
+
+<!-- 06 -->
+<section id="epoll" data-num="06">
+  <h2>Readiness &amp; <em class="cy">epoll</em></h2>
+  <div class="section-bar cy"></div>
+  <p>This is the one place where the API generations are genuinely different algorithms rather than different spellings. <code>select</code> and <code>poll</code> are stateless: you hand the kernel the whole set every call, it walks the set, you walk the result. Cost is linear in <em>watched</em> descriptors no matter how few are active, and <code>select</code> additionally caps at <code>FD_SETSIZE</code> (1024) with a bitmap that corrupts memory above it. <code>epoll</code> is stateful: the interest set lives in the kernel and the cost is linear in <em>ready</em> descriptors.</p>
+
+  <pre class="diagram">   epfd
+    <span class="dim">+--</span> <span class="acc">interest set</span> : rb-tree keyed by (fd, struct file)   <span class="dim">epoll_ctl ADD/MOD/DEL</span>
+    <span class="dim">+--</span> <span class="acc2">ready list</span>   : doubly-linked list of epitems        <span class="dim">epoll_wait drains</span>
+             <span class="dim">^</span>
+             <span class="dim">|</span> ep_poll_callback() links the epitem when the wait queue fires
+   sk_data_ready() <span class="dim">-&gt;</span> wake_up(sk_sleep) <span class="dim">-&gt;</span> callback
+
+   <span class="acc3">register O(log n) · wakeup O(1) · wait O(ready), not O(watched)</span></pre>
+
+  <table>
+    <tr><th>Mode / flag</th><th>Semantics</th><th>Obligation</th></tr>
+    <tr><td class="meth cy">level triggered</td><td>reports readiness while the condition holds</td><td>none, forgives a partial read</td></tr>
+    <tr><td class="meth cy">EPOLLET</td><td>reports only the transition</td><td class="rd">drain to <code>EAGAIN</code> or lose the event forever</td></tr>
+    <tr><td class="meth cy">EPOLLONESHOT</td><td>disarms after one event</td><td>rearm explicitly; removes a class of MT races</td></tr>
+    <tr><td class="meth cy">EPOLLEXCLUSIVE</td><td>wakes one waiter, not all</td><td>4.5+, the fix for accept thundering herd</td></tr>
+  </table>
+
+  <pre class="cy"><span class="label">edge-triggered accept loop, the only correct shape</span><span class="cm">// EPOLLET + nonblocking + drain-to-EAGAIN is ONE indivisible pattern.</span>
+<span class="cm">// Using two of the three is a hang, not a slowdown.</span>
+ev.events = <span class="val">EPOLLIN</span> | <span class="flag">EPOLLET</span> | <span class="flag">EPOLLEXCLUSIVE</span>;
+<span class="fn">epoll_ctl</span>(ep, <span class="val">EPOLL_CTL_ADD</span>, lfd, &amp;ev);
+
+<span class="kw">for</span> (;;) {
+    <span class="kw">int</span> n = <span class="fn">epoll_wait</span>(ep, evs, MAXEV, <span class="num">-1</span>);
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">0</span>; i &lt; n; i++) {
+        <span class="kw">for</span> (;;) {                                  <span class="cm">// drain, always</span>
+            <span class="kw">int</span> c = <span class="fn">accept4</span>(lfd, <span class="val">NULL</span>, <span class="val">NULL</span>, <span class="flag">SOCK_NONBLOCK</span>|<span class="flag">SOCK_CLOEXEC</span>);
+            <span class="kw">if</span> (c &lt; <span class="num">0</span>) {
+                <span class="kw">if</span> (errno == <span class="val">EAGAIN</span>) <span class="kw">break</span>;          <span class="cm">// queue empty: NOW you may wait</span>
+                <span class="kw">if</span> (errno == <span class="val">EINTR</span>)  <span class="kw">continue</span>;
+                <span class="kw">break</span>;
+            }
+            <span class="fn">register_conn</span>(ep, c);
+        }
+    }
+}</pre>
+
+  <p><code>io_uring</code> is a different model again: two shared-memory rings, submission and completion, so a batch of operations is issued and reaped with zero syscalls once <code>IORING_SETUP_SQPOLL</code> has a kernel thread polling the submission side. It expresses the <em>operation</em> rather than readiness, and supports multishot accept and receive, provided buffer pools, and registered files and buffers.</p>
+
+  <div class="info-box warn">
+    <strong>io_uring needs an epoll fallback in anything you ship</strong>
+    The attack surface has produced a steady stream of CVEs, and it is disabled outright in Docker's default seccomp profile, on ChromeOS and Android, and by several distro hardening configs. Detect at startup, do not assume.
+  </div>
+</section>
+
+<!-- 07 -->
+<section id="toolbox" data-num="07">
+  <h2>The <em class="yl">IPC Toolbox</em></h2>
+  <div class="section-bar yl"></div>
+  <p>Sockets are the general answer, not always the right one. Roughly ordered by how often the answer is actually this:</p>
+
+  <table>
+    <tr><th>Mechanism</th><th>Contract</th><th>Reach</th><th>When it wins</th></tr>
+    <tr><td class="meth yl">pipe / FIFO</td><td>unidirectional byte stream</td><td>related procs, or a path</td><td>shell plumbing, <code>splice</code> conduits</td></tr>
+    <tr><td class="meth yl">socketpair</td><td>bidirectional, seqpacket available</td><td>parent to child</td><td>supervisor channels, fd passing</td></tr>
+    <tr><td class="meth yl">POSIX shm</td><td>raw shared pages</td><td>anyone with the name</td><td>bulk data, ring buffers</td></tr>
+    <tr><td class="meth yl">memfd_create</td><td>anonymous shared pages + seals</td><td>passed via SCM_RIGHTS</td><td>sealed buffers, no filesystem name</td></tr>
+    <tr><td class="meth yl">futex</td><td>wait / wake on a shared word</td><td>shared memory</td><td>the sync layer under shm</td></tr>
+    <tr><td class="meth yl">eventfd</td><td>64-bit counter, pollable</td><td>passed or inherited</td><td>wakeups, semaphore mode</td></tr>
+    <tr><td class="meth yl">signalfd / timerfd / pidfd</td><td>signals, timers, processes as fds</td><td>local</td><td>folds everything into one epoll loop</td></tr>
+    <tr><td class="meth yl">SysV msg / sem / shm</td><td>keyed global objects</td><td>anyone with the key</td><td>legacy interop, mostly</td></tr>
+    <tr><td class="meth yl">process_vm_readv</td><td>direct cross-process copy</td><td>PTRACE_MODE_ATTACH</td><td>debuggers, checkpoint tools</td></tr>
+    <tr><td class="meth yl">netlink</td><td>kernel to userspace messages</td><td>the kernel</td><td>routes, links, uevents</td></tr>
+  </table>
+
+  <p>Pipes are a circular buffer of pages, 64 KiB (16 pages) by default and resizable with <code>F_SETPIPE_SZ</code> up to <code>/proc/sys/fs/pipe-max-size</code>. Writes up to <code>PIPE_BUF</code> (4096) are atomic against interleaving from other writers, which is a real guarantee worth using for multi-writer line logs and worthless above that size.</p>
+
+  <p>Shared memory is the only mechanism with no per-message kernel involvement at all, which makes it both the fastest and the most dangerous. A single-producer single-consumer ring in a <code>memfd</code> with futex wakeups on the empty and full transitions gets sub-microsecond handoff, and you now own memory ordering, cache line alignment, false sharing, and the fact that a crashed peer leaves the structure exactly as it was mid-write. Robust futexes and sequence-number protocols exist for that.</p>
+
+  <pre class="yl"><span class="label">memfd + seals + fd passing: the modern shm</span><span class="kw">int</span> fd = <span class="fn">memfd_create</span>(<span class="st">"ring"</span>, <span class="flag">MFD_CLOEXEC</span> | <span class="flag">MFD_ALLOW_SEALING</span>);
+<span class="fn">ftruncate</span>(fd, SZ);
+<span class="kw">void</span> *p = <span class="fn">mmap</span>(<span class="val">NULL</span>, SZ, <span class="val">PROT_READ</span>|<span class="val">PROT_WRITE</span>, <span class="val">MAP_SHARED</span>, fd, <span class="num">0</span>);
+
+<span class="cm">// freeze the size so the receiver can trust it; trusting contents would need F_SEAL_WRITE</span>
+<span class="fn">fcntl</span>(fd, <span class="val">F_ADD_SEALS</span>, <span class="flag">F_SEAL_SHRINK</span>|<span class="flag">F_SEAL_GROW</span>|<span class="flag">F_SEAL_SEAL</span>);
+<span class="fn">send_fd</span>(uds, fd);            <span class="cm">// SCM_RIGHTS; refcount handles cleanup, no ipcrm ever</span></pre>
+
+  <div class="info-box">
+    <strong>Socket activation is fd passing at boot</strong>
+    systemd creates and binds the listening socket, then hands it to the service as fd 3 onward with <code>LISTEN_FDS</code> and <code>LISTEN_PID</code> set. The service never binds anything. That is how zero-downtime restart and on-demand activation work: connections queue in the kernel accept queue while nothing is running.
+  </div>
+</section>
+
+<!-- 08 -->
+<section id="choose" data-num="08">
+  <h2>Choosing a <em class="or">Transport</em></h2>
+  <div class="section-bar"></div>
+  <p>Order-of-magnitude figures, commodity x86, single hop, small messages. Ratios, not absolutes: NUMA placement, C-states and whether the pair shares an L3 move every row substantially.</p>
+
+  <table>
+    <tr><th>Path</th><th>Round trip</th><th>Throughput</th><th>What it costs you</th></tr>
+    <tr><td class="meth">shm, busy poll</td><td>~200 ns to 1 us</td><td>memory bandwidth</td><td>a burned core; all synchronization is yours</td></tr>
+    <tr><td class="meth">shm + futex</td><td>~1 to 3 us</td><td>memory bandwidth</td><td>same, plus wakeup latency</td></tr>
+    <tr><td class="meth cy">AF_UNIX stream</td><td>~5 to 15 us</td><td>very high, one copy each way</td><td>local only</td></tr>
+    <tr><td class="meth">pipe</td><td>~5 to 15 us</td><td>good</td><td>unidirectional, related procs</td></tr>
+    <tr><td class="meth">loopback TCP</td><td>~15 to 30 us</td><td>high</td><td>a full TCP state machine per connection</td></tr>
+    <tr><td class="meth">TCP over NIC, same rack</td><td>~50 to 200 us</td><td>link limited</td><td>the network, and everything on it</td></tr>
+  </table>
+
+  <ul class="step-list">
+    <li><strong>Cross host?</strong> TCP or QUIC. The question is settled, spend your effort on buffers and framing.</li>
+    <li><strong>Same host, request and response?</strong> AF_UNIX <code>SOCK_SEQPACKET</code>, or a length-prefixed stream. Credentials and fd passing come free.</li>
+    <li><strong>Same host, bulk data?</strong> Shared memory for the payload, a Unix socket alongside it for control and wakeups. This is what Wayland, PipeWire and the GPU stacks do.</li>
+    <li><strong>Might move off-box later?</strong> Loopback TCP, deliberately, so the code path is identical. That is the only good reason to pay for it.</li>
+  </ul>
+
+  <div class="info-box danger">
+    <strong>Loopback is not a shortcut, it is the full stack</strong>
+    <code>lo</code> has a 65536 byte MTU and elides checksum validation, but every packet still allocates an <code>sk_buff</code>, traverses netfilter, and runs the congestion control and retransmit machinery. If both ends are guaranteed local, AF_UNIX is strictly less work for roughly half the latency.
+  </div>
+</section>
+
+<!-- 09 -->
+<section id="debug" data-num="09">
+  <h2>Instrumentation &amp; <em class="rd">Forensics</em></h2>
+  <div class="section-bar rd"></div>
+  <p><code>ss</code> replaced <code>netstat</code> and exposes far more of <code>struct sock</code> than the old tool ever did. These are the flags worth muscle memory.</p>
+
+  <pre class="rd"><span class="label">ss, the useful subset</span>ss <span class="flag">-tanp</span>                  <span class="cm"># tcp, all states, numeric, with owning process</span>
+ss <span class="flag">-lnt</span>                   <span class="cm"># listeners: Recv-Q = pending accepts, Send-Q = backlog max</span>
+ss <span class="flag">-i</span>                     <span class="cm"># rtt, cwnd, retrans, bytes_acked, pacing rate</span>
+ss <span class="flag">-m</span>                     <span class="cm"># skmem: rmem_alloc, rcv_buf, wmem_alloc, snd_buf, drops</span>
+ss <span class="flag">-x</span> <span class="flag">-p</span>                  <span class="cm"># unix sockets: path, peer inode, process</span>
+ss <span class="flag">-e</span>                     <span class="cm"># the sockfs inode - joins to /proc/net/unix and lsof</span>
+ss <span class="flag">-tn</span> state time-wait     <span class="cm"># state filters take an expression, not just a flag</span>
+
+<span class="cm"># the four counters that explain most mysteries (deltas, not totals)</span>
+nstat <span class="flag">-az</span> | grep <span class="flag">-E</span> <span class="st">'ListenOverflows|ListenDrops|BacklogDrop|Syncookies'</span></pre>
+
+  <table>
+    <tr><th>Symptom</th><th>Look at</th><th>Usually means</th></tr>
+    <tr><td class="meth rd">clients time out, server idle</td><td><code>TcpExtListenOverflows</code>, <code>ss -lnt</code></td><td>accept queue full, ACK dropped silently</td></tr>
+    <tr><td class="meth rd">40 ms latency plateau</td><td>message sizes, <code>TCP_NODELAY</code></td><td>Nagle meeting delayed ACK</td></tr>
+    <tr><td class="meth rd">throughput ceiling on a long path</td><td><code>ss -i</code> cwnd vs BDP</td><td>receive window or buffer max too small</td></tr>
+    <tr><td class="meth rd">memory grows, no leak in the heap</td><td><code>ss -m</code> wmem_queued</td><td>slow consumer, backpressure ignored</td></tr>
+    <tr><td class="meth rd">connection hangs with data pending</td><td>your epoll mode</td><td>EPOLLET without drain-to-EAGAIN</td></tr>
+    <tr><td class="meth rd">peer never sees EOF</td><td><code>lsof</code> for the same inode</td><td>a forked child still holds the fd</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>tcpdump cannot see AF_UNIX</strong>
+    There are no packets on any interface, so there is nothing to capture. Use <code>strace -f -e trace=%network -yy</code> (the <code>-yy</code> annotates fds with socket details), a <code>bpftrace</code> probe on <code>unix_stream_sendmsg</code> / <code>unix_dgram_sendmsg</code>, or interpose <code>socat</code> as a man in the middle when you need the bytes on the wire.
+  </div>
+
+  <pre class="diagram">   <span class="dim">reference:</span> socket(7) unix(7) tcp(7) epoll(7) pipe(7) cmsg(3) memfd_create(2)
+   <span class="dim">source   :</span> net/socket.c · net/unix/af_unix.c · fs/eventpoll.c · net/ipv4/tcp.c
+   <span class="dim">docs     :</span> Documentation/networking/{ip-sysctl,msg_zerocopy}.rst
+   <span class="dim">books    :</span> Kerrisk TLPI ch.43-61 · Stevens UNP vol.1 &amp; vol.2</pre>
+</section>
+
+</div>
+
+<div class="footer">
+  <span>Linux Sockets &amp; IPC Deep Dive</span>
+  <span>hed0rah // <a href="https://man7.org/linux/man-pages/man7/unix.7.html">man7.org</a></span>
+</div>
+<div class="spine">// object model · families · syscall arc · af_unix · buffers · epoll · toolbox · transport · forensics //</div>
+
+<script>
+const LABELS = {
+  model: 'The Object Model',
+  families: 'Families + Types',
+  arc: 'The Syscall Arc',
+  unix: 'Unix Domain Sockets',
+  buffers: 'Buffers + Backpressure',
+  epoll: 'Readiness + epoll',
+  toolbox: 'The IPC Toolbox',
+  choose: 'Choosing a Transport',
+  debug: 'Instrumentation'
+};
+const sections = [...document.querySelectorAll('.container > section[id]')];
+const sideLinks = [...document.querySelectorAll('.side a')];
+const radial = document.getElementById('radial');
+const ring = document.getElementById('radialRing');
+const center = document.getElementById('radialCenter');
+const navNum = document.getElementById('navNum');
+const navLabel = document.getElementById('navLabel');
+
+const items = sections.map(s => {
+  const a = document.createElement('a');
+  a.href = '#' + s.id;
+  a.className = 'radial-item';
+  a.innerHTML = '<span>' + s.dataset.num + '</span>' + (LABELS[s.id] || s.id);
+  radial.appendChild(a);
+  const dot = document.createElement('span');
+  dot.className = 'radial-dot';
+  radial.appendChild(dot);
+  return { sec: s, a, dot };
+});
+
+function layout() {
+  const rx = Math.max(140, Math.min(innerWidth * 0.5 - 150, 330));
+  const ry = Math.max(150, Math.min(innerHeight * 0.5 - 100, 330));
+  ring.style.width = (rx - 26) * 2 + 'px';
+  ring.style.height = (ry - 26) * 2 + 'px';
+  items.forEach((it, i) => {
+    const ang = -Math.PI / 2 + i * 2 * Math.PI / items.length;
+    const x = Math.cos(ang), y = Math.sin(ang);
+    it.a.style.left = 'calc(50% + ' + (rx * x).toFixed(1) + 'px)';
+    it.a.style.top = 'calc(50% + ' + (ry * y).toFixed(1) + 'px)';
+    const tx = x > 0.35 ? '0%' : x < -0.35 ? '-100%' : '-50%';
+    const ty = y > 0.35 ? '0%' : y < -0.35 ? '-100%' : '-50%';
+    it.a.style.transform = 'translate(' + tx + ', ' + ty + ')';
+    it.dot.style.left = 'calc(50% + ' + ((rx - 26) * x).toFixed(1) + 'px)';
+    it.dot.style.top = 'calc(50% + ' + ((ry - 26) * y).toFixed(1) + 'px)';
+  });
+}
+function openDial() { layout(); radial.classList.add('open'); document.body.classList.add('dial-open'); }
+function closeDial() { radial.classList.remove('open'); document.body.classList.remove('dial-open'); }
+
+function activate(id) {
+  const el = document.getElementById(id);
+  const sec = el ? (el.closest('.container > section[id]') || sections[0]) : sections[0];
+  sections.forEach(s => s.classList.toggle('active', s === sec));
+  items.forEach(it => {
+    it.a.classList.toggle('active', it.sec === sec);
+    it.dot.classList.toggle('active', it.sec === sec);
+  });
+  sideLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + sec.id));
+  navNum.textContent = sec.dataset.num + ' //';
+  navLabel.textContent = LABELS[sec.id] || sec.id;
+  center.textContent = sec.dataset.num;
+  closeDial();
+  if (el && el !== sec) el.scrollIntoView();
+  else window.scrollTo(0, 0);
+}
+function go(id) { history.replaceState(null, '', '#' + id); activate(id); }
+
+document.getElementById('navCurrent').addEventListener('click', openDial);
+document.getElementById('sideDial').addEventListener('click', openDial);
+center.addEventListener('click', closeDial);
+radial.addEventListener('click', e => { if (e.target === radial) closeDial(); });
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  e.preventDefault();
+  go(a.getAttribute('href').slice(1));
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') return closeDial();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const cur = sections.findIndex(s => s.classList.contains('active'));
+    const next = (cur + (e.key === 'ArrowRight' ? 1 : sections.length - 1)) % sections.length;
+    go(sections[next].id);
+  }
+});
+window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
+window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
+activate(location.hash.slice(1));
+
+// dark mode toggle (initial theme set by the inline script in <body>)
+const themeButtons = [...document.querySelectorAll('.theme-toggle')];
+function paintTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  themeButtons.forEach(b => b.textContent = (b.classList.contains('side-dial') ? (dark ? '◑ light' : '◐ dark') : (dark ? '◑' : '◐')));
+}
+themeButtons.forEach(b => b.addEventListener('click', () => {
+  const dark = document.documentElement.getAttribute('data-theme') !== 'dark';
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+  paintTheme();
+}));
+paintTheme();
+</script>
+</body>
+</html>
