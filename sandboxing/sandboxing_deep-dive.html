@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sandboxing Deep Dive // Five Primitives, No Sandbox</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* masthead */
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+.masthead .companion {
+  margin-top: 14px;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 2px;
+}
+
+/* nav */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-brand {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.nav-current {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-current:hover { border-color: var(--orange); color: var(--orange); }
+.nav-current .num { color: var(--orange); }
+.nav-hint { color: var(--dim2); margin-left: 6px; }
+
+/* sidebar */
+.side {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 248px;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  z-index: 150;
+  padding: 26px 0 20px;
+  overflow-y: auto;
+}
+.side-brand {
+  padding: 0 20px 16px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--bright);
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 12px;
+}
+.side-brand span { color: var(--orange); }
+.side a {
+  display: block;
+  padding: 7px 24px 7px 21px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.side a span { color: var(--dim2); margin-right: 7px; }
+.side a:hover { color: var(--orange); }
+.side a.active { color: var(--orange); border-left-color: var(--orange); background: var(--surface); }
+.side a.active span { color: var(--orange); }
+.side-dial {
+  display: block;
+  margin: 16px 20px 0 17px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--border2);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.side-dial:hover { color: var(--orange); border-color: var(--orange); }
+@media (min-width: 1100px) {
+  .side { display: block; }
+  body { padding-left: 248px; }
+  .nav { display: none; }
+}
+
+/* radial dial */
+.radial {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(242, 241, 238, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.radial.open { opacity: 1; pointer-events: auto; }
+body.dial-open { overflow: hidden; }
+.radial-ring {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+}
+.radial-center {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  cursor: pointer;
+}
+.radial-center:hover { color: var(--orange); }
+.radial-item {
+  position: absolute;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--dim);
+  padding: 4px 6px;
+}
+.radial-item span { color: var(--dim2); margin-right: 5px; }
+.radial-item:hover, .radial-item.active { color: var(--orange); }
+.radial-item:hover span, .radial-item.active span { color: var(--orange); }
+.radial-dot {
+  position: absolute;
+  width: 5px; height: 5px;
+  background: var(--dim2);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.radial-dot.active { background: var(--orange); }
+@media (max-width: 620px) {
+  .radial.open { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .radial-ring, .radial-dot, .radial-center { display: none; }
+  .radial-item { position: static !important; transform: none !important; font-size: 12px; padding: 7px; }
+}
+
+/* layout */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+}
+section { padding: 52px 0; display: none; }
+section.active { display: block; }
+section::before {
+  content: attr(data-num) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+/* headings */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--yellow); }
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+.section-bar.yl { background: var(--yellow); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+h3.cy { color: var(--cyan); }
+h3.yl { color: var(--yellow); }
+h3.rd { color: var(--red); }
+h4 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  margin: 20px 0 8px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+
+/* code */
+code {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--bright);
+}
+pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre.yl { border-left-color: var(--yellow); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .flag   { color: #7A7870; }
+
+/* diagrams */
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #8A8880;
+}
+.diagram.cy { border-left-color: var(--cyan); }
+.diagram.yl { border-left-color: var(--yellow); }
+.diagram.rd { border-left-color: var(--red); }
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .acc3 { color: #C8A030; }
+.diagram .dim  { color: #4A4942; }
+.diagram .hi   { color: #CCCBC4; }
+
+/* info boxes */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy    { border-left-color: var(--cyan); }
+.info-box.warn  { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; vertical-align: top; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; white-space: nowrap; }
+td.cy   { color: var(--cyan); }
+td.rd   { color: var(--red); }
+td.yl   { color: var(--yellow); }
+td.meth a { color: inherit; text-decoration: none; border-bottom: 1px dashed currentColor; }
+td.meth a:hover { color: var(--bright); }
+h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
+
+/* two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; align-items: stretch; }
+.two-col > div { display: flex; flex-direction: column; }
+.two-col > div > pre { flex: 1; margin-bottom: 0; }
+
+/* step list */
+.step-list { list-style: none; counter-reset: step; margin: 16px 0; }
+.step-list li {
+  counter-increment: step;
+  position: relative;
+  padding: 10px 0 10px 42px;
+  border-bottom: 1px dashed var(--border2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-list li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  width: 34px;
+}
+.step-list li strong { color: var(--bright); display: block; margin-bottom: 2px; }
+.step-list.cy li::before { color: var(--cyan); }
+.step-list.rd li::before { color: var(--red); }
+
+/* footer */
+.footer {
+  border-top: 1px solid var(--border2);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+.footer a { color: var(--orange); text-decoration: none; }
+
+/* spine */
+.spine {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* responsive */
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .masthead { padding: 40px 20px 28px; }
+}
+@media (max-width: 1280px) { .spine { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- masthead -->
+<div class="masthead">
+  <h1>Sandboxing <em>Deep</em> Dive</h1>
+  <div class="subtitle">
+    <span>Namespaces · Capabilities · seccomp-bpf · cgroups v2 · Landlock</span>
+  </div>
+  <div class="companion">bwrap / unshare / nsjail / firejail / podman // there is no "sandbox" syscall, only five primitives // linux 2.4 to 6.x</div>
+</div>
+
+<!-- sidebar -->
+<nav class="side">
+  <div class="side-brand">Sandboxing <span>//</span> Deep Dive</div>
+  <a href="#intro"><span>01</span>The One Idea</a>
+  <a href="#namespaces"><span>02</span>Namespaces</a>
+  <a href="#userns"><span>03</span>User NS</a>
+  <a href="#caps"><span>04</span>Capabilities</a>
+  <a href="#seccomp"><span>05</span>seccomp-bpf</a>
+  <a href="#landlock"><span>06</span>Landlock</a>
+  <a href="#cgroups"><span>07</span>cgroups v2</a>
+  <a href="#tools"><span>08</span>The Tools</a>
+  <a href="#escapes"><span>09</span>Escapes</a>
+  <a href="#recipes"><span>10</span>Recipes</a>
+  <button class="side-dial" id="sideDial" title="radial section dial">◎ dial</button>
+</nav>
+
+<!-- nav -->
+<div class="nav">
+  <div class="nav-inner">
+    <span class="nav-brand">Sandboxing Deep Dive</span>
+    <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
+      <span class="num" id="navNum">01 //</span> <span id="navLabel">The One Idea</span> <span class="nav-hint">◎</span>
+    </button>
+  </div>
+</div>
+
+<!-- radial dial -->
+<div class="radial" id="radial">
+  <div class="radial-ring" id="radialRing"></div>
+  <button class="radial-center" id="radialCenter" title="close (Esc)">01</button>
+</div>
+
+<div class="container">
+
+<!-- intro -->
+<section id="intro" data-num="01">
+  <h2>There Is No <em class="or">Sandbox</em></h2>
+  <div class="section-bar"></div>
+  <p>Linux has no sandbox syscall, no sandbox object, no sandbox subsystem. It has <strong>five independent primitives</strong>, each solving a different problem, none of which was designed as a security boundary on its own. Every tool you have heard of is a particular opinion about how to wire them together.</p>
+
+  <pre class="diagram"><span class="dim">   what each primitive actually controls</span>
+
+   <span class="acc">namespaces</span>    what a process can <span class="hi">SEE</span>        mounts, pids, net, ipc, uts, users, cgroups, time
+   <span class="acc">capabilities</span>  which of root's <span class="hi">POWERS</span> it holds   ~40 bits, split out of the old all-or-nothing uid 0
+   <span class="acc">seccomp-bpf</span>   which <span class="hi">SYSCALLS</span> it may issue     a bpf program run on every syscall entry
+   <span class="acc">cgroups v2</span>    how much <span class="hi">RESOURCE</span> it consumes    memory, pids, cpu, io
+   <span class="acc">Landlock</span>      which <span class="hi">FILES</span> it may touch        unprivileged, path-based, since 5.13
+
+   <span class="acc2">bwrap  firejail  nsjail  podman  systemd  gVisor</span>
+        <span class="dim">all of them = a choice of which of the five, and how tight</span></pre>
+
+  <div class="info-box">
+    <strong>Why this framing matters</strong>
+    Learn the five and every tool becomes readable. A <code>docker run</code> flag, a firejail profile line, a bwrap argument: each one is turning a knob on one of these. Learn the tools first and you memorize flags without knowing what they protect against, which is how people ship sandboxes with a hole straight through the middle.
+  </div>
+
+  <h3 class="cy">The honest strength ladder</h3>
+  <pre class="diagram cy">   <span class="dim">weakest</span>
+   1  separate uid + unix perms          <span class="dim">what most "sandboxing" actually is</span>
+   2  + namespaces, dropped caps         <span class="dim">bwrap defaults. good vs accidents</span>
+   3  + seccomp                          <span class="dim">a parser bug can no longer reach most of the kernel</span>
+   4  + Landlock / strict mounts         <span class="dim">filesystem reach is explicit, not implied</span>
+   5  gVisor                             <span class="dim">syscalls served by a userspace kernel</span>
+   6  VM (firecracker, qemu)             <span class="dim">hardware boundary</span>
+   <span class="dim">strongest</span>
+
+   <span class="acc">analysing</span> a hostile file with a parser  ->  level 3-4 is proportionate
+   <span class="acc">executing</span> hostile code                  ->  nothing below 6 is honest</pre>
+</section>
+
+<!-- namespaces -->
+<section id="namespaces" data-num="02">
+  <h2><em class="cy">Namespaces</em></h2>
+  <div class="section-bar cy"></div>
+  <p>Each namespace virtualizes one global kernel resource. A process inside gets its own copy, and cannot see the host's. They are independent: you take only the ones you want.</p>
+
+  <table>
+    <tr><th>ns</th><th>clone flag</th><th>isolates</th><th>note</th></tr>
+    <tr><td class="meth cy">mount</td><td><code>CLONE_NEWNS</code></td><td>the filesystem tree</td><td>oldest (2.4). propagation is the subtle part</td></tr>
+    <tr><td class="meth cy">pid</td><td><code>CLONE_NEWPID</code></td><td>process IDs</td><td>first process is pid 1 and must reap. it dies, the ns dies</td></tr>
+    <tr><td class="meth cy">net</td><td><code>CLONE_NEWNET</code></td><td>interfaces, routes, netfilter, sockets</td><td>empty ns has only a down <code>lo</code></td></tr>
+    <tr><td class="meth cy">ipc</td><td><code>CLONE_NEWIPC</code></td><td>sysv ipc, posix mqueues</td><td></td></tr>
+    <tr><td class="meth cy">uts</td><td><code>CLONE_NEWUTS</code></td><td>hostname, domainname</td><td>mostly cosmetic</td></tr>
+    <tr><td class="meth cy">user</td><td><code>CLONE_NEWUSER</code></td><td>uid/gid maps and capabilities</td><td>the keystone, see next section</td></tr>
+    <tr><td class="meth cy">cgroup</td><td><code>CLONE_NEWCGROUP</code></td><td>the visible cgroup root</td><td>stops escapes via /sys/fs/cgroup paths</td></tr>
+    <tr><td class="meth cy">time</td><td><code>CLONE_NEWTIME</code></td><td>monotonic/boottime offsets</td><td>5.6+. does <strong>not</strong> virtualize wall clock</td></tr>
+  </table>
+
+  <h3 class="cy">See it with no tools at all</h3>
+  <pre><span class="cm"># one line. this is the core of every sandbox tool.</span>
+  <span class="fn">unshare</span> <span class="flag">--user --map-root-user --net --pid --fork --mount-proc --uts --ipc</span> bash
+
+<span class="cm"># inside:</span>
+  ip addr        <span class="cm"># only lo. nothing to exfiltrate through</span>
+  ps -e          <span class="cm"># a handful of processes, not the host's hundreds</span>
+  id             <span class="cm"># uid 0 ... but see the next section</span></pre>
+
+  <div class="info-box warn">
+    <strong>The three that bite</strong>
+    <strong>Mount propagation:</strong> a bind mount can propagate back to the host if the mount is shared. Hand-rolled <code>unshare</code> frequently gets this wrong and the "sandboxed" process modifies the host. <strong>/proc leaks:</strong> mounting a fresh <code>/proc</code> without <code>--unshare-pid</code> still shows host processes, so the sandbox reads <code>/proc/&lt;host_pid&gt;/environ</code> for secrets. The two flags are a pair. <strong>pid 1 duties:</strong> the first process in a pid ns inherits reaping; if it does not, you accumulate zombies.
+  </div>
+</section>
+
+<!-- userns -->
+<section id="userns" data-num="03">
+  <h2>The <em class="or">Keystone</em></h2>
+  <div class="section-bar"></div>
+  <p>User namespaces are why unprivileged sandboxing exists at all. Inside one you hold uid 0 with a full capability set, while the kernel maps you to your real unprivileged uid outside. That is what lets a normal user create mount and network namespaces without <code>sudo</code>, and why <code>bwrap</code> needs no setuid bit on a modern kernel.</p>
+
+  <pre class="diagram">   <span class="dim">inside the namespace          the kernel's view</span>
+   <span class="hi">uid 0</span>, CAP_SYS_ADMIN,       <span class="dim">-- maps to --&gt;</span>   <span class="acc">uid 1000</span>, no real privilege
+   CAP_NET_ADMIN, ...                            on the host
+
+   <span class="acc2">root inside is not root outside.</span> capabilities are scoped to the namespace:
+   you may mount a tmpfs in YOUR mount ns, not touch the host's.</pre>
+
+  <p>It is also, historically, a <strong>rich source of privilege escalation</strong>. Handing unprivileged users reachability into kernel code paths that previously required root turned out to expose a lot of bugs. Distributions responded by restricting it.</p>
+
+  <h3 class="rd">Every distribution restricts it, and no two the same way</h3>
+  <p>This is the biggest portability trap in Linux sandboxing. Code that sandboxes cleanly on one machine dies on the next, with an error naming none of the responsible subsystems:</p>
+
+  <pre class="diagram rd"><span class="acc">bwrap:</span>   setting up uid map: Permission denied
+<span class="acc">unshare:</span> write failed /proc/self/uid_map: Operation not permitted
+<span class="acc">podman:</span>  cannot clone: Operation not permitted
+
+   <span class="dim">nothing here names the knob, the LSM, or the policy responsible.</span></pre>
+
+  <table>
+    <tr><th>gate</th><th>seen on</th><th>check</th><th>meaning</th></tr>
+    <tr><td class="meth rd">LSM-mediated</td><td>AppArmor distros, 23.10+</td><td><code>kernel.apparmor_restrict_unprivileged_userns</code></td><td>allowed only for binaries whose profile grants <code>userns</code></td></tr>
+    <tr><td class="meth rd">global toggle</td><td>Debian-family, hardened kernels</td><td><code>kernel.unprivileged_userns_clone</code></td><td><code>0</code> = no unprivileged userns at all</td></tr>
+    <tr><td class="meth rd">quota</td><td>upstream, every distro</td><td><code>user.max_user_namespaces</code></td><td><code>0</code> = disabled. RHEL shipped 0 for years</td></tr>
+    <tr><td class="meth rd">SELinux</td><td>Fedora, RHEL</td><td><code>getenforce</code> + booleans</td><td>a separate axis, can deny after the others allow</td></tr>
+    <tr><td class="meth rd">outer sandbox</td><td>inside a container</td><td>the runtime's seccomp profile</td><td>nested sandboxing blocked by the layer above</td></tr>
+  </table>
+
+  <p>The order matters: a kernel can permit userns by quota and still be denied by an LSM, so reading one knob proves nothing. <strong>The only portable probe is to attempt it and read the error.</strong></p>
+
+  <pre><span class="cm"># the capability test that works everywhere. no sysctl guessing.</span>
+<span class="fn">unshare</span> <span class="flag">--user --map-root-user</span> true <span class="kw">&amp;&amp;</span> echo <span class="st">"userns available"</span></pre>
+
+  <h3>Fixes, narrowest scope first</h3>
+  <table>
+    <tr><th>approach</th><th>scope</th><th>note</th></tr>
+    <tr><td class="meth">per-binary LSM profile</td><td>one executable</td><td>narrowest. on AppArmor systems, a few lines granting <code>userns</code>, following the distro's own pattern for tools like <code>mmdebstrap</code> and <code>ch-run</code></td></tr>
+    <tr><td class="meth">raise the quota</td><td>system</td><td><code>user.max_user_namespaces</code> when it was zeroed</td></tr>
+    <tr><td class="meth">flip the global toggle</td><td>system</td><td>blunt. re-opens exactly what the distro closed on purpose</td></tr>
+    <tr><td class="meth">setuid helper</td><td>one tool</td><td>firejail's approach. trades a userns CVE class for a setuid CVE class</td></tr>
+    <tr><td class="meth">run privileged</td><td>--</td><td>often means the payload runs as <strong>root inside the sandbox</strong>, which is worse than where you started</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>Be honest about the per-binary grant</strong>
+    Granting <code>userns</code> to a sandbox tool is narrower than a global toggle, but only somewhat: that tool exists to create namespaces, so anything able to execute it effectively has userns. On a single-user workstation the difference is small. On a shared host it is not.
+  </div>
+
+  <div class="info-box cy">
+    <strong>Diagnose it in one command</strong>
+    <code>./check</code> probes the capability directly, then, only when it fails, reports which gate above is responsible on your system and which fix applies.
+  </div>
+</section>
+
+<!-- caps -->
+<section id="caps" data-num="04">
+  <h2><em class="rd">Capabilities</em></h2>
+  <div class="section-bar rd"></div>
+  <p>Root's powers split into roughly forty bits, so a process can hold exactly the privilege it needs. A process carries permitted, effective, inheritable, bounding and ambient sets.</p>
+
+  <table>
+    <tr><th>capability</th><th>grants</th><th>verdict</th></tr>
+    <tr><td class="meth rd">CAP_SYS_ADMIN</td><td>mount, pivot_root, many ioctls, and a long tail</td><td><strong>is root.</strong> the junk drawer. granting it means you have not sandboxed anything</td></tr>
+    <tr><td class="meth rd">CAP_SYS_PTRACE</td><td>read/write other processes' memory</td><td>drop</td></tr>
+    <tr><td class="meth rd">CAP_DAC_READ_SEARCH</td><td>bypass file read permission checks entirely</td><td>drop</td></tr>
+    <tr><td class="meth rd">CAP_NET_RAW</td><td>raw sockets, packet crafting</td><td>drop unless the tool genuinely needs it</td></tr>
+    <tr><td class="meth rd">CAP_SYS_MODULE</td><td>load kernel modules</td><td>never</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>Dropping is not enough without no_new_privs</strong>
+    A setuid binary executed inside can regain what you dropped. Two things make it stick: clear the <strong>bounding set</strong> (so caps cannot be re-acquired on exec) and set <code>prctl(PR_SET_NO_NEW_PRIVS, 1)</code>, which guarantees no <code>execve</code> ever gains privilege again. <code>no_new_privs</code> is also a <em>precondition</em>: unprivileged seccomp and Landlock both refuse to install without it.
+  </div>
+</section>
+
+<!-- seccomp -->
+<section id="seccomp" data-num="05">
+  <h2><em class="yl">seccomp-bpf</em></h2>
+  <div class="section-bar yl"></div>
+  <p>Namespaces decide what a process can see. seccomp decides which kernel APIs it may call at all. It is a classic-BPF program, the same VM lineage as <code>tcpdump</code> filters, run on every syscall entry against a small struct.</p>
+
+  <pre class="diagram yl">   <span class="dim">struct seccomp_data -- everything the filter can see</span>
+     <span class="hi">nr</span>                  syscall number
+     <span class="hi">arch</span>                AUDIT_ARCH_X86_64, AUDIT_ARCH_I386, ...
+     <span class="hi">instruction_pointer</span>
+     <span class="hi">args[6]</span>             the six syscall arguments, <span class="acc">as scalars</span>
+
+   verdicts:  <span class="acc2">ALLOW</span>   <span class="acc2">ERRNO</span>(fake a failure)   <span class="acc2">TRAP</span>(SIGSYS)
+              <span class="acc2">KILL_THREAD</span> / <span class="acc2">KILL_PROCESS</span>   <span class="acc2">TRACE</span>   <span class="acc2">USER_NOTIF</span>(5.0+)</pre>
+
+  <div class="info-box danger">
+    <strong>seccomp cannot dereference pointers</strong>
+    Arguments are visible as scalars only. The filter may not follow a <code>char *path</code>, because userspace could change that memory after the check and before the kernel uses it, a TOCTOU race. So <strong>"deny open() of /etc/shadow" is not expressible in a seccomp <em>filter</em></strong>. Path policy has to come from mount namespaces or Landlock.</p>
+    <p>One nuance the blanket version of this claim misses: a <code>USER_NOTIF</code> supervisor (5.0+) <em>can</em> mediate paths, by copying the argument out of <code>/proc/&lt;tid&gt;/mem</code> once, performing the operation on its own copy, and injecting the resulting fd with <code>SECCOMP_IOCTL_NOTIF_ADDFD</code>. Acting on the supervisor's copy has no TOCTOU. It is the <code>CONTINUE</code> pattern, check-then-let-it-proceed, that stays racy and that the man page says cannot implement a security policy. This is how runc and systemd emulate <code>mount</code>. This single constraint explains most of the design of every sandbox tool.
+  </div>
+
+  <h3 class="yl">The classic hand-rolled bug</h3>
+  <p>x86_64 kernels also accept i386 syscalls via <code>int 0x80</code>, where the numbers mean different things. A filter that checks the syscall number without first pinning the architecture can be walked straight around by issuing 32-bit calls. Check <code>arch</code> first, always. libseccomp inserts this for you; hand-written filters must not forget. And pinning the arch is still not sufficient for a <em>denylist</em> on x86_64: x32 syscalls report the same <code>AUDIT_ARCH_X86_64</code> and are distinguished only by <code>__X32_SYSCALL_BIT</code> (0x40000000) in <code>nr</code>, so a denylist that does not also reject that bit is bypassable. <code>man 2 seccomp</code> says so outright.</p>
+
+  <pre class="yl"><span class="cm">/* arch must match, or kill. this is not optional. */</span>
+BPF_STMT(BPF_LD  | BPF_W | BPF_ABS, offsetof(struct seccomp_data, <span class="key">arch</span>)),
+BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, <span class="val">AUDIT_ARCH_X86_64</span>, 1, 0),
+BPF_STMT(BPF_RET | BPF_K, <span class="kw">SECCOMP_RET_KILL_PROCESS</span>),
+
+<span class="cm">/* only now is it safe to read the syscall number */</span>
+BPF_STMT(BPF_LD  | BPF_W | BPF_ABS, offsetof(struct seccomp_data, <span class="key">nr</span>)),</pre>
+
+  <div class="info-box warn">
+    <strong>Two policy lessons</strong>
+    <strong>Prefer ERRNO over KILL.</strong> Killing on an unexpected syscall means the next glibc update that calls something new turns a graceful degradation into a crash. <strong>Observation-derived profiles are incomplete.</strong> Trace a tool on benign input, capture its syscalls, ship the allowlist, and the first error path calls something unlisted and dies. This is exactly why Docker's default profile is a <em>human-maintained</em> allowlist rather than a trace-generated one: it defaults to <code>SCMP_ACT_ERRNO</code> and names the roughly 300 syscalls it permits, leaving about 44 blocked. Curated by people watching kernel CVEs, not derived from a recording of one happy path.
+  </div>
+</section>
+
+<!-- landlock -->
+<section id="landlock" data-num="06">
+  <h2><em class="cy">Landlock</em></h2>
+  <div class="section-bar cy"></div>
+  <p>An LSM, since 5.13, that lets an <strong>unprivileged</strong> process restrict its own filesystem access, irreversibly, for itself and everything it spawns. It expresses precisely what seccomp cannot: path policy, without the TOCTOU problem, because the kernel evaluates it at the point of use.</p>
+
+  <pre class="diagram cy">   <span class="dim">the model</span>
+   1  create a ruleset naming which access rights you <span class="hi">take responsibility for</span>
+   2  add rules re-permitting specific paths (by <span class="acc">open fd</span>, not by string)
+   3  landlock_restrict_self()  <span class="dim">-- from here it cannot be widened, ever</span>
+
+   <span class="acc2">rights not named in the ruleset are untouched.</span> a program that never
+   declares WRITE cannot restrict writes -- a common first-attempt mistake.</pre>
+
+  <p>Rights were added across kernel versions, so a program must query the ABI version and mask down to what the running kernel understands. Ask for a right it does not know and the call fails.</p>
+
+  <div class="info-box cy">
+    <strong>Order is load-bearing</strong>
+    <code>no_new_privs</code>, then Landlock, then seccomp, then <code>execv</code>. Landlock and unprivileged seccomp both refuse to install without <code>no_new_privs</code> already set, because otherwise a setuid binary could <code>execve</code> the whole sandbox away. See <code>examples/sandbox.c</code> in this repo for the working sequence.
+  </div>
+</section>
+
+<!-- cgroups -->
+<section id="cgroups" data-num="07">
+  <h2><em class="rd">cgroups v2</em></h2>
+  <div class="section-bar rd"></div>
+  <p>Resource control rather than an isolation boundary. It will not stop an exploit. It stops a zip bomb, a fork bomb, or a memory hog from taking the host down, which matters because hostile code with no limits will exhaust the machine whether or not it ever escapes.</p>
+
+  <table>
+    <tr><th>controller</th><th>knob</th><th>stops</th></tr>
+    <tr><td class="meth rd">memory</td><td><code>memory.max</code></td><td>decompression bombs, runaway parsers</td></tr>
+    <tr><td class="meth rd">pids</td><td><code>pids.max</code></td><td>fork bombs</td></tr>
+    <tr><td class="meth rd">cpu</td><td><code>cpu.max</code></td><td>a spin loop eating the box</td></tr>
+    <tr><td class="meth rd">io</td><td><code>io.max</code></td><td>disk saturation</td></tr>
+  </table>
+
+  <p><strong>bwrap has no cgroup support at all.</strong> Pair it with systemd, which is the easiest handle on any modern distro:</p>
+
+  <pre class="rd"><span class="fn">systemd-run</span> <span class="flag">--user --scope</span> <span class="key">-p</span> <span class="val">MemoryMax=512M</span> <span class="key">-p</span> <span class="val">TasksMax=64</span> <span class="key">-p</span> <span class="val">CPUQuota=50%</span> <span class="key">--</span> \
+  bwrap <span class="flag">--unshare-all</span> ... </pre>
+</section>
+
+<!-- tools -->
+<section id="tools" data-num="08">
+  <h2>The <em class="or">Tools</em></h2>
+  <div class="section-bar"></div>
+  <p>Same five primitives, different opinions.</p>
+
+  <table>
+    <tr><th>tool</th><th>ns</th><th>seccomp</th><th>cgroups</th><th>unprivileged</th><th>character</th></tr>
+    <tr><td class="meth">bwrap</td><td>all</td><td>you supply</td><td>no</td><td>yes</td><td>the sharp knife. no policy of its own. Flatpak's engine</td></tr>
+    <tr><td class="meth">firejail</td><td>all</td><td>built-in profiles</td><td>partial</td><td><strong>setuid</strong></td><td>batteries included, large profile library, setuid is its own attack surface</td></tr>
+    <tr><td class="meth">nsjail</td><td>all</td><td>yes</td><td>yes</td><td>yes</td><td>Google. many knobs, verbose config, good for jails</td></tr>
+    <tr><td class="meth">systemd-run</td><td>some</td><td><code>SystemCallFilter=</code></td><td><strong>yes</strong></td><td>yes</td><td>already installed. best cgroup story, weaker fs isolation</td></tr>
+    <tr><td class="meth">podman / docker</td><td>all</td><td>curated allowlist</td><td>yes</td><td>rootless: yes</td><td>heavy, but that default seccomp profile is genuinely good</td></tr>
+    <tr><td class="meth">gVisor</td><td>--</td><td>--</td><td>--</td><td>yes</td><td>userspace kernel. much smaller host surface, real perf cost</td></tr>
+    <tr><td class="meth">firecracker / qemu</td><td>--</td><td>--</td><td>--</td><td>--</td><td>a real VM. the only honest answer for executing hostile code</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>Learn bwrap</strong>
+    It has no policy. Every restriction is an explicit flag, which makes a bwrap command line a readable expression of the model rather than a black box. Once you can write one, every other tool becomes "which of these flags did they pick for me".
+  </div>
+</section>
+
+<!-- escapes -->
+<section id="escapes" data-num="09">
+  <h2>Three <em class="rd">Escapes</em></h2>
+  <div class="section-bar rd"></div>
+  <p>None of these involve a kernel bug. All three defeat an otherwise correctly built sandbox, and all three are configuration mistakes people make constantly.</p>
+
+  <h3 class="rd">1. D-Bus is a hole straight through everything</h3>
+  <p>Bind the session bus in for desktop-app compatibility and the sandboxed process can talk to host services. The bus name <code>org.freedesktop.Flatpak</code> exposes <code>org.freedesktop.Flatpak.Development.HostCommand</code>, which <strong>runs a process on the host for you</strong>. That is exactly what <code>flatpak-spawn --host</code> calls (cf. CVE-2019-10063). Do not confuse it with <code>org.freedesktop.portal.Flatpak.Spawn</code>, a different service that by default spawns into another sandbox rather than onto the host. Your namespaces, dropped capabilities and syscall filter are all intact and completely irrelevant, because you handed it an RPC channel to something privileged.</p>
+  <pre class="diagram rd">   sandbox <span class="dim">--(bind /run/user/1000/bus)--&gt;</span> session bus <span class="dim">--&gt;</span> <span class="acc">org.freedesktop.Flatpak</span>
+                                                        <span class="dim">|</span>
+                                              <span class="acc">.Development.HostCommand()</span> <span class="dim">-&gt; runs on the HOST</span>
+
+   fix: do not mount the bus. if unavoidable, front it with <span class="hi">xdg-dbus-proxy</span>
+        and allowlist specific interfaces.</pre>
+
+  <h3 class="rd">2. TIOCSTI terminal injection</h3>
+  <p>A process sharing your pty can <code>ioctl(0, TIOCSTI, &amp;c)</code> to push characters into the <strong>parent shell's input buffer</strong>, which then run as you after the sandbox exits. A full escape via a tty ioctl.</p>
+  <pre class="rd"><span class="cm"># fix: a fresh session with a detached controlling terminal</span>
+bwrap <span class="flag">--new-session</span> ...
+<span class="cm"># newer kernels can also disable it globally, but do not rely on it</span>
+sysctl dev.tty.legacy_tiocsti=0</pre>
+  <p>That framing is now out of date in the sandbox author's favour. Since Linux 6.2 <code>TIOCSTI</code> is gated behind <code>CAP_SYS_ADMIN</code> whenever <code>dev.tty.legacy_tiocsti=0</code>, and the build-time <code>CONFIG_LEGACY_TIOCSTI</code> sets that default. Upstream still defaults it on, but major distros ship it off, so on a current mainstream kernel this injection is already dead for unprivileged processes. Keep <code>--new-session</code> anyway: it costs nothing and covers older kernels and anyone who re-enabled the sysctl. (bwrap's own man page cites CVE-2017-5226 for it.)</p>
+
+  <h3 class="rd">3. /proc without a pid namespace</h3>
+  <p>Mounting a fresh <code>/proc</code> is not enough by itself. Without <code>--unshare-pid</code> it still shows host processes, so the sandbox reads <code>/proc/&lt;pid&gt;/environ</code> for secrets and <code>/proc/&lt;pid&gt;/fd/*</code> for open files. The two flags are a pair; either alone is a false sense of security.</p>
+
+  <div class="info-box warn">
+    <strong>Test the negative case</strong>
+    A sandbox you have not tried to break is a hope, not a control. Every recipe should ship with assertions that the things you forbade actually fail.
+  </div>
+</section>
+
+<!-- recipes -->
+<section id="recipes" data-num="10">
+  <h2><em class="cy">Recipes</em></h2>
+  <div class="section-bar cy"></div>
+
+  <h3 class="cy">Untrusted file, parser is the attack surface</h3>
+  <p>The file is never executed. The parser is the exploit. No network, minimal filesystem, no capabilities.</p>
+
+  <pre class="cy">bwrap \
+  <span class="flag">--unshare-all</span>                  <span class="cm"># every ns incl net: cannot phone home</span>
+  <span class="flag">--new-session</span>                  <span class="cm"># no TIOCSTI back into your shell</span>
+  <span class="flag">--die-with-parent</span> \
+  <span class="flag">--ro-bind</span> /usr /usr <span class="flag">--ro-bind</span> /lib /lib <span class="flag">--ro-bind</span> /lib64 /lib64 \
+  <span class="flag">--proc</span> /proc <span class="flag">--dev</span> /dev <span class="flag">--tmpfs</span> /tmp <span class="flag">--tmpfs</span> /home \
+  <span class="flag">--ro-bind</span> "$sample" /work/sample   <span class="cm"># the ONLY untrusted input, read-only</span>
+  <span class="flag">--chdir</span> /work <span class="flag">--clearenv</span>          <span class="cm"># env leaks tokens, paths, LD_PRELOAD</span>
+  <span class="flag">--setenv</span> PATH /usr/bin:/bin \
+  <span class="flag">--cap-drop</span> ALL \
+  pdfid /work/sample</pre>
+
+  <h3 class="cy">The inverted case: a network agent</h3>
+  <p>Something that <strong>must</strong> reach the internet, holding an API key. You cannot stop it talking out, so the goal flips: make sure nothing worth stealing is in reach.</p>
+
+  <pre class="cy">bwrap <span class="flag">--unshare-all --share-net</span> \   <span class="cm"># isolate everything EXCEPT the network</span>
+  <span class="flag">--ro-bind</span> /usr /usr <span class="flag">--ro-bind</span> /etc/ssl /etc/ssl \   <span class="cm"># tls trust store</span>
+  <span class="flag">--ro-bind</span> /etc/resolv.conf /etc/resolv.conf \
+  <span class="flag">--bind</span> /home/agent /home/agent \        <span class="cm"># the ONLY writable path</span>
+  <span class="flag">--proc</span> /proc <span class="flag">--dev</span> /dev <span class="flag">--tmpfs</span> /tmp <span class="flag">--cap-drop</span> ALL \
+  /home/agent/.local/bin/agent</pre>
+  <p>Run it as a <strong>separate uid</strong> as well, so even a full sandbox bypass lands somewhere with nothing in it. Two independent layers beat one good one.</p>
+
+  <h3>Prove it holds</h3>
+  <pre><span class="fn">box</span> /dev/null sh -c <span class="st">'ping -c1 1.1.1.1'</span>   <span class="cm"># must fail: no network</span>
+<span class="fn">box</span> /dev/null sh -c <span class="st">'cat /etc/shadow'</span>    <span class="cm"># must fail: not bound</span>
+<span class="fn">box</span> /dev/null sh -c <span class="st">'ps aux | wc -l'</span>     <span class="cm"># must be tiny: own pid ns</span></pre>
+
+  <div class="info-box cy">
+    <strong>In this repo</strong>
+    <code>check</code> reports what your kernel can actually do and why a sandbox is refusing to start, naming the failing stage rather than guessing from one sysctl. <code>escape-test</code> runs assertions inside a sandbox and reports what leaked, graded against a profile. <code>nsview</code> decides namespace membership by comparing against the kernel's fixed initial-namespace inodes, which beats counting processes. <code>capdecode</code> reads all five capability sets from <code>/proc</code> with no libcap, and calls out the <code>CapEff=0</code> with a full bounding set shape that reads clean and is not. <code>01_namespaces_by_hand.sh</code> walks the five primitives with nothing but util-linux, and <code>examples/sandbox.c</code> is self-restriction in C: no_new_privs, Landlock, seccomp, exec, in the order the kernel demands.
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <div>Sandboxing Deep Dive // five primitives, no sandbox</div>
+</footer>
+
+<div class="spine">// namespaces · userns · caps · seccomp · landlock · cgroups · tools · escapes · recipes //</div>
+
+<script>
+const LABELS = {
+  intro: 'The One Idea',
+  namespaces: 'Namespaces',
+  userns: 'User NS',
+  caps: 'Capabilities',
+  seccomp: 'seccomp-bpf',
+  landlock: 'Landlock',
+  cgroups: 'cgroups v2',
+  tools: 'The Tools',
+  escapes: 'Escapes',
+  recipes: 'Recipes'
+};
+const sections = [...document.querySelectorAll('.container > section[id]')];
+const sideLinks = [...document.querySelectorAll('.side a')];
+const radial = document.getElementById('radial');
+const ring = document.getElementById('radialRing');
+const center = document.getElementById('radialCenter');
+const navNum = document.getElementById('navNum');
+const navLabel = document.getElementById('navLabel');
+
+const items = sections.map(s => {
+  const a = document.createElement('a');
+  a.href = '#' + s.id;
+  a.className = 'radial-item';
+  a.innerHTML = '<span>' + s.dataset.num + '</span>' + (LABELS[s.id] || s.id);
+  radial.appendChild(a);
+  const dot = document.createElement('span');
+  dot.className = 'radial-dot';
+  radial.appendChild(dot);
+  return { sec: s, a, dot };
+});
+
+function layout() {
+  const rx = Math.max(140, Math.min(innerWidth * 0.5 - 150, 330));
+  const ry = Math.max(150, Math.min(innerHeight * 0.5 - 100, 330));
+  ring.style.width = (rx - 26) * 2 + 'px';
+  ring.style.height = (ry - 26) * 2 + 'px';
+  items.forEach((it, i) => {
+    const ang = -Math.PI / 2 + i * 2 * Math.PI / items.length;
+    const x = Math.cos(ang), y = Math.sin(ang);
+    it.a.style.left = 'calc(50% + ' + (rx * x).toFixed(1) + 'px)';
+    it.a.style.top = 'calc(50% + ' + (ry * y).toFixed(1) + 'px)';
+    const tx = x > 0.35 ? '0%' : x < -0.35 ? '-100%' : '-50%';
+    const ty = y > 0.35 ? '0%' : y < -0.35 ? '-100%' : '-50%';
+    it.a.style.transform = 'translate(' + tx + ', ' + ty + ')';
+    it.dot.style.left = 'calc(50% + ' + ((rx - 26) * x).toFixed(1) + 'px)';
+    it.dot.style.top = 'calc(50% + ' + ((ry - 26) * y).toFixed(1) + 'px)';
+  });
+}
+function openDial() { layout(); radial.classList.add('open'); document.body.classList.add('dial-open'); }
+function closeDial() { radial.classList.remove('open'); document.body.classList.remove('dial-open'); }
+
+function activate(id) {
+  const el = document.getElementById(id);
+  const sec = el ? (el.closest('.container > section[id]') || sections[0]) : sections[0];
+  sections.forEach(s => s.classList.toggle('active', s === sec));
+  items.forEach(it => {
+    it.a.classList.toggle('active', it.sec === sec);
+    it.dot.classList.toggle('active', it.sec === sec);
+  });
+  sideLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + sec.id));
+  navNum.textContent = sec.dataset.num + ' //';
+  navLabel.textContent = LABELS[sec.id] || sec.id;
+  center.textContent = sec.dataset.num;
+  closeDial();
+  if (el && el !== sec) el.scrollIntoView();
+  else window.scrollTo(0, 0);
+}
+function go(id) { history.replaceState(null, '', '#' + id); activate(id); }
+
+document.getElementById('navCurrent').addEventListener('click', openDial);
+document.getElementById('sideDial').addEventListener('click', openDial);
+center.addEventListener('click', closeDial);
+radial.addEventListener('click', e => { if (e.target === radial) closeDial(); });
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  e.preventDefault();
+  go(a.getAttribute('href').slice(1));
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') return closeDial();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const cur = sections.findIndex(s => s.classList.contains('active'));
+    const next = (cur + (e.key === 'ArrowRight' ? 1 : sections.length - 1)) % sections.length;
+    go(sections[next].id);
+  }
+});
+window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
+window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
+activate(location.hash.slice(1));
+</script>
+</body>
+</html>
