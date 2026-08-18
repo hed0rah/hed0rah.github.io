@@ -493,6 +493,49 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 :root[data-theme="dark"] pre .key, :root[data-theme="dark"] .diagram .acc2 { color: #5CD9CE; }
 :root[data-theme="dark"] .radial { background: rgba(18,18,19,0.96); }
 .theme-toggle { white-space: nowrap; }
+/* ---- bytemap: reusable byte/bit-level field breakdown ------------------
+   Authoring: a div of class bytemap containing one application/json script,
+   holding: label, note, unit (octet or bit), and a fields array whose entries
+   carry name, size, optional span, optional accent, desc and optional detail.
+   accent: or cy rd yl gr mg   (defaults to a rotating palette)
+   Hover or focus a cell or a legend row to light the field; click to pin.      */
+.bytemap{margin:22px 0;border:1px solid var(--border);background:var(--surface)}
+.bm-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding:7px 10px;border-bottom:1px solid var(--border);background:var(--bg)}
+.bm-title{font:700 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase}
+.bm-note{font:400 10px/1.4 var(--mono);color:var(--dim)}
+.bm-scroll{overflow-x:auto}
+.bm-ruler,.bm-cells{display:flex;min-width:min-content}
+.bm-ruler{border-bottom:1px dashed var(--border2)}
+.bm-tick{flex:0 0 auto;font:400 9px/1 var(--mono);color:var(--dim);padding:5px 0 4px;
+  text-align:center;border-right:1px solid transparent}
+.bm-cell{flex:0 0 auto;position:relative;padding:13px 6px;text-align:center;cursor:pointer;
+  border-right:1px solid var(--border);background:var(--surface);
+  font:700 11px/1.25 var(--mono);color:var(--text);
+  transition:background .12s ease,color .12s ease}
+.bm-cell:last-child{border-right:0}
+.bm-cell .bm-sz{display:block;font-weight:400;font-size:9px;color:var(--dim);margin-top:4px;
+  letter-spacing:.06em}
+.bm-cell::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;
+  background:var(--bm-c,var(--orange));opacity:.5}
+.bm-cell.on{background:var(--bm-c,var(--orange));color:var(--surface)}
+.bm-cell.on .bm-sz{color:inherit;opacity:.75}
+.bm-cell.on::after{opacity:1;background:var(--border)}
+.bm-legend{display:flex;flex-wrap:wrap;gap:0;border-top:1px solid var(--border)}
+.bm-item{flex:1 1 190px;display:flex;gap:8px;align-items:flex-start;text-align:left;
+  padding:8px 10px;border:0;border-right:1px solid var(--fine);border-bottom:1px solid var(--fine);
+  background:none;cursor:pointer;font:400 11px/1.45 var(--mono);color:var(--text)}
+.bm-item:hover,.bm-item:focus-visible{background:var(--bg);outline:0}
+.bm-item:focus-visible{box-shadow:inset 0 0 0 2px var(--bm-c,var(--orange))}
+.bm-swatch{flex:0 0 9px;height:9px;margin-top:4px;background:var(--bm-c,var(--orange))}
+.bm-item.on{background:var(--bg)}
+.bm-item.on .bm-name{color:var(--bm-c,var(--orange))}
+.bm-name{font-weight:700}
+.bm-item .bm-d{color:var(--text)}
+.bm-pin{padding:7px 10px;border-top:1px solid var(--border);background:var(--bg);
+  font:400 10px/1.5 var(--mono);color:var(--dim);min-height:1.5em}
+.bm-pin b{color:var(--text)}
+@media (prefers-reduced-motion:reduce){.bm-cell{transition:none}}
 </style>
 </head>
 <body>
@@ -518,15 +561,16 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   <a href="#css"><span>02</span>CSS Waveform</a>
   <a href="#chain"><span>03</span>Coding Chain</a>
   <a href="#packet"><span>04</span>PHY Packet</a>
-  <a href="#toa"><span>05</span>Time on Air</a>
-  <a href="#sx127x"><span>06</span>SX127x Regs</a>
-  <a href="#sx126x"><span>07</span>SX126x Cmds</a>
-  <a href="#compare"><span>08</span>127x vs 126x</a>
-  <a href="#esp32"><span>09</span>ESP32 Wire</a>
-  <a href="#lorawan"><span>10</span>LoRaWAN MAC</a>
-  <a href="#p2p"><span>11</span>P2P &amp; CAD</a>
-  <a href="#gotchas"><span>12</span>Gotchas</a>
-  <a href="#further"><span>13</span>Further</a>
+  <a href="#frame"><span>05</span>Frame Anatomy</a>
+  <a href="#toa"><span>06</span>Time on Air</a>
+  <a href="#sx127x"><span>07</span>SX127x Regs</a>
+  <a href="#sx126x"><span>08</span>SX126x Cmds</a>
+  <a href="#compare"><span>09</span>127x vs 126x</a>
+  <a href="#esp32"><span>10</span>ESP32 Wire</a>
+  <a href="#lorawan"><span>11</span>LoRaWAN MAC</a>
+  <a href="#p2p"><span>12</span>P2P &amp; CAD</a>
+  <a href="#gotchas"><span>13</span>Gotchas</a>
+  <a href="#further"><span>14</span>Further</a>
   <button class="side-dial" id="sideDial" title="radial section dial">◎ dial</button>
   <button class="side-dial theme-toggle" title="toggle dark mode">◐ dark</button>
 </nav>
@@ -703,8 +747,122 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   <p>Max payload is 255 bytes; each on-air symbol maps to SF bits after the coding chain in <a href="#chain">Coding Chain</a>.</p>
 </section>
 
+<!-- frame -->
+<section id="frame" data-num="05">
+  <h2>Frame <em class="yl">Anatomy</em></h2>
+  <div class="section-bar yl"></div>
+  <p>Two different frames get called "the LoRa packet" and conflating them is the root of most confusion. The <strong>PHY frame</strong> in <a href="#packet">PHY Packet</a> is what the radio puts on air: chirps, sync word, an optional header, a payload of opaque bytes. LoRa the modulation neither knows nor cares what those bytes mean.</p>
+  <p><strong>LoRaWAN</strong> is one thing you can put in that payload. Meshtastic is another. A raw P2P link is a third. Everything below is the LoRaWAN structure, verified against the <em>LoRaWAN L2 1.0.4 Specification</em>; the PHY layer above it is unchanged regardless.</p>
+
+  <div class="info-box warn">
+    <strong>1.0.4 renamed MType to FType</strong>
+    The field is identical on the wire. Older documents, and most code, still say MType. Both refer to bits [7:5] of MHDR.
+  </div>
+
+  <h3 class="yl">PHYPayload: the outermost envelope</h3>
+  <p>Everything LoRaWAN sends is this. Hover any field.</p>
+  <div class="bytemap"><script type="application/json">
+  {"label":"PHYPayload","note":"octets, LoRaWAN L2 1.0.4 Table 2","unit":"octet","fields":[
+    {"name":"MHDR","size":1,"span":2,"accent":"or","desc":"MAC header: frame type + major version","detail":"Broken out below. One octet decides how everything after it is parsed."},
+    {"name":"MACPayload","size":"7..M","span":9,"accent":"cy","desc":"FHDR + optional FPort + optional FRMPayload","detail":"M is region and data-rate specific, not a fixed constant. At DR0 in EU868 it is 59 octets."},
+    {"name":"MIC","size":4,"span":4,"accent":"rd","desc":"4-octet message integrity code","detail":"AES-CMAC over the whole frame, truncated to the first 4 bytes. Computed with NwkSKey, not AppSKey."}]}
+  </script></div>
+
+  <h3 class="yl">MHDR, bit by bit</h3>
+  <div class="bytemap"><script type="application/json">
+  {"label":"MHDR","note":"one octet, bits 7 down to 0, Table 3","unit":"bit","fields":[
+    {"name":"FType","size":3,"accent":"or","desc":"frame type, table below","detail":"Called MType before 1.0.4."},
+    {"name":"RFU","size":3,"accent":"yl","desc":"reserved, transmit as zero"},
+    {"name":"Major","size":2,"accent":"gr","desc":"major version of the frame format","detail":"00 = LoRaWAN R1. There is no other assigned value, so a nonzero Major means you are misparsing."}]}
+  </script></div>
+
+  <table>
+    <tr><th>FType</th><th>Frame</th><th>Notes</th></tr>
+    <tr><td class="meth">000</td><td>Join-Request</td><td>starts OTAA, unencrypted, MIC with AppKey</td></tr>
+    <tr><td class="meth">001</td><td>Join-Accept</td><td>encrypted with AppKey using an AES <em>decrypt</em>, see below</td></tr>
+    <tr><td class="meth">010</td><td>Unconfirmed data uplink</td><td>the common case</td></tr>
+    <tr><td class="meth">011</td><td>Unconfirmed data downlink</td><td></td></tr>
+    <tr><td class="meth">100</td><td>Confirmed data uplink</td><td>receiver must ACK</td></tr>
+    <tr><td class="meth">101</td><td>Confirmed data downlink</td><td></td></tr>
+    <tr><td class="meth">110</td><td>RFU</td><td>Rejoin-Request in 1.1</td></tr>
+    <tr><td class="meth">111</td><td>Proprietary</td><td>non-interoperable by design</td></tr>
+  </table>
+
+  <h3 class="yl">MACPayload and FHDR</h3>
+  <div class="bytemap"><script type="application/json">
+  {"label":"MACPayload","note":"Table 10","unit":"octet","fields":[
+    {"name":"FHDR","size":"7..22","span":8,"accent":"cy","desc":"frame header, broken out below"},
+    {"name":"FPort","size":"0..1","span":2,"accent":"mg","desc":"0 = MAC commands, 1..223 application, 224 test","detail":"Present whenever FRMPayload is. FPort 0 means FRMPayload holds MAC commands and is encrypted with NwkSKey instead of AppSKey."},
+    {"name":"FRMPayload","size":"0..N","span":7,"accent":"gr","desc":"your actual data, encrypted"}]}
+  </script></div>
+
+  <div class="bytemap"><script type="application/json">
+  {"label":"FHDR","note":"Table 6","unit":"octet","fields":[
+    {"name":"DevAddr","size":4,"accent":"or","desc":"32-bit device address within the network","detail":"LITTLE ENDIAN on the wire. This is the single most common LoRaWAN parsing bug."},
+    {"name":"FCtrl","size":1,"span":2,"accent":"rd","desc":"flags + FOpts length, differs by direction"},
+    {"name":"FCnt","size":2,"span":3,"accent":"cy","desc":"lower 16 bits of the 32-bit frame counter","detail":"Only 16 bits travel. Both ends track 32 and the receiver infers the upper 16. Get that wrong and the MIC check fails for reasons that look like a key problem."},
+    {"name":"FOpts","size":"0..15","span":6,"accent":"yl","desc":"piggybacked MAC commands","detail":"Length comes from FOptsLen in FCtrl. If FOptsLen is nonzero, FPort 0 is illegal: MAC commands may not appear in both places at once."}]}
+  </script></div>
+
+  <h3 class="yl">FCtrl differs by direction</h3>
+  <p>Same octet, different meaning depending on which way the frame is travelling. Bit 6 and bit 4 are the ones that change.</p>
+  <div class="bytemap"><script type="application/json">
+  {"label":"FCtrl, uplink","note":"Table 8","unit":"bit","fields":[
+    {"name":"ADR","size":1,"accent":"or","desc":"adaptive data rate enabled"},
+    {"name":"ADRACKReq","size":1,"accent":"rd","desc":"device is asking the network to confirm it is still heard"},
+    {"name":"ACK","size":1,"accent":"cy","desc":"acknowledges a confirmed downlink"},
+    {"name":"ClassB","size":1,"accent":"mg","desc":"device is in Class B mode","detail":"RFU in 1.0.2 and earlier. This bit is why an old parser mislabels a Class B device."},
+    {"name":"FOptsLen","size":4,"accent":"yl","desc":"length of FOpts, 0..15"}]}
+  </script></div>
+  <div class="bytemap"><script type="application/json">
+  {"label":"FCtrl, downlink","note":"Table 7","unit":"bit","fields":[
+    {"name":"ADR","size":1,"accent":"or","desc":"adaptive data rate enabled"},
+    {"name":"RFU","size":1,"accent":"yl","desc":"reserved"},
+    {"name":"ACK","size":1,"accent":"cy","desc":"acknowledges a confirmed uplink"},
+    {"name":"FPending","size":1,"accent":"gr","desc":"network has more downlink queued","detail":"Tells the device to send another uplink soon so the network gets a receive window."},
+    {"name":"FOptsLen","size":4,"accent":"yl","desc":"length of FOpts, 0..15"}]}
+  </script></div>
+
+  <h3 class="yl">The join exchange</h3>
+  <div class="bytemap"><script type="application/json">
+  {"label":"Join-Request payload","note":"Table 53, sent in the clear","unit":"octet","fields":[
+    {"name":"JoinEUI","size":8,"accent":"cy","desc":"identifies the join server","detail":"Called AppEUI before 1.0.4. Little endian."},
+    {"name":"DevEUI","size":8,"accent":"or","desc":"globally unique device identifier","detail":"Little endian. Printed on the device big-endian, which is why it so often gets entered backwards."},
+    {"name":"DevNonce","size":2,"span":3,"accent":"rd","desc":"counter, never repeats for a given device","detail":"A counter from 1.0.4 onward, random before it. The join server rejects a repeat, which is what makes replayed joins fail."}]}
+  </script></div>
+
+  <div class="bytemap"><script type="application/json">
+  {"label":"Join-Accept payload","note":"Table 54","unit":"octet","fields":[
+    {"name":"JoinNonce","size":3,"accent":"rd","desc":"server nonce, seeds both session keys"},
+    {"name":"NetID","size":3,"accent":"mg","desc":"network identifier"},
+    {"name":"DevAddr","size":4,"accent":"or","desc":"the short address assigned for this session"},
+    {"name":"DLSettings","size":1,"span":2,"accent":"yl","desc":"RX1 offset and RX2 data rate"},
+    {"name":"RXDelay","size":1,"span":2,"accent":"gr","desc":"delay before the first receive window"},
+    {"name":"CFList","size":"0 or 16","span":6,"accent":"cy","desc":"optional channel frequency list","detail":"Region specific. Either absent entirely or exactly 16 octets, never anything between."}]}
+  </script></div>
+
+  <div class="info-box danger">
+    <strong>Join-Accept is encrypted with a decrypt</strong>
+    The server runs <code>aes128_decrypt()</code> over the Join-Accept so the device can recover it with a single <code>aes128_encrypt()</code>. A device only needs the encrypt primitive. Reaching for decrypt on the device side produces garbage that looks like a wrong key.
+  </div>
+
+  <h3 class="yl">Three things that will bite you</h3>
+  <div class="info-box warn">
+    <strong>Everything multi-octet is little endian</strong>
+    The spec is explicit: "The octet order for all multi-octet fields SHALL be little endian." DevAddr, FCnt, DevEUI and JoinEUI all go out least-significant octet first, while every table above and every label printed on a device reads most-significant first. Byte-reversed DevEUI is close to a rite of passage.
+  </div>
+  <div class="info-box">
+    <strong>A C struct is not a wire format</strong>
+    Bitfields in C are laid out in declaration order, which on most ABIs is least-significant-first, the reverse of how the spec draws MHDR. Reading a vendor header and assuming the first declared field is bit 7 gets FType and Major backwards. Trust the spec table, then confirm against real bytes.
+  </div>
+  <div class="info-box">
+    <strong>FCnt is 16 bits on air and 32 bits in your head</strong>
+    Only the low half is transmitted. Both ends maintain the full counter and the receiver infers the upper 16 bits. A rollover mishandled here fails the MIC check, and a failing MIC looks exactly like a wrong session key.
+  </div>
+</section>
+
 <!-- toa -->
-<section id="toa" data-num="05">
+<section id="toa" data-num="06">
   <h2>Time <em class="yl">On Air</em></h2>
   <div class="section-bar yl"></div>
   <p>Semtech AN1200.13 gives the exact time-on-air formula used to size duty cycles and airtime budgets.</p>
@@ -733,7 +891,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 </section>
 
 <!-- sx127x -->
-<section id="sx127x" data-num="06">
+<section id="sx127x" data-num="07">
   <h2>SX127x <em class="or">Registers</em></h2>
   <div class="section-bar"></div>
   <p>SPI transaction: <strong>one address byte, then data.</strong> MSB of the address byte is the R/W bit -- set bit 7 = 1 for write, 0 for read. Holding NSS low and streaming further bytes gives burst/sequential access (address auto-increments; the FIFO at 0x00 does not auto-increment, enabling block FIFO reads/writes). SPI <strong>Mode 0</strong> (CPOL=0, CPHA=0), up to 10 MHz.</p>
@@ -895,7 +1053,7 @@ size_t <span class="fn">sx127x_rx_continuous</span>(spi_device_handle_t dev, uin
 </section>
 
 <!-- sx126x -->
-<section id="sx126x" data-num="07">
+<section id="sx126x" data-num="08">
   <h2>SX126x <em class="cy">Commands</em></h2>
   <div class="section-bar cy"></div>
   <p>The SX126x is <strong>command-based</strong>: every SPI transaction is <code>opcode + parameter bytes</code>, and the chip returns a <strong>status byte on MISO</strong> simultaneously with every byte. A <strong>BUSY pin</strong> must be polled low before each new command (the chip is processing). Register reads (opcode 0x1D) and buffer reads (0x1E) require a NOP/dummy byte after the address before data appears. SPI Mode 0, up to 16 MHz.</p>
@@ -1070,7 +1228,7 @@ size_t <span class="fn">sx126x_rx</span>(spi_device_handle_t dev, gpio_num_t bus
 </section>
 
 <!-- compare -->
-<section id="compare" data-num="08">
+<section id="compare" data-num="09">
   <h2>127x <em class="yl">vs</em> 126x</h2>
   <div class="section-bar yl"></div>
 
@@ -1101,7 +1259,7 @@ size_t <span class="fn">sx126x_rx</span>(spi_device_handle_t dev, gpio_num_t bus
 </section>
 
 <!-- esp32 -->
-<section id="esp32" data-num="09">
+<section id="esp32" data-num="10">
   <h2>ESP32 <em class="or">SPI</em> Wire</h2>
   <div class="section-bar"></div>
   <p>Both chips are SPI Mode 0 (CPOL=0, CPHA=0), 3.3V only. SX127x max SCLK ~10 MHz; SX126x ~16 MHz. Use SPI2_HOST/SPI3_HOST (the old HSPI/VSPI).</p>
@@ -1142,7 +1300,7 @@ spi_transaction_t t = { .length = <span class="num">16</span>, .tx_buffer = tx, 
 </section>
 
 <!-- lorawan -->
-<section id="lorawan" data-num="10">
+<section id="lorawan" data-num="11">
   <h2>LoRaWAN <em class="cy">MAC</em></h2>
   <div class="section-bar cy"></div>
   <p><strong>Architecture:</strong> end devices ↔ gateways (transparent PHY bridges) ↔ Network Server (dedup, MAC, ADR, routing) ↔ Application Server (payload decrypt); in 1.1 a <strong>Join Server</strong> holds root keys.</p>
@@ -1231,7 +1389,7 @@ spi_transaction_t t = { .length = <span class="num">16</span>, .tx_buffer = tx, 
 </section>
 
 <!-- p2p -->
-<section id="p2p" data-num="11">
+<section id="p2p" data-num="12">
   <h2>P2P <em class="or">&amp; CAD</em></h2>
   <div class="section-bar"></div>
   <p>For a raw P2P link, both ends must match <strong>carrier frequency, SF, BW, CR, preamble length, sync word, CRC and IQ polarity</strong> exactly. Use sync word <strong>0x12</strong> (private) to stay off LoRaWAN; SX126x uses 0x1424 for the same. Sync-word filtering is imperfect -- 0x12 and 0x34 are the two recommended values that maximize cross-network rejection; other values behave unpredictably (on SX126x the surrounding nibbles must stay 0x_4_4).</p>
@@ -1258,7 +1416,7 @@ spi_transaction_t t = { .length = <span class="num">16</span>, .tx_buffer = tx, 
 </section>
 
 <!-- gotchas -->
-<section id="gotchas" data-num="12">
+<section id="gotchas" data-num="13">
   <h2>Low-Level <em class="rd">Gotchas</em></h2>
   <div class="section-bar rd"></div>
 
@@ -1309,7 +1467,7 @@ spi_transaction_t t = { .length = <span class="num">16</span>, .tx_buffer = tx, 
 </section>
 
 <!-- further -->
-<section id="further" data-num="13">
+<section id="further" data-num="14">
   <h2><em class="or">Further</em> Reading</h2>
   <div class="section-bar"></div>
 
@@ -1350,7 +1508,7 @@ spi_transaction_t t = { .length = <span class="num">16</span>, .tx_buffer = tx, 
 
 <script>
 const LABELS = {
-  intro:'Intro', css:'CSS Waveform', chain:'Coding Chain', packet:'PHY Packet',
+  intro:'Intro', css:'CSS Waveform', chain:'Coding Chain', packet:'PHY Packet', frame:'Frame Anatomy',
   toa:'Time on Air', sx127x:'SX127x Regs', sx126x:'SX126x Cmds', compare:'127x vs 126x',
   esp32:'ESP32 Wire', lorawan:'LoRaWAN MAC', p2p:'P2P & CAD', gotchas:'Gotchas', further:'Further'
 };
@@ -1448,6 +1606,122 @@ themeButtons.forEach(b => b.addEventListener('click', () => {
   paintTheme();
 }));
 paintTheme();
+</script>
+<script>
+/* bytemap: renders field breakdowns from a JSON spec. See bytemap.css for the
+   authoring shape. Hover or focus lights a field; click pins it. Esc unpins. */
+(function(){
+  var PAL = ['--orange','--cyan','--red','--yellow','--green','--magenta'];
+  var ACC = {or:'--orange',cy:'--cyan',rd:'--red',yl:'--yellow',gr:'--green',mg:'--magenta'};
+
+  function build(root){
+    // Fail LOUDLY. A silent return leaves an empty div on the page and no clue why,
+    // which reads to an author as "the component is broken" rather than "my JSON is".
+    // Note for authors: the spec lives in a script tag, so the closing-tag sequence
+    // (less-than, slash, the word script, greater-than) inside ANY string will end the
+    // tag early and break the whole page. Escape the slash if you ever need it.
+    // This comment used to contain that sequence literally and truncated this file.
+    function bail(msg){
+      root.innerHTML = '<div class="bm-head"><span class="bm-title">bytemap error</span>' +
+                       '<span class="bm-note">' + esc(msg) + '</span></div>';
+    }
+    var tag = root.querySelector('script[type="application/json"]');
+    if(!tag){ bail('no application/json spec inside this .bytemap'); return; }
+    var spec;
+    try { spec = JSON.parse(tag.textContent); }
+    catch(e){ bail('spec is not valid JSON: ' + e.message); return; }
+    var fields = spec.fields || [];
+    if(!fields.length){ bail('spec has no fields'); return; }
+    var unit = spec.unit === 'bit' ? 'bit' : 'octet';
+
+    // width: explicit span, else a leading integer in size, else 1
+    fields.forEach(function(f,i){
+      var n = f.span;
+      if(n == null){ var m = String(f.size == null ? 1 : f.size).match(/^(\d+)/); n = m ? +m[1] : 1; }
+      f._span = Math.max(n, unit === 'bit' ? 1 : 0.8);
+      f._c = 'var(' + (ACC[f.accent] || PAL[i % PAL.length]) + ')';
+    });
+    var total = fields.reduce(function(a,f){ return a + f._span; }, 0) || 1;
+
+    var h = '<div class="bm-head"><span class="bm-title">' + esc(spec.label || 'layout') + '</span>';
+    if(spec.note) h += '<span class="bm-note">' + esc(spec.note) + '</span>';
+    h += '</div><div class="bm-scroll"><div class="bm-ruler">';
+
+    // ruler: bit maps count down 7..0 per octet, octet maps count offsets up
+    var off = 0;
+    fields.forEach(function(f){
+      var w = (f._span/total*100).toFixed(4) + '%';
+      var lab = unit === 'bit'
+        ? (f._span > 1 ? '[' + (7-off) + ':' + (7-off-f._span+1) + ']' : String(7-off))
+        : (f._span > 1 ? off + '-' + (off + f._span - 1) : String(off));
+      h += '<span class="bm-tick" style="width:' + w + '">' + lab + '</span>';
+      off += f._span;
+    });
+    h += '</div><div class="bm-cells">';
+    fields.forEach(function(f,i){
+      h += '<button class="bm-cell" type="button" data-i="' + i + '" style="width:' +
+           (f._span/total*100).toFixed(4) + '%;--bm-c:' + f._c + '">' + esc(f.name) +
+           '<span class="bm-sz">' + esc(String(f.size == null ? f._span : f.size)) + '</span></button>';
+    });
+    h += '</div></div><div class="bm-legend">';
+    fields.forEach(function(f,i){
+      h += '<button class="bm-item" type="button" data-i="' + i + '" style="--bm-c:' + f._c + '">' +
+           '<span class="bm-swatch"></span><span><span class="bm-name">' + esc(f.name) + '</span> ' +
+           '<span class="bm-d">' + esc(f.desc || '') + '</span></span></button>';
+    });
+    h += '</div><div class="bm-pin" aria-live="polite"></div>';
+
+    root.innerHTML = h;
+
+    var cells = root.querySelectorAll('.bm-cell');
+    var items = root.querySelectorAll('.bm-item');
+    var pin   = root.querySelector('.bm-pin');
+    var pinned = null;
+
+    function paint(i){
+      for(var k=0;k<cells.length;k++){
+        var on = (i !== null && +cells[k].dataset.i === i);
+        cells[k].classList.toggle('on', on);
+        items[k].classList.toggle('on', on);
+      }
+      if(i === null){ pin.innerHTML = pinned === null ? '' : pin.innerHTML; return; }
+      var f = fields[i];
+      var unitWord = unit === 'bit' ? 'bits' : 'octets';
+      pin.innerHTML = '<b>' + esc(f.name) + '</b> &middot; ' +
+        esc(String(f.size == null ? f._span : f.size)) + ' ' + unitWord +
+        (f.desc ? ' &middot; ' + esc(f.desc) : '') +
+        (f.detail ? '<br>' + esc(f.detail) : '');
+    }
+    function enter(i){ if(pinned === null) paint(i); }
+    function leave(){ if(pinned === null) paint(null); }
+    function toggle(i){
+      if(pinned === i){ pinned = null; paint(null); }
+      else { pinned = i; paint(i); }
+    }
+    [cells, items].forEach(function(set){
+      for(var k=0;k<set.length;k++){
+        (function(el){
+          var i = +el.dataset.i;
+          el.addEventListener('mouseenter', function(){ enter(i); });
+          el.addEventListener('mouseleave', leave);
+          el.addEventListener('focus', function(){ enter(i); });
+          el.addEventListener('blur', leave);
+          el.addEventListener('click', function(){ toggle(i); });
+        })(set[k]);
+      }
+    });
+    root.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && pinned !== null){ pinned = null; paint(null); }
+    });
+  }
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+
+  if(document.readyState === 'loading')
+    document.addEventListener('DOMContentLoaded', function(){ run(); });
+  else run();
+  function run(){ [].forEach.call(document.querySelectorAll('.bytemap'), build); }
+})();
 </script>
 </body>
 </html>
