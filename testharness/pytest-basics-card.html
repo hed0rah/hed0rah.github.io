@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>pytest field card</title>
+<style>
+/* Print scale: root font size, which every rem-based size below follows.
+   Raise for bigger type and more sides; lower for fewer. */
+@media print { html { font-size: 16px; } }
+
+:root{
+  --paper:#F4F1EA; --panel:#FBF9F4; --panel2:#EAE5D9; --ink:#14181A; --soft:#474D51;
+  --faint:#7C8388; --line:#C2BAA8; --hair:#DED8C9;
+  --accent:#A83208; --accent-soft:#F1DED4;
+  --ok:#2A6B4C; --no:#96182C; --warn:#7E5A00;
+  --mono:ui-monospace,"SF Mono","SFMono-Regular","Cascadia Code","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#111310; --panel:#191c17; --panel2:#22261f; --ink:#e7e4d9; --soft:#a3a79c;
+  --faint:#6e736a; --line:#2f342c; --hair:#252921;
+  --accent:#E5703A; --accent-soft:#33201a;
+  --ok:#6FBF95; --no:#E06070; --warn:#D6A93C;
+}}
+:root[data-theme="dark"]{
+  --paper:#111310; --panel:#191c17; --panel2:#22261f; --ink:#e7e4d9; --soft:#a3a79c;
+  --faint:#6e736a; --line:#2f342c; --hair:#252921;
+  --accent:#E5703A; --accent-soft:#33201a;
+  --ok:#6FBF95; --no:#E06070; --warn:#D6A93C;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--mono);
+     font-size:.82rem;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:1.2rem 1rem 3rem}
+a{color:var(--accent);text-decoration:none;border-bottom:1px dotted currentColor}
+
+.sheet{margin-bottom:2rem}
+.sheethead{border:1px solid var(--ink);margin-bottom:.6rem;display:flex;align-items:stretch}
+.side-badge{background:var(--ink);color:var(--paper);font-family:var(--sans);
+            font-weight:700;font-size:1.35rem;line-height:1;padding:.5rem .65rem;
+            display:flex;align-items:center;
+            -webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheettitle{padding:.4rem .65rem;flex:1;min-width:0}
+.sheettitle h1{font-size:.9rem;font-weight:700}
+.sheettitle h1 .g{color:var(--faint);font-weight:400}
+.sheettitle .sub{font-family:var(--sans);font-size:.72rem;color:var(--soft);
+                 line-height:1.35;margin-top:.1rem}
+.sheettitle .sub b{color:var(--ink);font-weight:600}
+.pageno{border-left:1px solid var(--line);padding:.4rem .55rem;display:flex;
+        flex-direction:column;justify-content:center;align-items:flex-end;
+        font-size:.52rem;letter-spacing:.13em;text-transform:uppercase;
+        color:var(--faint);white-space:nowrap}
+.pageno b{color:var(--accent);font-size:.7rem;letter-spacing:.05em}
+
+/* Explicit columns. NOT CSS multicol: multicol balances across the whole flow
+   and then paginates wherever it lands, which is how two pages became five. */
+.cols{display:flex;gap:9px;align-items:flex-start}
+.col{flex:1 1 0;min-width:0}
+
+.card{background:var(--panel);border:1px solid var(--line);
+      margin:0 0 9px;padding:.42rem .5rem .48rem;
+      break-inside:avoid;page-break-inside:avoid}
+.card.hot{border-left:3px solid var(--accent)}
+.lab{font-size:.53rem;letter-spacing:.15em;text-transform:uppercase;
+     color:var(--accent);font-weight:700;margin-bottom:.32rem;
+     display:flex;align-items:center;gap:.38rem}
+/* Outlined, not filled: survives a printer with background graphics off. */
+.lab .n{border:1px solid currentColor;padding:0 .2rem;letter-spacing:.03em;font-size:.53rem}
+.lab::after{content:"";flex:1;height:1px;background:var(--hair)}
+
+.p{font-family:var(--sans);font-size:.73rem;line-height:1.38;color:var(--soft);margin:.08rem 0 .32rem}
+.p b{color:var(--ink);font-weight:600}
+.p:last-child{margin-bottom:0}
+
+table{width:100%;border-collapse:collapse;font-size:.655rem}
+th,td{text-align:left;padding:.12rem .28rem;border-bottom:1px solid var(--hair);vertical-align:top}
+th{font-size:.5rem;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700}
+td.k{color:var(--accent);font-weight:700;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+
+pre{background:var(--panel2);border-left:2px solid var(--line);
+    padding:.3rem .4rem;overflow-x:auto;font-size:.635rem;line-height:1.4;
+    margin:.12rem 0 .3rem;white-space:pre;color:var(--ink);
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+pre.tree{border-left-color:var(--accent);border-left-width:3px;
+         background:var(--accent-soft);font-size:.65rem;line-height:1.45}
+pre.tree .q{color:var(--ink);font-weight:700}
+pre.ok{border-left-color:var(--ok)}
+pre.no{border-left-color:var(--no)}
+pre .c{color:var(--faint)}
+pre .y{color:var(--ok);font-weight:700}
+pre .r{color:var(--no);font-weight:700}
+pre .w{color:var(--warn);font-weight:700}
+pre .a{color:var(--accent);font-weight:700}
+code{background:var(--panel2);padding:0 .16rem;font-size:.93em;color:var(--accent)}
+
+ul{margin:.08rem 0 .28rem;padding-left:.8rem}
+li{margin:.1rem 0;font-size:.685rem;font-family:var(--sans);color:var(--soft)}
+li b{color:var(--ink);font-weight:600}
+li code{font-family:var(--mono)}
+
+.rule{font-family:var(--sans);font-size:.72rem;line-height:1.35;color:var(--ink);
+      background:var(--accent-soft);border-left:2px solid var(--accent);
+      padding:.26rem .4rem;margin:.24rem 0 .08rem;
+      -webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rule b{font-weight:700}
+.flag{display:inline-block;font-size:.48rem;letter-spacing:.09em;font-weight:700;
+      text-transform:uppercase;padding:0 .18rem;vertical-align:.08em;border:1px solid currentColor}
+.f-ok{color:var(--ok)} .f-no{color:var(--no)} .f-wa{color:var(--warn)}
+
+.fold{display:flex;align-items:center;gap:.6rem;margin:0 0 1.4rem;color:var(--faint);
+      font-size:.52rem;letter-spacing:.2em;text-transform:uppercase}
+.fold::before,.fold::after{content:"";flex:1;border-top:1px dashed var(--line)}
+footer{margin-top:.4rem;font-size:.52rem;letter-spacing:.09em;text-transform:uppercase;
+       color:var(--faint);display:flex;justify-content:space-between;gap:1rem}
+
+@media print{
+  /* Every selector the dark rules use, so this wins on specificity as well as
+     source order. `:root` alone is (0,1,0) and loses to the dark-mode
+     `:root:not([data-theme="light"])` at (0,2,0) -- which, on any browser that
+     keeps prefers-color-scheme:dark active while printing, prints a black
+     page and empties a toner cartridge. */
+  :root,
+  :root:not([data-theme="light"]),
+  :root[data-theme="dark"],
+  :root[data-theme="light"]{
+    --paper:#fff; --panel:#fff; --panel2:#f2f0ea; --accent-soft:#f5e9e3;
+    --line:#8d8d8d; --hair:#cfcfcf; --ink:#000; --soft:#1b1b1b; --faint:#474747;
+    --accent:#8f2a06; --ok:#1a4d33; --no:#78101f; --warn:#5a4100;
+  }
+  html,body{background:#fff !important;color:#000}
+  .card{background:#fff !important}
+  .wrap{padding:0;max-width:none}
+  .sheet{margin:0;break-after:page;page-break-after:always}
+  .sheet:last-of-type{break-after:auto;page-break-after:auto}
+  .fold{display:none}
+  a{color:inherit;border-bottom:none}
+  @page{size:A4 portrait;margin:8mm}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="sheet">
+  <div class="sheethead">
+    <div class="side-badge">1</div>
+    <div class="sheettitle">
+      <h1>pytest <span class="g">/ starting out</span></h1>
+      <div class="sub">your first test &middot; running it &middot; what pytest looks for &middot; reading a failure &middot; fixtures: reusable setup &middot; cleaning up afterwards &middot; conftest.py: sharing fixtures</div>
+    </div>
+    <div class="pageno"><b>1 / 2</b><span>sheet 1 front</span></div>
+  </div>
+<div class="cols">
+<div class="col">
+<div class="card hot">
+  <div class="lab"><span class="n">01</span> your first test</div>
+  <pre><span class="c"># test_math.py</span>
+def <span class="y">test_two_plus_two</span>():
+    assert 2 + 2 == 4</pre>
+  <pre><span class="a">$ pytest</span>
+1 passed in 0.01s</pre>
+  <div class="p">That is a complete test. <b>No class, no <code>self</code>, no
+  <code>assertEqual</code>, no imports.</b> A test is a function whose name
+  starts with <code>test</code>, and it passes if it does not raise.</div>
+  <div class="rule">The word <b>assert</b> is plain Python, not a pytest
+  feature. It means "stop here if this is not true".</div>
+</div>
+<div class="card">
+  <div class="lab"><span class="n">02</span> running it</div>
+  <table>
+    <tr><td class="k">pytest</td><td>run everything it can find</td></tr>
+    <tr><td class="k">pytest -q</td><td>quieter: one dot per test</td></tr>
+        <tr><td class="k">pytest test_math.py</td><td>just one file</td></tr>
+    <tr><td class="k">pytest -k adds</td><td>only tests with "adds" in the name</td></tr>
+    <tr><td class="k">pytest -x</td><td>stop at the first failure</td></tr>
+    <tr><td class="k">pytest --lf</td><td>only what failed last time</td></tr>
+    <tr><td class="k">pytest --collect-only</td><td>list what WOULD run, run nothing</td></tr>
+  </table>
+  <div class="rule"><b>Learn <code>--lf</code> early.</b> Fix one thing, rerun
+  only the failures, repeat. It changes how the day feels.</div>
+</div>
+<div class="card">
+  <div class="lab"><span class="n">03</span> what pytest looks for</div>
+  <table>
+    <tr><td class="k">files</td><td><code>test_*.py</code> or <code>*_test.py</code></td></tr>
+    <tr><td class="k">functions</td><td>name starts with <code>test</code></td></tr>
+    <tr><td class="k">classes</td><td>name starts with <code>Test</code>, and no <code>__init__</code></td></tr>
+  </table>
+  <div class="p">Finding tests is called <b>collection</b>. If a test is not
+  running, the name is nearly always why. <code>pytest --collect-only</code>
+  shows exactly what pytest can see.</div>
+</div>
+<div class="card hot">
+  <div class="lab"><span class="n">04</span> reading a failure</div>
+  <pre class="no">    def test_greeting():
+&gt;       assert greet("sam") == "hi sam"
+<span class="r">E       AssertionError: assert 'Hi sam' == 'hi sam'</span>
+<span class="r">E         - hi sam</span>
+<span class="r">E         + Hi sam</span></pre>
+  <div class="p"><code>&gt;</code> marks the failing line, <code>E</code> lines
+  are the explanation, and <b>pytest prints the actual values</b>. Here: a
+  capital H.</div>
+  <div class="rule">You get that diff from a plain <code>assert</code>. pytest
+  rewrites your test file as it loads it so it can show both sides. This is why
+  there is no assertion library to learn.</div>
+</div>
+</div>
+<div class="col">
+<div class="card hot">
+  <div class="lab"><span class="n">05</span> fixtures: reusable setup</div>
+  <div class="p">A <b>fixture</b> is a named piece of setup. Ask for it by
+  putting its name in your test's arguments, and pytest runs it and hands you
+  the result.</div>
+  <pre>import pytest
+
+<span class="y">@pytest.fixture</span>
+def <span class="y">user</span>():
+    return {"name": "sam", "admin": False}
+
+def test_not_admin(<span class="y">user</span>):
+    assert user["admin"] is False</pre>
+  <div class="rule"><b>The argument name is the wiring.</b> Writing
+  <code>user</code> in the signature is what finds the fixture called
+  <code>user</code>. Nothing else connects them.</div>
+</div>
+<div class="card">
+  <div class="lab"><span class="n">06</span> cleaning up afterwards</div>
+  <pre><span class="y">@pytest.fixture</span>
+def db():
+    conn = connect()
+    <span class="a">yield conn</span>      <span class="c"># the test runs here</span>
+    conn.close()      <span class="c"># then this runs</span></pre>
+  <div class="p">Everything after <code>yield</code> is <b>teardown</b>. It runs
+  when the test finishes.</div>
+  <div class="rule"><b>Teardown runs even when the test FAILS.</b> That is the
+  reason to use a fixture instead of writing setup at the top of the test: a
+  crash in the middle still closes the connection.</div>
+</div>
+<div class="card">
+  <div class="lab"><span class="n">07</span> conftest.py: sharing fixtures</div>
+  <div class="p">Move a fixture into a file called <b>conftest.py</b> and every
+  test in that folder can use it, <b>with no import</b>.</div>
+  <pre>tests/
+  <span class="a">conftest.py</span>      <span class="c"># fixtures live here</span>
+  test_users.py     <span class="c"># just ask for them by name</span>
+  test_billing.py</pre>
+  <div class="p">It is the one file where a name appears from nowhere, so it is
+  the first place to look when you meet an argument you do not recognise.</div>
+</div>
+</div>
+</div>
+  <footer>
+    <span>hed0rah &middot; pytest field card &middot; side 1 of 2</span>
+    <span>hed0rah.github.io/testharness</span>
+  </footer>
+</div>
+
+<div class="fold">turn over</div>
+
+<div class="sheet">
+  <div class="sheethead">
+    <div class="side-badge">2</div>
+    <div class="sheettitle">
+      <h1>pytest <span class="g">/ starting out</span></h1>
+      <div class="sub">factories: making several &middot; fixtures you get for free &middot; parametrize: same test, many inputs &middot; glossary &middot; glossary: fakes and patching &middot; habits worth starting with &middot; when something looks wrong</div>
+    </div>
+    <div class="pageno"><b>2 / 2</b><span>sheet 1 back</span></div>
+  </div>
+<div class="cols">
+<div class="col">
+<div class="card hot">
+  <div class="lab"><span class="n">08</span> factories: making several</div>
+  <div class="p">A plain fixture gives you <b>one</b> thing. Sometimes a test
+  needs three, or needs one with particular settings. So the fixture returns a
+  <b>function</b> instead of a value. That is a <b>factory fixture</b>.</div>
+  <pre><span class="y">@pytest.fixture</span>
+def <span class="y">make_user</span>():
+    def _make(name, admin=False):
+        return {"name": name, "admin": admin}
+    <span class="a">return _make</span>          <span class="c"># the FUNCTION, not a user</span>
+
+def test_two_users(<span class="y">make_user</span>):
+    boss  = make_user("ada", admin=True)
+    other = make_user("sam")
+    assert boss["admin"] and not other["admin"]</pre>
+  <div class="rule">Reach for a factory the moment you would otherwise write
+  <code>admin_user</code>, <code>expired_user</code>,
+  <code>user_with_no_email</code> as separate fixtures. Those pile up fast, and
+  a reader has to open another file to find out what each one is.
+  <br><br>A factory can also keep a list of what it made and clean up after the
+  test, using <code>yield</code> the same way the fixture above does.</div>
+</div>
+<div class="card">
+  <div class="lab"><span class="n">09</span> fixtures you get for free</div>
+  <table>
+    <tr><td class="k">tmp_path</td><td>an empty folder, new for every test, cleaned up for you</td></tr>
+    <tr><td class="k">capsys</td><td>captures anything printed, so you can assert on it</td></tr>
+    <tr><td class="k">monkeypatch</td><td>change something temporarily and have it put back</td></tr>
+    <tr><td class="k">caplog</td><td>captures log messages</td></tr>
+      </table>
+  <pre>def test_writes_a_file(<span class="y">tmp_path</span>):
+    out = tmp_path / "report.txt"
+    save_report(out)
+    assert out.read_text().startswith("REPORT")</pre>
+  <div class="rule">Never write to a fixed path like <code>/tmp/out.txt</code>
+  in a test. Two tests running at once will fight over it.</div>
+</div>
+<div class="card hot">
+  <div class="lab"><span class="n">10</span> parametrize: same test, many inputs</div>
+  <pre><span class="y">@pytest.mark.parametrize</span>("number,word", [
+    (0, "zero"),
+    (1, "one"),
+    (2, "many"),
+])
+def test_naming(number, word):
+    assert name(number) == word</pre>
+  <pre><span class="a">$ pytest -v</span>
+test_naming<span class="y">[0-zero]</span>  PASSED
+test_naming<span class="y">[1-one]</span>   PASSED
+test_naming<span class="y">[2-many]</span>  <span class="r">FAILED</span></pre>
+  <div class="rule">Three <b>separate</b> tests, so one failing does not hide
+  the others. A <code>for</code> loop inside a single test stops at the first
+  problem and reports one result.</div>
+</div>
+</div>
+<div class="col">
+<div class="card hot">
+  <div class="lab"><span class="n">11</span> glossary</div>
+  <table>
+    <tr><td class="k">assertion</td><td>a line that says what must be true. <code>assert x == y</code></td></tr>
+    <tr><td class="k">test</td><td>a function whose name starts with <code>test</code></td></tr>
+            <tr><td class="k">fixture</td><td>named setup a test asks for by argument name</td></tr>
+    <tr><td class="k">factory</td><td>a fixture returning a function, so a test can make several</td></tr>
+    <tr><td class="k">teardown</td><td>cleanup after a test, written after <code>yield</code></td></tr>
+        <tr><td class="k">conftest.py</td><td>shared fixtures for a folder, no import needed</td></tr>
+    <tr><td class="k">parametrize</td><td>run one test many times with different inputs</td></tr>
+    <tr><td class="k">pytest.raises</td><td>assert that something DOES fail: <code>with pytest.raises(ValueError):</code></td></tr>
+        <tr><td class="k">skip</td><td>this test does not apply here, do not run it</td></tr>
+        <tr><td class="k">flaky</td><td>passes and fails without the code changing. always a bug</td></tr>
+        <tr><td class="k">coverage</td><td>which lines ran. NOT whether they were checked</td></tr>
+  </table>
+</div>
+<div class="card hot">
+  <div class="lab"><span class="n">12</span> glossary: fakes and patching</div>
+  <div class="p">Words for "a stand-in used instead of the real thing".
+  Collectively they are <b>test doubles</b>.</div>
+  <table>
+    <tr><td class="k">stub</td><td>always gives the same canned answer</td></tr>
+    <tr><td class="k">fake</td><td>a real but simplified version, e.g. a dict instead of a database</td></tr>
+        <tr><td class="k">mock</td><td>a spy that also checks it was called correctly</td></tr>
+    <tr><td class="k">monkeypatch</td><td>temporarily replace something, put back automatically</td></tr>
+    <tr><td class="k">injection</td><td>passing the collaborator in, instead of the code fetching it</td></tr>
+  </table>
+  <div class="rule"><b>Prefer a fake.</b> A stub that always returns success
+  cannot tell you what happens on failure, because it was never pretending to
+  be anything.
+  <br><br>If a test is painful to write, that is usually the code talking. Code
+  that fetches its own database or network connection is hard to stand in for;
+  code that is <b>handed</b> one is easy.</div>
+</div>
+<div class="card">
+  <div class="lab"><span class="n">13</span> habits worth starting with</div>
+  <ul>
+    <li><b>Name the behaviour, not the function.</b>
+    <code>test_rejects_empty_name</code> beats <code>test_create_user_2</code>.</li>
+    <li><b>One idea per test.</b> Four unrelated asserts report the first
+    failure and hide the rest.</li>
+    <li><b>Write the failing test first</b> when fixing a bug. If it does not
+    fail before your fix, it is not testing the fix.</li>
+    <li><b>Check the unhappy path.</b> Empty input, missing file, wrong type.
+    That is where the bugs are.</li>
+  </ul>
+</div>
+<div class="card">
+  <div class="lab"><span class="n">14</span> when something looks wrong</div>
+  <table>
+    <tr><td class="k">test not running</td><td>check the name, then <code>--collect-only</code></td></tr>
+    <tr><td class="k">fixture not found</td><td>spelling, or it is not in <code>conftest.py</code></td></tr>
+    <tr><td class="k">passes alone, fails together</td><td>something is shared between tests</td></tr>
+    <tr><td class="k">passes here, fails on CI</td><td>a path, a clock, or an installed package</td></tr>
+    <tr><td class="k">no output shown</td><td>pytest hides prints on pass. use <code>-s</code></td></tr>
+      </table>
+  <div class="rule">Stuck on a failure? <code>pytest --lf -x --tb=short</code>
+  gets you the shortest useful loop: last failure only, stop at it, short
+  traceback.</div>
+</div>
+</div>
+</div>
+  <footer>
+    <span>hed0rah &middot; pytest field card &middot; side 2 of 2</span>
+    <span>github.com/hed0rah/testharness-fun</span>
+  </footer>
+</div>
+
+</div>
+</body>
+</html>

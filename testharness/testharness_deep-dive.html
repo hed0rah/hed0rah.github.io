@@ -1,0 +1,3014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test Harness Deep Dive // pytest, fixtures, doubles, mock transports, ASGI, guardrails, mutation, AI authors</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* masthead */
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+.masthead .companion {
+  margin-top: 14px;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 2px;
+}
+
+/* nav */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-brand {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.nav-current {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-current:hover { border-color: var(--orange); color: var(--orange); }
+.nav-current .num { color: var(--orange); }
+.nav-hint { color: var(--dim2); margin-left: 6px; }
+
+/* sidebar */
+.side {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 248px;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  z-index: 150;
+  padding: 26px 0 20px;
+  overflow-y: auto;
+}
+.side-brand {
+  padding: 0 20px 16px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--bright);
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 12px;
+}
+.side-brand span { color: var(--orange); }
+.side a {
+  display: block;
+  padding: 7px 24px 7px 21px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.side a span { color: var(--dim2); margin-right: 7px; }
+.side a:hover { color: var(--orange); }
+.side a.active { color: var(--orange); border-left-color: var(--orange); background: var(--surface); }
+.side a.active span { color: var(--orange); }
+.side-dial {
+  display: block;
+  margin: 16px 20px 0 17px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--border2);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.side-dial:hover { color: var(--orange); border-color: var(--orange); }
+@media (min-width: 1100px) {
+  .side { display: block; }
+  body { padding-left: 248px; }
+  .nav { display: none; }
+}
+
+/* radial dial */
+.radial {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(242, 241, 238, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.radial.open { opacity: 1; pointer-events: auto; }
+body.dial-open { overflow: hidden; }
+.radial-ring {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+}
+.radial-center {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  cursor: pointer;
+}
+.radial-center:hover { color: var(--orange); }
+.radial-item {
+  position: absolute;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--dim);
+  padding: 4px 6px;
+}
+.radial-item span { color: var(--dim2); margin-right: 5px; }
+.radial-item:hover, .radial-item.active { color: var(--orange); }
+.radial-item:hover span, .radial-item.active span { color: var(--orange); }
+.radial-dot {
+  position: absolute;
+  width: 5px; height: 5px;
+  background: var(--dim2);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.radial-dot.active { background: var(--orange); }
+@media (max-width: 620px) {
+  .radial.open { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .radial-ring, .radial-dot, .radial-center { display: none; }
+  .radial-item { position: static !important; transform: none !important; font-size: 12px; padding: 7px; }
+}
+
+/* layout */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+}
+section { padding: 52px 0; display: none; }
+section.active { display: block; }
+section::before {
+  content: attr(data-num) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+/* headings */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--yellow); }
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+.section-bar.yl { background: var(--yellow); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+h3.cy { color: var(--cyan); }
+h3.yl { color: var(--yellow); }
+h3.rd { color: var(--red); }
+h4 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  margin: 20px 0 8px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+
+/* code */
+code {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--bright);
+}
+pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre.yl { border-left-color: var(--yellow); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .flag   { color: #7A7870; }
+
+/* diagrams */
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #8A8880;
+}
+.diagram.cy { border-left-color: var(--cyan); }
+.diagram.yl { border-left-color: var(--yellow); }
+.diagram.rd { border-left-color: var(--red); }
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .acc3 { color: #C8A030; }
+.diagram .dim  { color: #4A4942; }
+.diagram .hi   { color: #CCCBC4; }
+
+/* info boxes */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy    { border-left-color: var(--cyan); }
+.info-box.warn  { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; vertical-align: top; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; white-space: nowrap; }
+td.cy   { color: var(--cyan); }
+td.rd   { color: var(--red); }
+td.yl   { color: var(--yellow); }
+td.meth a { color: inherit; text-decoration: none; border-bottom: 1px dashed currentColor; }
+td.meth a:hover { color: var(--bright); }
+h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
+
+/* two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; align-items: stretch; }
+.two-col > div { display: flex; flex-direction: column; }
+.two-col > div > pre { flex: 1; margin-bottom: 0; }
+
+/* step list */
+.step-list { list-style: none; counter-reset: step; margin: 16px 0; }
+.step-list li {
+  counter-increment: step;
+  position: relative;
+  padding: 10px 0 10px 42px;
+  border-bottom: 1px dashed var(--border2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-list li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  width: 34px;
+}
+.step-list li strong { color: var(--bright); display: block; margin-bottom: 2px; }
+.step-list.cy li::before { color: var(--cyan); }
+.step-list.rd li::before { color: var(--red); }
+
+/* footer */
+.footer {
+  border-top: 1px solid var(--border2);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+.footer a { color: var(--orange); text-decoration: none; }
+
+/* spine */
+.spine {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* responsive */
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .masthead { padding: 40px 20px 28px; }
+}
+@media (max-width: 1280px) { .spine { display: none; } }
+
+/* dark mode -- ink + gunmetal + teal/orange accents */
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:        #121213;
+  --surface:   #0e0e0f;
+  --surface2:  #1c1c1e;
+  --border:    #313135;
+  --border2:   #26262a;
+  --orange:    #FF4D00;
+  --cyan:      #08F9DF;
+  --yellow:    #E0913E;
+  --red:       #E04858;
+  --green:     #4DC26B;
+  --magenta:   #C97FD4;
+  --dim:       #8b8b88;
+  --dim2:      #5a5a5c;
+  --text:      #cbcbc9;
+  --bright:    #ececea;
+}
+:root[data-theme="dark"] ::selection { background: #08F9DF; color: #121213; }
+:root[data-theme="dark"] pre,
+:root[data-theme="dark"] .diagram {
+  background: #0e0e0f;
+  border-top-color: #2b2b30;
+  border-right-color: #2b2b30;
+  border-bottom-color: #2b2b30;
+}
+:root[data-theme="dark"] pre .label { color: #5a5a5e; }
+:root[data-theme="dark"] pre .cm, :root[data-theme="dark"] .diagram .dim { color: #66666b; }
+:root[data-theme="dark"] pre .kw { color: #F56A31; }
+:root[data-theme="dark"] pre .key, :root[data-theme="dark"] .diagram .acc2 { color: #5CD9CE; }
+:root[data-theme="dark"] .radial { background: rgba(18,18,19,0.96); }
+.theme-toggle { white-space: nowrap; }
+</style>
+</head>
+<body>
+<script>
+(function () {
+  const saved = localStorage.getItem('theme');
+  const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+})();
+</script>
+
+<!-- masthead -->
+<div class="masthead">
+  <h1>Test <em>Harness</em> Deep Dive</h1>
+  <div class="subtitle">
+    <span>pytest · Fixtures · Parametrize · xfail · Doubles · Monkeypatch · Mock Transports · ASGI · Guardrails · Mutation · Meta-Tests</span>
+  </div>
+  <div class="companion">testharness-fun // every technique here runs against <code>fwvault</code>, the specimen project in this repo // 424 tests, no runtime dependencies</div>
+</div>
+
+<!-- sidebar -->
+<nav class="side">
+  <div class="side-brand">Harness <span>//</span> Deep Dive</div>
+  <a href="#orient"><span>01</span>Orientation</a>
+  <a href="#terms"><span>02</span>Terms</a>
+  <a href="#collect"><span>03</span>Collection &amp; Config</a>
+  <a href="#fixtures"><span>04</span>Fixtures</a>
+  <a href="#param"><span>05</span>Parametrize &amp; IDs</a>
+  <a href="#assert"><span>06</span>Assertions</a>
+  <a href="#markers"><span>07</span>Markers &amp; xfail</a>
+  <a href="#doubles"><span>08</span>Test Doubles</a>
+  <a href="#patch"><span>09</span>Monkeypatching</a>
+  <a href="#transport"><span>10</span>Mock Transports</a>
+  <a href="#asgi"><span>11</span>ASGI &amp; Fake Clients</a>
+  <a href="#parser"><span>12</span>Parser Tests</a>
+  <a href="#hostile"><span>13</span>Hostile Input</a>
+  <a href="#policy"><span>14</span>Guardrails</a>
+  <a href="#differential"><span>15</span>Differential</a>
+  <a href="#cli"><span>16</span>CLI &amp; Subprocess</a>
+  <a href="#meta"><span>17</span>Meta-Tests</a>
+  <a href="#mutation"><span>18</span>Coverage &amp; Mutation</a>
+  <a href="#ai"><span>19</span>Testing an AI Author</a>
+  <a href="#running"><span>20</span>Running It</a>
+  <button class="side-dial" id="sideDial" title="radial section dial">&#9678; dial</button>
+  <button class="side-dial theme-toggle" title="toggle dark mode">&#9680; dark</button>
+</nav>
+
+<!-- nav -->
+<div class="nav">
+  <div class="nav-inner">
+    <span class="nav-brand">Test Harness Deep Dive</span>
+    <span style="display:flex;gap:6px">
+      <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
+        <span class="num" id="navNum">01 //</span> <span id="navLabel">Orientation</span> <span class="nav-hint">&#9678;</span>
+      </button>
+      <button class="nav-current theme-toggle" title="toggle dark mode">&#9680;</button>
+    </span>
+  </div>
+</div>
+
+<!-- radial dial -->
+<div class="radial" id="radial">
+  <div class="radial-ring" id="radialRing"></div>
+  <button class="radial-center" id="radialCenter" title="close (Esc)">01</button>
+</div>
+
+<div class="container">
+
+<!-- ─────────────────────────────────────────────── 01 -->
+<section id="orient" data-num="01">
+  <h2>The <em class="or">Specimen</em> and the Run</h2>
+  <div class="section-bar"></div>
+
+  <p>Everything on this page runs against one small service, <code>fwvault</code>: a firmware artifact intake. You POST a blob, it parses the header, asks a signing oracle about the digest, applies policy, and stores what survives. It exists to have seams.</p>
+
+  <pre class="diagram">   <span class="dim">the specimen, and which section tests which part</span>
+
+   POST /artifact
+        <span class="dim">│</span>
+        <span class="dim">▼</span>
+   <span class="hi">parse.py</span>    UF2 / ELF header walkers      <span class="dim">──</span> <span class="acc">§10 parser</span>  <span class="acc">§11 hostile</span>
+        <span class="dim">│</span>
+        <span class="dim">▼</span>
+   <span class="hi">signing.py</span>  ask the oracle about a digest  <span class="dim">──</span> <span class="acc">§08 transports</span>
+        <span class="dim">│</span>              <span class="dim">└─ transport is a PARAMETER</span>
+        <span class="dim">▼</span>
+   <span class="hi">policy.py</span>   allow / refuse, with a code    <span class="dim">──</span> <span class="acc">§12 guardrails</span>
+        <span class="dim">│</span>
+        <span class="dim">▼</span>
+   <span class="hi">store.py</span>    content-addressed, atomic      <span class="dim">──</span> <span class="acc2">tmp_path</span>
+        <span class="dim">│</span>
+        <span class="dim">▼</span>
+   <span class="hi">app.py</span>      raw ASGI, no framework         <span class="dim">──</span> <span class="acc">§09 asgi</span>
+   <span class="hi">cli.py</span>      argv in, exit code out         <span class="dim">──</span> <span class="acc">§14 cli</span>
+   <span class="hi">testing.py</span>  <span class="acc3">specimen builders + doubles, SHIPPED IN THE PACKAGE</span></pre>
+
+  <h3>What a pytest run actually does</h3>
+
+  <pre class="diagram">   <span class="dim">one run, five phases. Most confusion is about which phase you are in.</span>
+
+   <span class="acc">1 · CONFIG</span>     find rootdir, read pyproject/pytest.ini, load plugins,
+                  register markers, apply addopts
+        <span class="dim">▼</span>
+   <span class="acc">2 · COLLECT</span>    walk testpaths, import every test module, discover
+                  conftest.py per directory, build the item tree
+                  <span class="dim">↳ an ImportError here kills the FILE, not one test</span>
+        <span class="dim">▼</span>
+   <span class="acc">3 · MODIFY</span>     pytest_collection_modifyitems -- deselect, reorder, mark
+        <span class="dim">▼</span>
+   <span class="acc">4 · RUN</span>        per item:  setup fixtures  →  call the test  →  teardown
+                             <span class="dim">(outermost first)      (reverse order)</span>
+        <span class="dim">▼</span>
+   <span class="acc">5 · REPORT</span>     pass / fail / skip / xfail, plus -rs reasons</pre>
+
+  <div class="info-box">
+    <strong>The one-sentence version of this page</strong>
+    A test is a specimen, a call, and an assertion. Everything else -- fixtures, doubles, patching, harnesses -- exists to get a specimen into place cheaply and get an observation back out. When a technique stops doing that, stop using it.
+  </div>
+
+  <table>
+    <tr><th>Section</th><th>Answers</th></tr>
+    <tr><td class="meth"><a href="#fixtures">03 fixtures</a></td><td>how do I get a specimen into place, and clean it up</td></tr>
+    <tr><td class="meth"><a href="#doubles">06 doubles</a></td><td>what do I put where the real collaborator goes</td></tr>
+    <tr><td class="meth cy"><a href="#patch">07 monkeypatch</a></td><td>what do I do when there is no seam to pass anything through</td></tr>
+    <tr><td class="meth cy"><a href="#asgi">09 asgi</a></td><td>how does a test client work, and when do I not want one</td></tr>
+    <tr><td class="meth"><a href="#hostile">11 hostile</a></td><td>how do I test the inputs I did not think of</td></tr>
+    <tr><td class="meth"><a href="#meta">15 meta</a></td><td>how do I stop the suite rotting in the direction of passing</td></tr>
+  </table>
+</section>
+
+<!-- ─────────────────────────────────────────────── terms -->
+<section id="terms" data-num="02">
+  <h2><em class="cy">Terms</em></h2>
+  <div class="section-bar cy"></div>
+
+  <p>Every word this page uses, with a one-line meaning and the section that
+  explains it. Generated from <code>terms.py</code>, which is also where
+  <code>GLOSSARY.md</code> and the glossary side of the printed card come from.
+  They held separate copies once and drifted.</p>
+
+  <div class="info-box cy">
+    <strong>One line is the budget</strong>
+    A meaning that needs two lines is an argument, and arguments live in the
+    sections rather than here. If a term below reads as thin, the section in the
+    last column is where it is made properly.
+  </div>
+
+<!-- GENERATED glossary section: gen_glossary.py -->
+  <h3>the basics</h3>
+  <table>
+    <tr><th>term</th><th>meaning</th><th>section</th></tr>
+    <tr><td class="meth">test</td><td>a function whose name starts with <code>test</code>. It passes if it does not raise</td><td><a href="#collect">collect</a></td></tr>
+    <tr><td class="meth">assertion</td><td>a line stating what must be true. <code>assert x == y</code></td><td><a href="#assert">assert</a></td></tr>
+    <tr><td class="meth">test suite</td><td>all your tests together</td><td><span class="dim">-</span></td></tr>
+    <tr><td class="meth">test runner</td><td>the tool that finds and runs them. pytest is one</td><td><a href="#collect">collect</a></td></tr>
+    <tr><td class="meth">collection</td><td>pytest finding your tests, before running any</td><td><a href="#collect">collect</a></td></tr>
+    <tr><td class="meth">fail vs error</td><td><i>fail</i> = an assertion was false. <i>error</i> = it blew up before reaching one</td><td><a href="#assert">assert</a></td></tr>
+    <tr><td class="meth">AAA</td><td>arrange, act, assert. The three parts of most tests, in that order</td><td><span class="dim">-</span></td></tr>
+    <tr><td class="meth">TDD</td><td>write the failing test first, then the code that makes it pass</td><td><span class="dim">-</span></td></tr>
+  </table>
+  <h3>fixtures</h3>
+  <table>
+    <tr><th>term</th><th>meaning</th><th>section</th></tr>
+    <tr><td class="meth">fixture</td><td>named setup a test asks for by putting its name in the arguments</td><td><a href="#fixtures">fixtures</a></td></tr>
+    <tr><td class="meth">factory fixture</td><td>a fixture returning a <b>function</b>, so a test can make several things</td><td><a href="#fixtures">fixtures</a></td></tr>
+    <tr><td class="meth">setup / teardown</td><td>before and after. In pytest, teardown is whatever follows <code>yield</code></td><td><a href="#fixtures">fixtures</a></td></tr>
+    <tr><td class="meth">scope</td><td>how often a fixture is rebuilt: function, class, module, package, session</td><td><a href="#fixtures">fixtures</a></td></tr>
+    <tr><td class="meth">autouse</td><td>a fixture applied to every test without being asked for</td><td><a href="#fixtures">fixtures</a></td></tr>
+    <tr><td class="meth">conftest.py</td><td>shared fixtures for a folder and everything under it. No import needed</td><td><a href="#collect">collect</a></td></tr>
+    <tr><td class="meth">override</td><td>a fixture in a test file shadowing one of the same name from conftest</td><td><a href="#fixtures">fixtures</a></td></tr>
+    <tr><td class="meth">tmp_path</td><td>built in: an empty folder, new per test, cleaned up for you</td><td><a href="#fixtures">fixtures</a></td></tr>
+    <tr><td class="meth">capsys / capfd</td><td>built in: captured output. capfd when the write bypasses Python</td><td><a href="#assert">assert</a></td></tr>
+    <tr><td class="meth">caplog</td><td>built in: log records. Set the level or you capture nothing</td><td><a href="#assert">assert</a></td></tr>
+    <tr><td class="meth">monkeypatch</td><td>built in: change something temporarily, put back automatically</td><td><a href="#patch">patch</a></td></tr>
+  </table>
+  <h3>running and selecting</h3>
+  <table>
+    <tr><th>term</th><th>meaning</th><th>section</th></tr>
+    <tr><td class="meth">test id</td><td>the name in the report, e.g. <code>test_naming[2-many]</code></td><td><a href="#param">param</a></td></tr>
+    <tr><td class="meth">parametrize</td><td>run one test many times with different inputs, each reported separately</td><td><a href="#param">param</a></td></tr>
+    <tr><td class="meth">indirect</td><td>send a parametrize value to a fixture, so each case gets setup and teardown</td><td><a href="#param">param</a></td></tr>
+    <tr><td class="meth">marker</td><td>a label on a test: <code>@pytest.mark.slow</code>. Select with <code>-m</code></td><td><a href="#markers">markers</a></td></tr>
+    <tr><td class="meth">skip / skipif</td><td>does not apply here. skipif decides at collection</td><td><a href="#markers">markers</a></td></tr>
+    <tr><td class="meth">xfail</td><td>known broken. Needs <code>strict=True</code> or it stays green once fixed</td><td><a href="#markers">markers</a></td></tr>
+    <tr><td class="meth">xpass</td><td>an xfail that unexpectedly passed. Usually means delete the marker</td><td><a href="#markers">markers</a></td></tr>
+    <tr><td class="meth">deselect</td><td>excluded from this run by <code>-k</code> or <code>-m</code>. Not the same as skipped</td><td><a href="#collect">collect</a></td></tr>
+  </table>
+  <h3>test doubles</h3>
+  <table>
+    <tr><th>term</th><th>meaning</th><th>section</th></tr>
+    <tr><td class="meth">test double</td><td>any stand-in used instead of the real thing</td><td><a href="#doubles">doubles</a></td></tr>
+    <tr><td class="meth">dummy</td><td>passed only to fill a signature. Never actually used</td><td><a href="#doubles">doubles</a></td></tr>
+    <tr><td class="meth">stub</td><td>always returns the same canned answer</td><td><a href="#doubles">doubles</a></td></tr>
+    <tr><td class="meth">fake</td><td>a real but simplified implementation. A dict instead of a database</td><td><a href="#doubles">doubles</a></td></tr>
+    <tr><td class="meth">spy</td><td>works, and records how it was called</td><td><a href="#doubles">doubles</a></td></tr>
+    <tr><td class="meth">mock</td><td>a spy that also asserts it was called correctly</td><td><a href="#doubles">doubles</a></td></tr>
+    <tr><td class="meth">patching</td><td>replacing something in place, by name</td><td><a href="#patch">patch</a></td></tr>
+    <tr><td class="meth">injection</td><td>passing the collaborator in, rather than the code fetching it itself</td><td><a href="#patch">patch</a></td></tr>
+    <tr><td class="meth">seam</td><td>a place you can change behaviour without editing there. An argument is one</td><td><a href="#orient">orient</a></td></tr>
+    <tr><td class="meth">mock transport</td><td>a fake put in the place where code would talk to the network</td><td><a href="#transport">transport</a></td></tr>
+  </table>
+  <h3>kinds of test</h3>
+  <table>
+    <tr><th>term</th><th>meaning</th><th>section</th></tr>
+    <tr><td class="meth">unit</td><td>one function or class, nothing real underneath it</td><td><span class="dim">-</span></td></tr>
+    <tr><td class="meth">integration</td><td>several pieces together, often with a real file or database</td><td><span class="dim">-</span></td></tr>
+    <tr><td class="meth">end-to-end</td><td>the whole system as a user meets it. Slow, valuable, few</td><td><span class="dim">-</span></td></tr>
+    <tr><td class="meth">regression test</td><td>written to pin a bug you just fixed, so it cannot come back</td><td><span class="dim">-</span></td></tr>
+    <tr><td class="meth">smoke test</td><td>does it start at all</td><td><span class="dim">-</span></td></tr>
+    <tr><td class="meth">property-based</td><td>assert a rule for all inputs and let a tool hunt counterexamples</td><td><a href="#hostile">hostile</a></td></tr>
+    <tr><td class="meth">fuzzing</td><td>throw generated input at it and check nothing escapes the contract</td><td><a href="#hostile">hostile</a></td></tr>
+    <tr><td class="meth">differential</td><td>run two implementations over one input; whichever disagrees is wrong</td><td><a href="#differential">differential</a></td></tr>
+    <tr><td class="meth">oracle</td><td>differential testing where the reference is a trusted external tool</td><td><a href="#differential">differential</a></td></tr>
+    <tr><td class="meth">golden / snapshot</td><td>compare output against a stored known-good file</td><td><span class="dim">-</span></td></tr>
+    <tr><td class="meth">contract test</td><td>pin the shape you publish: names, codes, status codes, schema version</td><td><a href="#meta">meta</a></td></tr>
+    <tr><td class="meth">meta-test</td><td>a test about the test suite, e.g. does every test still assert</td><td><a href="#meta">meta</a></td></tr>
+  </table>
+  <h3>test quality</h3>
+  <table>
+    <tr><th>term</th><th>meaning</th><th>section</th></tr>
+    <tr><td class="meth">coverage</td><td>which lines ran. <b>Not</b> whether anything checked them</td><td><a href="#mutation">mutation</a></td></tr>
+    <tr><td class="meth">branch coverage</td><td>did both sides of each <code>if</code> run</td><td><a href="#mutation">mutation</a></td></tr>
+    <tr><td class="meth">mutation testing</td><td>break the code deliberately and see whether the suite notices</td><td><a href="#mutation">mutation</a></td></tr>
+    <tr><td class="meth">equivalent mutant</td><td>a deliberate break that changes no behaviour, so nothing can catch it</td><td><a href="#mutation">mutation</a></td></tr>
+    <tr><td class="meth">mutation gate</td><td>admit a generated suite only if it kills a threshold of mutants</td><td><a href="#ai">ai</a></td></tr>
+    <tr><td class="meth">flaky</td><td>passes and fails without the code changing. Always a bug, never noise</td><td><a href="#markers">markers</a></td></tr>
+    <tr><td class="meth">quarantine</td><td>move a flaky test behind a deselected marker with a ticket</td><td><a href="#markers">markers</a></td></tr>
+    <tr><td class="meth">test smell</td><td>a sign the test or code is wrong. More patching than assertion is one</td><td><a href="#meta">meta</a></td></tr>
+  </table>
+  <h3>an AI author</h3>
+  <table>
+    <tr><th>term</th><th>meaning</th><th>section</th></tr>
+    <tr><td class="meth">apparatus</td><td>the machinery that makes reading generated output unnecessary: tests, types, sanitizers, canaries</td><td><a href="#ai">ai</a></td></tr>
+    <tr><td class="meth">provenance separation</td><td>whatever wrote the code does not grade it, and ideally is not the same family</td><td><a href="#ai">ai</a></td></tr>
+    <tr><td class="meth">self-preference bias</td><td>an evaluator scoring its own generations higher than a human would</td><td><a href="#ai">ai</a></td></tr>
+    <tr><td class="meth">intrinsic self-correction</td><td>a model revising its own output with no external signal. Does not reliably work</td><td><a href="#ai">ai</a></td></tr>
+    <tr><td class="meth">external feedback</td><td>a signal from outside the model. A test run is one, which is the point</td><td><a href="#ai">ai</a></td></tr>
+    <tr><td class="meth">characterization test</td><td>assertions transcribed from what the code currently does. Pins change, not correctness</td><td><a href="#ai">ai</a></td></tr>
+    <tr><td class="meth">the oracle problem</td><td>knowing what the right answer is, independently of the thing being tested</td><td><a href="#differential">differential</a></td></tr>
+    <tr><td class="meth">metamorphic relation</td><td>a property linking two runs when you cannot state the answer for either</td><td><a href="#ai">ai</a></td></tr>
+    <tr><td class="meth">translation validation</td><td>proving one output matches its input for this run, rather than proving the tool</td><td><a href="#ai">ai</a></td></tr>
+    <tr><td class="meth">the intent gap</td><td>tests cannot check that they encode what was actually wanted. No technical fix</td><td><a href="#ai">ai</a></td></tr>
+  </table>
+  <!-- END generated glossary section -->
+</section>
+
+<!-- ─────────────────────────────────────────────── 02 -->
+<section id="collect" data-num="03">
+  <h2>Collection &amp; <em class="cy">Config</em></h2>
+  <div class="section-bar cy"></div>
+
+  <p>Before a single assertion runs, pytest has decided where the project root is, which files are tests, which fixtures are visible where, and what flags are in force. Most "why is this test not running" questions are answered here.</p>
+
+  <pre class="diagram">   <span class="dim">what counts as a test, by default</span>
+
+   files       <span class="hi">test_*.py</span>  or  <span class="hi">*_test.py</span>       <span class="dim">← testpaths, then rootdir</span>
+   classes     <span class="hi">Test*</span>      <span class="dim">(and no __init__ method)</span>
+   functions   <span class="hi">test*</span>      <span class="dim">← note: test* not test_*</span>
+
+   <span class="acc3">that last one bites.</span> A helper named `tests_in()` is COLLECTED as a
+   test. If it is a generator, pytest refuses the whole file:
+
+     <span class="acc3">'yield' keyword is allowed in fixtures, but not in tests</span>
+
+   and a collection error takes down every other test in that file.
+   This page's own hygiene file hit it. Name helpers `find_tests`.</pre>
+
+  <h3 class="cy">conftest.py is a plugin, not a junk drawer</h3>
+
+  <pre class="diagram">   <span class="dim">fixture visibility follows the DIRECTORY tree, not imports</span>
+
+   repo/
+     conftest.py            <span class="dim">← visible to everything below</span>
+     tests/
+       conftest.py          <span class="acc">← visible to tests/ and below; shadows the above</span>
+       test_parse.py            <span class="dim">sees both, nearest wins</span>
+       integration/
+         conftest.py        <span class="dim">← only here</span>
+         test_slow.py
+
+   A fixture defined in a conftest needs NO import in a test file.
+   That is the feature and the trap: a name with no visible origin.</pre>
+
+  <pre class="cy"><span class="label">tests/conftest.py: the three jobs</span><span class="cm"># 1. extend pytest itself</span>
+<span class="kw">def</span> <span class="fn">pytest_addoption</span>(parser):
+    parser.addoption(<span class="st">"--runnet"</span>, action=<span class="st">"store_true"</span>, default=<span class="val">False</span>,
+                     help=<span class="st">"run tests marked `net`, which make real connections"</span>)
+
+<span class="kw">def</span> <span class="fn">pytest_collection_modifyitems</span>(config, items):
+    <span class="cm"># runs after collection, before the first test.</span>
+    <span class="cm"># this is where a marker becomes behaviour.</span>
+    <span class="kw">if</span> config.getoption(<span class="st">"--runnet"</span>): <span class="kw">return</span>
+    skip = pytest.mark.skip(reason=<span class="st">"needs a real network; pass --runnet"</span>)
+    <span class="kw">for</span> item <span class="kw">in</span> items:
+        <span class="kw">if</span> <span class="st">"net"</span> <span class="kw">in</span> item.keywords:
+            item.add_marker(skip)
+
+<span class="cm"># 2. isolate the process, once, for everything</span>
+<span class="key">@pytest.fixture</span>(autouse=<span class="val">True</span>)
+<span class="kw">def</span> <span class="fn">isolate_environment</span>(monkeypatch, tmp_path_factory):
+    home = tmp_path_factory.mktemp(<span class="st">"fwvault_home"</span>)
+    monkeypatch.setenv(<span class="st">"HOME"</span>, str(home))
+    monkeypatch.setenv(<span class="st">"USERPROFILE"</span>, str(home))   <span class="cm"># expanduser reads this on Windows</span>
+    monkeypatch.setenv(<span class="st">"FWVAULT_WALKER_RAISE"</span>, <span class="st">"1"</span>)
+
+<span class="cm"># 3. hand out specimens and collaborators -- the fixtures themselves</span></pre>
+
+  <div class="info-box warn">
+    <strong>Deleting an env var is not isolation</strong>
+    With <code>FWVAULT_HOME</code> unset, the code falls back to <code>expanduser("~")</code> -- so a suite that carefully deletes the variable writes into the developer's real home directory. Setting a <em>fake</em> HOME is what contains it, and both <code>HOME</code> and <code>USERPROFILE</code> have to be set, because <code>expanduser</code> reads the first on POSIX and the second on Windows.
+  </div>
+
+  <h3 class="cy">pyproject.toml: the flags that are always on</h3>
+
+  <pre><span class="label">[tool.pytest.ini_options]</span>testpaths = [<span class="st">"tests"</span>]
+pythonpath = [<span class="st">"src"</span>]              <span class="cm"># src-layout, no install needed to run</span>
+
+<span class="cm"># -rs so a skip explains itself. A run that says "12 skipped" and</span>
+<span class="cm"># nothing else is a run whose coverage you cannot describe.</span>
+addopts = <span class="st">"-rs --strict-markers"</span>
+
+markers = [
+    <span class="st">"slow: takes real wall-clock time"</span>,
+    <span class="st">"net: would touch a real network (never enabled in CI)"</span>,
+]
+
+filterwarnings = [
+    <span class="cm"># our own deprecations are errors: a warning nobody reads is a</span>
+    <span class="cm"># rename nobody did. Scoped, so a dependency's schedule is not ours.</span>
+    <span class="st">"error::DeprecationWarning:fwvault.*"</span>,
+    <span class="st">"ignore::DeprecationWarning:starlette.*"</span>,
+]</pre>
+
+  <table>
+    <tr><th>Setting</th><th>Why it earns its line</th></tr>
+    <tr><td class="meth">-rs</td><td>prints every skip reason. Without it a skip is indistinguishable from a test that does not exist</td></tr>
+    <tr><td class="meth">--strict-markers</td><td>a typo'd <code>@pytest.mark.slwo</code> is an error, not a silently-ignored decorator</td></tr>
+    <tr><td class="meth cy">testpaths</td><td>stops a bare <code>pytest</code> from wandering into <code>build/</code> or <code>.venv/</code></td></tr>
+    <tr><td class="meth cy">pythonpath</td><td>src-layout works without <code>pip install -e .</code>, so a clone runs immediately</td></tr>
+    <tr><td class="meth">filterwarnings</td><td>your own deprecations become errors. Scope them, or somebody else's release schedule becomes your build break</td></tr>
+  </table>
+</section>
+
+<!-- ─────────────────────────────────────────────── 03 -->
+<section id="fixtures" data-num="04">
+  <h2>Fixtures: Scope, Teardown, <em class="or">Factories</em></h2>
+  <div class="section-bar"></div>
+
+  <p>A fixture is a named setup whose result pytest caches per scope and tears down in reverse order of setup. Everything else about fixtures is a consequence of that sentence.</p>
+
+  <pre class="diagram">   <span class="dim">build order is DEPENDENCY order; teardown is its exact reverse</span>
+
+   <span class="key">@fixture</span> outer                     <span class="key">@fixture</span> inner(<span class="hi">outer</span>)
+       setup                              setup
+       <span class="kw">yield</span>       <span class="dim">──────────────►</span>      <span class="kw">yield</span>      <span class="dim">──────►</span>   test body
+       teardown    <span class="dim">◄─────────────</span>       teardown   <span class="dim">◄──────</span>
+
+   <span class="acc">outer:setup → inner:setup → TEST → inner:teardown → outer:teardown</span>
+
+   Code after `yield` runs even if the test FAILS.
+   It does NOT run if setup before the yield raised.
+   <span class="acc3">→ put anything that can fail AFTER everything that must be cleaned up.</span></pre>
+
+  <h3>Scope: pick the narrowest that is not painfully slow</h3>
+
+  <table>
+    <tr><th>Scope</th><th>Built</th><th>Use when</th></tr>
+    <tr><td class="meth">function</td><td>once per test <em>(default)</em></td><td>almost always</td></tr>
+    <tr><td class="meth">class</td><td>once per test class</td><td>a class groups a scenario</td></tr>
+    <tr><td class="meth cy">module</td><td>once per file</td><td>expensive AND immutable</td></tr>
+    <tr><td class="meth cy">package</td><td>once per directory</td><td>rare; a shared container per suite area</td></tr>
+    <tr><td class="meth rd">session</td><td>once per run</td><td>a database, a compiled binary. Never mutable</td></tr>
+  </table>
+
+  <div class="info-box danger">
+    <strong>A session-scoped mutable fixture is a global variable with extra steps</strong>
+    The test that corrupts it fails a <em>different</em> test, three files later, only when the whole suite runs in one order. If a wide-scoped fixture must exist, make what it hands out immutable -- a tuple, a frozen dataclass, a read-only path.
+  </div>
+
+  <h3>The five shapes worth knowing</h3>
+
+  <pre><span class="label">tests/conftest.py</span><span class="cm"># 1. plain value</span>
+<span class="key">@pytest.fixture</span>
+<span class="kw">def</span> <span class="fn">uf2</span>():
+    <span class="cm"># the smallest thing that is genuinely valid. Two blocks, not two hundred.</span>
+    <span class="kw">return</span> build_uf2(blocks=<span class="num">2</span>)
+
+<span class="cm"># 2. FACTORY -- the test gets the function, not a value</span>
+<span class="key">@pytest.fixture</span>
+<span class="kw">def</span> <span class="fn">make_uf2</span>():
+    <span class="kw">return</span> build_uf2          <span class="cm"># now a test can build three different ones</span>
+
+<span class="cm"># 3. yield, for teardown</span>
+<span class="key">@pytest.fixture</span>
+<span class="kw">def</span> <span class="fn">vault</span>(tmp_path):
+    <span class="kw">return</span> Store(tmp_path / <span class="st">"vault"</span>)   <span class="cm"># tmp_path cleans itself up</span>
+
+<span class="cm"># 4. PARAMETRIZED -- every test that requests it runs once per param</span>
+<span class="key">@pytest.fixture</span>(params=[<span class="st">"uf2"</span>, <span class="st">"elf"</span>], ids=[<span class="st">"uf2"</span>, <span class="st">"elf"</span>])
+<span class="kw">def</span> <span class="fn">any_artifact</span>(request):
+    <span class="kw">return</span> build_uf2(blocks=<span class="num">2</span>) <span class="kw">if</span> request.param == <span class="st">"uf2"</span> <span class="kw">else</span> build_elf()
+
+<span class="cm"># 5. COMPOSED -- the whole service, wired to fakes, in one line,</span>
+<span class="cm">#    because every collaborator in app.py is a parameter</span>
+<span class="key">@pytest.fixture</span>
+<span class="kw">def</span> <span class="fn">app</span>(vault, client, policy):
+    <span class="kw">return</span> create_app(store=vault, client=client, policy=policy)</pre>
+
+  <div class="two-col">
+    <div>
+      <pre class="cy"><span class="label">factory: right</span><span class="kw">def</span> <span class="fn">test_sizes</span>(make_uf2):
+    small = make_uf2(blocks=<span class="num">1</span>)
+    large = make_uf2(blocks=<span class="num">9</span>)
+    <span class="kw">assert</span> len(large) == <span class="num">9</span> * len(small)
+
+<span class="cm"># the subject is visible in the test</span></pre>
+    </div>
+    <div>
+      <pre class="rd"><span class="label">fixture-per-variant: wrong</span><span class="kw">def</span> <span class="fn">test_sizes</span>(one_block, nine_blocks):
+    <span class="kw">assert</span> len(nine_blocks) == <span class="num">9</span> * len(one_block)
+
+<span class="cm"># what IS nine_blocks? open conftest.</span>
+<span class="cm"># now do that forty more times.</span></pre>
+    </div>
+  </div>
+
+  <h3 class="rd">autouse, and the two ways to misuse it</h3>
+
+  <p>An <code>autouse</code> fixture applies to every test in its directory whether the test asks or not. Correct for process-wide state any test could touch by accident and no test should have to remember: the environment, a fake home, a global registry. Wrong for anything a test could reasonably want to opt out of -- that gives you a suite where nobody can explain what a test is actually running against.</p>
+
+  <pre class="rd"><span class="label">the anti-pattern, named</span><span class="key">@pytest.fixture</span>
+<span class="kw">def</span> <span class="fn">over_helpful_fixture</span>(vault, uf2):
+    <span class="kw">assert</span> len(vault) == <span class="num">0</span>       <span class="cm"># ← WRONG PLACE</span>
+    <span class="kw">return</span> vault, uf2
+
+<span class="cm"># when that fails, EVERY test using this fixture reports an ERROR,</span>
+<span class="cm"># with a traceback pointing at conftest.py instead of at the</span>
+<span class="cm"># behaviour that broke.</span>
+<span class="cm">#</span>
+<span class="cm">#   assertions belong in tests. fixtures build things.</span></pre>
+
+  <h3 class="rd">Overriding: nearest conftest wins, silently</h3>
+
+  <p>A fixture defined in a test module shadows one of the same name from <code>conftest.py</code>, for that module only. Nothing anywhere announces it.</p>
+
+  <pre class="diagram">   <span class="dim">resolution order for the name `policy`</span>
+
+   tests/test_fixtures.py    <span class="acc">def policy()  ← wins, for this file</span>
+   tests/conftest.py             def policy()
+   conftest.py                       def policy()
+
+   <span class="acc3">nothing says a name has been shadowed.</span> a test three hundred lines
+   below is now running against a different object than its neighbour
+   in the next file, and both are called `policy`.
+
+   <span class="dim">an override can also EXTEND what it shadows, by requesting the same</span>
+   <span class="dim">name -- the lookup for the PARAMETER starts one level up:</span>
+
+     <span class="key">@pytest.fixture</span>
+     <span class="kw">def</span> strict_policy(<span class="hi">policy</span>):        <span class="dim">← this module's override</span>
+         <span class="kw">return</span> replace(policy, require_signature=True)</pre>
+
+  <p>Use it when a whole file genuinely needs a different baseline. Never as a quick fix for one test: that test should ask for what it needs by name.</p>
+
+  <h3>Two smaller tools</h3>
+
+  <pre class="cy"><span class="label">fixture(name=) and addfinalizer</span><span class="cm"># the function is _make_digest; the fixture is `digest`.</span>
+<span class="cm"># frees the good name for a normal import in the same module, and</span>
+<span class="cm"># stops a linter flagging the fixture function as unused.</span>
+<span class="key">@pytest.fixture</span>(name=<span class="st">"digest"</span>)
+<span class="kw">def</span> <span class="fn">_make_digest</span>(uf2):
+    <span class="kw">return</span> digest_of(uf2)
+
+
+<span class="cm"># addfinalizer is the older API. `yield` covers almost every case and</span>
+<span class="cm"># reads better. addfinalizer still wins when the cleanup should be</span>
+<span class="cm"># registered CONDITIONALLY -- only once the thing exists:</span>
+<span class="key">@pytest.fixture</span>
+<span class="kw">def</span> <span class="fn">conditional_cleanup</span>(request, tmp_path):
+    target = tmp_path / <span class="st">"artifact.bin"</span>
+    target.write_bytes(bytes(<span class="num">16</span>))
+    request.addfinalizer(target.unlink)   <span class="cm"># registered only now that it exists</span>
+    <span class="kw">return</span> target
+
+<span class="cm"># with `yield`, the teardown half runs even when the setup half failed,</span>
+<span class="cm"># and has to defend itself against a thing that was never created.</span></pre>
+</section>
+
+<!-- ─────────────────────────────────────────────── 04 -->
+<section id="param" data-num="05">
+  <h2>Parametrize &amp; <em class="cy">IDs</em></h2>
+  <div class="section-bar cy"></div>
+
+  <p>One function, many cases, each reported as its own test. The mechanics are easy; the value is entirely in the IDs.</p>
+
+  <pre class="diagram">   <span class="dim">stacked decorators are a CARTESIAN PRODUCT</span>
+
+   <span class="key">@parametrize</span>(<span class="st">"bit64"</span>, [True, False], ids=[<span class="st">"elf64"</span>, <span class="st">"elf32"</span>])
+   <span class="key">@parametrize</span>(<span class="st">"little"</span>, [True, False], ids=[<span class="st">"le"</span>, <span class="st">"be"</span>])
+   <span class="kw">def</span> test_elf_entry(bit64, little): ...
+
+                    <span class="dim">┌──────────────┬──────────────┐</span>
+                    <span class="dim">│</span>   elf64      <span class="dim">│</span>   elf32      <span class="dim">│</span>
+        <span class="dim">┌───────────┼──────────────┼──────────────┤</span>
+        <span class="dim">│</span>    le     <span class="dim">│</span> <span class="acc">[le-elf64]</span>   <span class="dim">│</span> <span class="acc">[le-elf32]</span>   <span class="dim">│</span>
+        <span class="dim">├───────────┼──────────────┼──────────────┤</span>
+        <span class="dim">│</span>    be     <span class="dim">│</span> <span class="acc">[be-elf64]</span>   <span class="dim">│</span> <span class="acc">[be-elf32]</span>   <span class="dim">│</span>
+        <span class="dim">└───────────┴──────────────┴──────────────┘</span>
+
+   4 tests from 2 lines. All four are real files somebody has --
+   entry point width and byte order are independent header fields.</pre>
+
+  <pre class="cy"><span class="label">ids: three ways, all better than the default</span><span class="cm"># 1. an explicit list -- best when the cases have names</span>
+<span class="key">@pytest.mark.parametrize</span>(
+    <span class="st">"family,expected"</span>,
+    [(RP2040, <span class="st">"RP2040"</span>), (NRF52840, <span class="st">"NRF52840"</span>), (UNKNOWN_FAMILY, <span class="val">None</span>)],
+    ids=[<span class="st">"rp2040"</span>, <span class="st">"nrf52840"</span>, <span class="st">"unknown"</span>],
+)
+
+<span class="cm"># 2. a callable -- best for computed cases</span>
+<span class="key">@pytest.mark.parametrize</span>(<span class="st">"bad_block"</span>, [<span class="num">0</span>, <span class="num">1</span>, <span class="num">2</span>], ids=<span class="kw">lambda</span> n: <span class="st">"block%d"</span> % n)
+
+<span class="cm"># 3. repr -- best for byte specimens</span>
+<span class="key">@pytest.mark.parametrize</span>(<span class="st">"blob"</span>, [<span class="st">b""</span>, <span class="st">b"\x00"</span>, <span class="st">b"\x7fEL"</span>], ids=repr)
+<span class="cm">#   → test_short_buffers[b'\x7fEL']</span></pre>
+
+  <div class="info-box cy">
+    <strong>A failure that names its case is worth ten that do not</strong>
+    <code>test_family[3-2]</code> tells you nothing and sends you counting list entries. <code>test_family[nrf52840]</code> tells you everything. You will read these IDs in CI output, in a bisect, and in a message from someone who does not have the repo open.
+  </div>
+
+  <h3 class="cy">When parametrize is the wrong tool</h3>
+
+  <table>
+    <tr><th>Situation</th><th>Do this instead</th></tr>
+    <tr><td class="meth rd">the cases need different assertions</td><td>separate tests. A body with <code>if param == "uf2"</code> is two tests wearing a trenchcoat</td></tr>
+    <tr><td class="meth rd">the list is 400 generated inputs</td><td>property-based (<a href="#hostile">§13</a>). Parametrize when you want each case NAMED</td></tr>
+    <tr><td class="meth rd">only one case has a setup step</td><td>pull that case out. A parametrize with a branch in setup is a fixture in disguise</td></tr>
+    <tr><td class="meth cy">the same cases recur across files</td><td>a parametrized <em>fixture</em>, or a module-level constant list both files import</td></tr>
+  </table>
+
+  <p>One more habit worth building: when a sweep is shared with a test that checks the sweep, make it one constant. This page's own hostile-input file had a truncation sweep stepping by 97 -- which never lands on a multiple of 512, so every one of its twenty cases hit the same early branch and none ever reached the walker. The meta-test caught it. Two copies of the list would have drifted silently.</p>
+
+  <pre><span class="label">tests/test_hostile.py</span><span class="cm"># One list, used by the sweep AND by the meta-test that checks the sweep.</span>
+SWEEP = sorted(set(range(<span class="num">0</span>, <span class="num">1537</span>, <span class="num">64</span>)) | {<span class="num">1</span>, <span class="num">7</span>, <span class="num">511</span>, <span class="num">513</span>, <span class="num">1535</span>})
+
+<span class="key">@pytest.mark.parametrize</span>(<span class="st">"length"</span>, SWEEP)
+<span class="kw">def</span> <span class="fn">test_every_truncation_is_survivable</span>(length):
+    _parses_or_raises_parse_error(VALID[:length])
+
+<span class="kw">def</span> <span class="fn">test_the_sweep_actually_covers_both_outcomes</span>():
+    outcomes = {_parses_or_raises_parse_error(VALID[:n]) <span class="kw">is not</span> <span class="val">None</span> <span class="kw">for</span> n <span class="kw">in</span> SWEEP}
+    <span class="kw">assert</span> outcomes == {<span class="val">True</span>, <span class="val">False</span>}, (
+        <span class="st">"every case in SWEEP had the same outcome, so the sweep is "</span>
+        <span class="st">"testing one branch twenty-five times"</span>)</pre>
+
+  <h3 class="cy">Indirect: send the parameter to a fixture</h3>
+
+  <p>Plain parametrize hands the value to the test. <code>indirect</code> hands it to a fixture first, so each case gets real setup and real teardown.</p>
+
+  <pre class="cy"><span class="label">tests/test_parametrize.py</span><span class="key">@pytest.fixture</span>
+<span class="kw">def</span> <span class="fn">vault_with</span>(request, tmp_path):
+    store = Store(tmp_path / <span class="st">"v"</span>)
+    <span class="kw">for</span> n <span class="kw">in</span> range(<span class="num">1</span>, <span class="hi">request.param</span> + <span class="num">1</span>):
+        store.put(...)
+    <span class="kw">yield</span> store
+    <span class="cm"># teardown a plain parametrize cannot express: where a socket, a</span>
+    <span class="cm"># process or a database transaction would close.</span>
+
+<span class="key">@pytest.mark.parametrize</span>(<span class="st">"vault_with"</span>, [<span class="num">0</span>, <span class="num">1</span>, <span class="num">5</span>], <span class="hi">indirect=True</span>,
+                         ids=<span class="kw">lambda</span> n: <span class="st">"%d-stored"</span> % n)
+<span class="kw">def</span> <span class="fn">test_vault_size</span>(vault_with):
+    <span class="kw">assert</span> len(vault_with) == vault_with.expected
+
+<span class="cm"># indirect=["artifact"] names WHICH params get routed; the others</span>
+<span class="cm"># arrive normally. Worth it when each case needs setup or teardown.</span>
+<span class="cm"># NOT worth it when the fixture is just a function call -- that is</span>
+<span class="cm"># what a factory fixture is for.</span></pre>
+
+  <h3 class="cy">pytest_generate_tests: build the list at collection</h3>
+
+  <pre><span class="label">the hook behind parametrize</span><span class="kw">def</span> <span class="fn">pytest_generate_tests</span>(metafunc):
+    <span class="cm"># runs once per test function, at collection time.</span>
+    <span class="kw">if</span> <span class="st">"known_family"</span> <span class="kw">in</span> metafunc.fixturenames:
+        families = importlib.import_module(<span class="st">"fwvault.parse"</span>).FAMILIES
+        metafunc.parametrize(
+            <span class="st">"known_family,expected_name"</span>,
+            sorted(families.items()),
+            ids=[name.lower() <span class="kw">for</span> _fid, name <span class="kw">in</span> sorted(families.items())])
+
+<span class="cm"># the cases come from the SOURCE OF TRUTH rather than a copy of it.</span>
+<span class="cm"># add a supported chip and a test appears; nobody has to remember.</span>
+<span class="cm">#</span>
+<span class="cm"># the cost: a reader of the file cannot see the cases without running</span>
+<span class="cm"># `pytest --collect-only`. pay it only when keeping a literal list in</span>
+<span class="cm"># sync is the bigger risk.</span></pre>
+
+  <div class="info-box warn">
+    <strong>Stacking multiplies</strong>
+    Two axes of two values is 4 tests. A fourth axis of 5 is 40, a fifth is 200. When most combinations stop testing anything new, switch to a hand-picked list of the ones that matter, or to property-based testing (<a href="#hostile">§13</a>), which searches the space instead of enumerating it.
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────── 05 -->
+<section id="assert" data-num="06">
+  <h2>Assertions &amp; <em class="or">Failure</em></h2>
+  <div class="section-bar"></div>
+
+  <p>pytest rewrites the bytecode of your test modules so a bare <code>assert</code> reports the values of its subexpressions. That is why you never need <code>assertEqual</code>. It also means the quality of a failure message is a property of how you wrote the assertion.</p>
+
+  <div class="two-col">
+    <div>
+      <pre class="rd"><span class="label">tells you nothing</span><span class="kw">assert</span> result
+
+<span class="cm"># E  assert None</span>
+
+
+<span class="kw">assert</span> len(hits) &gt; <span class="num">0</span>
+
+<span class="cm"># E  assert 0 &gt; 0</span></pre>
+    </div>
+    <div>
+      <pre class="cy"><span class="label">tells you what broke</span><span class="kw">assert</span> codes(image, SIGNED, policy) == [<span class="st">"OVERSIZE"</span>]
+
+<span class="cm"># E  assert ['UNSIGNED'] == ['OVERSIZE']</span>
+<span class="cm"># E    At index 0 diff: 'UNSIGNED' != 'OVERSIZE'</span>
+
+<span class="kw">assert</span> <span class="kw">not</span> offenders, <span class="st">"undocumented flags: "</span> + <span class="st">", "</span>.join(offenders)
+
+<span class="cm"># E  AssertionError: undocumented flags: ingest vault</span></pre>
+    </div>
+  </div>
+
+  <h3>Exceptions: assert the message and the object, not just the class</h3>
+
+  <pre><span class="label">pytest.raises</span><span class="cm"># the type alone. Passes when the message says "None".</span>
+<span class="kw">with</span> pytest.raises(ParseError):
+    sniff(blob)
+
+<span class="cm"># + the message. `match` is re.search, so it is a substring by default.</span>
+<span class="kw">with</span> pytest.raises(ParseError, match=<span class="st">r"unrecognised magic deadbeef"</span>):
+    sniff(<span class="st">b"\xde\xad\xbe\xef"</span> + <span class="st">b"\x00"</span> * <span class="num">8</span>)
+
+<span class="cm"># + the OBJECT. TruncatedError carries offset/needed/available</span>
+<span class="cm"># precisely so a test can say WHERE.</span>
+<span class="kw">with</span> pytest.raises(TruncatedError) <span class="kw">as</span> excinfo:
+    parse(build_elf(truncate_to=<span class="num">26</span>))
+<span class="kw">assert</span> excinfo.value.needed == <span class="num">32</span>
+<span class="kw">assert</span> excinfo.value.available == <span class="num">26</span></pre>
+
+  <div class="info-box warn">
+    <strong><code>match</code> is a regex, and your message probably contains regex metacharacters</strong>
+    <code>match="offset (0x1fc)"</code> does not do what it looks like -- the parentheses are a group. Use <code>re.escape()</code>, or match a distinctive substring without punctuation. A <code>match</code> that silently matches nothing still passes if the exception type is right.
+  </div>
+
+  <h3>The assertion vocabulary</h3>
+
+  <table>
+    <tr><th>Tool</th><th>For</th></tr>
+    <tr><td class="meth">assert a == b</td><td>everything. Rich diffs for str, list, dict, set, and dataclasses</td></tr>
+    <tr><td class="meth">pytest.raises(E, match=)</td><td>type and message together</td></tr>
+    <tr><td class="meth cy">pytest.warns(W, match=)</td><td>the same, for warnings. A warning nobody asserts is a warning nobody reads</td></tr>
+    <tr><td class="meth cy">pytest.approx(x, rel=, abs=)</td><td>floats. <code>0.1 + 0.2 == pytest.approx(0.3)</code></td></tr>
+    <tr><td class="meth">capsys / capfd</td><td>stdout and stderr. <em>capsys</em> at the Python level, <em>capfd</em> at file-descriptor level</td></tr>
+    <tr><td class="meth">caplog</td><td>log records, with <code>caplog.set_level()</code> and <code>caplog.records</code></td></tr>
+    <tr><td class="meth rd">recwarn</td><td>every warning raised. Broad; prefer <code>pytest.warns</code> for a specific one</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>capsys or capfd</strong>
+    <code>capsys</code> replaces <code>sys.stdout</code>. If your output goes through a C extension, a subprocess, or anything writing to fd 1 directly, capsys sees nothing and <code>capfd</code> sees everything. Reach for capsys first; if output goes missing, that <em>is</em> your answer.
+  </div>
+
+  <h3 class="rd">One behaviour per test</h3>
+
+  <p>A test with four unrelated asserts reports the first failure and hides the other three. Two asserts about the <em>same</em> decision seen from two sides are fine and often better together:</p>
+
+  <pre class="cy"><span class="label">two views of one decision</span><span class="kw">def</span> <span class="fn">test_oversized_payload_size_is_clamped_and_warned</span>():
+    image = parse(build_uf2(blocks=<span class="num">2</span>, oversized_payload=<span class="num">9999</span>))
+    <span class="kw">assert</span> image.payload_bytes == UF2_PAYLOAD_MAX + <span class="num">256</span>   <span class="cm"># the clamp</span>
+    <span class="kw">assert</span> any(<span class="st">"exceeds 476"</span> <span class="kw">in</span> w <span class="kw">for</span> w <span class="kw">in</span> image.warnings)  <span class="cm"># and it SAID so</span>
+
+<span class="cm"># a version that clamps silently is the bug this test exists to catch,</span>
+<span class="cm"># and it needs both halves to catch it.</span></pre>
+
+  <h3 class="cy">caplog: two things people miss</h3>
+
+  <pre class="cy"><span class="label">tests/test_transport.py</span><span class="kw">def</span> <span class="fn">test_a_retry_is_logged</span>(caplog, clock):
+    <span class="cm"># 1. SET THE LEVEL. pytest captures at WARNING by default, so an</span>
+    <span class="cm">#    log.info() you are asserting on never arrives, and the test</span>
+    <span class="cm">#    fails looking like the code is wrong.</span>
+    caplog.set_level(logging.WARNING, logger=<span class="st">"fwvault.signing"</span>)
+
+    script = ScriptedTransport(flaky(<span class="num">2</span>, Response(<span class="num">200</span>, signed_body())))
+    SigningClient(<span class="st">"https://x"</span>, transport=script, clock=clock, retries=<span class="num">3</span>).verify(d)
+
+    <span class="cm"># 2. ASSERT ON RECORDS, NOT ON TEXT. a record has .levelname, .name</span>
+    <span class="cm">#    and .getMessage(). caplog.text is whatever the formatter felt</span>
+    <span class="cm">#    like, and asserting on it couples the test to a format string</span>
+    <span class="cm">#    nobody thinks of as an interface.</span>
+    retries = [r <span class="kw">for</span> r <span class="kw">in</span> caplog.records <span class="kw">if</span> <span class="st">"attempt"</span> <span class="kw">in</span> r.getMessage()]
+    <span class="kw">assert</span> len(retries) == <span class="num">2</span>
+    <span class="kw">assert</span> all(r.levelname == <span class="st">"WARNING"</span> <span class="kw">for</span> r <span class="kw">in</span> retries)
+    <span class="kw">assert</span> all(r.name == <span class="st">"fwvault.signing"</span> <span class="kw">for</span> r <span class="kw">in</span> retries)</pre>
+
+  <div class="info-box cy">
+    <strong>And the negative case, which keeps a service usable</strong>
+    <code>test_the_happy_path_logs_nothing</code> asserts <code>caplog.records == []</code> for a successful call. A log line on every successful request is a log nobody reads, which is the same as no log at all on the night something finally goes wrong.
+    <br><br>
+    In the package: <code>log = logging.getLogger(__name__)</code>, never <code>logging.warning(...)</code>. The module-level function configures the root handler as a side effect and steals output formatting from whatever application imported you.
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────── markers -->
+<section id="markers" data-num="07">
+  <h2>Markers, xfail &amp; <em class="rd">Flakes</em></h2>
+  <div class="section-bar rd"></div>
+
+  <p>Four ways a test can not-run, and they mean completely different things. The one people get wrong is <code>xfail</code>, and it fails quietly.</p>
+
+  <pre class="diagram">   <span class="hi">skip</span>          this does not apply here        <span class="dim">platform, missing dep</span>
+   <span class="hi">skipif(cond)</span>  the same, decided at collection
+   <span class="acc3">xfail</span>         this is BROKEN and we know     <span class="dim">a bug with a ticket</span>
+   <span class="acc">xfail(strict)</span> ...and tell me the MOMENT it stops being broken
+   <span class="hi">deselected</span>    a marker the run excluded      <span class="dim">-m 'not net'</span>
+
+   <span class="dim">─────────────────────────────────────────────────────────────</span>
+
+   <span class="acc3">a plain xfail that starts passing reports XPASS and stays GREEN.</span>
+
+   so: the bug gets fixed, nobody notices, the marker sits there for
+   two years, and the test has been asserting nothing that whole time.
+
+   <span class="acc">strict=True turns that XPASS into a FAILURE.</span> it is the only
+   setting that makes xfail a temporary state rather than a permanent
+   one. set <span class="hi">xfail_strict = true</span> in pyproject and get it by default.</pre>
+
+  <div class="two-col">
+    <div>
+      <pre class="rd"><span class="label">silently green forever</span><span class="key">@pytest.mark.xfail</span>(reason=<span class="st">"bug FW-118"</span>)
+<span class="kw">def</span> <span class="fn">test_the_bug_is_fixed_now</span>():
+    <span class="kw">assert</span> <span class="val">True</span>
+
+<span class="cm"># 1 xpassed. exit code 0.</span></pre>
+    </div>
+    <div>
+      <pre class="cy"><span class="label">tells you to delete the marker</span><span class="key">@pytest.mark.xfail</span>(strict=<span class="val">True</span>, reason=<span class="st">"bug FW-118"</span>)
+<span class="kw">def</span> <span class="fn">test_the_bug_is_fixed_now</span>():
+    <span class="kw">assert</span> <span class="val">True</span>
+
+<span class="cm"># 1 failed. exit code 1.</span></pre>
+    </div>
+  </div>
+
+  <div class="info-box warn">
+    <strong><code>raises=</code> narrows it further</strong>
+    <code>xfail(strict=True, raises=ValueError)</code> means "fails <em>for this reason</em>". Without it an xfail absorbs every failure, including the ImportError you introduced this morning, which is not the bug you were documenting.
+  </div>
+
+  <h3 class="rd">pytest.param: marking one case</h3>
+
+  <p>A bare tuple in a parametrize list cannot carry an id or a marker. <code>pytest.param</code> wraps one case so it can carry both.</p>
+
+  <pre class="rd"><span class="label">tests/test_markers.py</span><span class="key">@pytest.mark.parametrize</span>(
+    <span class="st">"family,expected"</span>,
+    [
+        pytest.param(<span class="num">0xE48BFF56</span>, <span class="st">"RP2040"</span>, id=<span class="st">"rp2040"</span>),
+        pytest.param(<span class="num">0xADA52840</span>, <span class="st">"NRF52840"</span>, id=<span class="st">"nrf52840"</span>),
+        pytest.param(
+            UNKNOWN_FAMILY, <span class="st">"SOME-FUTURE-CHIP"</span>,
+            id=<span class="st">"unknown"</span>,
+            marks=pytest.mark.xfail(
+                strict=<span class="val">True</span>,
+                reason=<span class="st">"we do not name unknown families; parse returns None"</span>),
+        ),
+    ],
+)
+<span class="kw">def</span> <span class="fn">test_family_naming_with_one_expected_failure</span>(family, expected):
+    <span class="kw">assert</span> parse(build_uf2(blocks=<span class="num">1</span>, family=family)).family == expected
+
+<span class="cm"># the third case is a real, documented gap, stated IN THE SUITE rather</span>
+<span class="cm"># than in a comment. The day someone adds that family to the table,</span>
+<span class="cm"># this fails and tells them to delete the marker.</span></pre>
+
+  <pre class="cy"><span class="label">selecting one case out</span><span class="key">@pytest.mark.parametrize</span>(
+    <span class="st">"blocks"</span>, [<span class="num">1</span>, <span class="num">2</span>, pytest.param(<span class="num">600</span>, marks=pytest.mark.slow, id=<span class="st">"600-blocks"</span>)])
+<span class="kw">def</span> <span class="fn">test_marks_can_select_out_one_case</span>(blocks): ...
+
+<span class="cm"># `pytest -m 'not slow'` drops ONLY the 600-block case. Without</span>
+<span class="cm"># pytest.param the marker goes on the whole function and takes the</span>
+<span class="cm"># two cheap cases with it.</span></pre>
+
+  <h3>usefixtures, for a fixture with nothing to return</h3>
+
+  <pre><span class="label">side-effect-only fixtures</span><span class="key">@pytest.mark.usefixtures</span>(<span class="st">"strict_umask"</span>)
+<span class="kw">def</span> <span class="fn">test_something</span>():
+    ...
+
+<span class="cm"># the dependency is still declared and still visible; it just is not</span>
+<span class="cm"># pretending to be a value your linter has to ignore.</span>
+<span class="cm">#</span>
+<span class="cm"># do NOT use it to hide a fixture whose value you actually want. the</span>
+<span class="cm"># signature is where a reader looks for a test's inputs.</span></pre>
+
+  <h3 class="rd">The flaky test</h3>
+
+  <p>A flaky test is a bug report, against the test or against the code. It is never noise: something is genuinely non-deterministic and you have found it.</p>
+
+  <pre class="diagram">   <span class="dim">the causes, in the order they actually occur</span>
+
+   <span class="acc3">unseeded randomness</span>          <span class="dim">→ fix the seed        (§11)</span>
+   <span class="acc3">a real clock or a real sleep</span> <span class="dim">→ inject a clock      (§08)</span>
+   <span class="acc3">shared state between tests</span>   <span class="dim">→ narrow the scope    (§15)</span>
+   <span class="acc3">a fixed path two workers race</span><span class="dim">→ tmp_path           (§15)</span>
+   <span class="acc3">a real network call</span>          <span class="dim">→ a marker + a fake  (§08)</span>
+   <span class="acc3">dict / set ordering assumed</span>  <span class="dim">→ sort, or compare sets</span>
+
+   <span class="dim">─────────────────────────────────────────────────────────────</span>
+
+   <span class="acc">QUARANTINE, do not rerun.</span>
+
+   move it to a marker that CI deselects, with a ticket. it stops
+   blocking and it stops lying. `pytest-rerunfailures` is a last
+   resort for a genuinely external dependency you do not control;
+   `--reruns 3` on your own code converts a real bug into a slower
+   green run, permanently.
+
+   <span class="acc3">the tell that you have this wrong: anyone on the team has ever</span>
+   <span class="acc3">said "just re-run it".</span></pre>
+
+  <div class="info-box cy">
+    <strong>Test the outcomes, do not describe them</strong>
+    Asserting that a skip happened, from inside the same run, means asserting on a thing that by definition did not execute. <code>test_markers.py</code> runs a nested pytest in a temp directory and asserts on its exit code and output, so every claim on this page about XPASS and <code>strict=True</code> is checked rather than remembered.
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────── 06 -->
+<section id="doubles" data-num="08">
+  <h2>The Five <em class="cy">Test Doubles</em></h2>
+  <div class="section-bar cy"></div>
+
+  <p>The words are Gerard Meszaros's. They are worth using precisely because "mock" has drifted into meaning "any object I made up". The distinction is not pedantry: it predicts how your test fails.</p>
+
+  <pre class="diagram">   <span class="dim">the ladder, in order of how much they know about themselves</span>
+
+   <span class="hi">DUMMY</span>    passed to satisfy a signature, never used
+              <span class="dim">└─ `evaluate(image, None, unchecked_policy)`</span>
+
+   <span class="hi">STUB</span>     returns canned answers. no state worth asking about
+              <span class="dim">└─ 4 lines. cannot tell you the URL was right.</span>
+
+   <span class="acc">FAKE</span>     a real, working, SIMPLIFIED implementation
+              <span class="acc">└─ the one to reach for. It can be WRONG in a way a test notices.</span>
+
+   <span class="hi">SPY</span>      a stub that records how it was called
+              <span class="dim">└─ for asserting on calls that DID NOT happen</span>
+
+   <span class="acc3">MOCK</span>     a spy with expectations built in. it asserts on ITSELF
+              <span class="acc3">└─ fails inside the double, so the message describes a call</span>
+              <span class="acc3">   that did not happen rather than a behaviour that is wrong</span></pre>
+
+  <div class="info-box cy">
+    <strong>Rule of thumb</strong>
+    Prefer a <strong>fake</strong>. Fall back to a <strong>spy</strong>. Reach for a <strong>mock</strong> almost never. A mock puts the assertion in the setup section, where nobody looks for it.
+  </div>
+
+  <div class="two-col">
+    <div>
+      <pre class="rd"><span class="label">stub: cannot model a 404</span><span class="kw">class</span> <span class="fn">StubTransport</span>:
+    <span class="kw">def</span> __init__(self, response):
+        self.response = response
+
+    <span class="kw">def</span> <span class="fn">request</span>(self, method, url, body=<span class="val">None</span>, headers=<span class="val">None</span>):
+        <span class="kw">return</span> self.response
+
+<span class="cm"># answers everything identically, so it passes</span>
+<span class="cm"># against a client that builds a nonsense URL.</span></pre>
+    </div>
+    <div>
+      <pre class="cy"><span class="label">fake: models both outcomes</span><span class="kw">class</span> <span class="fn">FakeOracle</span>:
+    <span class="kw">def</span> __init__(self, known=<span class="val">None</span>):
+        self.known = dict(known <span class="kw">or</span> {})
+
+    <span class="kw">def</span> <span class="fn">request</span>(self, method, url, body=<span class="val">None</span>, headers=<span class="val">None</span>):
+        digest = url.rsplit(<span class="st">"/"</span>, <span class="num">1</span>)[-<span class="num">1</span>]
+        <span class="kw">if</span> digest <span class="kw">not in</span> self.known:
+            <span class="kw">return</span> Response(<span class="num">404</span>, <span class="st">b'{"error":"unknown"}'</span>)
+        <span class="kw">return</span> Response(<span class="num">200</span>, signed_body(self.known[digest]))</pre>
+    </div>
+  </div>
+
+  <p>Only the fake can express the distinction the whole service is built around: a <strong>404 is a definite no</strong>, not an outage. A stub returning 200 forever cannot fail to model a 404, because it was never modelling anything -- so a suite built on stubs never checks it.</p>
+
+  <h3 class="rd">The mock failure mode, twice</h3>
+
+  <pre class="rd"><span class="label">unittest.mock, as people actually use it</span><span class="kw">from</span> unittest.mock <span class="kw">import</span> Mock
+
+transport = Mock(spec=[<span class="st">"request"</span>])            <span class="cm"># spec= is NOT optional</span>
+transport.request.return_value = Response(<span class="num">200</span>, signed_body())
+
+client = SigningClient(<span class="st">"https://x"</span>, transport=transport, clock=clock)
+client.verify(<span class="st">"c"</span> * <span class="num">64</span>)
+
+transport.request.assert_called_once_with(
+    <span class="st">"GET"</span>, <span class="st">"https://x/keys/"</span> + <span class="st">"c"</span> * <span class="num">64</span>, headers={<span class="st">"accept"</span>: <span class="st">"application/json"</span>})
+
+<span class="cm"># FAILURE 1: the message.</span>
+<span class="cm">#   "Expected call: request('GET', ...)" -- nothing about which</span>
+<span class="cm">#   BEHAVIOUR is wrong. Compare a spy: you get a URL diff.</span>
+
+<span class="cm"># FAILURE 2: a Mock without spec answers ANY attribute with another Mock.</span>
+loose = Mock()
+loose.this_method_does_not_exist().nor_does_this_one()   <span class="cm"># passes. silently.</span>
+transport.reqeust                                        <span class="cm"># spec= makes this raise</span></pre>
+
+  <h3 class="cy">Ship your doubles</h3>
+
+  <p>A library whose only seam is a transport protocol owes its users a working fake for that protocol -- the way httpx ships <code>MockTransport</code> and Django ships a test client. If the fake lives in <code>tests/</code>, every downstream user writes their own and every one of them gets a detail wrong. <code>fwvault.testing</code> is a shipped module, and <a href="#meta">§17</a> asserts its signatures still match the real transport.</p>
+
+  <pre class="cy"><span class="label">fwvault/testing.py: a scripted double for sequences</span><span class="kw">class</span> <span class="fn">ScriptedTransport</span>:
+    <span class="st">"""Answers a fixed sequence, one per call. For testing retry loops,
+    where WHEN a response arrives is the behaviour under test."""</span>
+
+    <span class="kw">def</span> <span class="fn">request</span>(self, method, url, body=<span class="val">None</span>, headers=<span class="val">None</span>):
+        self.calls.append((method, url, body, headers <span class="kw">or</span> {}))
+        <span class="kw">if</span> <span class="kw">not</span> self.script:
+            <span class="cm"># Running off the end is a HARD FAILURE, not a repeat of the</span>
+            <span class="cm"># last item. A double that quietly keeps answering turns</span>
+            <span class="cm"># "retried 3 times" and "retried 300 times" into the same</span>
+            <span class="cm"># passing test.</span>
+            <span class="kw">raise</span> AssertionError(
+                <span class="st">"ScriptedTransport exhausted: call {} was not scripted"</span>
+                .format(len(self.calls)))
+        item = self.script.pop(<span class="num">0</span>)
+        <span class="kw">if</span> isinstance(item, Exception):
+            <span class="kw">raise</span> item
+        <span class="kw">return</span> item</pre>
+
+  <div class="info-box danger">
+    <strong>The limit no double can cross</strong>
+    A stub or a fake encodes <em>your belief</em> about what the collaborator does. When that belief goes stale -- the API changed, the status code is different now -- the double keeps agreeing with you and the suite stays green against a service that no longer exists. Nothing inside your process can detect that. See <a href="#transport">§10</a> for how to keep the gap visible instead of pretending it is covered.
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────── 07 -->
+<section id="patch" data-num="09">
+  <h2><em class="rd">Monkeypatching</em>: Every Method, and When Not To</h2>
+  <div class="section-bar rd"></div>
+
+  <p><code>monkeypatch</code> is a function-scoped fixture that records every change it makes and undoes all of them at teardown, in reverse order, whether the test passed, failed, or exploded. That automatic undo is the entire reason to use it over <code>os.environ[...] = x</code> or a hand-rolled try/finally.</p>
+
+  <table>
+    <tr><th>Method</th><th>Patches</th><th>Note</th></tr>
+    <tr><td class="meth">setattr(obj, name, value)</td><td>an attribute</td><td>raises if the name does not exist -- that is the guardrail</td></tr>
+    <tr><td class="meth">delattr(obj, name)</td><td>removes one</td><td></td></tr>
+    <tr><td class="meth cy">setitem(mapping, k, v)</td><td>a dict entry</td><td>sys.modules, os.environ, any lookup table</td></tr>
+    <tr><td class="meth cy">delitem(mapping, k)</td><td></td><td><code>raising=False</code> for cleanup deletes</td></tr>
+    <tr><td class="meth">setenv(name, value)</td><td>environment</td><td>values are strings; be explicit about the coercion</td></tr>
+    <tr><td class="meth">delenv(name)</td><td></td><td>raises if unset. <code>raising=False</code> in fixtures</td></tr>
+    <tr><td class="meth cy">syspath_prepend(path)</td><td>sys.path</td><td>ALSO invalidates importlib caches -- a bare <code>sys.path.insert</code> does not</td></tr>
+    <tr><td class="meth cy">chdir(path)</td><td>working directory</td><td>and puts it back</td></tr>
+  </table>
+
+  <h3 class="rd">Patch where the name is LOOKED UP</h3>
+
+  <pre class="diagram">   <span class="dim">this is the single most common patching mistake, and it fails</span>
+   <span class="dim">by the test PASSING against unpatched code.</span>
+
+   <span class="acc">works</span>                             <span class="acc3">does nothing</span>
+
+   <span class="dim">parse.py</span>                          <span class="dim">parse.py</span>
+     <span class="kw">from</span> . <span class="kw">import</span> families           <span class="kw">from</span> .families <span class="kw">import</span> FAMILIES
+     ...                                 ...
+     families.FAMILIES[fam]              FAMILIES[fam]
+            <span class="dim">▲</span>                                <span class="dim">▲</span>
+            <span class="dim">│</span> read at CALL time               <span class="dim">│</span> bound at IMPORT time
+            <span class="dim">│</span>                                <span class="dim">│</span> into a SECOND namespace
+   patch families.FAMILIES            patch families.FAMILIES
+   <span class="acc">→ the parser sees it</span>              <span class="acc3">→ the parser never looks there again</span>
+
+   <span class="acc3">the from-import already copied the reference.</span></pre>
+
+  <h3 class="rd">Four traps, all real, all found writing this repo</h3>
+
+  <pre class="rd"><span class="label">1: raising=False disables the only signal you have</span><span class="cm"># patching a name that does not exist is almost always a typo or a</span>
+<span class="cm"># rename you have not noticed, so monkeypatch raises.</span>
+monkeypatch.setattr(parse_module, <span class="st">"FAMILEIS"</span>, {})                 <span class="cm"># AttributeError</span>
+monkeypatch.setattr(parse_module, <span class="st">"FAMILEIS"</span>, {}, raising=<span class="val">False</span>)  <span class="cm"># created,</span>
+                                                                <span class="cm"># and aimed at nothing</span></pre>
+
+  <pre class="rd"><span class="label">2: patching a constant does not move an already-bound default</span><span class="key">@dataclass</span>(frozen=<span class="val">True</span>)
+<span class="kw">class</span> <span class="fn">Manifest</span>:
+    schema_version: int = SCHEMA_VERSION     <span class="cm"># ← evaluated ONCE, at import</span>
+
+monkeypatch.setattr(<span class="st">"fwvault.store.SCHEMA_VERSION"</span>, <span class="num">99</span>)
+Manifest(...).schema_version                 <span class="cm"># still 3.</span>
+
+<span class="cm"># same shape as `def f(x=CONST)`, same shape as `from x import CONST`.</span>
+<span class="cm"># if a value must be patchable, it has to be READ at call time.</span></pre>
+
+  <pre class="rd"><span class="label">3: the string target form walks getattr, and can be ambushed</span><span class="cm"># fwvault/__init__.py does `from .parse import parse`, which rebinds</span>
+<span class="cm"># the attribute `fwvault.parse` from the MODULE to the FUNCTION.</span>
+
+monkeypatch.setattr(<span class="st">"fwvault.parse.UF2_PAYLOAD_MAX"</span>, <span class="num">8</span>)
+<span class="cm"># AttributeError: 'function' object at fwvault.parse has no attribute ...</span>
+
+<span class="kw">import</span> fwvault.parse <span class="kw">as</span> m       <span class="cm"># does NOT save you -- `as` getattrs too</span>
+m = importlib.import_module(<span class="st">"fwvault.parse"</span>)   <span class="cm"># reads sys.modules. works.</span>
+<span class="kw">from</span> fwvault.parse <span class="kw">import</span> sniff              <span class="cm"># also works. prefer this.</span></pre>
+
+  <pre class="cy"><span class="label">4: sys.modules[name] = None makes `import name` raise</span><span class="cm"># the import-isolation trick. Test the dependency-is-absent path on a</span>
+<span class="cm"># machine where it is very much present.</span>
+
+monkeypatch.delitem(sys.modules, <span class="st">"httpx"</span>, raising=<span class="val">False</span>)  <span class="cm"># ← NOT optional</span>
+monkeypatch.setitem(sys.modules, <span class="st">"httpx"</span>, <span class="val">None</span>)
+<span class="kw">with</span> pytest.raises(ImportError):
+    <span class="kw">import</span> httpx
+
+<span class="cm"># the delitem first matters: if the module is already imported, the</span>
+<span class="cm"># None assignment is what takes effect, and forgetting to clear an</span>
+<span class="cm"># existing entry gives a test that passes for the wrong reason.</span></pre>
+
+  <h3>The rule</h3>
+
+  <pre class="diagram">   <span class="acc">PATCH what you do NOT own.</span>      urllib, datetime, os.replace,
+                                    a third-party client's internals
+
+   <span class="acc">INJECT what you DO own.</span>          your transport, your clock,
+                                    your store, your policy
+
+   <span class="dim">why it matters, concretely:</span>
+
+   A. monkeypatch UrllibTransport.request    <span class="acc3">passes even if the client</span>
+                                             <span class="acc3">stops using its transport</span>
+                                             <span class="acc3">entirely</span>
+
+   B. pass transport=&lt;a fake&gt;                <span class="acc">fails immediately -- the fake</span>
+                                             <span class="acc">stops being asked anything</span></pre>
+
+  <div class="info-box warn">
+    <strong>The tell</strong>
+    If your test has more lines of patching than of assertion, the code under test has no seam and the patching is a symptom. Adding a parameter is nearly always cheaper than maintaining the patch.
+  </div>
+
+  <h3 class="cy">monkeypatch.context(): undo early</h3>
+
+  <p>The fixture undoes everything at teardown, which is too late when one test needs the patched behaviour and then the real behaviour.</p>
+
+  <pre class="cy"><span class="label">patch, assert, unpatch, assert again</span><span class="kw">def</span> <span class="fn">test_monkeypatch_context_undoes_early</span>(monkeypatch):
+    <span class="kw">with</span> monkeypatch.context() <span class="kw">as</span> m:
+        m.setattr(parse_module, <span class="st">"FAMILIES"</span>, {})
+        <span class="kw">assert</span> parse(build_uf2(blocks=<span class="num">1</span>)).family <span class="kw">is</span> <span class="val">None</span>
+
+    <span class="kw">assert</span> parse(build_uf2(blocks=<span class="num">1</span>)).family == <span class="st">"RP2040"</span>   <span class="cm"># already restored</span></pre>
+
+  <div class="info-box warn">
+    <strong>The reason you will actually need it</strong>
+    <code>monkeypatch</code> is <strong>function-scoped</strong>. A session or module-scoped fixture cannot request it: pytest refuses with a <code>ScopeMismatch</code>. To patch from a wider-scoped fixture, build the context manager yourself.
+    <br><br>
+    <code>@pytest.fixture(scope="session")</code><br>
+    <code>def patched_env():</code><br>
+    <code>&nbsp;&nbsp;&nbsp;&nbsp;with pytest.MonkeyPatch.context() as m:</code><br>
+    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;m.setenv("FWVAULT_HOME", "/somewhere")</code><br>
+    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yield m</code>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────── 08 -->
+<section id="transport" data-num="10">
+  <h2>Mock <em class="or">Transports</em></h2>
+  <div class="section-bar"></div>
+
+  <p>The thing that talks to the network is a parameter, not an import. <code>SigningClient</code> never mentions urllib, sockets or hosts -- it holds a <code>transport</code> with a single <code>request</code> method, and the real one is just the default argument.</p>
+
+  <pre class="diagram">   <span class="dim">the seam. Nothing is patched; the test passes a different object.</span>
+
+   <span class="hi">SigningClient</span>
+        <span class="dim">│</span>  .verify(digest)
+        <span class="dim">▼</span>
+   <span class="acc">transport.request(method, url, body, headers) → Response</span>
+        <span class="dim">│</span>
+        <span class="dim">├──</span> <span class="hi">UrllibTransport</span>      real sockets. stdlib. <span class="acc3">§net marker only</span>
+        <span class="dim">├──</span> <span class="hi">RecordingTransport</span>   routes + a call log      <span class="dim">(spy)</span>
+        <span class="dim">├──</span> <span class="hi">ScriptedTransport</span>    one answer per call      <span class="dim">(sequence)</span>
+        <span class="dim">└──</span> <span class="hi">FakeOracle</span>           a working oracle in RAM  <span class="dim">(fake)</span>
+
+   <span class="acc">The narrower the seam, the cheaper the fake that fills it.</span>
+   `Response` is a 3-field dataclass, deliberately NOT an httpx.Response.</pre>
+
+  <h3>What is actually worth asserting</h3>
+
+  <p>Not "it returned a Verdict". The interesting assertions are about <strong>when</strong>, <strong>how often</strong>, and <strong>what it did not do</strong> -- and none of those are visible in a return value.</p>
+
+  <pre><span class="label">the retry schedule, in zero wall-clock time</span><span class="kw">def</span> <span class="fn">test_backoff_is_exponential_and_instant</span>(clock):
+    script = ScriptedTransport(flaky(<span class="num">3</span>, Response(<span class="num">200</span>, signed_body())))
+    client = SigningClient(<span class="st">"https://x"</span>, transport=script, clock=clock, retries=<span class="num">4</span>)
+    client.verify(<span class="st">"a"</span> * <span class="num">64</span>)
+
+    <span class="kw">assert</span> clock.slept == [<span class="num">0.5</span>, <span class="num">1.0</span>, <span class="num">2.0</span>]
+
+<span class="cm"># the schedule IS the behaviour. A real sleep here would put 3.5</span>
+<span class="cm"># seconds into every CI run to test arithmetic.</span>
+
+<span class="kw">def</span> <span class="fn">test_no_sleep_on_the_first_attempt</span>(clock):
+    <span class="cm"># an off-by-one in a backoff loop costs every caller half a second</span>
+    <span class="cm"># on the HAPPY path, and no return value shows it.</span>
+    <span class="kw">assert</span> clock.slept == []</pre>
+
+  <h3 class="rd">The status taxonomy this is all for</h3>
+
+  <pre class="diagram">   <span class="dim">what the oracle said</span>              <span class="dim">what it MEANS</span>
+
+   <span class="acc">200 {"signed": true}</span>    <span class="dim">──►</span>   Verdict(signed=True)      <span class="dim">an answer</span>
+   <span class="acc">404</span>                     <span class="dim">──►</span>   Verdict(signed=False)     <span class="dim">an answer. NOT retried.</span>
+   <span class="acc3">401 / 403 / 400</span>         <span class="dim">──►</span>   <span class="acc3">VaultUnavailable</span>          <span class="dim">OUR credentials are wrong</span>
+   <span class="acc3">500 / 502 / 503</span>         <span class="dim">──►</span>   retry, then <span class="acc3">VaultUnavailable</span>
+   <span class="acc3">connection reset</span>        <span class="dim">──►</span>   retry, then <span class="acc3">VaultUnavailable</span>
+
+   <span class="acc3">VaultUnavailable is NEVER Verdict(signed=False).</span>
+
+   An outage rendered as "unsigned" turns into a wall of confident
+   refusals indistinguishable from real ones, and nobody finds it
+   until someone asks why every build failed overnight.</pre>
+
+  <div class="info-box cy">
+    <strong>A stale yes that says it is stale</strong>
+    When the oracle dies and a cached answer exists, the client serves it with <code>stale=True</code>, and the API surfaces <code>stale_verdict</code>. A cached yes served during an outage is useful; a cached yes presenting as fresh is a lie with a timestamp on it. Availability and honesty are two behaviours, so they get two tests -- a change that keeps the first and drops the second should fail one test with an obvious name.
+  </div>
+
+  <h3>httpx: two transports, opposite ends of the wire</h3>
+
+  <pre class="cy"><span class="label">the confusion worth clearing up once</span><span class="cm"># ASGITransport substitutes the SERVER -- the thing that answers us.</span>
+transport = httpx.ASGITransport(app=app)
+<span class="kw">async with</span> httpx.AsyncClient(transport=transport, base_url=<span class="st">"http://vault"</span>) <span class="kw">as</span> c:
+    r = <span class="kw">await</span> c.post(<span class="st">"/artifact"</span>, content=uf2)
+
+<span class="cm"># MockTransport substitutes the THING WE CALL -- the far side.</span>
+<span class="kw">def</span> <span class="fn">handler</span>(request):
+    <span class="kw">return</span> httpx.Response(<span class="num">200</span>, json={<span class="st">"signed"</span>: <span class="val">True</span>, <span class="st">"signer"</span>: <span class="st">"ci-builder"</span>})
+
+httpx_client = httpx.Client(transport=httpx.MockTransport(handler))
+
+<span class="cm"># same library, opposite directions, and they get confused constantly.</span></pre>
+
+  <h3 class="rd">The gap you cannot close, named rather than hidden</h3>
+
+  <pre class="rd"><span class="label">tests/test_transport.py</span><span class="key">@pytest.mark.net</span>
+<span class="kw">def</span> <span class="fn">test_urllib_transport_against_a_real_server</span>():
+    <span class="st">"""The one thing no fake can cover: that UrllibTransport speaks HTTP.
+
+    Deselected by default; `pytest --runnet` opts in. The skip reason prints
+    on every run because pyproject sets -rs, so the gap stays VISIBLE instead
+    of being quietly covered by a fake of the very class under test."""</span>
+    response = UrllibTransport(timeout=<span class="num">5.0</span>).request(<span class="st">"GET"</span>, <span class="st">"https://example.com/"</span>)
+    <span class="kw">assert</span> response.status == <span class="num">200</span>
+
+
+<span class="kw">def</span> <span class="fn">test_urllib_transport_converts_socket_errors</span>(monkeypatch):
+    <span class="cm"># what CAN be tested without a socket: that the error TRANSLATION</span>
+    <span class="cm"># is right. urlopen is PATCHED here, and that is correct -- urllib</span>
+    <span class="cm"># is not our seam, we do not own it, there is no argument to pass.</span>
+    monkeypatch.setattr(urllib.request, <span class="st">"urlopen"</span>, boom)
+    <span class="kw">with</span> pytest.raises(TransportError, match=<span class="st">"unreachable"</span>):
+        UrllibTransport().request(<span class="st">"GET"</span>, <span class="st">"https://x/"</span>)</pre>
+</section>
+
+<!-- ─────────────────────────────────────────────── 09 -->
+<section id="asgi" data-num="11">
+  <h2>ASGI &amp; <em class="cy">Fake Clients</em></h2>
+  <div class="section-bar cy"></div>
+
+  <p>An ASGI app is a coroutine taking three arguments. That is the whole protocol. Every framework you have used is a very good router and middleware stack wrapped around those three names, and every test client you have used is something that builds a scope, feeds a receive, and collects the sends.</p>
+
+  <pre class="diagram">   <span class="acc">async def app(scope, receive, send)</span>
+
+   <span class="hi">scope</span>     a dict describing the connection
+             {<span class="st">"type"</span>: <span class="st">"http"</span>, <span class="st">"method"</span>: <span class="st">"POST"</span>, <span class="st">"path"</span>: <span class="st">"/artifact"</span>,
+              <span class="st">"headers"</span>: [(<span class="st">b"content-type"</span>, <span class="st">b"application/octet-stream"</span>)], ...}
+
+   <span class="hi">receive</span>   an awaitable you CALL to pull events IN
+             <span class="dim">→</span> {<span class="st">"type"</span>: <span class="st">"http.request"</span>, <span class="st">"body"</span>: <span class="st">b"..."</span>, <span class="st">"more_body"</span>: True}
+             <span class="dim">→</span> {<span class="st">"type"</span>: <span class="st">"http.request"</span>, <span class="st">"body"</span>: <span class="st">b"..."</span>, <span class="st">"more_body"</span>: False}
+             <span class="dim">→</span> {<span class="st">"type"</span>: <span class="st">"http.disconnect"</span>}
+
+   <span class="hi">send</span>      a coroutine you CALL to push events OUT
+             <span class="dim">←</span> {<span class="st">"type"</span>: <span class="st">"http.response.start"</span>, <span class="st">"status"</span>: 201, <span class="st">"headers"</span>: [...]}
+             <span class="dim">←</span> {<span class="st">"type"</span>: <span class="st">"http.response.body"</span>, <span class="st">"body"</span>: <span class="st">b'{"digest":...}'</span>}
+
+   <span class="acc3">plus one more scope type nobody handles until it hangs:</span>
+   <span class="hi">lifespan</span>  {<span class="st">"type"</span>: <span class="st">"lifespan"</span>} → startup / shutdown, each needing a reply</pre>
+
+  <h3 class="cy">The whole test client, in twenty lines</h3>
+
+  <pre class="cy"><span class="label">tests/test_asgi_raw.py</span><span class="kw">def</span> <span class="fn">call</span>(app, method=<span class="st">"GET"</span>, path=<span class="st">"/"</span>, body=<span class="st">b""</span>, headers=<span class="val">None</span>, chunks=<span class="val">None</span>):
+    <span class="st">"""One request, start to finish. Returns (status, headers, parsed body)."""</span>
+    incoming = list(chunks) <span class="kw">if</span> chunks <span class="kw">is not</span> <span class="val">None</span> <span class="kw">else</span> [body]
+    scope = {
+        <span class="st">"type"</span>: <span class="st">"http"</span>, <span class="st">"asgi"</span>: {<span class="st">"version"</span>: <span class="st">"3.0"</span>}, <span class="st">"method"</span>: method,
+        <span class="st">"path"</span>: path, <span class="st">"query_string"</span>: <span class="st">b""</span>,
+        <span class="st">"headers"</span>: [(k.lower().encode(), v.encode())
+                    <span class="kw">for</span> k, v <span class="kw">in</span> (headers <span class="kw">or</span> {}).items()],
+    }
+
+    <span class="kw">async def</span> <span class="fn">receive</span>():
+        <span class="kw">if</span> incoming:
+            part = incoming.pop(<span class="num">0</span>)
+            <span class="kw">return</span> {<span class="st">"type"</span>: <span class="st">"http.request"</span>, <span class="st">"body"</span>: part,
+                    <span class="st">"more_body"</span>: bool(incoming)}
+        <span class="kw">return</span> {<span class="st">"type"</span>: <span class="st">"http.disconnect"</span>}
+
+    sent = []
+    <span class="kw">async def</span> <span class="fn">send</span>(message):
+        sent.append(message)
+
+    asyncio.run(app(scope, receive, send))
+
+    start = next(m <span class="kw">for</span> m <span class="kw">in</span> sent <span class="kw">if</span> m[<span class="st">"type"</span>] == <span class="st">"http.response.start"</span>)
+    payload = <span class="st">b""</span>.join(m.get(<span class="st">"body"</span>, <span class="st">b""</span>) <span class="kw">for</span> m <span class="kw">in</span> sent
+                       <span class="kw">if</span> m[<span class="st">"type"</span>] == <span class="st">"http.response.body"</span>)
+    <span class="kw">return</span> start[<span class="st">"status"</span>], dict(start[<span class="st">"headers"</span>]), json.loads(payload)</pre>
+
+  <h3>Three clients, one behaviour</h3>
+
+  <table>
+    <tr><th>Client</th><th>Gives you</th><th>Takes away</th></tr>
+    <tr><td class="meth cy">raw harness</td><td>chunk boundaries, disconnects, malformed scopes, visible lifespan</td><td>header normalisation, cookies, redirects</td></tr>
+    <tr><td class="meth">httpx.ASGITransport</td><td>real header handling, the same API as your production client code</td><td>control of the protocol</td></tr>
+    <tr><td class="meth">starlette TestClient</td><td>all of that, plus lifespan via a context manager, sync over async</td><td>the same, plus a framework dependency</td></tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>The assertions should barely change</strong>
+    In this repo, <code>test_asgi_raw.py</code> and <code>test_asgi_clients.py</code> assert nearly identical things about the same app. That is the demonstration: <em>if swapping the client changes what you assert, you were testing the client.</em> And <code>TestClient</code> wraps any ASGI app -- <code>fwvault</code> has never heard of Starlette, and the client does not care.
+  </div>
+
+  <h3 class="cy">What only the raw harness can do</h3>
+
+  <pre class="cy"><span class="label">things no HTTP client will let you send</span><span class="cm"># 1. choose the chunk boundaries. The reassembly loop is exactly</span>
+<span class="cm">#    where an off-by-one costs you a corrupted upload.</span>
+call(app, <span class="st">"POST"</span>, <span class="st">"/artifact"</span>, chunks=[uf2[:<span class="num">100</span>], uf2[<span class="num">100</span>:<span class="num">700</span>], uf2[<span class="num">700</span>:]])
+
+<span class="cm"># 2. prove the size limit fires BEFORE the whole body is buffered.</span>
+<span class="cm">#    a service that buffers 900 MB and THEN checks has no limit.</span>
+app = create_app(store=vault, client=client, policy=policy, max_body=<span class="num">1024</span>)
+status, _h, body = call(app, <span class="st">"POST"</span>, <span class="st">"/artifact"</span>, chunks=[...])
+<span class="kw">assert</span> (status, body[<span class="st">"error"</span>]) == (<span class="num">413</span>, <span class="st">"OVERSIZE"</span>)
+
+<span class="cm"># 3. hang up mid-body. The app must not respond to a closed</span>
+<span class="cm">#    connection, and must not raise.</span>
+events = [{<span class="st">"type"</span>: <span class="st">"http.request"</span>, <span class="st">"body"</span>: uf2[:<span class="num">100</span>], <span class="st">"more_body"</span>: <span class="val">True</span>},
+          {<span class="st">"type"</span>: <span class="st">"http.disconnect"</span>}]
+<span class="kw">assert</span> sent == []
+
+<span class="cm"># 4. drive lifespan by hand, and assert both events are answered.</span>
+<span class="kw">assert</span> lifespan(app) == [<span class="st">"lifespan.startup.complete"</span>, <span class="st">"lifespan.shutdown.complete"</span>]</pre>
+
+  <div class="info-box warn">
+    <strong>Lifespan is where hangs come from</strong>
+    A test client sends startup and shutdown events and <em>waits</em>. An app that ignores them hangs at fixture time, and the failure looks like the test framework being broken rather than the app. Answer lifespan, and assert that you do.
+  </div>
+
+  <h3>Async fixtures need an async plugin</h3>
+
+  <pre><span class="label">the "coroutine was never awaited" answer</span><span class="key">@pytest.fixture</span>
+<span class="kw">def</span> <span class="fn">anyio_backend</span>():
+    <span class="cm"># anyio's plugin parametrizes over backends via this fixture.</span>
+    <span class="cm"># pinning it stops the run also spawning a trio pass.</span>
+    <span class="kw">return</span> <span class="st">"asyncio"</span>
+
+<span class="key">@pytest.fixture</span>
+<span class="kw">async def</span> <span class="fn">http</span>(app):
+    transport = httpx.ASGITransport(app=app)
+    <span class="kw">async with</span> httpx.AsyncClient(transport=transport,
+                                 base_url=<span class="st">"http://vault"</span>) <span class="kw">as</span> client:
+        <span class="kw">yield</span> client
+
+<span class="key">@pytest.mark.anyio</span>
+<span class="kw">async def</span> <span class="fn">test_ingest_over_httpx</span>(http, uf2):
+    response = <span class="kw">await</span> http.post(<span class="st">"/artifact"</span>, content=uf2)
+    <span class="kw">assert</span> response.status_code == <span class="num">201</span>
+
+<span class="cm"># no plugin → pytest collects the coroutine as if it were a test,</span>
+<span class="cm"># never awaits it, and reports a pass with a RuntimeWarning.</span></pre>
+</section>
+
+<!-- ─────────────────────────────────────────────── 10 -->
+<section id="parser" data-num="12">
+  <h2>Parser Tests: Walkers, <em class="or">Builders</em>, Corpora</h2>
+  <div class="section-bar"></div>
+
+  <p>Two parsers, one shape: a <strong>generator that walks structure and yields records</strong>, wrapped by a <strong>function that folds those records</strong> into a result. Keeping the walk separate from the fold is what makes a parser testable at two levels.</p>
+
+  <pre class="diagram">   <span class="dim">walk / fold, and what each half buys you</span>
+
+   bytes <span class="dim">──►</span> <span class="acc">walk_uf2()</span> <span class="dim">──►</span> Block, Block, Block <span class="dim">──►</span> <span class="acc">parse_uf2()</span> <span class="dim">──►</span> Image
+                <span class="dim">│</span>                                       <span class="dim">│</span>
+                <span class="dim">│</span> a GENERATOR                           <span class="dim">│</span> the FOLD
+                <span class="dim">│</span> · 40 MB costs one block of RAM        <span class="dim">│</span> · testable with hand-built
+                <span class="dim">│</span> · a caller can stop early             <span class="dim">│</span>   records and NO bytes
+                <span class="dim">│</span> · assert on block 10 of 900           <span class="dim">│</span> · where warnings accumulate
+                <span class="dim">│</span>   without building a manifest         <span class="dim">│</span>
+
+   <span class="acc3">raise vs warn is THE line, and getting it wrong either way is a bug:</span>
+     raise too eagerly  <span class="dim">→</span> half the real world is unparseable
+     warn too eagerly   <span class="dim">→</span> a corrupt image ships</pre>
+
+  <h3>The UF2 block, which is what all of this parses</h3>
+
+  <pre class="diagram">   <span class="dim">512 bytes, three magic numbers, 476 usable payload bytes</span>
+
+   offset   size   field
+   <span class="dim">──────────────────────────────────────────────────────────────────</span>
+     <span class="hi">0</span>       4     <span class="acc">magicStart0</span>   0x0A324655   <span class="dim">"UF2\n"</span>
+     <span class="hi">4</span>       4     <span class="acc">magicStart1</span>   0x9E5D5157
+     <span class="hi">8</span>       4     flags         0x2000 = familyID present
+    <span class="hi">12</span>       4     targetAddr    where this block is flashed
+    <span class="hi">16</span>       4     payloadSize   <span class="acc3">≤ 476, and a parser must clamp</span>
+    <span class="hi">20</span>       4     blockNo
+    <span class="hi">24</span>       4     numBlocks     <span class="acc3">declared, not verified</span>
+    <span class="hi">28</span>       4     fileSize / familyID
+    <span class="hi">32</span>     476     data
+   <span class="hi">508</span>       4     <span class="acc">magicEnd</span>      0x0AB16F30
+   <span class="dim">──────────────────────────────────────────────────────────────────</span>
+
+   <span class="acc">the third magic at 508 is the POINT of the format:</span>
+   it makes a block self-identifying even when found mid-stream.</pre>
+
+  <h3>Build specimens, do not commit them</h3>
+
+  <p>A builder turns keyword arguments into bytes, and every defect argument names a block index. A test then reads as "block 1's end magic is wrong" rather than as a byte offset the reader has to divide by 512 in their head.</p>
+
+  <pre><span class="label">fwvault/testing.py</span><span class="kw">def</span> <span class="fn">build_uf2</span>(blocks=<span class="num">2</span>, family=RP2040, payload_size=<span class="num">256</span>, base_addr=<span class="num">0x10000000</span>,
+              flags=<span class="val">None</span>, bad_start_magic=<span class="val">None</span>, bad_end_magic=<span class="val">None</span>,
+              wrong_num_blocks=<span class="val">None</span>, oversized_payload=<span class="val">None</span>,
+              shuffle_block_no=<span class="val">False</span>, trailing_garbage=<span class="num">0</span>, addr_step=<span class="val">None</span>):
+    ...
+
+<span class="cm"># reads as a sentence:</span>
+build_uf2(blocks=<span class="num">3</span>, bad_end_magic=<span class="num">1</span>)              <span class="cm"># block 1's end magic is wrong</span>
+build_uf2(blocks=<span class="num">10</span>, shuffle_block_no=<span class="val">True</span>)      <span class="cm"># blockNo fields out of order</span>
+build_uf2(blocks=<span class="num">2</span>, wrong_num_blocks=<span class="num">0xFFFFFFFF</span>) <span class="cm"># claims 4 billion blocks</span></pre>
+
+  <div class="info-box">
+    <strong>Why generated rather than committed</strong>
+    A committed corpus of real files is licensing risk, repository weight, and -- worst -- a corpus that exists on one machine. If a test names a path in a gitignored tree, it runs on the developer's laptop and skips on every runner, and <em>both readings look fine from where you are standing</em>. Generated specimens are deterministic, identical everywhere, and a failure is reproducible from the arguments in the traceback.
+  </div>
+
+  <h3 class="rd">Test the builder</h3>
+
+  <pre class="rd"><span class="label">the one everybody skips</span><span class="kw">def</span> <span class="fn">test_the_builder_builds_what_it_claims</span>():
+    <span class="st">"""A corpus generator is code, and untested code in a test corpus
+    produces tests that pass against the wrong bytes.
+
+    This asserts the raw layout DIRECTLY, without going through the parser --
+    otherwise a matching pair of bugs in builder and parser cancels out and
+    the suite stays green."""</span>
+    blob = build_uf2(blocks=<span class="num">1</span>, family=RP2040, payload_size=<span class="num">128</span>)
+    <span class="kw">assert</span> len(blob) == <span class="num">512</span>
+    <span class="kw">assert</span> struct.unpack_from(<span class="st">"&lt;I"</span>, blob, <span class="num">0</span>)[<span class="num">0</span>] == UF2_MAGIC0
+    <span class="kw">assert</span> struct.unpack_from(<span class="st">"&lt;I"</span>, blob, <span class="num">16</span>)[<span class="num">0</span>] == <span class="num">128</span>
+    <span class="kw">assert</span> struct.unpack_from(<span class="st">"&lt;I"</span>, blob, <span class="num">508</span>)[<span class="num">0</span>] == UF2_MAGIC_END</pre>
+
+  <h3>Sniff by magic, never by filename</h3>
+
+  <pre class="cy"><span class="label">and locate every finding absolutely</span><span class="kw">def</span> <span class="fn">test_block_offsets_are_absolute</span>():
+    <span class="cm"># so a finding can be handed to `xxd -s`. Relative offsets are the</span>
+    <span class="cm"># reason people stop trusting parser output.</span>
+    blocks = list(walk_uf2(build_uf2(blocks=<span class="num">3</span>)))
+    <span class="kw">assert</span> [b.offset <span class="kw">for</span> b <span class="kw">in</span> blocks] == [<span class="num">0</span>, <span class="num">512</span>, <span class="num">1024</span>]
+
+<span class="key">@pytest.mark.parametrize</span>(<span class="st">"bad_block"</span>, [<span class="num">0</span>, <span class="num">1</span>, <span class="num">2</span>], ids=<span class="kw">lambda</span> n: <span class="st">"block%d"</span> % n)
+<span class="kw">def</span> <span class="fn">test_bad_end_magic_is_located</span>(bad_block):
+    <span class="cm"># parametrizing over WHICH block is defective catches an off-by-one</span>
+    <span class="cm"># in the offset arithmetic that a single specimen would not.</span>
+    <span class="kw">with</span> pytest.raises(ParseError) <span class="kw">as</span> excinfo:
+        list(walk_uf2(build_uf2(blocks=<span class="num">3</span>, bad_end_magic=bad_block)))
+    <span class="kw">assert</span> excinfo.value.offset == bad_block * <span class="num">512</span> + <span class="num">508</span></pre>
+
+  <h3 class="rd">The negative case people forget</h3>
+
+  <pre class="rd"><span class="label">without this, a parser that warns about everything passes</span><span class="kw">def</span> <span class="fn">test_a_clean_image_warns_about_nothing</span>():
+    <span class="kw">assert</span> parse(build_uf2(blocks=<span class="num">4</span>)).warnings == ()</pre>
+
+  <h3 class="rd">Why parsers get more testing than other code</h3>
+
+  <p>Four properties, and no other kind of code has all four.</p>
+
+  <table>
+    <tr><th>Property</th><th>Consequence for testing</th></tr>
+    <tr><td class="meth rd">the input space is adversarial by definition</td><td>the entire job is consuming bytes somebody else chose. "Nobody would send that" is not available to you</td></tr>
+    <tr><td class="meth rd">the state machine is deep</td><td>a wrong branch three levels in still returns something plausible. The failure is a wrong answer, not a crash</td></tr>
+    <tr><td class="meth rd">length fields are trust boundaries</td><td>an off-by-one at a length prefix is a memory-safety or trust bug, not a style issue</td></tr>
+    <tr><td class="meth cy">a real oracle usually exists</td><td>the unusual luxury. There is a spec, and often a second implementation. Almost no other code has that</td></tr>
+  </table>
+
+  <h3>The techniques, in increasing order of return</h3>
+
+  <pre class="diagram">   <span class="dim">cheapest first. each one finds what the one above it cannot.</span>
+
+   <span class="hi">1 corpus + golden files</span>     catches regressions. catches nothing new.
+   <span class="hi">2 truncation sweeps</span>         an interrupted upload is the commonest
+                              corrupt file alive. cheapest real finder.
+   <span class="hi">3 bit flips, seeded fuzz</span>    field boundaries beat random offsets
+                              by orders of magnitude.
+   <span class="acc">4 metamorphic relations</span>     <span class="acc">no oracle needed.</span> parse, reserialize,
+                              reparse, and assert a fixed point.
+   <span class="acc">5 differential</span>              the strongest, when a second
+                              implementation exists.
+   <span class="hi">6 structural generation</span>     generate VALID inputs so the fuzzer
+                              spends its budget past the header checks
+                              instead of bouncing off them.
+
+   <span class="acc3">and the sweep itself needs a test.</span> this repo's truncation sweep
+   stepped by 97, which never lands on a multiple of 512, so all
+   twenty cases took the same early branch and none reached the
+   walker. a meta-test caught it. see <a href="#hostile">§13</a>.</pre>
+
+  <h3 class="cy">Metamorphic relations: assertions with no oracle</h3>
+
+  <p>Every other technique needs somebody to know the right answer. An example test states it, a differential test borrows it, a property test implies it. A metamorphic relation needs none: it says how two runs must relate, never what either one should produce.</p>
+
+  <pre class="cy"><span class="label">the four shapes worth learning</span><span class="cm"># ROUND TRIP: the strongest, when an inverse exists</span>
+<span class="kw">assert</span> serialize_uf2(walk_uf2(blob)) == blob
+<span class="cm">#   byte for byte. anything the walker drops shows up as a diff,</span>
+<span class="cm">#   including fields nothing else in the suite reads.</span>
+
+<span class="cm"># INVARIANCE: changing X must NOT change Y</span>
+scrambled = serialize_uf2(replace(b, data=random_bytes()) <span class="kw">for</span> b <span class="kw">in</span> blocks)
+<span class="kw">assert</span> parse(scrambled) == parse(blob)
+<span class="cm">#   payload is opaque to a HEADER parser. catches a parser reading</span>
+<span class="cm">#   a length or a flag out of the data area.</span>
+
+<span class="cm"># EQUIVARIANCE: changing X must change Y by a stated amount</span>
+after = parse(serialize_uf2(blocks_of(base) + blocks_of(added)))
+<span class="kw">assert</span> after.payload_bytes == before.payload_bytes + <span class="num">200</span> * extra
+<span class="cm">#   not "the total is 768". the relation holds whatever the</span>
+<span class="cm">#   numbers are, so it survives the specimen changing.</span>
+
+<span class="cm"># IDEMPOTENCE: twice is once</span>
+<span class="kw">assert</span> serialize_uf2(walk_uf2(once)) == once</pre>
+
+  <div class="info-box cy">
+    <strong>Stating a bound without naming it</strong>
+    <code>test_clamping_is_monotonic_in_the_declared_size</code> asserts that raising <code>payloadSize</code> can never lower the reported total, and that past some point it stops moving. That states the clamp <em>without naming 476</em>, so the test does not have to agree with the implementation about where the ceiling sits. It only has to be right that there is one. A test that repeats the implementation's constant is a test that cannot disagree with it.
+  </div>
+
+  <div class="info-box danger">
+    <strong>Every relation needs a not-invariant companion</strong>
+    All of the above is satisfied by a parser that ignores its input and returns a constant. Two tests in <code>test_metamorphic.py</code> exist only to fail against that: corrupting a magic number must raise, and changing <code>payloadSize</code> must move the total. This is the never-crash trap from <a href="#hostile">§13</a> in a different costume, and it shows up wherever the assertions describe relationships rather than values.
+  </div>
+
+  <h3 class="rd">Why this is the technique that survives an AI author</h3>
+
+  <p>A relation is a claim about the <em>problem</em>, not about the code, so it cannot be transcribed from the implementation's behaviour. Ask a model what <code>parse</code> returns for a given blob and it can read the answer off the source. Ask it whether reordering blocks may change the payload total and it has to reason about UF2. See <a href="#ai">§19</a>, and <code>test_oracle_independence.py</code> for what happens when the assertions do come from the implementation.</p>
+
+  <h3>Two ideas worth stealing from other parser traditions</h3>
+
+  <table>
+    <tr><th>Source</th><th>What transfers</th></tr>
+    <tr><td class="meth cy">Nystrom, <em>Pratt Parsers: Expression Parsing Made Easy</em></td><td>the precedence table <strong>is</strong> the grammar. The article is about parsing rather than testing, but the consequence for tests is direct: when the specification is a table, the test surface is a table, and <code>parametrize</code> is the natural fit rather than a convenience</td></tr>
+    <tr><td class="meth cy">Henkelmann, <em>Scala Parser Combinators, Part 3</em></td><td>sub-parsers are testable in isolation, so you test <code>boolean</code>, <code>int</code> and <code>string</code> separately before anything composes them. That is <a href="#orient">§01</a>'s seam argument arriving from a different language and paradigm, which is the strongest kind of confirmation</td></tr>
+  </table>
+
+  <p>The walk/fold split at the top of this section is the same idea in a byte-parser: <code>walk_uf2</code> is the sub-parser, <code>parse_uf2</code> composes it, and both are reachable on their own. <code>serialize_uf2</code> is what makes the pair invertible, which is what buys the round-trip relation.</p>
+</section>
+
+<!-- ─────────────────────────────────────────────── 11 -->
+<section id="hostile" data-num="13">
+  <h2>Hostile Input, Fuzz &amp; <em class="rd">Properties</em></h2>
+  <div class="section-bar rd"></div>
+
+  <p>A parser's contract under bad input is narrow and absolute: <strong>for any byte string, <code>parse()</code> either returns an Image or raises ParseError.</strong> Nothing else. Not IndexError, not struct.error, not MemoryError, not a hang -- every one of those is the same defect wearing a different exception class, and every one reaches a client as a 500 with a stack trace in it.</p>
+
+  <pre class="diagram">   <span class="dim">four techniques, and what each one is actually good at</span>
+
+   <span class="acc">TRUNCATION SWEEP</span>   every prefix of a valid file
+                      <span class="dim">cheap · exhaustive · finds more real bugs than the rest combined</span>
+                      <span class="dim">an interrupted upload is the commonest corrupt file in the world</span>
+
+   <span class="acc">BIT FLIPS</span>          one byte changed, walking the header FIELD BOUNDARIES
+                      <span class="dim">12 named offsets do what a fuzzer needs a million iterations for</span>
+
+   <span class="acc">SEEDED FUZZ</span>        random garbage from a FIXED seed
+                      <span class="dim">reproducible from the test ID alone. no artifact to attach.</span>
+
+   <span class="acc">PROPERTY-BASED</span>     the machine finds the specimen, then SHRINKS it
+                      <span class="dim">1,847 bytes of noise → b'\x00' and the same traceback</span></pre>
+
+  <div class="info-box danger">
+    <strong>The unseeded fuzz trap</strong>
+    <code>random.randbytes(n)</code> with no seed gives a suite that fails once a fortnight with no way to reproduce it -- which trains everyone to re-run CI until it goes green. A fixed seed gives a fixed corpus that grows only when you decide it should, and growing it is a diff someone reviews.
+  </div>
+
+  <h3 class="rd">Guided beats unguided, by three orders of magnitude</h3>
+
+  <pre class="rd"><span class="label">why pure random bytes prove almost nothing here</span><span class="key">@pytest.mark.parametrize</span>(<span class="st">"seed"</span>, range(<span class="num">8</span>))
+<span class="kw">def</span> <span class="fn">test_valid_prefix_random_tail</span>(seed):
+    <span class="st">"""The interesting shape: enough valid structure to get PAST sniff,
+    then garbage.
+
+    Pure random bytes almost never reach the walker at all -- they fail the
+    magic check in the first four bytes and prove nothing about the code past
+    it. This is why unguided fuzzing of a parser with a magic number spends
+    99.9% of its budget on the same branch."""</span>
+    rng = random.Random(<span class="num">1000</span> + seed)
+    tail = bytes(rng.randrange(<span class="num">256</span>) <span class="kw">for</span> _ <span class="kw">in</span> range(<span class="num">512</span>))
+    _parses_or_raises_parse_error(VALID[:<span class="num">512</span>] + tail)</pre>
+
+  <h3>Properties, in order of strength</h3>
+
+  <table>
+    <tr><th>Property</th><th>Shape</th><th>Strength</th></tr>
+    <tr><td class="meth cy">round-trip</td><td><code>parse(build(x)) == x</code></td><td>strongest. Subsumes a dozen example tests</td></tr>
+    <tr><td class="meth cy">invariant</td><td>a relationship holds for all inputs</td><td>strong. Cross-function ones are the best value</td></tr>
+    <tr><td class="meth">oracle</td><td>fast impl agrees with obvious impl</td><td>strong -- see <a href="#differential">§15</a></td></tr>
+    <tr><td class="meth">idempotence</td><td><code>f(f(x)) == f(x)</code></td><td>useful where it applies</td></tr>
+    <tr><td class="meth rd">never-crash</td><td>no exception outside the declared set</td><td><strong>weakest.</strong> Where everyone starts</td></tr>
+  </table>
+
+  <pre class="cy"><span class="label">tests/test_property.py</span><span class="key">@COMMON</span>
+<span class="key">@given</span>(blocks=st.integers(min_value=<span class="num">1</span>, max_value=<span class="num">12</span>),
+       payload=st.integers(min_value=<span class="num">0</span>, max_value=UF2_PAYLOAD_MAX))
+<span class="kw">def</span> <span class="fn">test_uf2_round_trip</span>(blocks, payload):
+    image = parse(build_uf2(blocks=blocks, payload_size=payload, family=RP2040))
+    <span class="kw">assert</span> image.block_count == blocks
+    <span class="kw">assert</span> image.payload_bytes == blocks * payload
+    <span class="kw">assert</span> image.size == blocks * UF2_BLOCK_SIZE
+
+<span class="key">@COMMON</span>
+<span class="key">@given</span>(entry=st.integers(min_value=<span class="num">0</span>, max_value=<span class="num">2</span>**<span class="num">64</span> - <span class="num">1</span>),
+       bit64=st.booleans(), little=st.booleans())
+<span class="kw">def</span> <span class="fn">test_elf_entry_round_trips_at_every_width</span>(entry, bit64, little):
+    <span class="cm"># 32-bit ELF cannot hold a 64-bit entry point, so the precondition</span>
+    <span class="cm"># is stated with `assume` rather than by narrowing the strategy --</span>
+    <span class="cm"># hypothesis tracks rejections and complains if the filter is too</span>
+    <span class="cm"># aggressive, which beats a silently narrower search.</span>
+    assume(bit64 <span class="kw">or</span> entry &lt; <span class="num">2</span>**<span class="num">32</span>)
+    <span class="kw">assert</span> parse(build_elf(entry=entry, bit64=bit64, little=little)).entry == entry</pre>
+
+  <div class="info-box danger">
+    <strong>Every never-crash property needs a positive companion</strong>
+    <code>test_parse_never_raises_anything_but_parse_error</code> passes completely against <code>def parse(b): raise ParseError("no")</code>. A hostile-input suite asserts only that nothing explodes, and something that refuses everything never explodes. Put the companion assertion <em>in the same file</em>, so the pairing is visible:
+    <br><br>
+    <code>def test_hostile_specimens_do_not_all_look_alike(): assert parse(VALID).block_count == 3</code>
+  </div>
+
+  <h3 class="rd">Resource exhaustion, without a timing assertion</h3>
+
+  <pre class="rd"><span class="label">the classic parser DoS</span><span class="kw">def</span> <span class="fn">test_a_declared_block_count_does_not_allocate</span>():
+    <span class="st">"""A length field is trusted and pre-allocated. A two-block file
+    claiming four billion blocks must cost two blocks of work.
+
+    Asserted by wall-clock-free means -- drive the walker to completion and
+    check the count -- because a timing assertion on a loaded CI runner is a
+    flake generator."""</span>
+    image = parse(build_uf2(blocks=<span class="num">2</span>, wrong_num_blocks=<span class="num">0xFFFFFFFF</span>))
+    <span class="kw">assert</span> image.block_count == <span class="num">2</span>
+    <span class="kw">assert</span> image.declared_blocks == <span class="num">0xFFFFFFFF</span></pre>
+</section>
+
+<!-- ─────────────────────────────────────────────── 12 -->
+<section id="policy" data-num="14">
+  <h2><em class="yl">Guardrails</em>: Proving a Refusal</h2>
+  <div class="section-bar yl"></div>
+
+  <p>A policy test has three obligations, and most suites discharge one.</p>
+
+  <pre class="diagram">   <span class="acc">1.</span> the rule FIRES on a violating artifact        <span class="dim">everyone does this</span>
+   <span class="acc">2.</span> the rule does NOT fire on a compliant one      <span class="dim">half of everyone</span>
+   <span class="acc3">3.</span> the rule fires for the RIGHT REASON            <span class="acc3">almost nobody</span>
+
+   <span class="dim">why three rots:</span>
+
+   an oversized UNSIGNED artifact is rejected by TWO rules.
+   a test asserting "rejected" passes forever after the size check is
+   accidentally deleted, because the signature check is still there.
+
+        <span class="dim">┌─────────────────────────────────────────────┐</span>
+        <span class="dim">│</span>  evaluate() returns EVERY hit               <span class="dim">│</span>  <span class="acc">→ can state #3</span>
+        <span class="dim">│</span>  enforce()  raises the FIRST by precedence  <span class="dim">│</span>  <span class="acc">→ what a client sees</span>
+        <span class="dim">└─────────────────────────────────────────────┘</span></pre>
+
+  <h3 class="yl">Precedence is behaviour, not dict ordering</h3>
+
+  <pre><span class="label">fwvault/policy.py</span>PRECEDENCE = (
+    <span class="st">"MALFORMED"</span>,          <span class="cm"># parser said no, before policy is consulted</span>
+    <span class="st">"OVERSIZE"</span>,
+    <span class="st">"EMPTY_PAYLOAD"</span>,
+    <span class="st">"UNKNOWN_FAMILY"</span>,
+    <span class="st">"DENIED_MACHINE"</span>,
+    <span class="st">"NOT_MAIN_FLASH"</span>,
+    <span class="st">"REVOKED_KEY"</span>,        <span class="cm"># a STRONGER statement than unsigned...</span>
+    <span class="st">"UNSIGNED"</span>,           <span class="cm"># ...and must not be masked by it</span>
+    <span class="st">"TOO_MANY_WARNINGS"</span>,
+)
+
+<span class="cm"># codes are a PUBLIC CONTRACT. Clients branch on `code`, never on</span>
+<span class="cm"># `detail`, so the codes are frozen in test_contract.py while the</span>
+<span class="cm"># wording of `detail` stays free to improve.</span></pre>
+
+  <pre class="cy"><span class="label">the assertion a first-hit design cannot make</span><span class="kw">def</span> <span class="fn">test_every_applicable_rule_fires_at_once</span>(policy):
+    <span class="st">"""One artifact, five independent violations, five codes.
+
+    If OVERSIZE stops firing, this list gets shorter and the test fails BY
+    NAME -- rather than staying green because UNSIGNED still rejects the
+    same file."""</span>
+    image = parse(build_uf2(blocks=<span class="num">2</span>, family=UNKNOWN_FAMILY, payload_size=<span class="num">0</span>))
+    tight = replace(policy, max_bytes=<span class="num">100</span>)
+
+    <span class="kw">assert</span> codes(image, UNSIGNED, tight, flags=UF2_FLAG_NOT_MAIN_FLASH) == [
+        <span class="st">"OVERSIZE"</span>, <span class="st">"EMPTY_PAYLOAD"</span>, <span class="st">"UNKNOWN_FAMILY"</span>,
+        <span class="st">"NOT_MAIN_FLASH"</span>, <span class="st">"UNSIGNED"</span>,
+    ]</pre>
+
+  <h3 class="rd">The line the whole service is built around</h3>
+
+  <pre class="diagram">   <span class="dim">three kinds of bad thing, and conflating any two is how a service</span>
+   <span class="dim">starts lying about its inputs</span>
+
+   <span class="hi">ParseError</span>        the blob is malformed        <span class="acc">a fact about the ARTIFACT</span>
+                                                  <span class="dim">→ 422 MALFORMED, with an offset</span>
+
+   <span class="hi">PolicyRejection</span>   parsed fine, we refuse it    <span class="acc">a DECISION</span>
+                                                  <span class="dim">→ 422 &lt;CODE&gt;</span>
+
+   <span class="acc3">VaultUnavailable</span>  we could not tell            <span class="acc3">a fact about US</span>
+                                                  <span class="dim">→ 503 + Retry-After. NEVER a rejection.</span>
+
+   <span class="acc3">VaultUnavailable is not a subclass of PolicyRejection and never</span>
+   <span class="acc3">converts into one.</span> A signing oracle that times out and is reported
+   as "unsigned" turns an outage into a stream of confident refusals,
+   and the refusals look exactly like the real ones.</pre>
+
+  <pre class="rd"><span class="label">tests/test_asgi_raw.py: the headline assertion</span><span class="kw">def</span> <span class="fn">test_an_oracle_outage_is_503_and_never_a_rejection</span>(vault, policy, uf2):
+    <span class="kw">class</span> <span class="fn">DeadClient</span>:
+        <span class="kw">def</span> <span class="fn">verify</span>(self, digest):
+            <span class="kw">raise</span> VaultUnavailable(<span class="st">"oracle down"</span>)
+
+    app = create_app(store=vault, client=DeadClient(), policy=policy)
+    status, headers, body = call(app, <span class="st">"POST"</span>, <span class="st">"/artifact"</span>, uf2)
+
+    <span class="kw">assert</span> status == <span class="num">503</span>
+    <span class="kw">assert</span> body[<span class="st">"error"</span>] == <span class="st">"ORACLE_UNAVAILABLE"</span>
+    <span class="kw">assert</span> headers[<span class="st">b"retry-after"</span>] == <span class="st">b"5"</span>
+    <span class="kw">assert</span> len(vault) == <span class="num">0</span>, <span class="st">"nothing is stored when we could not verify it"</span></pre>
+
+  <h3 class="yl">The meta-test that keeps the guardrails complete</h3>
+
+  <pre class="yl"><span class="label">no code in PRECEDENCE may go untested</span><span class="kw">def</span> <span class="fn">test_every_rejection_code_is_exercised_somewhere</span>():
+    <span class="st">"""Implemented by RUNNING the suite's own specimens rather than by
+    scraping source text, so it cannot be satisfied by a code appearing in a
+    comment.
+
+    When you add a rule, this fails until you add a case -- which is the only
+    reliable way a guardrail suite stays complete as the policy grows."""</span>
+    seen = set()
+    <span class="kw">for</span> image, verdict, pol, flags <span class="kw">in</span> specimens:
+        seen.update(codes(image, verdict, pol, flags))
+
+    untested = set(PRECEDENCE) - seen - {<span class="st">"MALFORMED"</span>}
+    <span class="kw">assert</span> <span class="kw">not</span> untested, (
+        <span class="st">"these policy codes are never produced by any specimen in the suite, "</span>
+        <span class="st">"so nothing would notice if the rule stopped firing: "</span>
+        + <span class="st">", "</span>.join(sorted(untested)))</pre>
+
+  <h3>Path safety: regenerate, do not sanitise</h3>
+
+  <pre class="diagram">   <span class="dim">the traversal test everyone writes, and why it is not the fix</span>
+
+   <span class="acc3">"../../etc/passwd"    "..%2f..%2fetc"    ".../....//"    "\\..\\..\\"</span>
+
+   <span class="acc3">this list can never be complete.</span> There is always another encoding.
+
+   <span class="acc">so the design does not rely on it:</span>
+
+     the key is not SANITISED, it is <span class="acc">REGENERATED</span>.
+     `put()` hashes the bytes itself and ignores whatever the
+     client called them. `has()` on a hostile string is just a miss.
+
+   the parametrized sweep still exists -- but it documents the threat,
+   it does not implement the defence. And it gets a companion:
+
+     <span class="kw">def</span> test_the_traversal_test_is_not_vacuous(vault, uf2):
+         <span class="cm"># if has() returned False for EVERYTHING, the whole sweep</span>
+         <span class="cm"># passes against a store that does not work.</span>
+         digest, _ = vault.put(uf2, manifest_for(uf2))
+         <span class="kw">assert</span> vault.has(digest) <span class="kw">is</span> True</pre>
+</section>
+
+<!-- ─────────────────────────────────────────────── 13 -->
+<section id="differential" data-num="15">
+  <h2><em class="cy">Differential</em> &amp; Oracle Tests</h2>
+  <div class="section-bar cy"></div>
+
+  <p>When a parser gets complicated enough that you cannot write down the expected output by hand, write a second, dumber implementation and compare them. The naive one is obviously correct and much too slow; the real one is fast and subtle.</p>
+
+  <pre class="diagram">   <span class="dim">the wiring</span>
+
+                    <span class="dim">┌────────────────────┐</span>
+      specimen <span class="dim">──┬──►</span>  <span class="acc">walk_uf2()</span>          <span class="dim">├──►</span> blocks  <span class="dim">─┐</span>
+                 <span class="dim">│</span>  <span class="dim">│</span> fast, subtle       <span class="dim">│</span>            <span class="dim">│</span>
+                 <span class="dim">│</span>  <span class="dim">└────────────────────┘</span>            <span class="dim">├──►</span> <span class="acc">==</span> ?
+                 <span class="dim">│</span>  <span class="dim">┌────────────────────┐</span>            <span class="dim">│</span>
+                 <span class="dim">└──►</span>  <span class="acc2">_reference_walk()</span>   <span class="dim">├──►</span> blocks  <span class="dim">─┘</span>
+                    <span class="dim">│</span> naive, obvious     <span class="dim">│</span>
+                    <span class="dim">└────────────────────┘</span>
+
+   <span class="acc3">both OUTCOMES are compared, not just both outputs.</span>
+   agreeing on the block list is not enough if one raises where the
+   other does not.
+
+   the ORACLE variant: same shape, but the reference is a trusted
+   external tool -- your parser vs readelf, your decoder vs ffmpeg --
+   and the corpus is real files instead of generated ones.</pre>
+
+  <div class="info-box danger">
+    <strong>Rule 1: the reference must be independent</strong>
+    If it shares helpers with the code under test, a bug in the shared part cancels out and the suite goes green against two identical mistakes. This repo asserts that structurally -- it reads its own source and checks the reference borrows nothing:
+    <br><br>
+    <code>for borrowed in ("UF2_MAGIC", "from fwvault", "parse.", "Block("): assert borrowed not in source</code>
+    <br><br>
+    Crude, and it catches the refactor where someone "removes the duplication" between the two implementations and silently deletes the reason the test exists.
+  </div>
+
+  <pre class="cy"><span class="label">tests/test_differential.py</span><span class="cm"># one test per specimen, NAMED by specimen. Adding a corpus entry adds</span>
+<span class="cm"># a test with no assertion to write -- the whole economics of this.</span>
+
+CORPUS = {
+    <span class="st">"one-block"</span>:         build_uf2(blocks=<span class="num">1</span>),
+    <span class="st">"many-blocks"</span>:       build_uf2(blocks=<span class="num">17</span>),
+    <span class="st">"no-family"</span>:         build_uf2(blocks=<span class="num">2</span>, family=<span class="val">None</span>, flags=<span class="num">0</span>),
+    <span class="st">"zero-payload"</span>:      build_uf2(blocks=<span class="num">3</span>, payload_size=<span class="num">0</span>),
+    <span class="st">"max-payload"</span>:       build_uf2(blocks=<span class="num">3</span>, payload_size=<span class="num">476</span>),
+    <span class="st">"oversized-payload"</span>: build_uf2(blocks=<span class="num">2</span>, oversized_payload=<span class="num">5000</span>),
+    <span class="st">"backwards-addr"</span>:    build_uf2(blocks=<span class="num">3</span>, addr_step=-<span class="num">256</span>),
+    <span class="st">"bad-end-magic"</span>:     build_uf2(blocks=<span class="num">3</span>, bad_end_magic=<span class="num">2</span>),
+    <span class="st">"ragged"</span>:            build_uf2(blocks=<span class="num">2</span>) + <span class="st">b"\x00"</span> * <span class="num">3</span>,
+    <span class="st">"empty"</span>:             <span class="st">b""</span>,
+}
+
+<span class="key">@pytest.mark.parametrize</span>(<span class="st">"name"</span>, sorted(CORPUS), ids=sorted(CORPUS))
+<span class="kw">def</span> <span class="fn">test_the_walker_agrees_with_the_reference</span>(name):
+    ours,   our_error   = _run(walk_uf2, CORPUS[name])
+    theirs, their_error = _run(_reference_walk, CORPUS[name])
+
+    <span class="kw">assert</span> (our_error <span class="kw">is</span> <span class="val">None</span>) == (their_error <span class="kw">is</span> <span class="val">None</span>), (
+        <span class="st">"specimen {!r}: one implementation raised and the other did not "</span>
+        <span class="st">"(ours={!r}, reference={!r})"</span>.format(name, our_error, their_error))
+    <span class="kw">if</span> our_error <span class="kw">is</span> <span class="val">None</span>:
+        <span class="kw">assert</span> ours == theirs, <span class="st">"specimen {!r}: block streams differ"</span>.format(name)</pre>
+
+  <div class="info-box cy">
+    <strong>Rule 2: and the corpus needs a guard too</strong>
+    A corpus where every specimen raises makes the differential test pass trivially -- both implementations agree that everything is broken. So <code>test_the_corpus_contains_both_outcomes</code> asserts the corpus straddles the boundary. Every meta-check on this page has this shape: <em>the filter must be shown firing at least once.</em>
+  </div>
+
+  <p>Differential also works at a higher level than the walk. The reference computes the payload total the obvious way; <code>parse</code> accumulates it during the walk with a clamp. Two routes to one number, and no expected value written down anywhere:</p>
+
+  <pre><span class="label">folds agree too</span><span class="kw">def</span> <span class="fn">test_the_folds_agree_on_payload_total</span>():
+    blob = build_uf2(blocks=<span class="num">6</span>, payload_size=<span class="num">300</span>, family=RP2040)
+    expected = sum(min(b[<span class="st">"payload_size"</span>], <span class="num">476</span>) <span class="kw">for</span> b <span class="kw">in</span> _reference_walk(blob))
+    <span class="kw">assert</span> parse(blob).payload_bytes == expected</pre>
+</section>
+
+<!-- ─────────────────────────────────────────────── 14 -->
+<section id="cli" data-num="16">
+  <h2>CLI &amp; <em class="or">Subprocess</em></h2>
+  <div class="section-bar"></div>
+
+  <p>Two ways to test a command line, and you want both. The shape that makes the fast way possible costs nothing and is the highest-leverage decision in a CLI's design.</p>
+
+  <pre class="diagram">   <span class="acc">def main(argv=None, stdout=None, stderr=None, transport=None) -&gt; int</span>
+
+     · takes argv                    <span class="dim">does not read sys.argv</span>
+     · returns an int                <span class="dim">does not call sys.exit</span>
+     · writes to streams it was HANDED
+
+   <span class="dim">────────────────────────────────────────────────────────────────</span>
+
+   <span class="acc">IN-PROCESS</span>    main([<span class="st">"inspect"</span>, path])          microseconds
+                 every branch · real tracebacks · <span class="acc">the coverage lives here</span>
+
+   <span class="acc2">SUBPROCESS</span>    python -m fwvault inspect ...    milliseconds each
+                 a handful of cases · <span class="acc2">"works on my machine" dies here</span>
+
+   in-process CANNOT see:
+     · whether the package imports from a CLEAN interpreter
+     · whether the console entry point exists
+     · what the SHELL sees as the exit code
+     · stream buffering, encoding, line endings
+     · a stray print() somewhere in the import path corrupting your JSON</pre>
+
+  <h3>Exit codes are a contract</h3>
+
+  <table>
+    <tr><th>Code</th><th>Means</th><th>Because</th></tr>
+    <tr><td class="meth">0</td><td>OK</td><td></td></tr>
+    <tr><td class="meth">1</td><td>ERROR</td><td>could not read the file, unexpected</td></tr>
+    <tr><td class="meth">2</td><td>USAGE</td><td>argparse's own convention</td></tr>
+    <tr><td class="meth yl">3</td><td>REJECTED</td><td>policy said no</td></tr>
+    <tr><td class="meth yl">4</td><td>MALFORMED</td><td>the artifact is bad</td></tr>
+    <tr><td class="meth rd">5</td><td>UNAVAILABLE</td><td><strong>our</strong> infrastructure is down</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>3, 4 and 5 have to be different numbers</strong>
+    A build script must be able to tell "your firmware is bad" from "our signing oracle is down". One exit code for both means a red build teaches nobody anything, and the on-call person pages the wrong team. <code>test_every_exit_code_is_distinct</code> is a three-line test that catches the copy-paste.
+  </div>
+
+  <pre class="cy"><span class="label">in-process, with streams we own</span><span class="kw">def</span> <span class="fn">run</span>(argv, transport=<span class="val">None</span>):
+    <span class="cm"># explicit StringIOs rather than capsys: capsys also captures pytest's</span>
+    <span class="cm"># own output and anything a library logs, which makes an exact-match</span>
+    <span class="cm"># assertion on stdout fragile.</span>
+    out, err = io.StringIO(), io.StringIO()
+    code = cli.main(argv, stdout=out, stderr=err, transport=transport)
+    <span class="kw">return</span> code, out.getvalue(), err.getvalue()
+
+
+<span class="kw">def</span> <span class="fn">test_findings_go_to_stderr_and_data_to_stdout</span>(tmp_path):
+    <span class="cm"># so `fwvault --json inspect x | jq` works while warnings stay visible.</span>
+    <span class="cm"># mixing them means the pipe eats the warnings or the JSON parse</span>
+    <span class="cm"># fails -- and which one it is depends on the day.</span>
+    _code, out, err = run([<span class="st">"--json"</span>, <span class="st">"inspect"</span>, str(path)])
+    json.loads(out)                     <span class="cm"># stdout is pure JSON</span>
+    <span class="kw">assert</span> <span class="st">"warning:"</span> <span class="kw">in</span> err</pre>
+
+  <pre><span class="label">the real process, four cases</span><span class="kw">def</span> <span class="fn">_module_run</span>(args, **kwargs):
+    env = dict(os.environ, PYTHONPATH=os.path.join(REPO, <span class="st">"src"</span>))
+    <span class="kw">return</span> subprocess.run(
+        [sys.executable, <span class="st">"-m"</span>, <span class="st">"fwvault"</span>] + args,
+        capture_output=<span class="val">True</span>, text=<span class="val">True</span>, env=env, cwd=REPO,
+        timeout=<span class="num">30</span>,          <span class="cm"># ← a test that CAN hang needs a timeout on the CALL</span>
+        **kwargs)
+
+<span class="kw">def</span> <span class="fn">test_stdout_stays_parseable_through_a_real_pipe</span>(artifact):
+    <span class="cm"># catches a stray print() in the import path, which corrupts the JSON</span>
+    <span class="cm"># for every downstream consumer and is completely invisible to capsys.</span>
+    result = _module_run([<span class="st">"--json"</span>, <span class="st">"inspect"</span>, artifact])
+    <span class="kw">assert</span> json.loads(result.stdout)[<span class="st">"kind"</span>] == <span class="st">"uf2"</span></pre>
+
+  <div class="info-box danger">
+    <strong><code>python -I</code> implies <code>-E</code></strong>
+    Isolated mode ignores the user site directory <em>and</em> <code>PYTHONPATH</code>. A cold-start import test that passes the path via the environment silently gets an empty <code>sys.path</code> and fails looking exactly like a packaging bug. Put the path in the program instead:
+    <br><br>
+    <code>[sys.executable, "-I", "-c", "import sys; sys.path.insert(0, SRC); import fwvault"]</code>
+  </div>
+
+  <h3>The cheapest documentation test there is</h3>
+
+  <pre class="yl"><span class="label">walk the parser, assert every flag has help</span><span class="kw">def</span> <span class="fn">test_every_subcommand_has_help_text</span>():
+    parser = cli.build_parser()
+    subparsers = [a <span class="kw">for</span> a <span class="kw">in</span> parser._actions
+                  <span class="kw">if</span> hasattr(a, <span class="st">"choices"</span>) <span class="kw">and</span> isinstance(a.choices, dict)]
+    <span class="kw">assert</span> subparsers, <span class="st">"no subcommands found; did the parser shape change?"</span>
+
+    missing = [<span class="st">"{} {}"</span>.format(name, arg.dest)
+               <span class="kw">for</span> a <span class="kw">in</span> subparsers <span class="kw">for</span> name, sub <span class="kw">in</span> a.choices.items()
+               <span class="kw">for</span> arg <span class="kw">in</span> sub._actions
+               <span class="kw">if</span> arg.dest != <span class="st">"help"</span> <span class="kw">and</span> <span class="kw">not</span> arg.help]
+    <span class="kw">assert</span> <span class="kw">not</span> missing, <span class="st">"undocumented flags: "</span> + <span class="st">", "</span>.join(missing)
+
+<span class="cm"># a flag with no help is a flag nobody can use, and it is invisible</span>
+<span class="cm"># to every behavioural test in the file.</span></pre>
+</section>
+
+<!-- ─────────────────────────────────────────────── 15 -->
+<section id="meta" data-num="17">
+  <h2><em class="rd">Meta-Tests</em>: Contract, Lean Install, Hygiene</h2>
+  <div class="section-bar rd"></div>
+
+  <p>A test suite is code, it rots like code, and it rots in a way ordinary code does not: <strong>silently, and in the direction of passing.</strong> A test that stops asserting anything still shows up green. A test that skips on every machine still counts toward "1,204 passed".</p>
+
+  <pre class="diagram">   <span class="dim">the tier above the tests</span>
+
+   <span class="acc">CONTRACT</span>       the SHAPE you publish, pinned
+                  __all__ · rejection codes · exit codes · schema version
+                  · the route table · the response envelope
+                  <span class="dim">invisible to every behavioural test</span>
+
+   <span class="acc">LEAN INSTALL</span>   the dependency boundary, two ways
+                  static: AST-walk for module-level optional imports
+                  behavioural: sys.modules[name] = None, then run it
+
+   <span class="acc">HYGIENE</span>        the suite as DATA
+                  every test asserts · every skip explains itself
+                  · no fixed paths · no path outside the repo
+                  · no silently disabled test · no duplicate names
+
+   <span class="acc3">and the rule that keeps this tier honest:</span>
+   <span class="acc3">every check must be SHOWN FIRING at least once.</span>
+   a filter with a broken pattern passes everything, forever.</pre>
+
+  <h3 class="rd">Contract: what a behavioural test cannot see</h3>
+
+  <pre class="rd"><span class="label">tests/test_contract.py</span><span class="kw">def</span> <span class="fn">test_the_public_api_is_exactly_what_is_documented</span>():
+    <span class="cm"># both directions matter. A name that disappeared breaks importers;</span>
+    <span class="cm"># a name that APPEARED is a promise nobody meant to make, and it is</span>
+    <span class="cm"># much harder to withdraw a year later.</span>
+    <span class="kw">assert</span> set(fwvault.__all__) == EXPECTED_API
+
+<span class="kw">def</span> <span class="fn">test_rejection_codes_are_frozen</span>():
+    <span class="cm"># clients branch on these strings. Renaming one is a breaking change</span>
+    <span class="cm"># whether or not anything else in the suite notices.</span>
+    <span class="cm">#</span>
+    <span class="cm"># `detail` is deliberately NOT pinned -- the wording should be free</span>
+    <span class="cm"># to improve, and a test that asserts on prose fails every time</span>
+    <span class="cm"># someone fixes a typo.</span>
+    <span class="kw">assert</span> PRECEDENCE == (<span class="st">"MALFORMED"</span>, <span class="st">"OVERSIZE"</span>, ...)
+
+<span class="kw">def</span> <span class="fn">test_the_shipped_doubles_match_the_transport_protocol</span>():
+    <span class="cm"># a fake whose signature drifts from the real transport passes every</span>
+    <span class="cm"># test in this repo and breaks in every consumer.</span>
+    real = inspect.signature(UrllibTransport.request)
+    <span class="kw">for</span> double <span class="kw">in</span> (RecordingTransport, ScriptedTransport):
+        <span class="kw">assert</span> inspect.signature(double.request) == real, double.__name__</pre>
+
+  <h3 class="rd">Lean install: the boundary, asserted twice</h3>
+
+  <pre class="cy"><span class="label">static: reads source, so it reports EVERY offender in one run</span><span class="kw">def</span> <span class="fn">_module_level_imports</span>(path):
+    tree = ast.parse(open(path, encoding=<span class="st">"utf-8"</span>).read())
+    names = set()
+    <span class="kw">for</span> node <span class="kw">in</span> tree.body:          <span class="cm"># TOP LEVEL only -- lazy imports are the contract</span>
+        <span class="kw">if</span> isinstance(node, ast.Import):
+            names.update(a.name.split(<span class="st">"."</span>)[<span class="num">0</span>] <span class="kw">for</span> a <span class="kw">in</span> node.names)
+        <span class="kw">elif</span> isinstance(node, ast.ImportFrom) <span class="kw">and</span> node.module <span class="kw">and</span> node.level == <span class="num">0</span>:
+            names.add(node.module.split(<span class="st">"."</span>)[<span class="num">0</span>])
+    <span class="kw">return</span> names
+
+<span class="cm"># a test that fails with "fix this, then run me again to find the next</span>
+<span class="cm"># one" wastes an afternoon.</span></pre>
+
+  <pre class="cy"><span class="label">behavioural: one test per package, so a failure NAMES which one</span><span class="key">@pytest.mark.parametrize</span>(<span class="st">"absent"</span>, sorted(OPTIONAL), ids=sorted(OPTIONAL))
+<span class="kw">def</span> <span class="fn">test_the_core_imports_with_every_optional_package_missing</span>(absent, monkeypatch):
+    monkeypatch.delitem(sys.modules, absent, raising=<span class="val">False</span>)
+    monkeypatch.setitem(sys.modules, absent, <span class="val">None</span>)
+    <span class="kw">for</span> name <span class="kw">in</span> (<span class="st">"fwvault"</span>, <span class="st">"fwvault.parse"</span>, ...):
+        monkeypatch.delitem(sys.modules, name, raising=<span class="val">False</span>)
+
+    <span class="kw">assert</span> importlib.import_module(<span class="st">"fwvault"</span>).parse <span class="kw">is not</span> <span class="val">None</span>
+
+<span class="cm"># the alternative is a second CI job with a different lockfile, which</span>
+<span class="cm"># is real work and gets disabled the first time it goes red on a Friday.</span></pre>
+
+  <h3 class="rd">Hygiene: treat the test tree as data</h3>
+
+  <pre class="rd"><span class="label">tests/test_suite_hygiene.py</span><span class="kw">def</span> <span class="fn">test_every_test_asserts_something</span>():
+    <span class="kw">for</span> path <span class="kw">in</span> TEST_FILES:
+        <span class="kw">for</span> name, node <span class="kw">in</span> find_tests(path):
+            has_assert  = any(isinstance(n, ast.Assert) <span class="kw">for</span> n <span class="kw">in</span> ast.walk(node))
+            has_raises  = <span class="cm"># .raises / .warns / .approx</span>
+            calls_check = <span class="cm"># a helper named assert_*</span>
+            <span class="kw">if</span> <span class="kw">not</span> (has_assert <span class="kw">or</span> has_raises <span class="kw">or</span> calls_check):
+                offenders.append(<span class="st">"{}:{} {}"</span>.format(path.name, node.lineno, name))
+
+    <span class="kw">assert</span> <span class="kw">not</span> offenders, (
+        <span class="st">"these tests assert nothing, so they pass whatever the code does:\n  "</span>
+        + <span class="st">"\n  "</span>.join(offenders))</pre>
+
+  <div class="info-box danger">
+    <strong>Every check must name the file and line it objects to</strong>
+    A hygiene test that fails with a bare <code>assert not offenders</code> is worse than no hygiene test: it tells you something is wrong and hides what. This one prints <code>test_property.py:84 test_parse_never_raises_anything_but_parse_error</code> -- and that is exactly how it caught two real assertionless tests in this repo while it was being written.
+  </div>
+
+  <h3>Scanning source without flagging your own prose</h3>
+
+  <pre class="yl"><span class="label">the false-positive fix</span><span class="kw">def</span> <span class="fn">code_lines</span>(path):
+    <span class="st">"""Every line that is CODE: no comments, no docstrings.
+
+    String LITERALS stay in, and that distinction is the whole point. The
+    banned things these checks look for -- "/tmp/", "expanduser" -- appear in
+    real code AS string literals, so a scanner that strips every string can
+    never see the defect. It also has to strip docstrings, or it flags the
+    paragraph explaining the rule."""</span>
+    skip = set()
+    <span class="kw">for</span> token <span class="kw">in</span> tokenize.generate_tokens(io.StringIO(source).readline):
+        <span class="kw">if</span> token.type == tokenize.COMMENT:
+            skip.update(range(token.start[<span class="num">0</span>], token.end[<span class="num">0</span>] + <span class="num">1</span>))
+
+    <span class="kw">for</span> node <span class="kw">in</span> ast.walk(ast.parse(source)):
+        <span class="cm"># a docstring is exactly an Expr whose value is a str Constant</span>
+        <span class="kw">if</span> isinstance(node, ast.Expr) <span class="kw">and</span> isinstance(node.value, ast.Constant) \
+                <span class="kw">and</span> isinstance(node.value.value, str):
+            skip.update(range(node.lineno, (node.end_lineno <span class="kw">or</span> node.lineno) + <span class="num">1</span>))
+
+    <span class="kw">for</span> lineno, line <span class="kw">in</span> enumerate(source.splitlines(), <span class="num">1</span>):
+        <span class="kw">if</span> lineno <span class="kw">not in</span> skip:
+            <span class="kw">yield</span> lineno, line</pre>
+
+  <div class="info-box warn">
+    <strong>A checker whose false positives land on its own documentation gets disabled within a week</strong>
+    The first version of this scanned raw lines and skipped anything starting with <code>#</code> or a quote. That is wrong for the <em>second</em> line of a docstring, and it flagged three passages of prose that were describing the thing being banned. The second version stripped all strings -- and could no longer see the path literals it was hunting. Neither is subtle in hindsight; both shipped green.
+  </div>
+
+  <h3 class="rd">Distinguish a constant from shared state</h3>
+
+  <pre class="rd"><span class="label">mutable module-level state makes test ORDER load-bearing</span><span class="cm"># flag only names something actually MUTATES. A frozen set of expected</span>
+<span class="cm"># API names assigned once is a constant, and flagging it teaches people</span>
+<span class="cm"># the check is noise.</span>
+
+MUTATORS = {<span class="st">"append"</span>, <span class="st">"add"</span>, <span class="st">"extend"</span>, <span class="st">"update"</span>, <span class="st">"insert"</span>,
+            <span class="st">"pop"</span>, <span class="st">"remove"</span>, <span class="st">"clear"</span>, <span class="st">"setdefault"</span>}
+
+<span class="cm"># CONSTANT = {'a', 'b'}   → not flagged</span>
+<span class="cm"># STATE = []             → flagged, because STATE.append(1) exists</span></pre>
+</section>
+
+<!-- ─────────────────────────────────────────────── mutation -->
+<section id="mutation" data-num="18">
+  <h2>Coverage, <em class="cy">Mutation</em> &amp; CI</h2>
+  <div class="section-bar cy"></div>
+
+  <p>Coverage answers "did this line run". It cannot answer the question you actually have.</p>
+
+  <pre class="diagram">   <span class="acc3">100% line coverage is compatible with ZERO assertions.</span>
+
+   <span class="kw">def</span> test_everything():
+       parse(build_uf2(blocks=<span class="num">3</span>))
+       evaluate(image, verdict, policy)
+       store.put(blob, manifest)
+       <span class="cm"># no asserts. every line green.</span>
+
+   <span class="dim">─────────────────────────────────────────────────────────────</span>
+
+   <span class="hi">line coverage</span>     did this line execute
+   <span class="hi">branch coverage</span>   did BOTH sides of this `if` execute
+                     <span class="dim">--cov-branch. line coverage calls a half-tested</span>
+                     <span class="dim">conditional covered, which is most of them.</span>
+   <span class="acc">mutation score</span>    if I BREAK this line, does anything go red
+
+   only the third one is a question about your TESTS. the first two
+   are questions about your test RUN.</pre>
+
+  <div class="info-box cy">
+    <strong>Coverage is a map, not a score</strong>
+    Read it to find the branch nobody exercises, then go and write a test with a real assertion about it. A <code>--cov-fail-under</code> threshold is a number people game, and the cheapest way to game it is a test with no assertions. There is no threshold in this repo's CI for exactly that reason.
+  </div>
+
+  <h3 class="cy">Mutation testing: break it on purpose</h3>
+
+  <pre class="diagram">   <span class="dim">the loop</span>
+
+   for each small edit the tool can make:
+        <span class="dim">│</span>   <span class="dim">(x &lt; y  →  x &lt;= y,  return v  →  return None,  and  →  or)</span>
+        <span class="dim">▼</span>
+     apply it to the source
+        <span class="dim">▼</span>
+     run the whole suite
+        <span class="dim">▼</span>
+     <span class="acc">suite goes RED</span>   <span class="dim">→</span> mutant KILLED    <span class="dim">the behaviour is checked</span>
+     <span class="acc3">suite stays GREEN</span> <span class="dim">→</span> mutant SURVIVED  <span class="acc3">a hole. executed, unchecked.</span>
+
+   the tools are <span class="hi">mutmut</span> and <span class="hi">cosmic-ray</span>. both rewrite your source and
+   run the suite once per mutant, so they take minutes to hours.
+   <span class="acc3">run one occasionally. never in CI.</span></pre>
+
+  <p>A mutation score is never 100%, and the reason has a name. Some edits cannot be detected because they do not change behaviour at all:</p>
+
+  <div class="info-box warn">
+    <strong>Equivalent mutants</strong>
+    Writing this page's mutation file, the first attempt at "PRECEDENCE gets alphabetised" survived. Alphabetical order happens to put <code>OVERSIZE</code> first as well, for the specimen that was chosen, so the mutant changed nothing observable and looked like a hole in the suite. It was not: it was an equivalent mutant. <code>OVERSIZE</code> + <code>EMPTY_PAYLOAD</code> is the pair that actually distinguishes the two orderings. Real tools produce these constantly, and telling them apart from real holes is the manual work mutation testing costs you.
+  </div>
+
+  <h3>The cheap version, which does belong in the suite</h3>
+
+  <p>Hand-written mutants, each paired with the assertion that should catch it. Milliseconds, lives next to the code, and it fails the day someone weakens a check. It cannot find the mutants nobody thought of, so it does not replace the real tool. It pins the checks that matter most.</p>
+
+  <pre class="cy"><span class="label">tests/test_mutation.py</span><span class="cm"># A mutant is KILLED if the suite goes red, and a test that ERRORS is red</span>
+<span class="cm"># just like a test that fails. So any exception counts.</span>
+<span class="cm">#</span>
+<span class="cm"># pytest.fail.Exception has to be listed separately: a failing</span>
+<span class="cm"># pytest.raises(...) raises Failed, which derives from BaseException</span>
+<span class="cm"># rather than Exception, so a bare `except Exception` misses it.</span>
+CHECK_FAILURES = (Exception, pytest.fail.Exception)
+
+
+<span class="kw">def</span> <span class="fn">assert_caught</span>(check, what):
+    <span class="st">"""Run a real suite assertion against a mutant and require it to go RED."""</span>
+    <span class="kw">try</span>:
+        check()
+    <span class="kw">except</span> CHECK_FAILURES:
+        <span class="kw">return</span>
+    <span class="kw">raise</span> AssertionError(
+        <span class="st">"MUTANT SURVIVED: {}. The suite executes this behaviour but does "</span>
+        <span class="st">"not check it."</span>.format(what))</pre>
+
+  <pre class="rd"><span class="label">the mutant this whole service is shaped around</span><span class="kw">def</span> <span class="fn">test_an_outage_rendered_as_unsigned_is_caught</span>(clock):
+    <span class="cm"># a "helpful" refactor catches VaultUnavailable so the pipeline does</span>
+    <span class="cm"># not blow up. the service keeps running, the rejections look real,</span>
+    <span class="cm"># and nobody finds out until someone asks why every build failed.</span>
+    <span class="kw">class</span> <span class="fn">ForgivingClient</span>(SigningClient):
+        <span class="kw">def</span> <span class="fn">verify</span>(self, digest):
+            <span class="kw">try</span>:
+                <span class="kw">return</span> super().verify(digest)
+            <span class="kw">except</span> VaultUnavailable:
+                <span class="kw">return</span> Verdict(signed=<span class="val">False</span>)          <span class="cm"># ← the mutation</span>
+
+    dead = ScriptedTransport([TransportError(<span class="st">"down"</span>)] * <span class="num">3</span>)
+    client = ForgivingClient(<span class="st">"https://x"</span>, transport=dead, clock=clock, retries=<span class="num">3</span>)
+
+    <span class="kw">def</span> <span class="fn">the_suite_assertion</span>():
+        <span class="kw">with</span> pytest.raises(VaultUnavailable):       <span class="cm"># from test_doubles.py</span>
+            client.verify(<span class="st">"0"</span> * <span class="num">64</span>)
+
+    assert_caught(the_suite_assertion, <span class="st">"an outage rendered as Verdict(signed=False)"</span>)</pre>
+
+  <table>
+    <tr><th>Mutant</th><th>What survives it</th><th>Caught by</th></tr>
+    <tr><td class="meth">OVERSIZE stops firing</td><td>every test, under a first-hit-only policy design</td><td>the whole-list assertion</td></tr>
+    <tr><td class="meth">evaluate returns hits[:1]</td><td>every single-rule test</td><td>the five-code assertion</td></tr>
+    <tr><td class="meth cy">PRECEDENCE reordered</td><td>every single-rule test</td><td>the enforce() code check</td></tr>
+    <tr><td class="meth cy">outage becomes UNSIGNED</td><td>the 422 path, the store, the API shape</td><td>the raises(VaultUnavailable)</td></tr>
+    <tr><td class="meth rd">stale flag dropped</td><td>the availability test</td><td>the separate honesty test</td></tr>
+    <tr><td class="meth rd">magicEnd check deleted</td><td>every valid-file test</td><td>the located-offset test</td></tr>
+    <tr><td class="meth">clamp warning dropped</td><td>every arithmetic test</td><td>the paired warning assert</td></tr>
+    <tr><td class="meth">parse() refuses everything</td><td><strong>the entire hostile-input file</strong></td><td>the positive companion</td></tr>
+  </table>
+
+  <div class="info-box danger">
+    <strong>Read the last row again</strong>
+    Every assertion in <code>test_hostile.py</code> passes against <code>def parse(b): raise ParseError("no")</code>. That is 40-odd tests, a truncation sweep, twelve bit flips and twenty seeds, all green, against a parser that does nothing. One positive assertion in the same file is what stands between you and that.
+  </div>
+
+  <h3 class="cy">CI: two jobs, and the first one is the point</h3>
+
+  <pre><span class="label">.github/workflows/tests.yml</span>jobs:
+  <span class="key">bare</span>:                          <span class="cm"># pytest and NOTHING else</span>
+    steps:
+      - run: pip install pytest
+      - run: python -m pytest -q
+
+  <span class="key">full</span>:
+    strategy:
+      fail-fast: <span class="val">false</span>            <span class="cm"># one red cell must not hide the others</span>
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: [<span class="st">"3.11"</span>, <span class="st">"3.13"</span>]
+    steps:
+      - run: pip install -e <span class="st">".[test]"</span>
+      - run: python -m pytest -q
+
+  <span class="key">coverage</span>:
+    steps:
+      - run: python -m pytest -q --cov=fwvault <span class="flag">--cov-branch</span> --cov-report=term-missing</pre>
+
+  <div class="info-box">
+    <strong>Why <code>bare</code> exists</strong>
+    It proves a clone with nothing but pytest still runs the suite, which is the claim <code>test_lean_install.py</code> asserts from the inside. If the extras were installed everywhere, that claim would be untested in the one environment that could disprove it. The same logic runs Windows in the matrix: <code>expanduser</code>, path separators and <code>os.replace</code> semantics all differ, and every one of them has produced a green local run and a red CI run in some project you have worked on.
+  </div>
+
+  <div class="info-box warn">
+    <strong>The gap CI cannot close</strong>
+    Your fake signing oracle encodes what you believe the real one does. When that belief goes stale, the fake keeps agreeing with you and every job above stays green against a service that no longer exists. Nothing in this pipeline can detect it. The answers are a contract test run against the real thing on a schedule (schemathesis against its OpenAPI document, or a consumer-driven contract), plus the <code>net</code>-marked test that at least keeps the gap named. Pick one, or accept the gap knowingly. Do not let a green matrix persuade you it is not there.
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────── ai -->
+<section id="ai" data-num="19">
+  <h2>Testing an <em class="rd">AI Author</em></h2>
+  <div class="section-bar rd"></div>
+
+  <p>The argument goes: nobody reads their compiler's assembly output, so nobody will read generated code either, and the objection is sentimental. That argument is better than its critics allow and worse than its advocates think. This section takes it seriously, then takes it apart, then says what the repo does about it.</p>
+
+  <pre class="diagram">   <span class="dim">the position, in two moves</span>
+
+   <span class="hi">Su</span>          lights-out codebases: code no human reads or edits.
+               volume makes review impossible, and the chess analogy
+               says it will look like a category error to have tried.
+
+   <span class="hi">Venturini</span>   the better version. you do not read your compiler's
+               output, and NOT because compilers are trusted blindly.
+               they have shipped catastrophic bugs. it is because an
+               <span class="acc">apparatus</span> was built that makes reading unnecessary:
+               behavioural tests, type systems, reproducible builds,
+               fuzzers, sanitizers, formal methods where it matters.
+
+               <span class="acc">you trust the process, not the artifact.</span>
+
+   his diagnosis: that apparatus does not exist for agents yet,
+   so the fear is rational rather than nostalgic.</pre>
+
+  <div class="info-box">
+    <strong>The distinction worth keeping</strong>
+    "Nobody reads compiler output" is false. Compiler Explorer is beloved and compiler engineers live in it. The true claim is narrower: reading it is not the <em>quality gate</em>. Read generated code when you are curious or debugging. Do not make reading it the thing standing between you and production, because at volume that is not a gate, it is a queue.
+  </div>
+
+  <h3 class="rd">Where the analogy breaks</h3>
+
+  <table>
+    <tr><th>Property</th><th>Compiler</th><th>Agent</th></tr>
+    <tr><td class="meth">determinism</td><td>same source, same flags, same binary. Reproducible builds are a security property people fought for</td><td>same prompt twice, different code. No artifact to pin, no hash to compare, nothing to bisect</td></tr>
+    <tr><td class="meth">who owns the spec</td><td>the source <em>is</em> the specification, and a human wrote it. The compiler is a semantics-preserving translator with no licence to invent</td><td>the prompt is the specification. It is ambiguous natural language, and the agent's job is precisely to invent the parts you did not say</td></tr>
+    <tr><td class="meth cy">how it is verified</td><td>CompCert has a machine-checked proof of semantic preservation. Alive2 does translation validation on LLVM passes. Csmith finds bugs by differential testing across toolchains</td><td>a suite somebody wrote, often the same somebody that wrote the code</td></tr>
+    <tr><td class="meth rd">trusting trust</td><td>Thompson's compiler can backdoor itself and hide the evidence in its own source. The answer is diverse double-compiling</td><td>a model that writes both the code and the tests for that code has exactly that structure. The answer is provenance separation</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>The bill the analogy quietly runs up</strong>
+    "We verify compilers with tests, not by reading" is true and expensive. It means CompCert, Alive2, Csmith, decades of formal methods, and a specification precise enough to prove against. Anyone invoking the compiler analogy is invoking that apparatus. Almost nobody invoking it has costed it.
+  </div>
+
+  <h3 class="rd">The numbers</h3>
+
+  <p>Every figure below is from a paper, and each was checked against the abstract rather than taken from a summary. Sources at the end of the section.</p>
+
+  <table>
+    <tr><th>Finding</th><th>Source</th></tr>
+    <tr><td class="meth">A suite can reach <strong>100% coverage at a 4% mutation score</strong>. Quoted in MUTGEN's abstract as the motivating example for mutation-guided generation</td><td>Wang, Xu, Briand, Liu. arXiv 2506.02954</td></tr>
+    <tr><td class="meth">On 3,909 real-world Python functions, LLM test generation averages <strong>41.3% accuracy, 45.1% statement, 30.2% branch, 40.2% mutation</strong>. The same models on the TestEval benchmark: 91.8 / 92.2 / 82.0 / 49.7</td><td>Huang, Zhang, Harman, Zhang, Du, Ng. arXiv 2508.00408</td></tr>
+    <tr><td class="meth cy">Whether coverage and mutation predict real fault detection is <strong>context-dependent</strong>: a usable comparative signal in regression scenarios, unreliable when the code under test may already be buggy. Suite size is <em>not</em> the dominant confounder for LLM-generated suites that it is for human-written ones</td><td>Zhao, Zhou, Cohen. arXiv 2607.22880</td></tr>
+    <tr><td class="meth rd">Evaluators <strong>recognise and favour their own generations</strong>, scoring them higher than human annotators do. Self-recognition correlates linearly with the strength of the bias, and the causal reading survives the obvious confounders</td><td>Panickssery, Bowman, Feng. arXiv 2404.13076</td></tr>
+    <tr><td class="meth rd">The bias tracks <strong>perplexity</strong>: models rate low-perplexity text higher regardless of who wrote it. Familiar-looking, not better</td><td>Wataoka, Takahashi, Ri. arXiv 2410.21819</td></tr>
+    <tr><td class="meth rd">Capability does not fix it. Advanced ability is <strong>uncorrelated, sometimes negatively correlated</strong>, with low self-preference bias</td><td>Yang, Hu, Qiu, Deng, Jiao, Zhou. arXiv 2604.22891</td></tr>
+    <tr><td class="meth">Models <strong>struggle to self-correct without external feedback</strong>, and performance sometimes degrades after trying</td><td>Huang, Chen, Mishra, Zheng, Yu, Song, Zhou. arXiv 2310.01798, ICLR 2024</td></tr>
+    <tr><td class="meth">Models correct errors from external sources but not the same errors in their own traces. <strong>Relabelling identical content as external</strong> restores the ability</td><td>Chen, Su, Lin, Li, Chiang. arXiv 2606.05976</td></tr>
+    <tr><td class="meth cy">Constructive: one agent writes tests, one writes mutants, adversarially, gated on coverage and mutation score</td><td>AdverTest. Chang, Fang, Chen, Shi, Shen, Gu. arXiv 2602.08146</td></tr>
+    <tr><td class="meth cy">Constructive: LLM-seeded population plus evolutionary search, <strong>about 10% better on both coverage and mutation score</strong> than either alone</td><td>EvoGPT. Broide, Stern, Mordoch. arXiv 2505.12424</td></tr>
+  </table>
+
+  <div class="info-box danger">
+    <strong>The two that matter most, together</strong>
+    The benchmark gap (92% on TestEval, 41% on real functions) says generated tests are much worse than the headline suggests. The self-preference results say the model grading them is systematically kind to work that looks like its own. Neither is fixed by a better prompt or a larger model, and the second explicitly does not improve with capability.
+  </div>
+
+  <h3>The loop that cannot close</h3>
+
+  <pre class="diagram">   <span class="acc3">self-verification</span>                      <span class="acc">provenance separation</span>
+
+   model <span class="dim">──►</span> code                        model A <span class="dim">──►</span> code
+     <span class="dim">│</span>       <span class="dim">▲</span>                                     <span class="dim">▲</span>
+     <span class="dim">└──►</span> tests <span class="dim">──┘</span>                        model B <span class="dim">──►</span> tests <span class="dim">──┘</span>
+          <span class="dim">│</span>                                          <span class="dim">│</span>
+          <span class="dim">▼</span>                                          <span class="dim">▼</span>
+       <span class="acc3">GREEN</span>                                    <span class="acc">independent oracle</span>
+   <span class="acc3">and it means nothing:</span>                    <span class="acc3">still not sufficient,</span>
+   <span class="acc3">both halves share the</span>                    <span class="acc3">but now a wrong belief</span>
+   <span class="acc3">same wrong belief</span>                        <span class="acc3">has to be held twice</span>
+
+   tests/test_oracle_independence.py runs exactly this. A parser and
+   its tests, both built on one plausible wrong number: the pair is
+   self-consistent, green, and wrong. Only the spec catches it.
+
+   <span class="dim">no model is involved in that file. it is a property of where the</span>
+   <span class="dim">assertions came from, and it holds for a human who writes tests by</span>
+   <span class="dim">running the code and pasting the output.</span></pre>
+
+  <h3 class="rd">What this repo measures</h3>
+
+  <p><code>tests/test_ai_authored.py</code> puts two suites over the same twelve specimens. One is written in the shape a model produces: sweep the inputs, assert only that nothing escaped the declared exception. The other asserts what each specimen should actually produce. Coverage is counted with a twenty-line <code>sys.settrace</code> tracer so the number owes nothing to a plugin.</p>
+
+  <pre><span class="label">measured, not asserted from memory</span>                 lines covered   mutants killed
+ai-authored           <span class="num">93</span>            <span class="acc3">0 / 5</span>
+asserting             <span class="num">93</span>            <span class="acc">5 / 5</span>
+                 <span class="cm"># identical coverage. a --cov gate cannot</span>
+                 <span class="cm"># tell these two files apart.</span></pre>
+
+  <p>Three of the five mutants return a plausible <code>Image</code> with the wrong contents rather than raising. That is the failure an intake service actually ships: not a crash, an answer that is quietly false. A never-crash suite <em>rewards</em> it, because refusing to raise is exactly what it checks for.</p>
+
+  <h3>Eight things to do about it</h3>
+
+  <table>
+    <tr><th>Mitigation</th><th>Where it already lives</th></tr>
+    <tr><td class="meth">Mutation score as the acceptance gate for generated tests. A test that kills no mutant is not a test</td><td><code>test_mutation.py</code>, <code>test_ai_authored.py</code></td></tr>
+    <tr><td class="meth">The never-crash trap, named and demonstrated. Every hostile-input assertion must have a positive companion</td><td><code>test_hostile.py</code>, <a href="#hostile">§13</a></td></tr>
+    <tr><td class="meth rd">Provenance separation. Whatever wrote the code does not grade it</td><td><code>test_oracle_independence.py</code></td></tr>
+    <tr><td class="meth rd">Differential against an independent implementation, not against the author's own expectation</td><td><code>test_differential.py</code>, <a href="#differential">§15</a></td></tr>
+    <tr><td class="meth cy">Properties over examples. A human can review five properties. A human cannot review five hundred generated examples</td><td><code>test_property.py</code>, <a href="#hostile">§13</a></td></tr>
+    <tr><td class="meth cy">Meta-tests. Suites rot in the direction of passing, and a generator will help them</td><td><code>test_suite_hygiene.py</code>, <a href="#meta">§17</a></td></tr>
+    <tr><td class="meth">Metamorphic relations, for when you cannot state the answer but can state what must stay true</td><td><a href="#parser">§12</a></td></tr>
+    <tr><td class="meth yl">Equivalent mutants as the honest cost. Telling them from real gaps is manual work that does not go away</td><td><a href="#mutation">§18</a></td></tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>Properties over examples is the strongest practical recommendation here</strong>
+    Examples are cheap for a model to emit and expensive for a human to validate. Properties invert both costs. <code>@given(blob=st.binary())</code> plus one stated invariant is reviewable in ten seconds and covers more than a page of generated cases. If you adopt one thing from this section, adopt that.
+  </div>
+
+  <h3 class="rd">Where it runs out</h3>
+
+  <pre class="diagram">   a test can check that the code does what the test says.
+   <span class="acc3">nothing can check that the test says what was meant.</span>
+
+   spec <span class="dim">──►</span> tests <span class="dim">──►</span> code
+    <span class="dim">▲</span>
+    <span class="dim">│</span>
+   <span class="acc3">a human wrote this, and a human has to read it</span>
+
+   the mitigations above all live to the RIGHT of the spec. every one
+   of them assumes the tests encode the intent. none of them can check
+   that they do.
+
+   <span class="acc">the only defence is that the spec is small enough to be read.</span></pre>
+
+  <p>This is the one place the apparatus genuinely runs out, and it is worth saying plainly rather than ending on the eight mitigations as though they closed the loop. An agent can verify code against tests all day. It cannot verify that the tests capture what anyone actually wanted.</p>
+
+  <div class="info-box">
+    <strong>The apparatus is the deliverable</strong>
+    Reviewing generated code line by line is neither possible at volume nor the point. What replaces review has to be engineered on purpose, and that engineering is the work. This repo is one small worked example of it: the mutation gate, the independent oracle, the positive companion and the meta-tests are not fussiness, they are the parts of the apparatus that a generated suite most needs and least provides.
+  </div>
+
+  <h3>Sources</h3>
+
+  <table>
+    <tr><th>Reference</th><th>Where</th></tr>
+    <tr><td class="meth">Su, <em>No More Code Reviews: Lights-Out Codebases Ahead</em></td><td>molochinations.substack.com</td></tr>
+    <tr><td class="meth">Venturini, <em>Treat Agent Output Like Compiler Output</em></td><td>skiplabs.io/blog/codegen_as_compiler</td></tr>
+    <tr><td class="meth cy">Wang, Xu, Briand, Liu, <em>Mutation-Guided Unit Test Generation with a Large Language Model</em> (MUTGEN), IEEE TSE</td><td>arXiv 2506.02954</td></tr>
+    <tr><td class="meth cy">Huang, Zhang, Harman, Zhang, Du, Ng, <em>Benchmarking LLMs for Unit Test Generation from Real-World Functions</em> (ULT)</td><td>arXiv 2508.00408</td></tr>
+    <tr><td class="meth cy">Zhao, Zhou, Cohen, <em>Do Coverage and Mutation Scores of LLM-Generated Test Suites Correlate with Their Effectiveness?</em></td><td>arXiv 2607.22880</td></tr>
+    <tr><td class="meth rd">Panickssery, Bowman, Feng, <em>LLM Evaluators Recognize and Favor Their Own Generations</em></td><td>arXiv 2404.13076</td></tr>
+    <tr><td class="meth rd">Wataoka, Takahashi, Ri, <em>Self-Preference Bias in LLM-as-a-Judge</em></td><td>arXiv 2410.21819</td></tr>
+    <tr><td class="meth rd">Yang, Hu, Qiu, Deng, Jiao, Zhou, <em>Quantifying and Mitigating Self-Preference Bias of LLM Judges</em></td><td>arXiv 2604.22891</td></tr>
+    <tr><td class="meth">Huang, Chen, Mishra, Zheng, Yu, Song, Zhou, <em>Large Language Models Cannot Self-Correct Reasoning Yet</em>, ICLR 2024</td><td>arXiv 2310.01798</td></tr>
+    <tr><td class="meth">Chen, Su, Lin, Li, Chiang, <em>The Self-Correction Illusion</em></td><td>arXiv 2606.05976</td></tr>
+    <tr><td class="meth cy">Chang, Fang, Chen, Shi, Shen, Gu, <em>Test vs Mutant: Adversarial LLM Agents for Robust Unit Test Generation</em></td><td>arXiv 2602.08146</td></tr>
+    <tr><td class="meth cy">Broide, Stern, Mordoch, <em>EvoGPT</em></td><td>arXiv 2505.12424</td></tr>
+    <tr><td class="meth yl">Thompson, <em>Reflections on Trusting Trust</em>; Leroy, <em>CompCert</em>; Lopes et al, <em>Alive2</em>; Yang et al, <em>Csmith</em></td><td>the apparatus the analogy borrows</td></tr>
+  </table>
+</section>
+
+<!-- ─────────────────────────────────────────────── 16 -->
+<section id="running" data-num="20">
+  <h2><em class="or">Running</em> It</h2>
+  <div class="section-bar"></div>
+
+  <pre><span class="label">the repo</span><span class="cm"># everything a fresh clone can run -- no install, no dependencies</span>
+python -m pytest -q                     <span class="cm"># 424 passed, 3 skipped</span>
+
+<span class="cm"># plus hypothesis, httpx, starlette</span>
+pip install -e .[test]
+python -m pytest -q                     <span class="cm"># 433 passed, 2 skipped</span>
+
+<span class="cm"># the tests that make real connections, off by default</span>
+python -m pytest --runnet</pre>
+
+  <h3>Flags worth muscle memory</h3>
+
+  <table>
+    <tr><th>Flag</th><th>Does</th></tr>
+    <tr><td class="meth">-q / -v</td><td>quieter / one line per test with its ID</td></tr>
+    <tr><td class="meth">-x</td><td>stop at the first failure</td></tr>
+    <tr><td class="meth">--lf / --ff</td><td>last-failed only / failed-first. The debug loop</td></tr>
+    <tr><td class="meth cy">-k 'magic and not elf'</td><td>select by name expression</td></tr>
+    <tr><td class="meth cy">-m 'not net'</td><td>select by marker</td></tr>
+    <tr><td class="meth">--collect-only</td><td>what WOULD run. The first thing to try when a test does not</td></tr>
+    <tr><td class="meth">-rs / -ra</td><td>skip reasons / all non-pass reasons</td></tr>
+    <tr><td class="meth yl">-l</td><td>show local variables in tracebacks</td></tr>
+    <tr><td class="meth yl">--tb=short / =line / =no</td><td>traceback verbosity</td></tr>
+    <tr><td class="meth rd">--pdb</td><td>drop into the debugger at the failure</td></tr>
+    <tr><td class="meth rd">--setup-show</td><td>print every fixture setup and teardown. The scope debugger</td></tr>
+    <tr><td class="meth">--durations=10</td><td>the ten slowest tests. Run it monthly</td></tr>
+    <tr><td class="meth">-p no:randomly</td><td>disable a plugin for one run</td></tr>
+  </table>
+
+  <h3>Plugins, and whether you need them</h3>
+
+  <table>
+    <tr><th>Plugin</th><th>For</th><th>Verdict</th></tr>
+    <tr><td class="meth cy">pytest-cov</td><td>coverage</td><td>yes, but read it as a map of what is <em>untested</em>, never as a score</td></tr>
+    <tr><td class="meth cy">pytest-xdist</td><td><code>-n 4</code>, parallel</td><td>yes. Also the cheapest order-dependence detector you own</td></tr>
+    <tr><td class="meth cy">hypothesis</td><td>property-based</td><td>yes, for parsers and anything with an inverse</td></tr>
+    <tr><td class="meth">anyio / pytest-asyncio</td><td>async tests</td><td>one of them, if you have async code. Not both</td></tr>
+    <tr><td class="meth">pytest-randomly</td><td>shuffles order</td><td>useful, occasionally infuriating, which is the point</td></tr>
+    <tr><td class="meth yl">freezegun / time-machine</td><td>freeze the clock</td><td>only where you cannot inject one. See <a href="#transport">§10</a></td></tr>
+    <tr><td class="meth yl">respx / responses</td><td>HTTP mocking</td><td>only if you cannot pass a transport. You almost always can</td></tr>
+    <tr><td class="meth rd">pytest-mock</td><td>a <code>mocker</code> fixture</td><td>a thin wrapper over unittest.mock. <code>monkeypatch</code> is already there</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>Coverage is a map, not a score</strong>
+    100% line coverage is compatible with zero assertions. Use coverage to find the branch nobody exercises, then go and write a test with a real assertion about it -- and remember the meta-test lesson: a test that only proves nothing crashed is satisfied by a function that refuses everything.
+  </div>
+
+  <h3 class="rd">The order this repo would teach it in</h3>
+
+  <pre class="diagram">   <span class="acc">1</span>  make the code have seams          <span class="dim">every collaborator a parameter</span>
+   <span class="acc">2</span>  write specimen BUILDERS           <span class="dim">not a committed corpus</span>
+   <span class="acc">3</span>  example tests, with good IDs      <span class="dim">§04, §05</span>
+   <span class="acc">4</span>  a FAKE for each seam              <span class="dim">§07, §09 -- ship it in the package</span>
+   <span class="acc">5</span>  the negative cases                <span class="dim">the clean specimen that must NOT warn</span>
+   <span class="acc">6</span>  hostile input                     <span class="dim">§12 -- truncation first, it is cheapest</span>
+   <span class="acc">7</span>  contract tests                    <span class="dim">§16 -- before your first release</span>
+   <span class="acc">8</span>  hygiene tests                     <span class="dim">§16 -- before the suite hits 100 files</span>
+
+   <span class="acc3">patching comes LAST, and only for things you do not own.</span></pre>
+
+  <div class="info-box cy">
+    <strong>The whole page in four lines</strong>
+    Inject what you own, patch what you do not. Prefer a fake to a mock. Every never-crash test needs a positive companion. And a check nobody has seen fire is a check nobody should trust.
+  </div>
+</section>
+
+</div>
+
+<div class="footer">
+  <span>Test Harness Deep Dive</span>
+  <span>hed0rah // <a href="https://docs.pytest.org/">pytest docs</a> · <a href="https://hypothesis.readthedocs.io/">hypothesis</a> · <a href="https://asgi.readthedocs.io/">ASGI spec</a></span>
+</div>
+<div class="spine">// orientation · terms · collection · fixtures · parametrize · assertions · markers · doubles · monkeypatch · transports · asgi · parsers · hostile · guardrails · differential · cli · meta · mutation · ai · running //</div>
+
+<script>
+const LABELS = {
+  orient: 'Orientation',
+  terms: 'Terms',
+  collect: 'Collection &amp; Config',
+  fixtures: 'Fixtures',
+  param: 'Parametrize &amp; IDs',
+  assert: 'Assertions',
+  markers: 'Markers &amp; xfail',
+  doubles: 'Test Doubles',
+  patch: 'Monkeypatching',
+  transport: 'Mock Transports',
+  asgi: 'ASGI &amp; Fake Clients',
+  parser: 'Parser Tests',
+  hostile: 'Hostile Input',
+  policy: 'Guardrails',
+  differential: 'Differential',
+  cli: 'CLI &amp; Subprocess',
+  meta: 'Meta-Tests',
+  mutation: 'Coverage &amp; Mutation',
+  ai: 'Testing an AI Author',
+  running: 'Running It'
+};
+const sections = [...document.querySelectorAll('.container > section[id]')];
+const sideLinks = [...document.querySelectorAll('.side a')];
+const radial = document.getElementById('radial');
+const ring = document.getElementById('radialRing');
+const center = document.getElementById('radialCenter');
+const navNum = document.getElementById('navNum');
+const navLabel = document.getElementById('navLabel');
+
+const items = sections.map(s => {
+  const a = document.createElement('a');
+  a.href = '#' + s.id;
+  a.className = 'radial-item';
+  a.innerHTML = '<span>' + s.dataset.num + '</span>' + (LABELS[s.id] || s.id);
+  radial.appendChild(a);
+  const dot = document.createElement('span');
+  dot.className = 'radial-dot';
+  radial.appendChild(dot);
+  return { sec: s, a, dot };
+});
+
+function layout() {
+  const rx = Math.max(140, Math.min(innerWidth * 0.5 - 150, 330));
+  const ry = Math.max(150, Math.min(innerHeight * 0.5 - 100, 330));
+  ring.style.width = (rx - 26) * 2 + 'px';
+  ring.style.height = (ry - 26) * 2 + 'px';
+  items.forEach((it, i) => {
+    const ang = -Math.PI / 2 + i * 2 * Math.PI / items.length;
+    const x = Math.cos(ang), y = Math.sin(ang);
+    it.a.style.left = 'calc(50% + ' + (rx * x).toFixed(1) + 'px)';
+    it.a.style.top = 'calc(50% + ' + (ry * y).toFixed(1) + 'px)';
+    const tx = x > 0.35 ? '0%' : x < -0.35 ? '-100%' : '-50%';
+    const ty = y > 0.35 ? '0%' : y < -0.35 ? '-100%' : '-50%';
+    it.a.style.transform = 'translate(' + tx + ', ' + ty + ')';
+    it.dot.style.left = 'calc(50% + ' + ((rx - 26) * x).toFixed(1) + 'px)';
+    it.dot.style.top = 'calc(50% + ' + ((ry - 26) * y).toFixed(1) + 'px)';
+  });
+}
+function openDial() { layout(); radial.classList.add('open'); document.body.classList.add('dial-open'); }
+function closeDial() { radial.classList.remove('open'); document.body.classList.remove('dial-open'); }
+
+function activate(id) {
+  const el = document.getElementById(id);
+  const sec = el ? (el.closest('.container > section[id]') || sections[0]) : sections[0];
+  sections.forEach(s => s.classList.toggle('active', s === sec));
+  items.forEach(it => {
+    it.a.classList.toggle('active', it.sec === sec);
+    it.dot.classList.toggle('active', it.sec === sec);
+  });
+  sideLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + sec.id));
+  navNum.textContent = sec.dataset.num + ' //';
+  navLabel.textContent = LABELS[sec.id] || sec.id;
+  center.textContent = sec.dataset.num;
+  closeDial();
+  if (el && el !== sec) el.scrollIntoView();
+  else window.scrollTo(0, 0);
+}
+function go(id) { history.replaceState(null, '', '#' + id); activate(id); }
+
+document.getElementById('navCurrent').addEventListener('click', openDial);
+document.getElementById('sideDial').addEventListener('click', openDial);
+center.addEventListener('click', closeDial);
+radial.addEventListener('click', e => { if (e.target === radial) closeDial(); });
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  e.preventDefault();
+  go(a.getAttribute('href').slice(1));
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') return closeDial();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const cur = sections.findIndex(s => s.classList.contains('active'));
+    const next = (cur + (e.key === 'ArrowRight' ? 1 : sections.length - 1)) % sections.length;
+    go(sections[next].id);
+  }
+});
+window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
+window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
+activate(location.hash.slice(1));
+
+// dark mode toggle (initial theme set by the inline script in <body>)
+const themeButtons = [...document.querySelectorAll('.theme-toggle')];
+function paintTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  themeButtons.forEach(b => b.textContent = (b.classList.contains('side-dial') ? (dark ? '◑ light' : '◐ dark') : (dark ? '◑' : '◐')));
+}
+themeButtons.forEach(b => b.addEventListener('click', () => {
+  const dark = document.documentElement.getAttribute('data-theme') !== 'dark';
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+  paintTheme();
+}));
+paintTheme();
+</script>
+</body>
+</html>
