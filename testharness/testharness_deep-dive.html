@@ -1951,9 +1951,9 @@ after = parse(serialize_uf2(blocks_of(base) + blocks_of(added)))
   <h3>Two ideas worth stealing from other parser traditions</h3>
 
   <table>
-    <tr><th>Source</th><th>What transfers</th></tr>
-    <tr><td class="meth cy">Nystrom, <em>Pratt Parsers: Expression Parsing Made Easy</em></td><td>the precedence table <strong>is</strong> the grammar. The article is about parsing rather than testing, but the consequence for tests is direct: when the specification is a table, the test surface is a table, and <code>parametrize</code> is the natural fit rather than a convenience</td></tr>
-    <tr><td class="meth cy">Henkelmann, <em>Scala Parser Combinators, Part 3</em></td><td>sub-parsers are testable in isolation, so you test <code>boolean</code>, <code>int</code> and <code>string</code> separately before anything composes them. That is <a href="#orient">§01</a>'s seam argument arriving from a different language and paradigm, which is the strongest kind of confirmation</td></tr>
+    <tr><th>Source</th><th>Work</th><th>What transfers</th></tr>
+    <tr><td class="meth cy">Nystrom</td><td><em>Pratt Parsers: Expression Parsing Made Easy</em></td><td>the precedence table <strong>is</strong> the grammar. The article is about parsing rather than testing, but the consequence for tests is direct: when the specification is a table, the test surface is a table, and <code>parametrize</code> is the natural fit rather than a convenience</td></tr>
+    <tr><td class="meth cy">Henkelmann</td><td><em>Scala Parser Combinators, Part 3</em></td><td>sub-parsers are testable in isolation, so you test <code>boolean</code>, <code>int</code> and <code>string</code> separately before anything composes them. That is <a href="#orient">§01</a>'s seam argument arriving from a different language and paradigm, which is the strongest kind of confirmation</td></tr>
   </table>
 
   <p>The walk/fold split at the top of this section is the same idea in a byte-parser: <code>walk_uf2</code> is the sub-parser, <code>parse_uf2</code> composes it, and both are reachable on their own. <code>serialize_uf2</code> is what makes the pair invertible, which is what buys the round-trip relation.</p>
@@ -2698,17 +2698,17 @@ CHECK_FAILURES = (Exception, pytest.fail.Exception)
   <p>Every figure below is from a paper, and each was checked against the abstract rather than taken from a summary. Sources at the end of the section.</p>
 
   <table>
-    <tr><th>Finding</th><th>Source</th></tr>
-    <tr><td class="meth">A suite can reach <strong>100% coverage at a 4% mutation score</strong>. Quoted in MUTGEN's abstract as the motivating example for mutation-guided generation</td><td>Wang, Xu, Briand, Liu. arXiv 2506.02954</td></tr>
-    <tr><td class="meth">On 3,909 real-world Python functions, LLM test generation averages <strong>41.3% accuracy, 45.1% statement, 30.2% branch, 40.2% mutation</strong>. The same models on the TestEval benchmark: 91.8 / 92.2 / 82.0 / 49.7</td><td>Huang, Zhang, Harman, Zhang, Du, Ng. arXiv 2508.00408</td></tr>
-    <tr><td class="meth cy">Whether coverage and mutation predict real fault detection is <strong>context-dependent</strong>: a usable comparative signal in regression scenarios, unreliable when the code under test may already be buggy. Suite size is <em>not</em> the dominant confounder for LLM-generated suites that it is for human-written ones</td><td>Zhao, Zhou, Cohen. arXiv 2607.22880</td></tr>
-    <tr><td class="meth rd">Evaluators <strong>recognise and favour their own generations</strong>, scoring them higher than human annotators do. Self-recognition correlates linearly with the strength of the bias, and the causal reading survives the obvious confounders</td><td>Panickssery, Bowman, Feng. arXiv 2404.13076</td></tr>
-    <tr><td class="meth rd">The bias tracks <strong>perplexity</strong>: models rate low-perplexity text higher regardless of who wrote it. Familiar-looking, not better</td><td>Wataoka, Takahashi, Ri. arXiv 2410.21819</td></tr>
-    <tr><td class="meth rd">Capability does not fix it. Advanced ability is <strong>uncorrelated, sometimes negatively correlated</strong>, with low self-preference bias</td><td>Yang, Hu, Qiu, Deng, Jiao, Zhou. arXiv 2604.22891</td></tr>
-    <tr><td class="meth">Models <strong>struggle to self-correct without external feedback</strong>, and performance sometimes degrades after trying</td><td>Huang, Chen, Mishra, Zheng, Yu, Song, Zhou. arXiv 2310.01798, ICLR 2024</td></tr>
-    <tr><td class="meth">Models correct errors from external sources but not the same errors in their own traces. <strong>Relabelling identical content as external</strong> restores the ability</td><td>Chen, Su, Lin, Li, Chiang. arXiv 2606.05976</td></tr>
-    <tr><td class="meth cy">Constructive: one agent writes tests, one writes mutants, adversarially, gated on coverage and mutation score</td><td>AdverTest. Chang, Fang, Chen, Shi, Shen, Gu. arXiv 2602.08146</td></tr>
-    <tr><td class="meth cy">Constructive: LLM-seeded population plus evolutionary search, <strong>about 10% better on both coverage and mutation score</strong> than either alone</td><td>EvoGPT. Broide, Stern, Mordoch. arXiv 2505.12424</td></tr>
+    <tr><th>What</th><th>Finding</th><th>Source</th></tr>
+    <tr><td class="meth">coverage vs mutation</td><td>A suite can reach <strong>100% coverage at a 4% mutation score</strong>. Quoted in MUTGEN's abstract as the motivating example for mutation-guided generation</td><td>arXiv 2506.02954</td></tr>
+    <tr><td class="meth">the benchmark gap</td><td>On 3,909 real-world Python functions, LLM test generation averages <strong>41.3% accuracy, 45.1% statement, 30.2% branch, 40.2% mutation</strong>. The same models on TestEval: 91.8 / 92.2 / 82.0 / 49.7</td><td>arXiv 2508.00408</td></tr>
+    <tr><td class="meth cy">metric validity</td><td>Whether coverage and mutation predict real fault detection is <strong>context-dependent</strong>: a usable comparative signal in regression scenarios, unreliable when the code under test may already be buggy. Suite size is <em>not</em> the dominant confounder for LLM-generated suites that it is for human-written ones</td><td>arXiv 2607.22880</td></tr>
+    <tr><td class="meth rd">self-preference</td><td>Evaluators <strong>recognise and favour their own generations</strong>, scoring them higher than human annotators do. Self-recognition correlates linearly with the strength of the bias, and the causal reading survives the obvious confounders</td><td>arXiv 2404.13076</td></tr>
+    <tr><td class="meth rd">why it happens</td><td>The bias tracks <strong>perplexity</strong>: models rate low-perplexity text higher regardless of who wrote it. Familiar-looking, not better</td><td>arXiv 2410.21819</td></tr>
+    <tr><td class="meth rd">scale does not fix it</td><td>Advanced capability is <strong>uncorrelated, sometimes negatively correlated</strong>, with low self-preference bias</td><td>arXiv 2604.22891</td></tr>
+    <tr><td class="meth">self-correction</td><td>Models <strong>struggle to self-correct without external feedback</strong>, and performance sometimes degrades after trying</td><td>arXiv 2310.01798</td></tr>
+    <tr><td class="meth">provenance effect</td><td>Models correct errors from external sources but not the same errors in their own traces. <strong>Relabelling identical content as external</strong> restores the ability</td><td>arXiv 2606.05976</td></tr>
+    <tr><td class="meth cy">adversarial pair</td><td>One agent writes tests, one writes mutants, adversarially, gated on coverage and mutation score</td><td>arXiv 2602.08146</td></tr>
+    <tr><td class="meth cy">search plus LLM</td><td>LLM-seeded population plus evolutionary search, <strong>about 10% better on both coverage and mutation score</strong> than either alone</td><td>arXiv 2505.12424</td></tr>
   </table>
 
   <div class="info-box danger">
@@ -2753,15 +2753,15 @@ asserting             <span class="num">93</span>            <span class="acc">5
   <h3>Eight things to do about it</h3>
 
   <table>
-    <tr><th>Mitigation</th><th>Where it already lives</th></tr>
-    <tr><td class="meth">Mutation score as the acceptance gate for generated tests. A test that kills no mutant is not a test</td><td><code>test_mutation.py</code>, <code>test_ai_authored.py</code></td></tr>
-    <tr><td class="meth">The never-crash trap, named and demonstrated. Every hostile-input assertion must have a positive companion</td><td><code>test_hostile.py</code>, <a href="#hostile">§13</a></td></tr>
-    <tr><td class="meth rd">Provenance separation. Whatever wrote the code does not grade it</td><td><code>test_oracle_independence.py</code></td></tr>
-    <tr><td class="meth rd">Differential against an independent implementation, not against the author's own expectation</td><td><code>test_differential.py</code>, <a href="#differential">§15</a></td></tr>
-    <tr><td class="meth cy">Properties over examples. A human can review five properties. A human cannot review five hundred generated examples</td><td><code>test_property.py</code>, <a href="#hostile">§13</a></td></tr>
-    <tr><td class="meth cy">Meta-tests. Suites rot in the direction of passing, and a generator will help them</td><td><code>test_suite_hygiene.py</code>, <a href="#meta">§17</a></td></tr>
-    <tr><td class="meth">Metamorphic relations, for when you cannot state the answer but can state what must stay true</td><td><a href="#parser">§12</a></td></tr>
-    <tr><td class="meth yl">Equivalent mutants as the honest cost. Telling them from real gaps is manual work that does not go away</td><td><a href="#mutation">§18</a></td></tr>
+    <tr><th>Mitigation</th><th>What it means</th><th>Where it already lives</th></tr>
+    <tr><td class="meth">mutation gate</td><td>Admit a generated suite only if it kills a threshold of mutants. A test that kills nothing is not a test</td><td><code>test_mutation.py</code></td></tr>
+    <tr><td class="meth">positive companion</td><td>Every hostile-input assertion needs one, or a parser that refuses everything passes the file</td><td><code>test_hostile.py</code>, <a href="#hostile">&sect;13</a></td></tr>
+    <tr><td class="meth rd">provenance separation</td><td>Whatever wrote the code does not grade it, and ideally is not the same family</td><td><code>test_oracle_independence.py</code></td></tr>
+    <tr><td class="meth rd">differential</td><td>Check against an independent implementation, not against the author's own expectation</td><td><code>test_differential.py</code>, <a href="#differential">&sect;16</a></td></tr>
+    <tr><td class="meth cy">properties over examples</td><td>A human can review five properties. A human cannot review five hundred generated examples</td><td><code>test_property.py</code>, <a href="#hostile">&sect;13</a></td></tr>
+    <tr><td class="meth cy">meta-tests</td><td>Suites rot in the direction of passing, and a generator will help them</td><td><code>test_suite_hygiene.py</code>, <a href="#meta">&sect;17</a></td></tr>
+    <tr><td class="meth">metamorphic relations</td><td>For when you cannot state the answer but can state what must stay true</td><td><code>test_metamorphic.py</code>, <a href="#parser">&sect;12</a></td></tr>
+    <tr><td class="meth yl">equivalent mutants</td><td>The honest cost. Telling them from real gaps is manual work that does not go away</td><td><a href="#mutation">&sect;18</a></td></tr>
   </table>
 
   <div class="info-box cy">
@@ -2795,20 +2795,20 @@ asserting             <span class="num">93</span>            <span class="acc">5
   <h3>Sources</h3>
 
   <table>
-    <tr><th>Reference</th><th>Where</th></tr>
-    <tr><td class="meth">Su, <em>No More Code Reviews: Lights-Out Codebases Ahead</em></td><td>molochinations.substack.com</td></tr>
-    <tr><td class="meth">Venturini, <em>Treat Agent Output Like Compiler Output</em></td><td>skiplabs.io/blog/codegen_as_compiler</td></tr>
-    <tr><td class="meth cy">Wang, Xu, Briand, Liu, <em>Mutation-Guided Unit Test Generation with a Large Language Model</em> (MUTGEN), IEEE TSE</td><td>arXiv 2506.02954</td></tr>
-    <tr><td class="meth cy">Huang, Zhang, Harman, Zhang, Du, Ng, <em>Benchmarking LLMs for Unit Test Generation from Real-World Functions</em> (ULT)</td><td>arXiv 2508.00408</td></tr>
-    <tr><td class="meth cy">Zhao, Zhou, Cohen, <em>Do Coverage and Mutation Scores of LLM-Generated Test Suites Correlate with Their Effectiveness?</em></td><td>arXiv 2607.22880</td></tr>
-    <tr><td class="meth rd">Panickssery, Bowman, Feng, <em>LLM Evaluators Recognize and Favor Their Own Generations</em></td><td>arXiv 2404.13076</td></tr>
-    <tr><td class="meth rd">Wataoka, Takahashi, Ri, <em>Self-Preference Bias in LLM-as-a-Judge</em></td><td>arXiv 2410.21819</td></tr>
-    <tr><td class="meth rd">Yang, Hu, Qiu, Deng, Jiao, Zhou, <em>Quantifying and Mitigating Self-Preference Bias of LLM Judges</em></td><td>arXiv 2604.22891</td></tr>
-    <tr><td class="meth">Huang, Chen, Mishra, Zheng, Yu, Song, Zhou, <em>Large Language Models Cannot Self-Correct Reasoning Yet</em>, ICLR 2024</td><td>arXiv 2310.01798</td></tr>
-    <tr><td class="meth">Chen, Su, Lin, Li, Chiang, <em>The Self-Correction Illusion</em></td><td>arXiv 2606.05976</td></tr>
-    <tr><td class="meth cy">Chang, Fang, Chen, Shi, Shen, Gu, <em>Test vs Mutant: Adversarial LLM Agents for Robust Unit Test Generation</em></td><td>arXiv 2602.08146</td></tr>
-    <tr><td class="meth cy">Broide, Stern, Mordoch, <em>EvoGPT</em></td><td>arXiv 2505.12424</td></tr>
-    <tr><td class="meth yl">Thompson, <em>Reflections on Trusting Trust</em>; Leroy, <em>CompCert</em>; Lopes et al, <em>Alive2</em>; Yang et al, <em>Csmith</em></td><td>the apparatus the analogy borrows</td></tr>
+    <tr><th>Handle</th><th>Reference</th><th>Where</th></tr>
+    <tr><td class="meth">Su</td><td><em>No More Code Reviews: Lights-Out Codebases Ahead</em></td><td>molochinations.substack.com</td></tr>
+    <tr><td class="meth">Venturini</td><td><em>Treat Agent Output Like Compiler Output</em></td><td>skiplabs.io/blog/codegen_as_compiler</td></tr>
+    <tr><td class="meth cy">MUTGEN</td><td>Wang, Xu, Briand, Liu. <em>Mutation-Guided Unit Test Generation with a Large Language Model</em>, IEEE TSE</td><td>arXiv 2506.02954</td></tr>
+    <tr><td class="meth cy">ULT</td><td>Huang, Zhang, Harman, Zhang, Du, Ng. <em>Benchmarking LLMs for Unit Test Generation from Real-World Functions</em></td><td>arXiv 2508.00408</td></tr>
+    <tr><td class="meth cy">replicability</td><td>Zhao, Zhou, Cohen. <em>Do Coverage and Mutation Scores of LLM-Generated Test Suites Correlate with Their Effectiveness?</em></td><td>arXiv 2607.22880</td></tr>
+    <tr><td class="meth rd">self-preference</td><td>Panickssery, Bowman, Feng. <em>LLM Evaluators Recognize and Favor Their Own Generations</em></td><td>arXiv 2404.13076</td></tr>
+    <tr><td class="meth rd">perplexity</td><td>Wataoka, Takahashi, Ri. <em>Self-Preference Bias in LLM-as-a-Judge</em></td><td>arXiv 2410.21819</td></tr>
+    <tr><td class="meth rd">quantifying it</td><td>Yang, Hu, Qiu, Deng, Jiao, Zhou. <em>Quantifying and Mitigating Self-Preference Bias of LLM Judges</em></td><td>arXiv 2604.22891</td></tr>
+    <tr><td class="meth">self-correction</td><td>Huang, Chen, Mishra, Zheng, Yu, Song, Zhou. <em>Large Language Models Cannot Self-Correct Reasoning Yet</em>, ICLR 2024</td><td>arXiv 2310.01798</td></tr>
+    <tr><td class="meth">role relabeling</td><td>Chen, Su, Lin, Li, Chiang. <em>The Self-Correction Illusion</em></td><td>arXiv 2606.05976</td></tr>
+    <tr><td class="meth cy">AdverTest</td><td>Chang, Fang, Chen, Shi, Shen, Gu. <em>Test vs Mutant: Adversarial LLM Agents for Robust Unit Test Generation</em></td><td>arXiv 2602.08146</td></tr>
+    <tr><td class="meth cy">EvoGPT</td><td>Broide, Stern, Mordoch. <em>EvoGPT</em></td><td>arXiv 2505.12424</td></tr>
+    <tr><td class="meth yl">the apparatus</td><td>Thompson, <em>Reflections on Trusting Trust</em>; Leroy, <em>CompCert</em>; Lopes et al, <em>Alive2</em>; Yang et al, <em>Csmith</em></td><td>what the analogy borrows</td></tr>
   </table>
 </section>
 
