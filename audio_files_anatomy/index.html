@@ -99,6 +99,9 @@ a{color:inherit;text-decoration:none}
 .fxp  .tab{background:#3F4E7D} .fxp  .name{color:#354268}
 .rmid .tab{background:#7D4A6E} .rmid .name{color:#683e5c}
 .sid  .tab{background:#7E3A4E} .sid  .name{color:#693041}
+.mdx  .tab{background:#3D6E6A} .mdx  .name{color:#2F5450}
+.nsf  .tab{background:#8A4A3A} .nsf  .name{color:#6F3B2E}
+.sap  .tab{background:#7A6438} .sap  .name{color:#61502C}
 .multisample .tab{background:#4E7048} .multisample .name{color:#415e3c}
 .rx2  .tab{background:#6E4A2E} .rx2  .name{color:#5c3e26}
 .mpc  .tab{background:#A02A3A} .mpc  .name{color:#85242F}
@@ -126,7 +129,7 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div><h1>Audio File Anatomy</h1></div><acidcat-toggle aria-label="Cycle theme: light, dark, acid, house light, house dark"></acidcat-toggle></div>
-      <div class="stamp"><b>21 formats</b>interactive<br>rev 2026.07</div>
+      <div class="stamp"><b>35 formats</b>interactive<br>rev 2026.07</div>
     </div>
     <div class="strip">
       <div>view <b>byte / bit maps</b></div>
@@ -341,6 +344,24 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
       <div><div class="name">SID</div>
         <div class="d">A big-endian header describing a 6502 music player, then the raw C64 memory image it runs in. The flags word bit by bit, and the little-endian load address that hides under a big-endian header.</div></div>
       <span class="t">bit + byte</span>
+    </a>
+    <a class="row mdx" href="mdx-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">MDX</div>
+        <div class="d">A Music Macro Language score for the Sharp X68000 and its YM2151 FM chip. No magic number at all: a file opens with its Shift-JIS title, so identification is arithmetic. Every offset is relative to a word that moves with the title's length.</div></div>
+      <span class="t">byte + bit</span>
+    </a>
+    <a class="row nsf" href="nsf-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">NSF</div>
+        <div class="d">Not a description of music but the 6502 program that made it, lifted out of a cartridge. The 2A03's five voices, the expansion byte bit by bit, and the load address that stops being an address when the file is banked.</div></div>
+      <span class="t">byte + bit</span>
+    </a>
+    <a class="row sap" href="sap-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">SAP</div>
+        <div class="d">An ASCII tag header concatenated onto an Atari executable. POKEY's four dividers and its polynomial-counter timbre, the tag vocabulary, and the boundary rule the specification never defines.</div></div>
+      <span class="t">byte + text</span>
     </a>
   </div>
 
