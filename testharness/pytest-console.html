@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>pytest console / testharness-fun</title>
+<style>
+:root{
+  --bg:#16181C; --panel:#1C1F24; --panel2:#22262C; --ink:#E8E6DF; --soft:#A8ADB4;
+  --faint:#6E747C; --line:#2E333A; --hair:#262B31;
+  --teal:#00F9DF; --orange:#FF6A2A; --pink:#FF3EB5; --yellow:#FFE900;
+  --green:#5FD08A; --red:#FF5C6E;
+  --mono:ui-monospace,"SF Mono","Cascadia Code","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#F2F1EE; --panel:#FFFFFF; --panel2:#EAE8E2; --ink:#14181A; --soft:#4A5054;
+  --faint:#7C8388; --line:#C9C4B8; --hair:#DCD8CE;
+  --teal:#00776C; --orange:#C24312; --pink:#A3006B; --yellow:#8A6A00;
+  --green:#24713F; --red:#B01524;
+}
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    --bg:#F2F1EE; --panel:#FFFFFF; --panel2:#EAE8E2; --ink:#14181A; --soft:#4A5054;
+    --faint:#7C8388; --line:#C9C4B8; --hair:#DCD8CE;
+    --teal:#00776C; --orange:#C24312; --pink:#A3006B; --yellow:#8A6A00;
+    --green:#24713F; --red:#B01524;
+  }
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--mono);
+     font-size:13px;line-height:1.55;-webkit-font-smoothing:antialiased}
+::selection{background:var(--teal);color:var(--bg)}
+a{color:var(--teal);text-decoration:none;border-bottom:1px dotted currentColor}
+
+/* ── masthead ─────────────────────────────────────────────────────────── */
+header{border-bottom:1px solid var(--line);background:var(--panel);
+       position:sticky;top:0;z-index:20}
+.top{max-width:1900px;margin:0 auto;padding:.7rem 1.1rem .55rem;
+     display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap}
+h1{font-size:1.05rem;font-weight:700;letter-spacing:.04em;white-space:nowrap}
+h1 em{color:var(--teal);font-style:normal}
+.tag{font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+.spacer{flex:1}
+.tbtn{font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;
+      text-transform:uppercase;background:none;color:var(--faint);
+      border:1px solid var(--line);padding:.28rem .5rem;cursor:pointer}
+.tbtn:hover{color:var(--ink);border-color:var(--faint)}
+
+/* ── tabs ─────────────────────────────────────────────────────────────── */
+nav{max-width:1900px;margin:0 auto;padding:0 1.1rem;display:flex;
+    gap:2px;flex-wrap:wrap;overflow-x:auto}
+.tab{font-family:var(--mono);font-size:.7rem;letter-spacing:.13em;
+     text-transform:uppercase;background:none;border:none;cursor:pointer;
+     color:var(--faint);padding:.5rem .75rem;border-bottom:2px solid transparent;
+     white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--teal);border-bottom-color:var(--teal)}
+.tab .n{color:var(--line);margin-right:.4rem}
+.tab[aria-selected="true"] .n{color:var(--teal)}
+
+/* ── panels and the card grid ─────────────────────────────────────────── */
+main{max-width:1900px;margin:0 auto;padding:1.1rem 1.1rem 5rem}
+.panel{display:none}
+.panel[data-open]{display:block}
+.lede{font-family:var(--sans);font-size:.92rem;line-height:1.5;color:var(--soft);
+      max-width:70ch;margin:.2rem 0 1.1rem;border-left:2px solid var(--teal);
+      padding-left:.8rem}
+.lede b{color:var(--ink);font-weight:600}
+
+.grid{display:grid;gap:11px;align-items:stretch;
+      grid-template-columns:repeat(auto-fill,minmax(380px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);padding:.7rem .8rem .8rem;
+      display:flex;flex-direction:column}
+.card>*:last-child{margin-bottom:0}
+.card.hot{border-left:3px solid var(--orange)}
+.card.key{border-left:3px solid var(--teal)}
+.card.w2{grid-column:span 2}
+.card.w3{grid-column:span 3}
+@media (max-width:900px){.card.w2,.card.w3{grid-column:span 1}}
+@media (min-width:901px) and (max-width:1320px){.card.w3{grid-column:span 2}}
+
+.lab{font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;
+     color:var(--orange);font-weight:700;margin-bottom:.55rem;
+     display:flex;align-items:center;gap:.5rem}
+.card.key .lab{color:var(--teal)}
+.lab::after{content:"";flex:1;height:1px;background:var(--hair)}
+
+p{font-family:var(--sans);font-size:.84rem;line-height:1.5;color:var(--soft);
+  margin:0 0 .55rem}
+p b{color:var(--ink);font-weight:600}
+ul{margin:0 0 .55rem;padding-left:1.05rem}
+li{font-family:var(--sans);font-size:.82rem;line-height:1.45;color:var(--soft);margin:.22rem 0}
+li b{color:var(--ink);font-weight:600}
+li code,p code{font-family:var(--mono)}
+
+table{width:100%;border-collapse:collapse;font-size:.76rem;margin:0 0 .55rem}
+th,td{text-align:left;padding:.26rem .4rem;border-bottom:1px solid var(--hair);
+      vertical-align:top}
+th{font-size:.58rem;letter-spacing:.11em;text-transform:uppercase;
+   color:var(--faint);font-weight:700}
+td.k{color:var(--teal);font-weight:700;white-space:nowrap}
+td.o{color:var(--orange);font-weight:700;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+
+pre{background:var(--panel2);border-left:2px solid var(--line);
+    padding:.5rem .6rem;overflow-x:auto;font-size:.75rem;line-height:1.55;
+    margin:0 0 .55rem;white-space:pre;color:var(--ink)}
+pre.ok{border-left-color:var(--green)}
+pre.no{border-left-color:var(--red)}
+pre.tree{border-left-color:var(--orange)}
+pre.map{border-left-color:var(--teal);font-size:.735rem;line-height:1.5}
+pre .c{color:var(--faint)}
+pre .t{color:var(--teal)}
+pre .y{color:var(--green);font-weight:600}
+pre .r{color:var(--red);font-weight:600}
+pre .w{color:var(--yellow)}
+pre .a{color:var(--orange);font-weight:600}
+pre .q{color:var(--ink);font-weight:700}
+code{background:var(--panel2);padding:0 .22rem;color:var(--teal);font-size:.94em}
+
+.rule{font-family:var(--sans);font-size:.82rem;line-height:1.45;color:var(--ink);
+      background:var(--panel2);border-left:2px solid var(--orange);
+      padding:.4rem .55rem;margin:.1rem 0 .55rem}
+.rule b{font-weight:700}
+.rule.t{border-left-color:var(--teal)}
+.rule.r{border-left-color:var(--red)}
+.flag{display:inline-block;font-size:.55rem;letter-spacing:.1em;font-weight:700;
+      text-transform:uppercase;padding:.02rem .25rem;border:1px solid currentColor}
+.f-y{color:var(--green)} .f-n{color:var(--red)} .f-w{color:var(--yellow)}
+
+footer{max-width:1900px;margin:0 auto;padding:1rem 1.1rem 3rem;
+       font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
+       color:var(--faint);display:flex;justify-content:space-between;
+       gap:1rem;flex-wrap:wrap;border-top:1px solid var(--line)}
+
+/* ── print: every panel, one per page ─────────────────────────────────── */
+@media print{
+  :root, :root[data-theme="dark"], :root[data-theme="light"]{
+    --bg:#fff; --panel:#fff; --panel2:#f3f2ee; --ink:#000; --soft:#1c1c1c;
+    --faint:#4a4a4a; --line:#8d8d8d; --hair:#d0d0d0;
+    --teal:#00625a; --orange:#9c3c0d; --green:#1c5233; --red:#7c1223;
+    --yellow:#5f4a00; --pink:#7a0055;
+  }
+  html,body{background:#fff}
+  header{position:static;border-bottom:1px solid #000}
+  nav,.tbtn{display:none}
+  main{padding:0;max-width:none}
+  .panel{display:block;break-after:page;page-break-after:always}
+  .panel:last-of-type{break-after:auto;page-break-after:auto}
+  .panel::before{content:attr(data-title);display:block;font-size:.9rem;
+                 font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+                 border-bottom:1px solid #000;padding-bottom:.25rem;margin-bottom:.6rem}
+  .grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .card{break-inside:avoid;page-break-inside:avoid}
+  .card.w2,.card.w3{grid-column:span 2}
+  a{color:inherit;border-bottom:none}
+  @page{size:A4 portrait;margin:9mm}
+}
+</style>
+</head>
+<body>
+<script>(function(){var t=localStorage.getItem('console-theme');if(t)document.documentElement.setAttribute('data-theme',t);})();</script>
+<header>
+  <div class="top">
+    <h1>pytest <em>console</em></h1>
+    <span class="tag">testharness-fun // screen reference</span>
+    <span class="spacer"></span>
+    <button class="tbtn" title="toggle theme">theme</button>
+  </div>
+  <nav role="tablist">
+  <button class="tab" data-for="map" aria-selected="false"><span class="n">01</span>map</button>
+  <button class="tab" data-for="mechanics" aria-selected="false"><span class="n">02</span>mechanics</button>
+  <button class="tab" data-for="doubles" aria-selected="false"><span class="n">03</span>doubles</button>
+  <button class="tab" data-for="surfaces" aria-selected="false"><span class="n">04</span>surfaces</button>
+  <button class="tab" data-for="evidence" aria-selected="false"><span class="n">05</span>evidence</button>
+  <button class="tab" data-for="commands" aria-selected="false"><span class="n">06</span>commands</button>
+  <button class="tab" data-for="ai" aria-selected="false"><span class="n">07</span>ai author</button>
+  <button class="tab" data-for="glossary" aria-selected="false"><span class="n">08</span>glossary</button>
+  </nav>
+</header>
+
+<main>
+<section class="panel" id="map" data-title="map">
+  <div class="lede">What the specimen is, where every seam sits, and which test file drives which part of it. <b>fwvault</b> is a firmware artifact intake service that exists to be tested: it parses a blob, asks a signing oracle about the digest, applies policy, and stores what survives.</div>
+<div class="grid">
+<div class="card key w2">
+  <div class="lab">system map</div>
+  <pre class="map">testharness-fun/
+├─ <span class="t">src/fwvault/</span>          <span class="c">the specimen. no runtime dependencies.</span>
+│  ├─ parse.py     <span class="c">303  UF2 + ELF walkers, and serialize_uf2</span>
+│  ├─ policy.py    <span class="c">118  9 rules, precedence-ordered</span>
+│  ├─ signing.py   <span class="c">158  outbound client. transport is a PARAM</span>
+│  ├─ store.py     <span class="c">116  content-addressed, atomic writes</span>
+│  ├─ app.py       <span class="c">220  raw ASGI3. no framework.</span>
+│  ├─ cli.py       <span class="c">168  argv in, exit code out</span>
+│  ├─ errors.py    <span class="c"> 55  the taxonomy the design hangs on</span>
+│  ├─ clock.py     <span class="c"> 47  time as a dependency</span>
+│  └─ testing.py   <span class="c">158  builders + doubles, SHIPPED</span>
+│
+├─ <span class="t">tests/</span>                <span class="c">one file per technique family</span>
+│  ├─ conftest.py            <span class="c">isolation, specimens, plugin hooks</span>
+│  ├─ <span class="a">mechanics</span>   parse, fixtures, parametrize, markers,
+│  │              assertions, time, cli, store
+│  ├─ <span class="a">doubles</span>     doubles, monkeypatch, transport,
+│  │              asgi_raw, asgi_clients
+│  ├─ <span class="a">evidence</span>    hostile, property, metamorphic,
+│  │              differential, policy, oracle_independence
+│  └─ <span class="a">meta</span>        suite_hygiene, contract, lean_install,
+│                 mutation, ai_authored, cards
+│
+├─ <span class="t">terms.py</span>              <span class="c">67 terms. every glossary generates from it</span>
+├─ <span class="t">frag.html</span>             <span class="c">deep dive source. the page is built.</span>
+├─ card_content*.py       <span class="c">the two printed cards</span>
+└─ build_*.py gen_*.py    <span class="c">generators. see the COMMANDS tab.</span></pre>
+</div>
+<div class="card hot">
+  <div class="lab">the request, end to end</div>
+  <pre>POST /artifact  <span class="c">← 1024 bytes of UF2</span>
+     │
+     ├─ <span class="a">parse(blob)</span>            sniff magic, walk 512-byte
+     │                        blocks, fold to an Image
+     │
+     ├─ <span class="a">digest_of(blob)</span>        sha256, computed by US,
+     │                        never taken from the client
+     │
+     ├─ <span class="a">client.verify(digest)</span>  GET oracle/keys/&lt;digest&gt;
+     │                        → Verdict, or VaultUnavailable
+     │
+     ├─ <span class="a">policy.enforce(...)</span>    9 rules, precedence order,
+     │                        raises the first hit
+     │
+     └─ <span class="a">store.put(blob, m)</span>     → 201 {"digest": ...}</pre>
+  <div class="rule">Four collaborators: a parser, an HTTP client, a rule engine, a
+  filesystem. The minimum shape that needs all four, which is why it was picked.</div>
+</div>
+<div class="card key w2">
+  <div class="lab">seam inventory</div>
+  <table>
+    <tr><th>seam</th><th>enabling point</th><th>contract</th><th>what it buys</th></tr>
+    <tr><td class="k">transport</td><td><code>SigningClient(transport=)</code></td><td><code>.request(method,url,body,headers)</code></td><td>retries, URLs, calls that did not happen</td></tr>
+    <tr><td class="k">clock</td><td><code>SigningClient(clock=)</code></td><td><code>.now()</code>, <code>.sleep(s)</code></td><td><code>assert clock.slept == [0.5,1.0,2.0]</code> in zero time</td></tr>
+    <tr><td class="k">cache</td><td><code>SigningClient(cache=)</code></td><td>a dict</td><td>stale-verdict behaviour, prepopulated</td></tr>
+    <tr><td class="k">store</td><td><code>create_app(store=)</code></td><td><code>.put/.get/.has/__len__</code></td><td><code>assert len(vault) == 0</code> after a refusal</td></tr>
+    <tr><td class="k">client</td><td><code>create_app(client=)</code></td><td><code>.verify(digest)</code></td><td>the 503 path, via a 3-line DeadClient</td></tr>
+    <tr><td class="k">policy</td><td><code>create_app(policy=)</code></td><td>frozen dataclass, 9 fields</td><td>every rule via <code>replace(policy, ...)</code></td></tr>
+    <tr><td class="k">body limit</td><td><code>create_app(max_body=)</code></td><td>int</td><td>413 without generating 8 MB</td></tr>
+    <tr><td class="k">argv + streams</td><td><code>cli.main(argv,stdout,stderr)</code></td><td>files</td><td>the whole CLI in microseconds</td></tr>
+    <tr><td class="k">vault root</td><td><code>Store(root)</code></td><td>a path</td><td><code>tmp_path</code>, so tests never collide</td></tr>
+  </table>
+  <div class="rule t">No module-level singletons, no settings object, no global
+  registry. That is what lets two tests run two differently-configured apps in one
+  process, and why the <code>app</code> fixture is one line.</div>
+</div>
+<div class="card">
+  <div class="lab">seams that are not parameters</div>
+  <pre><span class="a">STRUCTURAL</span>   split a function so both halves are reachable
+   walk_uf2()   generator, yields Block records
+   parse_uf2()  folds that stream into an Image
+   <span class="c">assert on block 10 of 900 without building a</span>
+   <span class="c">manifest; test the fold with hand-built records</span>
+   <span class="c">and no bytes at all.</span>
+
+<span class="a">INVERSE</span>      serialize_uf2() is walk_uf2 backwards
+   <span class="c">buys the round-trip relation, which needs no</span>
+   <span class="c">oracle at all. see the EVIDENCE tab.</span>
+
+<span class="a">IMPORT</span>       sys.modules[name] = None
+   <span class="c">makes `import name` raise. tests the</span>
+   <span class="c">dependency-absent path on a machine that has it.</span>
+
+<span class="a">ENVIRONMENT</span>  FWVAULT_WALKER_RAISE
+   <span class="c">a walker bug is a warning in production and a</span>
+   <span class="c">traceback in the suite. both states tested.</span></pre>
+</div>
+<div class="card w3">
+  <div class="lab">which file drives which surface</div>
+  <table>
+    <tr><th>test file</th><th>surfaces</th><th>what it is really about</th></tr>
+    <tr><td class="o">test_parse.py</td><td>parser</td><td>the assertion vocabulary, parametrize and ids</td></tr>
+    <tr><td class="o">test_hostile.py</td><td>parser</td><td>truncation sweeps, bit flips, seeded fuzz</td></tr>
+    <tr><td class="o">test_property.py</td><td>parser, policy, store</td><td>hypothesis: round trip, invariant, never-crash</td></tr>
+    <tr><td class="o">test_metamorphic.py</td><td>parser</td><td>relations that need no oracle</td></tr>
+    <tr><td class="o">test_differential.py</td><td>parser</td><td>two independent implementations over one corpus</td></tr>
+    <tr><td class="o">test_policy.py</td><td>policy</td><td>proving a refusal, for the right reason</td></tr>
+    <tr><td class="o">test_store.py</td><td>store</td><td>tmp_path, atomicity, path traversal by regeneration</td></tr>
+    <tr><td class="o">test_transport.py</td><td>transport</td><td>retry schedules, cache staleness, caplog</td></tr>
+    <tr><td class="o">test_asgi_raw.py</td><td>HTTP</td><td>a 20-line ASGI client, and what only it can do</td></tr>
+    <tr><td class="o">test_asgi_clients.py</td><td>HTTP, transport</td><td>the same app through httpx and TestClient</td></tr>
+    <tr><td class="o">test_cli.py</td><td>CLI</td><td>in-process with streams, plus four real processes</td></tr>
+    <tr><td class="o">test_doubles.py</td><td>transport, policy</td><td>the five doubles, each with a working example</td></tr>
+    <tr><td class="o">test_monkeypatch.py</td><td>most</td><td>every method, four traps, and when not to patch</td></tr>
+    <tr><td class="o">test_fixtures.py</td><td>store</td><td>scope, teardown order, factories, the anti-pattern</td></tr>
+    <tr><td class="o">test_parametrize.py</td><td>policy, store</td><td>indirect, generate_tests, stacking limits</td></tr>
+    <tr><td class="o">test_markers.py</td><td>parser</td><td>skip vs xfail, strict, pytest.param, flaky policy</td></tr>
+    <tr><td class="o">test_time.py</td><td>transport</td><td>inject a clock, never sleep in a test</td></tr>
+    <tr><td class="o">test_contract.py</td><td>all</td><td>the published shape: names, codes, routes, schema</td></tr>
+    <tr><td class="o">test_lean_install.py</td><td>all</td><td>the dependency boundary, statically and behaviourally</td></tr>
+    <tr><td class="o">test_suite_hygiene.py</td><td>the suite</td><td>does every test still assert anything</td></tr>
+    <tr><td class="o">test_mutation.py</td><td>the suite</td><td>8 mutants, each paired with its catcher</td></tr>
+    <tr><td class="o">test_ai_authored.py</td><td>the suite</td><td>generated-shaped suite vs asserting, measured</td></tr>
+    <tr><td class="o">test_oracle_independence.py</td><td>the suite</td><td>why the author cannot grade its own homework</td></tr>
+    <tr><td class="o">test_cards.py</td><td>the docs</td><td>generated files, cross-refs, page fit</td></tr>
+  </table>
+</div>
+</div>
+</section>
+
+<section class="panel" id="mechanics" data-title="mechanics">
+  <div class="lede">The tool itself. Collection, configuration, fixtures, cases, assertions. <b>Everything here is pytest behaviour</b> rather than an opinion about testing, so it transfers to any project unchanged.</div>
+<div class="grid">
+<div class="card hot">
+  <div class="lab">what gets collected</div>
+  <table>
+    <tr><td class="o">files</td><td><code>test_*.py</code> or <code>*_test.py</code></td></tr>
+    <tr><td class="o">classes</td><td><code>Test*</code>, and no <code>__init__</code></td></tr>
+    <tr><td class="o">functions</td><td><code>test*</code> &nbsp;<b>not</b>&nbsp; <code>test_*</code></td></tr>
+  </table>
+  <pre class="no"><span class="c"># a helper named tests_in() IS COLLECTED as a test.</span>
+<span class="c"># if it is a generator, the whole FILE dies:</span>
+<span class="r">'yield' keyword is allowed in fixtures,
+ but not in tests</span></pre>
+  <div class="rule r">This repo walked into it twice: once in
+  <code>test_suite_hygiene.py</code>, once in <code>test_oracle_independence.py</code>
+  with a helper called <code>tests_from_belief</code>. Name helpers
+  <code>find_*</code> or <code>suite_*</code>.</div>
+</div>
+<div class="card">
+  <div class="lab">conftest.py, three jobs</div>
+  <pre><span class="c">visibility follows the DIRECTORY tree.</span>
+<span class="c">nearest wins. no import needed, anywhere.</span>
+repo/conftest.py       <span class="c">everything below</span>
+  tests/conftest.py    <span class="c">tests/ and below</span>
+    tests/test_x.py    <span class="a">a fixture here SHADOWS both</span></pre>
+  <pre><span class="c">1. isolate the process (autouse)</span>
+@pytest.fixture(autouse=True)
+def isolate_environment(monkeypatch, tmp_path_factory):
+    home = tmp_path_factory.mktemp("fwvault_home")
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))  <span class="c"># windows</span>
+    monkeypatch.setenv("FWVAULT_WALKER_RAISE", "1")
+
+<span class="c">2. supply specimens and collaborators</span>
+<span class="c">3. extend pytest itself</span>
+def pytest_addoption(parser):
+    parser.addoption("--runnet", action="store_true")
+
+def pytest_collection_modifyitems(config, items):
+    <span class="c"># where a marker becomes behaviour</span></pre>
+  <div class="rule">Deleting an env var is not isolation. With it unset the code
+  falls back to <code>expanduser("~")</code> and the suite writes into a real home
+  directory. Set a fake one, and set both HOME and USERPROFILE.</div>
+</div>
+<div class="card key">
+  <div class="lab">pyproject block, steal it</div>
+  <pre>[tool.pytest.ini_options]
+testpaths    = ["tests"]
+pythonpath   = ["src"]     <span class="c"># runs without installing</span>
+addopts      = "-rs --strict-markers"
+xfail_strict = true
+markers = [
+  "slow: takes real wall-clock time",
+  "net: touches a real network",
+]
+filterwarnings = [
+  <span class="c"># YOUR deprecations are errors. SCOPE it, or</span>
+  <span class="c"># someone else's release breaks your build.</span>
+  "error::DeprecationWarning:yourpkg.*",
+]</pre>
+  <table>
+    <tr><td class="k">-rs</td><td>print every skip reason</td></tr>
+    <tr><td class="k">--strict-markers</td><td>a typo'd marker is an error</td></tr>
+    <tr><td class="k">xfail_strict</td><td>an xfail that passes is a failure</td></tr>
+    <tr><td class="k">pythonpath</td><td>a fresh clone runs immediately</td></tr>
+  </table>
+</div>
+<div class="card hot">
+  <div class="lab">fixture lifecycle</div>
+  <pre><span class="c">build order is DEPENDENCY order.</span>
+<span class="c">teardown is its exact reverse.</span>
+
+ outer:setup <span class="a">→</span> inner:setup <span class="a">→</span> <span class="y">TEST</span>
+             <span class="a">→</span> inner:teardown <span class="a">→</span> outer:teardown
+
+<span class="c">code after `yield` runs even if the test FAILS.</span>
+<span class="c">it does NOT run if setup before the yield raised.</span>
+<span class="a">→ put what CAN fail after what MUST be cleaned up.</span></pre>
+  <table>
+    <tr><th>scope</th><th>built</th><th>safe when</th></tr>
+    <tr><td class="k">function</td><td>per test</td><td>always. the default</td></tr>
+    <tr><td class="k">class</td><td>per class</td><td>a class groups a scenario</td></tr>
+    <tr><td class="k">module</td><td>per file</td><td>expensive AND immutable</td></tr>
+    <tr><td class="k">package</td><td>per directory</td><td>rare</td></tr>
+    <tr><td class="k">session</td><td>per run</td><td>never mutable</td></tr>
+  </table>
+  <div class="rule r">A session-scoped <b>mutable</b> fixture is a global with extra
+  steps. The test that corrupts it fails a <i>different</i> test, three files later,
+  in one ordering only.</div>
+</div>
+<div class="card">
+  <div class="lab">fixture shapes</div>
+  <pre><span class="c">FACTORY: the test gets the FUNCTION</span>
+@pytest.fixture
+def make_uf2(): return build_uf2
+<span class="c">  beats forty fixtures named after their defects</span>
+
+<span class="c">PARAMETRIZED: requester runs once per case</span>
+@pytest.fixture(params=["uf2","elf"], ids=[...])
+def any_artifact(request): ...
+
+<span class="c">NAMED: function name is not the fixture name</span>
+@pytest.fixture(name="digest")
+def _make_digest(uf2): ...
+
+<span class="c">OVERRIDE: a module-level fixture shadows conftest</span>
+<span class="c">  silently. nothing announces it.</span>
+
+<span class="c">CONDITIONAL CLEANUP: addfinalizer beats yield</span>
+    request.addfinalizer(t.unlink)  <span class="c"># only now that</span>
+                                    <span class="c"># it exists</span></pre>
+  <div class="rule">Assertions belong in tests. Fixtures build things. An assert in
+  a fixture reports an ERROR against every test that uses it, with a traceback
+  pointing at conftest.</div>
+</div>
+<div class="card hot">
+  <div class="lab">parametrize</div>
+  <pre>@pytest.mark.parametrize("fam,want",
+    [(RP2040,"RP2040"), (NRF,"NRF52840")],
+    ids=["rp2040","nrf52840"])       <span class="c"># explicit</span>
+    ids=lambda n: "block%d" % n      <span class="c"># callable</span>
+    ids=repr                         <span class="c"># byte specimens</span>
+
+<span class="c">STACKED = cartesian product. 2x2 = 4 tests.</span>
+<span class="c">multiplies fast: a 4th axis of 5 is 40 tests.</span>
+
+<span class="c">pytest.param = per-case id AND marks</span>
+pytest.param(x, id="unknown",
+  marks=pytest.mark.xfail(strict=True, reason="..."))
+
+<span class="c">indirect: the param goes to a FIXTURE first,</span>
+<span class="c">so each case gets setup AND teardown</span>
+@parametrize("vault",[0,1,5], indirect=True)
+
+<span class="c">pytest_generate_tests(metafunc): build the case</span>
+<span class="c">list at collection, from the source of truth</span></pre>
+  <div class="rule"><code>test_family[3-2]</code> tells you nothing.
+  <code>test_family[nrf52840]</code> tells you everything. You read these in CI, in
+  a bisect, and in a message from someone without the repo open.</div>
+</div>
+<div class="card">
+  <div class="lab">skip, xfail, and the trap</div>
+  <table>
+    <tr><td class="k">skip</td><td>does not apply here</td></tr>
+    <tr><td class="k">skipif(cond)</td><td>same, decided at collection</td></tr>
+    <tr><td class="k">xfail</td><td>this is broken and we know</td></tr>
+    <tr><td class="k">xfail(strict=True)</td><td><b>and tell me when it stops</b></td></tr>
+    <tr><td class="k">xfail(raises=E)</td><td>fails FOR THIS REASON</td></tr>
+  </table>
+  <pre class="no"><span class="r">@pytest.mark.xfail(reason="bug FW-118")</span>
+def test_the_bug():
+    assert True        <span class="c"># someone fixed it</span>
+<span class="c"># → XPASS. exit 0. GREEN. the marker sits there</span>
+<span class="c"># for two years and the test asserts nothing.</span></pre>
+  <pre class="ok"><span class="y">@pytest.mark.xfail(strict=True, reason="FW-118")</span>
+<span class="c"># → FAILED: "delete this marker."</span></pre>
+  <div class="rule r">Without <code>raises=</code>, an xfail absorbs <b>every</b>
+  failure, including the ImportError you added this morning.</div>
+</div>
+<div class="card">
+  <div class="lab">assertions and capture</div>
+  <pre>with pytest.raises(ParseError, match=r"bad magic"):
+    parse(blob)
+<span class="c">  match is re.SEARCH, not fullmatch.</span>
+<span class="r">  ESCAPE YOUR METACHARACTERS.</span> "offset (0x1fc)"
+<span class="c">  is a group. a match that matches NOTHING still</span>
+<span class="c">  passes if the exception type is right.</span>
+
+with pytest.raises(TruncatedError) as ei: ...
+assert ei.value.needed == 32   <span class="c"># the OBJECT, not</span>
+                               <span class="c"># just the class</span></pre>
+  <table>
+    <tr><td class="k">capsys</td><td>stdout/stderr at the <b>Python</b> level</td></tr>
+    <tr><td class="k">capfd</td><td>at the <b>fd</b> level. C ext, subprocess</td></tr>
+    <tr><td class="k">caplog</td><td>log records. set the level or capture nothing</td></tr>
+    <tr><td class="k">tmp_path</td><td>fresh dir per test, last 3 runs kept</td></tr>
+    <tr><td class="k">tmp_path_factory</td><td>the session-scoped variant</td></tr>
+  </table>
+  <div class="rule t">Assert on <code>caplog.records</code>, not
+  <code>caplog.text</code>. Records carry <code>.levelname</code>,
+  <code>.name</code>, <code>.getMessage()</code>. Text is whatever the formatter
+  felt like, and nobody thinks of a format string as an interface.</div>
+</div>
+<div class="card">
+  <div class="lab">the flaky test</div>
+  <p>A flaky test is a <b>bug report</b>, against the test or the code. Never noise.
+  Something is genuinely non-deterministic and you have found it.</p>
+  <table>
+    <tr><th>cause</th><th>fix</th></tr>
+    <tr><td class="k">unseeded random</td><td>fix the seed</td></tr>
+    <tr><td class="k">real clock / sleep</td><td>inject a clock</td></tr>
+    <tr><td class="k">shared state</td><td>narrow the scope</td></tr>
+    <tr><td class="k">fixed path + <code>-n</code></td><td>tmp_path</td></tr>
+    <tr><td class="k">real network</td><td>a marker plus a fake</td></tr>
+    <tr><td class="k">dict / set order</td><td>sort, or compare sets</td></tr>
+  </table>
+  <div class="rule r"><b>Quarantine, do not rerun.</b> Move it behind a deselected
+  marker with a ticket. <code>--reruns 3</code> on your own code turns a real bug
+  into a slower green run, permanently.</div>
+</div>
+</div>
+</section>
+
+<section class="panel" id="doubles" data-title="doubles">
+  <div class="lede">What you put where the real collaborator goes, and how you get it in there. <b>The words are load-bearing</b>: which kind you reach for predicts how your test fails, and whether it can fail at all.</div>
+<div class="grid">
+<div class="card hot">
+  <div class="lab">the five doubles</div>
+  <pre>DUMMY  fills a signature, never used
+STUB   canned answers, no state
+<span class="y">FAKE   a real, working, SIMPLIFIED impl  ← this one</span>
+SPY    a stub that records its calls
+<span class="r">MOCK   a spy that asserts on ITSELF      ← almost never</span></pre>
+  <ul>
+    <li><b>Fake</b> is the only kind that can be <i>wrong</i> in a way a test
+    notices. A stub returning 200 forever cannot fail to model a 404, because it
+    was never modelling anything.</li>
+    <li><b>Spy</b> for the negative assertion. "the cache was used" is invisible in
+    a return value and obvious in a call log.</li>
+    <li><b>Mock</b> fails <i>inside</i> the double, so the message describes a call
+    that did not happen, not a behaviour that is wrong.</li>
+  </ul>
+  <pre class="no">loose = Mock()          <span class="c"># no spec=</span>
+loose.method_that_does_not_exist()   <span class="c"># passes.</span>
+<span class="r">spec= is not optional.</span></pre>
+</div>
+<div class="card key">
+  <div class="lab">the transport seam</div>
+  <pre><span class="t">SigningClient</span>
+     │  .verify(digest)
+     ▼
+<span class="a">transport.request(method, url, body, headers)</span>
+     │                                    <span class="a">→ Response</span>
+     ├── UrllibTransport     <span class="c">real. stdlib. net-marked only</span>
+     ├── RecordingTransport  <span class="c">routes + a call log  (spy)</span>
+     ├── ScriptedTransport   <span class="c">one answer per call  (sequence)</span>
+     └── FakeOracle          <span class="c">a working oracle in RAM (fake)</span>
+
+<span class="c">The narrower the seam, the cheaper the fake.</span>
+<span class="c">`Response` is a 3-field dataclass, deliberately</span>
+<span class="c">NOT an httpx.Response.</span></pre>
+  <div class="rule t">Nothing is patched. The test passes a different object.
+  Patching enters only where you do not own the seam.</div>
+</div>
+<div class="card">
+  <div class="lab">shipped doubles</div>
+  <p>A library whose only seam is a protocol owes its users a working fake for it,
+  the way httpx ships <code>MockTransport</code>. Otherwise every downstream user
+  writes their own and each gets a detail wrong.</p>
+  <pre><span class="c"># fwvault/testing.py, part of the package</span>
+build_uf2(blocks=3, bad_end_magic=1)   <span class="c"># named defect</span>
+build_elf(machine=0x28, bit64=True)
+signed_body(signer="ci-builder")
+
+RecordingTransport(routes={...})       <span class="c"># spy</span>
+ScriptedTransport([err, err, Response(200, ...)])
+flaky(2, Response(200, body))          <span class="c"># the idiom</span></pre>
+  <pre class="no"><span class="c"># running off the end of a script is a HARD FAILURE</span>
+<span class="r">AssertionError: ScriptedTransport exhausted:
+call 4 was not scripted (GET https://...)</span>
+<span class="c"># a double that keeps answering makes "retried 3</span>
+<span class="c"># times" and "retried 300 times" the same test.</span></pre>
+</div>
+<div class="card hot">
+  <div class="lab">monkeypatch, all of it</div>
+  <table>
+    <tr><td class="o">setattr(o,n,v)</td><td>raises if n is absent. the guardrail</td></tr>
+    <tr><td class="o">delattr(o,n)</td><td></td></tr>
+    <tr><td class="o">setitem(d,k,v)</td><td>sys.modules, os.environ, any table</td></tr>
+    <tr><td class="o">delitem(d,k)</td><td><code>raising=False</code> for cleanup</td></tr>
+    <tr><td class="o">setenv / delenv</td><td>strings only</td></tr>
+    <tr><td class="o">syspath_prepend</td><td>+ invalidates importlib caches</td></tr>
+    <tr><td class="o">chdir(p)</td><td>and puts it back</td></tr>
+    <tr><td class="o">context()</td><td>undo EARLY, mid-test</td></tr>
+  </table>
+  <pre><span class="c">patch where the name is LOOKED UP:</span>
+<span class="y">from . import families;  families.FAMILIES[x]</span>
+<span class="c">  read at CALL time  → patchable</span>
+<span class="r">from .families import FAMILIES;  FAMILIES[x]</span>
+<span class="c">  bound at IMPORT time into a SECOND namespace</span>
+<span class="c">  → patching does NOTHING, and the test PASSES</span></pre>
+  <div class="rule">monkeypatch is <b>function-scoped</b>. A session fixture that
+  requests it gets ScopeMismatch. Build the context manager yourself:
+  <code>with pytest.MonkeyPatch.context() as m:</code></div>
+</div>
+<div class="card">
+  <div class="lab">four patching traps</div>
+  <pre class="no"><span class="r">1</span> raising=False disables your only signal
+  <span class="c">a patch aimed at a typo'd name is a patch</span>
+  <span class="c">aimed at nothing, and it passes.</span>
+
+<span class="r">2</span> patching a constant does not move an
+  already-bound default
+  <span class="c">@dataclass  x: int = CONST  ← evaluated ONCE at</span>
+  <span class="c">class creation. same for def f(x=CONST) and</span>
+  <span class="c">`from mod import CONST`.</span>
+
+<span class="r">3</span> the string form walks getattr
+  <span class="c">"pkg.mod.CONST" imports pkg then getattrs along.</span>
+  <span class="c">if pkg re-exported a FUNCTION over its own</span>
+  <span class="c">submodule name, the walk dies there.</span>
+  <span class="c">`import pkg.mod as m` does NOT save you.</span>
+  <span class="c">importlib.import_module() reads sys.modules.</span>
+
+<span class="r">4</span> sys.modules[n] = None makes `import n` raise
+  <span class="c">delitem FIRST, or the None assignment is what</span>
+  <span class="c">takes effect and you pass for the wrong reason.</span></pre>
+</div>
+<div class="card key">
+  <div class="lab">inject or patch</div>
+  <pre><span class="y">INJECT what you DO own</span>
+       your transport, clock, store, policy,
+       streams, argv, the vault root
+<span class="w">PATCH  what you do NOT own</span>
+       urllib, datetime, os.replace, a vendor lib
+<span class="t">SPLIT  when there is nothing to pass</span>
+       a generator that WALKS plus a function that
+       FOLDS is a seam too, and often a better one</pre>
+  <div class="rule r">Patching a seam you own <b>passes even after the code stops
+  using that seam</b>. Injecting notices at once: the fake stops being asked
+  anything. If a test has more patching than assertion, the code has no seam.</div>
+</div>
+</div>
+</section>
+
+<section class="panel" id="surfaces" data-title="surfaces">
+  <div class="lede">Each surface of the service takes a different kind of test, for a reason that comes from the surface rather than from taste. <b>What is hard about each one</b> is the useful column.</div>
+<div class="grid">
+<div class="card hot">
+  <div class="lab">parser &middot; bytes in</div>
+  <pre>walk_uf2(blob)     <span class="c">generator → Block records</span>
+parse_uf2(blob)    <span class="c">folds → Image</span>
+serialize_uf2(bs)  <span class="c">the inverse</span></pre>
+  <table>
+    <tr><td class="k">hard because</td><td>the input space is adversarial by definition</td></tr>
+    <tr><td class="k"></td><td>the state machine is deep, so a wrong branch still returns something plausible</td></tr>
+    <tr><td class="k"></td><td>a length field is a trust boundary, not a style issue</td></tr>
+    <tr><td class="k">easy because</td><td>a real oracle usually exists. almost no other code has one</td></tr>
+  </table>
+  <p>Driven by: <code>test_parse</code>, <code>test_hostile</code>,
+  <code>test_property</code>, <code>test_metamorphic</code>,
+  <code>test_differential</code>.</p>
+  <div class="rule">Raise on malformed, warn on odd-but-survivable. Getting that
+  line wrong in either direction is a bug: raise too eagerly and half the real
+  world is unparseable, warn too eagerly and a corrupt image ships.</div>
+</div>
+<div class="card hot">
+  <div class="lab">policy &middot; decisions and writes</div>
+  <pre>evaluate(image, verdict, policy, flags)
+  <span class="c">→ EVERY rejection, in precedence order</span>
+enforce(...)
+  <span class="c">→ raises the FIRST one</span></pre>
+  <p>Returning every hit rather than the first is what makes the rules testable
+  without combinatorial fixtures. One hostile artifact that trips four rules gives
+  four codes in one assertion, so a rule that silently stopped firing cannot hide
+  behind one that fires earlier.</p>
+  <pre>PRECEDENCE = (MALFORMED, OVERSIZE, EMPTY_PAYLOAD,
+  UNKNOWN_FAMILY, DENIED_MACHINE, NOT_MAIN_FLASH,
+  REVOKED_KEY, UNSIGNED, TOO_MANY_WARNINGS)
+<span class="c">codes are a PUBLIC CONTRACT. clients branch on</span>
+<span class="c">`code`, never on `detail`, so codes are frozen in</span>
+<span class="c">test_contract.py while the wording stays free.</span></pre>
+  <div class="rule t">A meta-test asserts every code in PRECEDENCE is produced by
+  some specimen. Add a rule and it fails until you add a case.</div>
+</div>
+<div class="card">
+  <div class="lab">store &middot; the filesystem</div>
+  <pre>Store(root).put(blob, manifest) → (digest, created)
+<span class="c">content-addressed. atomic. two-level fan-out.</span></pre>
+  <ul>
+    <li><b>Atomic:</b> temp file in the SAME directory plus <code>os.replace</code>.
+    A temp in the system temp dir and a cross-device move is a copy, and a copy is
+    the torn write you were avoiding.</li>
+    <li><b>Idempotent:</b> the same bytes twice is a no-op, not a rewrite.</li>
+    <li><b>Path safety by regeneration:</b> the key is not sanitised, it is hashed
+    from the bytes. A traversal string is just a miss.</li>
+  </ul>
+  <pre class="no"><span class="c"># the traversal test everyone writes:</span>
+"../../etc/passwd"   "..%2f..%2fetc"   "....//"
+<span class="r">this list can never be complete.</span>
+<span class="c"># so the design does not rely on it. the sweep</span>
+<span class="c"># documents the threat; regeneration IS the defence.</span></pre>
+  <div class="rule">Every write goes to <code>tmp_path</code>. Never a fixed path:
+  two workers under <code>-n 4</code> will race for it.</div>
+</div>
+<div class="card key">
+  <div class="lab">HTTP &middot; ASGI, three ways</div>
+  <pre>async def app(scope, receive, send)
+<span class="c">  scope    dict describing the connection</span>
+<span class="c">  receive  await it to pull events IN</span>
+<span class="c">  send     await it to push events OUT</span>
+<span class="c">that is the whole protocol.</span></pre>
+  <table>
+    <tr><td class="k">raw harness</td><td>chunk boundaries, disconnects, malformed scopes, visible lifespan</td></tr>
+    <tr><td class="k">ASGITransport</td><td>substitutes the <b>server</b>. real header handling</td></tr>
+    <tr><td class="k">MockTransport</td><td>substitutes what you <b>call</b>. opposite end of the wire</td></tr>
+    <tr><td class="k">TestClient</td><td>wraps ANY asgi app, lifespan via <code>with</code></td></tr>
+  </table>
+  <div class="rule t">If swapping the client changes what you <b>assert</b>, you
+  were testing the client. The raw and httpx files here assert nearly identical
+  things about the same app.</div>
+  <div class="rule r">Answer <code>lifespan</code> or a test client hangs at fixture
+  time, and it looks like the framework is broken rather than your app.</div>
+</div>
+<div class="card">
+  <div class="lab">CLI &middot; process boundary</div>
+  <pre>def main(argv=None, stdout=None, stderr=None) -&gt; int
+<span class="c">  takes argv. returns an int. writes to streams it</span>
+<span class="c">  was HANDED. the highest-leverage decision in a</span>
+<span class="c">  CLI's design, and it costs nothing.</span></pre>
+  <table>
+    <tr><td class="k">in-process</td><td>microseconds, every branch. the coverage lives here</td></tr>
+    <tr><td class="k">subprocess</td><td>four cases, but the ones in-process cannot see</td></tr>
+  </table>
+  <ul>
+    <li>importable from a <b>clean</b> interpreter</li>
+    <li>the exit code as the <b>shell</b> sees it</li>
+    <li>buffering, encoding, line endings</li>
+    <li>a stray <code>print()</code> in the import path corrupting your JSON</li>
+  </ul>
+  <div class="rule r">Exit codes are a contract. "your input is bad" and "our
+  infrastructure is down" must be <b>different numbers</b>, or a red build pages
+  the wrong team. Here: 3 rejected, 4 malformed, 5 unavailable.</div>
+</div>
+<div class="card">
+  <div class="lab">transport &middot; outbound network</div>
+  <pre><span class="c">what is worth asserting is not "it returned a</span>
+<span class="c">Verdict". it is WHEN, HOW OFTEN, and WHAT IT DID</span>
+<span class="c">NOT DO. none of those show in a return value.</span>
+
+assert clock.slept == [0.5, 1.0, 2.0]   <span class="c">schedule</span>
+assert len(transport.calls) == 1        <span class="c">no retry</span>
+assert verdict.stale is True            <span class="c">honesty</span></pre>
+  <table>
+    <tr><th>oracle said</th><th>means</th></tr>
+    <tr><td class="k">200</td><td>an answer</td></tr>
+    <tr><td class="k">404</td><td>an answer. NOT retried</td></tr>
+    <tr><td class="k">4xx</td><td>OUR credentials are wrong → unavailable</td></tr>
+    <tr><td class="k">5xx / reset</td><td>retry, then unavailable</td></tr>
+  </table>
+  <div class="rule r">An outage rendered as "unsigned" is a wall of confident
+  refusals indistinguishable from real ones, found when someone asks why every
+  build failed overnight.</div>
+</div>
+<div class="card">
+  <div class="lab">containers and real dependencies</div>
+  <p>fwvault has no container in the loop, so nothing here is demonstrated by a
+  running test. The <b>pattern</b> is the one this repo already uses for the single
+  real HTTP call, and it generalises unchanged.</p>
+  <pre><span class="c"># the shape: a marker, deselected by default</span>
+@pytest.mark.net          <span class="c"># or .docker, .integration</span>
+def test_against_the_real_thing():
+    ...
+
+<span class="c"># conftest turns the marker into behaviour</span>
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--runnet"): return
+    skip = pytest.mark.skip(reason="needs a real network;
+                                    pass --runnet")
+    for item in items:
+        if "net" in item.keywords:
+            item.add_marker(skip)</pre>
+  <div class="rule t">The reason to name it rather than delete it: the fake cannot
+  cover the class it is a fake OF. Keeping a deselected test with a printed skip
+  reason keeps the gap <b>visible</b> instead of pretending it is covered.</div>
+  <div class="rule">In CI this becomes a separate job with the service running,
+  on a schedule rather than per-commit. Same reasoning as the <code>bare</code>
+  job: an environment that can disprove a claim the others cannot.</div>
+</div>
+<div class="card">
+  <div class="lab">the suite itself</div>
+  <p>A surface most projects never test. These read the test tree as data.</p>
+  <ul>
+    <li>every test asserts something</li>
+    <li>every skip explains itself</li>
+    <li>no fixed paths, no path outside the repo</li>
+    <li>nothing silently disabled: a bare <code>return</code> at the top leaves no
+    skip line at all</li>
+    <li>no duplicate test names across files</li>
+    <li>no <b>mutated</b> module-level state</li>
+    <li>the published shape is pinned: names, codes, routes, schema version</li>
+    <li>the dependency boundary, statically and behaviourally</li>
+  </ul>
+  <div class="rule">Two rules or it becomes folklore. <b>(1)</b> every check names
+  the file and line it objects to. <b>(2)</b> every check is shown FIRING at least
+  once, or a broken pattern passes everything forever.</div>
+</div>
+</div>
+</section>
+
+<section class="panel" id="evidence" data-title="evidence">
+  <div class="lede">What each technique actually proves, and what it cannot. <b>Read the third column first.</b> Most arguments about testing are two people using techniques from different rows and assuming the same guarantees.</div>
+<div class="grid">
+<div class="card key w3">
+  <div class="lab">evidence layers</div>
+  <table>
+    <tr><th>layer</th><th>proves</th><th>cannot prove</th><th>needs you to know</th><th>where</th></tr>
+    <tr><td class="k">example</td><td>this input gives that output</td><td>anything about the inputs you did not write</td><td>the answer</td><td><code>test_parse</code></td></tr>
+    <tr><td class="k">contract</td><td>the published shape has not moved</td><td>that anything behind it works</td><td>what you promised</td><td><code>test_contract</code></td></tr>
+    <tr><td class="k">guardrail</td><td>it refuses, with this code</td><td>that the rule is the right rule</td><td>the policy</td><td><code>test_policy</code></td></tr>
+    <tr><td class="k">hostile</td><td>nothing escapes the declared error</td><td>that it does anything useful</td><td>the error contract</td><td><code>test_hostile</code></td></tr>
+    <tr><td class="k">property</td><td>a rule holds across generated inputs</td><td>that the rule is complete</td><td>a rule</td><td><code>test_property</code></td></tr>
+    <tr><td class="k">metamorphic</td><td>two runs relate as they must</td><td>that either run is correct</td><td><b>nothing</b></td><td><code>test_metamorphic</code></td></tr>
+    <tr><td class="k">differential</td><td>two implementations agree</td><td>that both are not wrong the same way</td><td>nothing, if independent</td><td><code>test_differential</code></td></tr>
+    <tr><td class="k">mutation</td><td>the suite notices a break</td><td>that it notices the breaks nobody wrote</td><td>plausible breaks</td><td><code>test_mutation</code></td></tr>
+    <tr><td class="k">meta</td><td>the suite is still a suite</td><td>anything about the code</td><td>what rot looks like</td><td><code>test_suite_hygiene</code></td></tr>
+  </table>
+  <div class="rule t">The fourth column is the ladder. Example needs the answer.
+  Differential borrows it. Property implies it. <b>Metamorphic needs none</b>, which
+  is why it is the layer a generated suite cannot fake.</div>
+</div>
+<div class="card hot">
+  <div class="lab">coverage vs mutation, measured</div>
+  <pre>                 lines covered   mutants killed
+ai-authored           <span class="w">93</span>            <span class="r">0 / 5</span>
+asserting             <span class="w">93</span>            <span class="y">5 / 5</span>
+<span class="c">  identical coverage. a --cov gate cannot tell</span>
+<span class="c">  these two files apart.</span></pre>
+  <p>Two suites over the same twelve specimens. One written in the never-crash
+  shape, one with positive assertions. Coverage counted by a twenty-line
+  <code>sys.settrace</code> tracer so the number owes nothing to a plugin.</p>
+  <table>
+    <tr><td class="k">line coverage</td><td>did this line execute</td></tr>
+    <tr><td class="k">branch coverage</td><td>did BOTH sides of the <code>if</code></td></tr>
+    <tr><td class="k">mutation score</td><td>if I BREAK it, does anything go red</td></tr>
+  </table>
+  <div class="rule r">100% line coverage is compatible with <b>zero assertions</b>.
+  Only the third row is a question about your tests.</div>
+</div>
+<div class="card hot">
+  <div class="lab">the never-crash trap</div>
+  <pre class="no"><span class="c"># every assertion in test_hostile.py passes</span>
+<span class="c"># against this:</span>
+<span class="r">def parse(b): raise ParseError("no")</span>
+
+<span class="c"># that is a truncation sweep, twelve bit flips</span>
+<span class="c"># and twenty seeds. all green. against a parser</span>
+<span class="c"># that does nothing.</span></pre>
+  <p>The same trap reappears wherever assertions describe relationships instead of
+  values. Every metamorphic relation in this repo is satisfied by a parser that
+  ignores its input and returns a constant.</p>
+  <pre class="ok"><span class="c"># the companion, in the SAME file so the pairing</span>
+<span class="c"># is visible:</span>
+def test_hostile_specimens_do_not_all_look_alike():
+    <span class="y">assert parse(VALID).block_count == 3</span></pre>
+  <div class="rule r">Every never-crash assertion needs a positive companion.
+  This is the single highest-value rule on this page.</div>
+</div>
+<div class="card">
+  <div class="lab">metamorphic relations</div>
+  <pre><span class="c">ROUND TRIP: the strongest, when an inverse exists</span>
+assert serialize_uf2(walk_uf2(blob)) == blob
+
+<span class="c">INVARIANCE: changing X must NOT change Y</span>
+scrambled = <span class="c">every payload byte randomised</span>
+assert parse(scrambled) == parse(blob)
+
+<span class="c">EQUIVARIANCE: change X, predict the change in Y</span>
+assert after.payload_bytes ==
+       before.payload_bytes + 200 * extra
+
+<span class="c">IDEMPOTENCE: twice is once</span>
+assert serialize_uf2(walk_uf2(once)) == once</pre>
+  <div class="rule t">Stating a bound <b>without naming it</b>: raising
+  <code>payloadSize</code> can never lower the total, and past some point it stops
+  moving. That states the clamp without repeating 476, so the test cannot simply
+  agree with the implementation.</div>
+</div>
+<div class="card">
+  <div class="lab">differential, and its two rules</div>
+  <pre>specimen ─┬─► walk_uf2()          ─┐
+          │   fast, subtle        ├─► <span class="y">==</span> ?
+          └─► _reference_walk()   ─┘
+              naive, obvious, INDEPENDENT</pre>
+  <ul>
+    <li><b>The reference must be independent.</b> Shared helpers mean a shared bug
+    cancels out and both agree. Asserted structurally here: the reference borrows
+    no constant, import or type from the implementation.</li>
+    <li><b>Compare outcomes, not just outputs.</b> Agreeing on the result is not
+    enough if one raises and the other does not.</li>
+    <li><b>The corpus needs a guard.</b> If every specimen raises, both agree
+    everything is broken and the test is vacuous.</li>
+    <li>One test per specimen, named by specimen. Adding a corpus entry adds a test
+    with no assertion to write. That is the economics.</li>
+  </ul>
+</div>
+<div class="card">
+  <div class="lab">equivalent mutants, the honest cost</div>
+  <p>A mutation score is never 100%, and the reason has a name: some edits cannot
+  be detected because they change no behaviour.</p>
+  <pre><span class="c"># the first attempt at "PRECEDENCE gets alphabetised"</span>
+<span class="c"># SURVIVED, and it was not a hole:</span>
+real:         MALFORMED, <span class="a">OVERSIZE</span>, EMPTY_PAYLOAD, ...
+alphabetical: DENIED_MACHINE, EMPTY_PAYLOAD, ... <span class="a">OVERSIZE</span>
+
+<span class="c"># for the specimen chosen, OVERSIZE came first in</span>
+<span class="c"># BOTH orders. the mutation changed nothing</span>
+<span class="c"># observable.</span>
+<span class="y">OVERSIZE + EMPTY_PAYLOAD is the pair that</span>
+<span class="y">actually distinguishes them.</span></pre>
+  <div class="rule">Telling equivalent mutants from real gaps is manual work that
+  does not go away. Say so, or the practice becomes the thing it criticises.</div>
+</div>
+</div>
+</section>
+
+<section class="panel" id="commands" data-title="commands">
+  <div class="lede">One-liners, grouped by what you are trying to find out. <b>Most of these answer a question without running a test</b>, which is the fastest loop available and the one people skip.</div>
+<div class="grid">
+<div class="card key">
+  <div class="lab">environment</div>
+  <pre><span class="c"># nothing but pytest. this is the claim the repo makes.</span>
+pip install pytest
+python -m pytest -q                <span class="c"># 547 passed</span>
+
+<span class="c"># plus hypothesis, httpx, starlette</span>
+pip install -e ".[test]"
+python -m pytest -q                <span class="c"># 557 passed</span>
+
+<span class="c"># the deselected-by-default tests</span>
+python -m pytest --runnet
+
+<span class="c"># no install at all: pythonpath is set in pyproject</span>
+git clone ... &amp;&amp; cd testharness-fun &amp;&amp; pytest</pre>
+  <div class="rule t">If a clone needs an install step to run its own tests, the
+  first thing a new reader meets is a packaging problem. <code>pythonpath =
+  ["src"]</code> costs one line.</div>
+</div>
+<div class="card hot">
+  <div class="lab">answer it without running anything</div>
+  <pre><span class="c"># what WOULD run. the first thing to try when a</span>
+<span class="c"># test is not running.</span>
+pytest --collect-only -q
+pytest --collect-only -q | wc -l
+
+<span class="c"># every fixture visible here, and where it is from</span>
+pytest --fixtures
+pytest --fixtures-per-test tests/test_policy.py
+
+<span class="c"># which markers exist and what they mean</span>
+pytest --markers
+
+<span class="c"># the fixture setup plan, without executing tests</span>
+pytest --setup-plan tests/test_asgi_raw.py
+
+<span class="c"># what a marker expression selects</span>
+pytest --collect-only -q -m "net"
+pytest --collect-only -q -k "metamorphic and not round"</pre>
+  <div class="rule"><code>--setup-plan</code> is the one people never learn. It
+  prints the fixture tree per test and runs nothing, which is how you find out
+  that a session fixture is being rebuilt.</div>
+</div>
+<div class="card hot">
+  <div class="lab">discovering seams</div>
+  <pre><span class="c"># every injectable collaborator in the package</span>
+grep -rn "def __init__\|def create_app\|def main" src/ \
+  | grep "="
+
+<span class="c"># the same, structurally</span>
+python - &lt;&lt;'PY'
+import inspect, fwvault.signing as s, fwvault.app as a
+print(inspect.signature(s.SigningClient.__init__))
+print(inspect.signature(a.create_app))
+PY
+
+<span class="c"># what does this module import at MODULE level?</span>
+<span class="c"># (a lazy import inside a function is the contract)</span>
+python -c "import ast,sys;print([n.names[0].name
+  for n in ast.parse(open(sys.argv[1]).read()).body
+  if isinstance(n,ast.Import)])" src/fwvault/app.py
+
+<span class="c"># who patches, and who injects?</span>
+grep -rln "monkeypatch" tests/
+grep -rn "transport=" tests/ | head</pre>
+  <div class="rule">The ratio of the last two lines is a design metric. Lots of
+  patching against your own package means the seams are missing.</div>
+</div>
+<div class="card">
+  <div class="lab">affected layers</div>
+  <pre><span class="c"># one surface at a time</span>
+pytest tests/test_parse.py tests/test_hostile.py \
+       tests/test_metamorphic.py tests/test_differential.py
+
+<span class="c"># by name expression, across files</span>
+pytest -k "parse or walk or serialize"
+pytest -k "policy or reject"
+pytest -k "asgi or transport"
+
+<span class="c"># the meta tier only</span>
+pytest tests/test_suite_hygiene.py tests/test_contract.py \
+       tests/test_lean_install.py tests/test_cards.py
+
+<span class="c"># everything EXCEPT the slow generated ones</span>
+pytest -k "not property and not metamorphic"
+
+<span class="c"># what changed, if you use git</span>
+pytest $(git diff --name-only HEAD~1 | grep ^tests/)</pre>
+</div>
+<div class="card key">
+  <div class="lab">the debug loop</div>
+  <pre>pytest --lf                 <span class="c"># only what failed last time</span>
+pytest --lf -x --tb=short    <span class="c"># the shortest useful loop</span>
+pytest --ff                 <span class="c"># failed first, then the rest</span>
+
+<span class="c"># one test, exactly</span>
+pytest tests/test_policy.py::test_oversize
+pytest "tests/test_parse.py::test_family_naming[rp2040]"
+
+<span class="c"># see prints and live logs</span>
+pytest -s
+pytest --log-cli-level=DEBUG
+
+<span class="c"># locals in the traceback, then a debugger</span>
+pytest -l
+pytest --pdb
+pytest --trace              <span class="c"># break at the START of the test</span>
+
+<span class="c"># why is this fixture what it is</span>
+pytest --setup-show tests/test_fixtures.py</pre>
+  <div class="rule t">If you take one flag away, take <code>--lf</code>. It changes
+  the edit-run loop more than anything else here.</div>
+</div>
+<div class="card">
+  <div class="lab">quality of the suite</div>
+  <pre><span class="c"># coverage as a MAP, not a score</span>
+pytest --cov=fwvault --cov-branch --cov-report=term-missing
+
+<span class="c"># the branch list only, which is what you act on</span>
+pytest --cov=fwvault --cov-branch --cov-report=term-missing \
+  | grep -E "^src.*[0-9]+%" | sort -t% -k1
+
+<span class="c"># does the suite notice a break? (slow, occasional)</span>
+pip install mutmut &amp;&amp; mutmut run --paths-to-mutate src/fwvault
+
+<span class="c"># the cheap in-repo version, milliseconds</span>
+pytest tests/test_mutation.py tests/test_ai_authored.py -v
+
+<span class="c"># order dependence, the cheapest detector you own</span>
+pytest -p xdist -n 4
+pytest -p no:randomly            <span class="c"># baseline to compare</span>
+
+<span class="c"># slowest ten. run it monthly.</span>
+pytest --durations=10</pre>
+</div>
+<div class="card">
+  <div class="lab">regenerating the artifacts</div>
+  <pre><span class="c"># after editing terms.py</span>
+python gen_glossary.py     <span class="c"># → GLOSSARY.md, cards, frag</span>
+
+<span class="c"># after editing card_content*.py</span>
+python build_card.py       <span class="c"># the 3-sheet reference</span>
+python build_basics.py     <span class="c"># the 1-sheet beginner card</span>
+python build_console.py    <span class="c"># this page</span>
+
+<span class="c"># layout without writing anything</span>
+python build_card.py --check
+python build_console.py --check
+
+<span class="c"># the deep dive: edit frag.html, NEVER the built page</span>
+build.py frag.html testharness_deep-dive.html "&lt;title&gt;"
+
+<span class="c"># the check that catches a stale artifact</span>
+pytest tests/test_cards.py</pre>
+  <div class="rule r"><code>test_cards.py</code> fails if a generated file is
+  stale, if a cross-reference cites a section number that moved, or if a card
+  column would overflow its page. A bad rebuild fails locally, not on the site.</div>
+</div>
+<div class="card">
+  <div class="lab">CI</div>
+  <pre>jobs:
+  <span class="y">bare</span>: pip install pytest   <span class="c"># and NOTHING else</span>
+        <span class="c"># the only environment that can DISPROVE a</span>
+        <span class="c"># no-dependencies claim.</span>
+
+  full: matrix [ubuntu, windows] x [3.11, 3.13]
+        fail-fast: <span class="w">false</span>   <span class="c"># one red cell must not</span>
+                            <span class="c"># hide the others</span>
+
+  cov:  --cov=fwvault --cov-branch --cov-report=term-missing
+        <span class="c"># no --cov-fail-under. a threshold is a number</span>
+        <span class="c"># people game, and the cheapest way to game it</span>
+        <span class="c"># is a test with no assertions.</span></pre>
+  <div class="rule">Windows in the matrix is not politeness.
+  <code>expanduser</code>, path separators and <code>os.replace</code> semantics all
+  differ, and every one has produced a green local run and a red CI run.</div>
+</div>
+</div>
+</section>
+
+<section class="panel" id="ai" data-title="ai author">
+  <div class="lede">What changes when the thing writing the code also offers to write the tests. <b>Everything below is measured or cited</b>, and the citations were checked against the abstracts rather than taken from a summary.</div>
+<div class="grid">
+<div class="card key w2">
+  <div class="lab">the argument, in two moves</div>
+  <pre><span class="t">Su</span>          lights-out codebases: code no human reads.
+            volume makes review impossible, and the chess
+            analogy says trying will look like a category
+            error.
+
+<span class="t">Venturini</span>   the better version. you do not read your
+            compiler's output, and NOT because compilers
+            are trusted blindly. they have shipped
+            catastrophic bugs. it is because an <span class="a">apparatus</span>
+            was built that makes reading unnecessary:
+            behavioural tests, type systems, reproducible
+            builds, fuzzers, sanitizers, formal methods.
+
+            <span class="a">you trust the process, not the artifact.</span>
+
+his diagnosis: that apparatus does not exist for agents
+yet, so the fear is rational rather than nostalgic.</pre>
+  <div class="rule">"Nobody reads compiler output" is false. Compiler Explorer is
+  beloved. The true claim is narrower: reading it is not the <b>quality gate</b>.
+  Read generated code when curious or debugging. Do not make reading it the thing
+  standing between you and production, because at volume that is a queue, not a
+  gate.</div>
+</div>
+<div class="card hot">
+  <div class="lab">where the analogy breaks</div>
+  <table>
+    <tr><th></th><th>compiler</th><th>agent</th></tr>
+    <tr><td class="o">determinism</td><td>same source, same binary</td><td>same prompt, different code. nothing to pin or bisect</td></tr>
+    <tr><td class="o">the spec</td><td>the source IS the spec, and a human wrote it</td><td>the prompt is the spec, and inventing the rest is the job</td></tr>
+    <tr><td class="o">verification</td><td>CompCert, Alive2, Csmith. decades of formal methods</td><td>a suite somebody wrote, often the same somebody</td></tr>
+    <tr><td class="o">trusting trust</td><td>a compiler can backdoor itself and hide it in its own source</td><td>one model writing both code and tests has that exact structure</td></tr>
+  </table>
+  <div class="rule r">Anyone invoking the compiler analogy is invoking that
+  apparatus. Almost nobody invoking it has costed it.</div>
+</div>
+<div class="card hot w2">
+  <div class="lab">the numbers</div>
+  <table>
+    <tr><th>what</th><th>finding</th><th>source</th></tr>
+    <tr><td class="o">coverage vs mutation</td><td>a suite can reach <b>100% coverage at a 4% mutation score</b>. quoted in MUTGEN's abstract as the motivating example</td><td>arXiv 2506.02954</td></tr>
+    <tr><td class="o">the benchmark gap</td><td>on 3,909 real-world Python functions: <b>41.3% accuracy, 45.1% statement, 30.2% branch, 40.2% mutation</b>. the same models on TestEval: 91.8 / 92.2 / 82.0 / 49.7</td><td>arXiv 2508.00408</td></tr>
+    <tr><td class="o">metric validity</td><td>whether coverage and mutation predict real fault detection is <b>context-dependent</b>: usable in regression scenarios, unreliable when the code may already be buggy</td><td>arXiv 2607.22880</td></tr>
+    <tr><td class="o">self-preference</td><td>evaluators <b>recognise and favour their own generations</b>, above what human annotators give them</td><td>arXiv 2404.13076</td></tr>
+    <tr><td class="o">why</td><td>the bias tracks <b>perplexity</b>. familiar-looking, not better</td><td>arXiv 2410.21819</td></tr>
+    <tr><td class="o">scale does not fix it</td><td>advanced capability is <b>uncorrelated, sometimes negatively correlated</b>, with low bias</td><td>arXiv 2604.22891</td></tr>
+    <tr><td class="o">self-correction</td><td>models <b>struggle to self-correct without external feedback</b>, and sometimes degrade</td><td>arXiv 2310.01798</td></tr>
+    <tr><td class="o">provenance effect</td><td>models correct external errors but not the same ones in their own traces. <b>relabelling identical content as external</b> restores it</td><td>arXiv 2606.05976</td></tr>
+  </table>
+  <div class="rule r">The benchmark gap says generated tests are far worse than the
+  headline. The self-preference results say the model grading them is
+  systematically kind to work that looks like its own. Neither is fixed by a better
+  prompt, and the second explicitly does not improve with capability.</div>
+</div>
+<div class="card key">
+  <div class="lab">the loop that cannot close</div>
+  <pre><span class="r">self-verification</span>          <span class="y">provenance separation</span>
+
+model ──► code            model A ──► code
+  │        ▲                            ▲
+  └──► tests ┘            model B ──► tests ┘
+        │                          │
+        ▼                          ▼
+     <span class="r">GREEN</span>                   <span class="y">independent oracle</span>
+<span class="c">and it means nothing:</span>    <span class="c">still not sufficient, but</span>
+<span class="c">both halves share the</span>    <span class="c">a wrong belief now has to</span>
+<span class="c">same wrong belief</span>        <span class="c">be held twice</span></pre>
+  <p><code>test_oracle_independence.py</code> runs exactly this, with
+  <b>no model involved</b>. A parser and its tests built on one plausible wrong
+  number: self-consistent, green, and wrong. Only the spec catches it.</p>
+  <div class="rule">It is a property of where the assertions came from, and it holds
+  for a human who writes tests by running the code and pasting the output.</div>
+</div>
+<div class="card">
+  <div class="lab">eight mitigations</div>
+  <table>
+    <tr><td class="k">mutation gate</td><td>a test that kills no mutant is not a test</td></tr>
+    <tr><td class="k">positive companion</td><td>or a refusing parser passes the file</td></tr>
+    <tr><td class="k">provenance separation</td><td>the author does not grade it</td></tr>
+    <tr><td class="k">differential</td><td>an independent implementation, not an expectation</td></tr>
+    <tr><td class="k">properties over examples</td><td>review five, not five hundred</td></tr>
+    <tr><td class="k">meta-tests</td><td>suites rot toward passing, and a generator helps</td></tr>
+    <tr><td class="k">metamorphic</td><td>for when you cannot state the answer</td></tr>
+    <tr><td class="k">equivalent mutants</td><td>the manual cost, stated honestly</td></tr>
+  </table>
+  <div class="rule t"><b>Properties over examples</b> is the strongest practical one.
+  Examples are cheap for a model to emit and expensive for a human to validate.
+  Properties invert both costs.</div>
+</div>
+<div class="card">
+  <div class="lab">where it runs out</div>
+  <pre>a test can check the code does what the test says.
+<span class="r">nothing can check the test says what was meant.</span>
+
+spec ──► tests ──► code
+ ▲
+ └─ <span class="a">a human wrote this, and a human has to read it</span>
+
+every mitigation lives to the RIGHT of the spec.
+all of them assume the tests encode the intent.
+none can check that they do.
+
+<span class="y">the only defence is that the spec is small enough
+to be read.</span></pre>
+  <div class="rule">Worth saying plainly rather than ending on the eight
+  mitigations as though they closed the loop. An agent can verify code against
+  tests all day. It cannot verify that the tests capture what anyone wanted.</div>
+</div>
+</div>
+</section>
+
+<section class="panel" id="glossary" data-title="glossary">
+  <div class="lede">Generated from <code>terms.py</code>, the same source as GLOSSARY.md, the printed card and section 02 of the deep dive. <b>One line is the budget</b>: a meaning needing two lines is an argument, and arguments live in the deep dive.</div>
+<div class="grid">
+<div class="card key">
+  <div class="lab">the basics</div>
+  <table>
+    <tr><td class="k">test</td><td>a function whose name starts with <code>test</code>. It passes if it does not raise</td></tr>
+    <tr><td class="k">assertion</td><td>a line stating what must be true. <code>assert x == y</code></td></tr>
+    <tr><td class="k">test suite</td><td>all your tests together</td></tr>
+    <tr><td class="k">test runner</td><td>the tool that finds and runs them. pytest is one</td></tr>
+    <tr><td class="k">collection</td><td>pytest finding your tests, before running any</td></tr>
+    <tr><td class="k">fail vs error</td><td><i>fail</i> = an assertion was false. <i>error</i> = it blew up before reaching one</td></tr>
+    <tr><td class="k">AAA</td><td>arrange, act, assert. The three parts of most tests, in that order</td></tr>
+    <tr><td class="k">TDD</td><td>write the failing test first, then the code that makes it pass</td></tr>
+  </table>
+</div>
+<div class="card key">
+  <div class="lab">fixtures</div>
+  <table>
+    <tr><td class="k">fixture</td><td>named setup a test asks for by putting its name in the arguments</td></tr>
+    <tr><td class="k">factory fixture</td><td>a fixture returning a <b>function</b>, so a test can make several things</td></tr>
+    <tr><td class="k">setup / teardown</td><td>before and after. In pytest, teardown is whatever follows <code>yield</code></td></tr>
+    <tr><td class="k">scope</td><td>how often a fixture is rebuilt: function, class, module, package, session</td></tr>
+    <tr><td class="k">autouse</td><td>a fixture applied to every test without being asked for</td></tr>
+    <tr><td class="k">conftest.py</td><td>shared fixtures for a folder and everything under it. No import needed</td></tr>
+    <tr><td class="k">override</td><td>a fixture in a test file shadowing one of the same name from conftest</td></tr>
+    <tr><td class="k">tmp_path</td><td>built in: an empty folder, new per test, cleaned up for you</td></tr>
+    <tr><td class="k">capsys / capfd</td><td>built in: captured output. capfd when the write bypasses Python</td></tr>
+    <tr><td class="k">caplog</td><td>built in: log records. Set the level or you capture nothing</td></tr>
+    <tr><td class="k">monkeypatch</td><td>built in: change something temporarily, put back automatically</td></tr>
+  </table>
+</div>
+<div class="card key">
+  <div class="lab">running and selecting</div>
+  <table>
+    <tr><td class="k">test id</td><td>the name in the report, e.g. <code>test_naming[2-many]</code></td></tr>
+    <tr><td class="k">parametrize</td><td>run one test many times with different inputs, each reported separately</td></tr>
+    <tr><td class="k">indirect</td><td>send a parametrize value to a fixture, so each case gets setup and teardown</td></tr>
+    <tr><td class="k">marker</td><td>a label on a test: <code>@pytest.mark.slow</code>. Select with <code>-m</code></td></tr>
+    <tr><td class="k">skip / skipif</td><td>does not apply here. skipif decides at collection</td></tr>
+    <tr><td class="k">xfail</td><td>known broken. Needs <code>strict=True</code> or it stays green once fixed</td></tr>
+    <tr><td class="k">xpass</td><td>an xfail that unexpectedly passed. Usually means delete the marker</td></tr>
+    <tr><td class="k">deselect</td><td>excluded from this run by <code>-k</code> or <code>-m</code>. Not the same as skipped</td></tr>
+  </table>
+</div>
+<div class="card key">
+  <div class="lab">test doubles</div>
+  <table>
+    <tr><td class="k">test double</td><td>any stand-in used instead of the real thing</td></tr>
+    <tr><td class="k">dummy</td><td>passed only to fill a signature. Never actually used</td></tr>
+    <tr><td class="k">stub</td><td>always returns the same canned answer</td></tr>
+    <tr><td class="k">fake</td><td>a real but simplified implementation. A dict instead of a database</td></tr>
+    <tr><td class="k">spy</td><td>works, and records how it was called</td></tr>
+    <tr><td class="k">mock</td><td>a spy that also asserts it was called correctly</td></tr>
+    <tr><td class="k">patching</td><td>replacing something in place, by name</td></tr>
+    <tr><td class="k">injection</td><td>passing the collaborator in, rather than the code fetching it itself</td></tr>
+    <tr><td class="k">seam</td><td>a place you can change behaviour without editing there. An argument is one</td></tr>
+    <tr><td class="k">mock transport</td><td>a fake put in the place where code would talk to the network</td></tr>
+  </table>
+</div>
+<div class="card key">
+  <div class="lab">kinds of test</div>
+  <table>
+    <tr><td class="k">unit</td><td>one function or class, nothing real underneath it</td></tr>
+    <tr><td class="k">integration</td><td>several pieces together, often with a real file or database</td></tr>
+    <tr><td class="k">end-to-end</td><td>the whole system as a user meets it. Slow, valuable, few</td></tr>
+    <tr><td class="k">regression test</td><td>written to pin a bug you just fixed, so it cannot come back</td></tr>
+    <tr><td class="k">smoke test</td><td>does it start at all</td></tr>
+    <tr><td class="k">property-based</td><td>assert a rule for all inputs and let a tool hunt counterexamples</td></tr>
+    <tr><td class="k">fuzzing</td><td>throw generated input at it and check nothing escapes the contract</td></tr>
+    <tr><td class="k">differential</td><td>run two implementations over one input; whichever disagrees is wrong</td></tr>
+    <tr><td class="k">oracle</td><td>differential testing where the reference is a trusted external tool</td></tr>
+    <tr><td class="k">golden / snapshot</td><td>compare output against a stored known-good file</td></tr>
+    <tr><td class="k">contract test</td><td>pin the shape you publish: names, codes, status codes, schema version</td></tr>
+    <tr><td class="k">meta-test</td><td>a test about the test suite, e.g. does every test still assert</td></tr>
+  </table>
+</div>
+<div class="card key">
+  <div class="lab">test quality</div>
+  <table>
+    <tr><td class="k">coverage</td><td>which lines ran. <b>Not</b> whether anything checked them</td></tr>
+    <tr><td class="k">branch coverage</td><td>did both sides of each <code>if</code> run</td></tr>
+    <tr><td class="k">mutation testing</td><td>break the code deliberately and see whether the suite notices</td></tr>
+    <tr><td class="k">equivalent mutant</td><td>a deliberate break that changes no behaviour, so nothing can catch it</td></tr>
+    <tr><td class="k">mutation gate</td><td>admit a generated suite only if it kills a threshold of mutants</td></tr>
+    <tr><td class="k">flaky</td><td>passes and fails without the code changing. Always a bug, never noise</td></tr>
+    <tr><td class="k">quarantine</td><td>move a flaky test behind a deselected marker with a ticket</td></tr>
+    <tr><td class="k">test smell</td><td>a sign the test or code is wrong. More patching than assertion is one</td></tr>
+  </table>
+</div>
+<div class="card key">
+  <div class="lab">an AI author</div>
+  <table>
+    <tr><td class="k">apparatus</td><td>the machinery that makes reading generated output unnecessary: tests, types, sanitizers, canaries</td></tr>
+    <tr><td class="k">provenance separation</td><td>whatever wrote the code does not grade it, and ideally is not the same family</td></tr>
+    <tr><td class="k">self-preference bias</td><td>an evaluator scoring its own generations higher than a human would</td></tr>
+    <tr><td class="k">intrinsic self-correction</td><td>a model revising its own output with no external signal. Does not reliably work</td></tr>
+    <tr><td class="k">external feedback</td><td>a signal from outside the model. A test run is one, which is the point</td></tr>
+    <tr><td class="k">characterization test</td><td>assertions transcribed from what the code currently does. Pins change, not correctness</td></tr>
+    <tr><td class="k">the oracle problem</td><td>knowing what the right answer is, independently of the thing being tested</td></tr>
+    <tr><td class="k">metamorphic relation</td><td>a property linking two runs when you cannot state the answer for either</td></tr>
+    <tr><td class="k">translation validation</td><td>proving one output matches its input for this run, rather than proving the tool</td></tr>
+    <tr><td class="k">the intent gap</td><td>tests cannot check that they encode what was actually wanted. No technical fix</td></tr>
+  </table>
+</div>
+</div>
+</section>
+</main>
+
+<footer>
+  <span>hed0rah &middot; testharness-fun</span>
+  <span>arrow keys or 1-9 switch tabs &middot; print gives one page per tab</span>
+  <span>github.com/hed0rah/testharness-fun</span>
+</footer>
+<script>
+(function () {
+  const tabs = [...document.querySelectorAll('.tab')];
+  const panels = [...document.querySelectorAll('.panel')];
+
+  function show(id, push) {
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.for === id)));
+    panels.forEach(p => p.id === id ? p.setAttribute('data-open', '')
+                                    : p.removeAttribute('data-open'));
+    if (push) history.replaceState(null, '', '#' + id);
+    window.scrollTo({ top: 0 });
+  }
+
+  tabs.forEach(t => t.addEventListener('click', () => show(t.dataset.for, true)));
+
+  // arrow keys move between tabs, the way the deep dive's sections do
+  addEventListener('keydown', e => {
+    if (e.target.matches('input,textarea')) return;
+    const i = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
+    if (e.key === 'ArrowRight') show(tabs[(i + 1) % tabs.length].dataset.for, true);
+    if (e.key === 'ArrowLeft') show(tabs[(i - 1 + tabs.length) % tabs.length].dataset.for, true);
+    if (/^[1-9]$/.test(e.key) && tabs[+e.key - 1]) show(tabs[+e.key - 1].dataset.for, true);
+  });
+
+  const wanted = location.hash.slice(1);
+  show(panels.some(p => p.id === wanted) ? wanted : panels[0].id, false);
+
+  const toggle = document.querySelector('.tbtn');
+  toggle.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+    document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+    localStorage.setItem('console-theme', dark ? 'light' : 'dark');
+  });
+})();
+</script>
+</body>
+</html>
