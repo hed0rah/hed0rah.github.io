@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<meta name="robots" content="noindex,nofollow" />
+<title>Windows Cleanup Command Reference</title>
+<style>
+/* Flat. No webfonts, no radii, no shadows, no gradients. Loads on any signal. */
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: #FFFFFF;
+  color: #000000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.page { max-width: 46rem; margin: 0 auto; padding: 0 12px 48px; }
+
+.masthead { background: #003366; color: #FFFFFF; padding: 10px 12px; margin: 0 -12px 0; }
+.masthead .kicker { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: #99BBDD; }
+.masthead h1 { font-size: 18px; font-weight: bold; margin: 2px 0 0; }
+.subbar {
+  background: #DDDDDD; border-bottom: 1px solid #999999;
+  padding: 5px 12px; margin: 0 -12px 18px;
+  font-size: 12px; color: #333333;
+}
+
+h2 {
+  font-size: 13px; font-weight: bold; color: #003366;
+  text-transform: uppercase; letter-spacing: .04em;
+  margin: 26px 0 0; padding: 3px 0;
+  border-bottom: 2px solid #003366;
+}
+h2:first-of-type { margin-top: 18px; }
+
+p { margin: 6px 0 0; font-size: 13px; color: #333333; }
+p b, li b { color: #000000; }
+code {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12px; background: #EEEEEE; padding: 0 2px;
+  word-break: break-word;
+}
+
+.box { border: 1px solid #999999; background: #F4F4F4; margin: 8px 0 0; }
+.box .hdr {
+  background: #DDDDDD; border-bottom: 1px solid #999999;
+  padding: 2px 6px; font-size: 11px; color: #333333;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.box .hdr span { font-family: "Courier New", Courier, monospace; }
+.box a.copy { color: #0000CC; text-decoration: underline; font-size: 11px; cursor: pointer; }
+.box a.copy:visited { color: #0000CC; }
+.box pre {
+  margin: 0; padding: 7px 8px; overflow-x: auto;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12px; line-height: 1.5; white-space: pre; color: #000000;
+}
+
+.warn { border: 1px solid #999999; border-left: 5px solid #CC0000; background: #FFF4F4; padding: 6px 8px; margin: 8px 0 0; font-size: 13px; }
+.info { border: 1px solid #999999; border-left: 5px solid #003366; background: #F0F4F8; padding: 6px 8px; margin: 8px 0 0; font-size: 13px; }
+
+ul, ol { margin: 6px 0 0; padding-left: 22px; }
+li { font-size: 13px; color: #333333; margin-bottom: 3px; }
+
+table { border-collapse: collapse; margin: 8px 0 0; width: 100%; font-size: 12px; }
+th, td { border: 1px solid #999999; padding: 3px 6px; text-align: left; vertical-align: top; }
+th { background: #DDDDDD; font-weight: bold; }
+td code { background: transparent; padding: 0; }
+
+hr { border: 0; border-top: 1px solid #CCCCCC; margin: 26px 0 0; }
+.foot { margin-top: 10px; font-size: 11px; color: #666666; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="masthead">
+  <div class="kicker">Reference</div>
+  <h1>Windows Cleanup Command Reference</h1>
+</div>
+<div class="subbar">
+  Elevated PowerShell required: <b>Win+X</b>, then <b>A</b>. Title bar must read Administrator.
+</div>
+
+<h2>Back up the user profile</h2>
+<div class="box">
+  <div class="hdr"><span>robocopy</span><a class="copy">[copy]</a></div>
+<pre>robocopy "$env:USERPROFILE" "D:\rescue" /E /R:1 /W:1 /XJ /XA:SH</pre>
+</div>
+<p><code>/XJ</code> prevents junction loops. Format the target <b>exFAT</b>; FAT32 fails
+silently over 4 GB. Copying from a Linux live stick is safer where practical.</p>
+
+<h2>Detect remote access software</h2>
+<div class="box">
+  <div class="hdr"><span>Get-Process / Get-Service</span><a class="copy">[copy]</a></div>
+<pre>$rat='anydesk|teamviewer|logmein|screenconnect|connectwise|supremo|ultraviewer|ammyy|gotoassist|splashtop|remotepc'
+Get-Process | ? {$_.Name -match $rat} | Select Name,Path
+Get-Service | ? {$_.Name -match $rat -or $_.DisplayName -match $rat} | Select Name,DisplayName,Status</pre>
+</div>
+<div class="warn"><b>Run first.</b> These are legitimately signed commercial products, so
+antivirus does not flag them and they do not appear in malware scan results. Correlate any hit
+against the installed-programs list below: a service with no corresponding uninstall entry, or
+an install date inside the cluster identified there, indicates unattended deployment rather than
+deliberate installation.</div>
+
+<h2>List installed programs by install date</h2>
+<div class="box">
+  <div class="hdr"><span>Get-ItemProperty</span><a class="copy">[copy]</a></div>
+<pre>$k='HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+   'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
+   'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*'
+Get-ItemProperty $k | ? DisplayName | Select DisplayName,Publisher,InstallDate |
+  Sort InstallDate -Desc | Format-Table -AutoSize</pre>
+</div>
+<p>A group of installations sharing one date identifies the incident. Treat the whole group as
+suspect regardless of publisher name.</p>
+
+<h2>Report registered security products</h2>
+<div class="box">
+  <div class="hdr"><span>SecurityCenter2 / Get-MpComputerStatus</span><a class="copy">[copy]</a></div>
+<pre>Get-CimInstance -Namespace root\SecurityCenter2 -ClassName AntiVirusProduct |
+  Select displayName,pathToSignedProductExe
+Get-MpComputerStatus | Select AMRunningMode,RealTimeProtectionEnabled,AntivirusEnabled</pre>
+</div>
+<p><code>RealTimeProtectionEnabled : False</code> indicates Defender was disabled by another
+product.</p>
+
+<h2>Enumerate startup items and scheduled tasks</h2>
+<div class="box">
+  <div class="hdr"><span>Win32_StartupCommand / Get-ScheduledTask</span><a class="copy">[copy]</a></div>
+<pre>Get-CimInstance Win32_StartupCommand | Select Name,Command,Location | Format-List
+Get-ScheduledTask | ? {$_.TaskPath -notlike '\Microsoft\*'} |
+  Select State,TaskPath,TaskName | Sort State | Format-Table -AutoSize</pre>
+</div>
+<p>Persistence is more commonly in the task scheduler than in the Run key.</p>
+
+<h2>Inspect browser shortcuts for appended arguments</h2>
+<div class="box">
+  <div class="hdr"><span>WScript.Shell</span><a class="copy">[copy]</a></div>
+<pre>$w=New-Object -ComObject WScript.Shell
+Get-ChildItem "$env:USERPROFILE\Desktop","$env:PUBLIC\Desktop" -Filter *.lnk -EA 0 |
+  % { $s=$w.CreateShortcut($_.FullName)
+      [pscustomobject]@{Name=$_.Name;Target=$s.TargetPath;Args=$s.Arguments} } |
+  Format-Table -AutoSize</pre>
+</div>
+<p><b>Args must be empty</b> for a normal browser shortcut. A URL or
+<code>--load-extension=</code> reinstates the hijack at every launch.</p>
+
+<h2>Check proxy, DNS and hosts file</h2>
+<div class="box">
+  <div class="hdr"><span>Internet Settings / DNS / hosts</span><a class="copy">[copy]</a></div>
+<pre>Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' |
+  Select ProxyEnable,ProxyServer,AutoConfigURL
+Get-DnsClientServerAddress -AddressFamily IPv4 | ? ServerAddresses |
+  Select InterfaceAlias,ServerAddresses
+Get-Content $env:WINDIR\System32\drivers\etc\hosts | ? {$_ -notmatch '^\s*#' -and $_.Trim()}</pre>
+</div>
+<p>A populated <code>AutoConfigURL</code> is a hijack. The hosts file should return no output.</p>
+
+<h2>Reset proxy and DNS</h2>
+<div class="box">
+  <div class="hdr"><span>writes changes</span><a class="copy">[copy]</a></div>
+<pre>Remove-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' -Name AutoConfigURL -EA 0
+Set-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' -Name ProxyEnable -Value 0
+Set-DnsClientServerAddress -InterfaceAlias '&lt;alias from above&gt;' -ResetServerAddresses</pre>
+</div>
+
+<h2>Find recently written executables</h2>
+<div class="box">
+  <div class="hdr"><span>Get-ChildItem</span><a class="copy">[copy]</a></div>
+<pre>Get-ChildItem $env:APPDATA,$env:LOCALAPPDATA,$env:ProgramData -Recurse -Include *.exe,*.dll -EA 0 |
+  ? {$_.LastWriteTime -gt (Get-Date).AddDays(-60)} |
+  Sort LastWriteTime -Desc | Select -First 40 LastWriteTime,FullName</pre>
+</div>
+
+<h2>Retrieve an uninstall string</h2>
+<div class="box">
+  <div class="hdr"><span>UninstallString</span><a class="copy">[copy]</a></div>
+<pre>Get-ItemProperty $k | ? {$_.DisplayName -like '*partial name*'} | Select DisplayName,UninstallString</pre>
+</div>
+<p>Execute the returned string. MSI packages accept
+<code>msiexec /x {GUID} /qn</code>.</p>
+
+<h2>Re-enable Defender and scan</h2>
+<div class="box">
+  <div class="hdr"><span>writes changes</span><a class="copy">[copy]</a></div>
+<pre>Set-MpPreference -DisableRealtimeMonitoring $false
+Update-MpSignature
+Start-MpScan -ScanType QuickScan
+Get-MpThreatDetection | Select -Last 20 ThreatID,InitialDetectionTime,Resources</pre>
+</div>
+
+<h2>Confirm patch level</h2>
+<div class="box">
+  <div class="hdr"><span>Get-HotFix</span><a class="copy">[copy]</a></div>
+<pre>Get-HotFix | Sort InstalledOn -Desc | Select -First 5</pre>
+</div>
+
+<h2>Removal sequence</h2>
+<ol>
+  <li>Uninstall the unwanted security product first. It obstructs removal and commonly holds
+  Defender disabled.</li>
+  <li>Run AdwCleaner. Add a Malwarebytes on-demand scan only if results are unclear.</li>
+  <li>Run Autoruns with <b>Options &gt; Hide Microsoft entries</b>. Review Logon and
+  Scheduled Tasks.</li>
+  <li>Re-enable Defender, update signatures, quick scan.</li>
+  <li>Reset browser search engine, homepage and startup pages. Remove all extensions; restore
+  an ad blocker only.</li>
+</ol>
+<div class="info">Carry tools on removable media rather than downloading them on the affected
+machine; a modified proxy or DNS can alter what is retrieved. Autoruns, Process Explorer and
+AdwCleaner require no installation.</div>
+
+<h2>PowerShell equivalents for Unix users</h2>
+<div class="box">
+  <div class="hdr"><span>built-in aliases</span><a class="copy">[copy]</a></div>
+<pre>ls  cd  pwd  cat  cp  mv  rm  ps  kill  echo  clear  history</pre>
+</div>
+<table>
+  <tr><th>Unix</th><th>PowerShell</th><th>Note</th></tr>
+  <tr><td>grep</td><td><code>Select-String</code></td><td>text</td></tr>
+  <tr><td>grep</td><td><code>? {$_.Name -match 'x'}</code></td><td>objects</td></tr>
+  <tr><td>awk / cut</td><td><code>select a,b</code></td><td>pipes carry objects, not text</td></tr>
+  <tr><td>xargs</td><td><code>% {...}</code></td><td>ForEach-Object</td></tr>
+  <tr><td>find</td><td><code>Get-ChildItem -Recurse</code></td><td></td></tr>
+  <tr><td>man</td><td><code>Get-Help &lt;cmd&gt; -Examples</code></td><td></td></tr>
+  <tr><td>which</td><td><code>Get-Command &lt;name&gt;</code></td><td></td></tr>
+  <tr><td>sudo</td><td>none</td><td>elevate the shell once, up front</td></tr>
+</table>
+
+<h2>Operational notes</h2>
+<ul>
+  <li>A full-screen browser window exits with <b>F11</b>, then <b>Esc</b>. If the window
+  persists, identify the owning process in Task Manager (<b>Ctrl+Shift+Esc</b>) and terminate it
+  there. <code>chrome.exe</code> or <code>msedge.exe</code> indicates a web page rather than an
+  installed application.</li>
+  <li>Session restore reinstates the previous tab set on next launch. Decline it, or clear
+  <code>Continue where you left off</code> in browser settings first.</li>
+  <li>Two resident antivirus products produce scan conflicts, file-lock contention and
+  substantially degraded I/O. Confirm only one is registered under SecurityCenter2.</li>
+  <li>Reinstalling the operating system discards the profile, the installed-program history and
+  the persistence artifacts above. Enumerate before considering it.</li>
+</ul>
+
+<hr>
+<p class="foot">
+  Unlisted. Not linked from the site index.<br>
+  All commands are read-only except the two blocks marked <b>writes changes</b>.
+</p>
+
+</div>
+<script>
+document.querySelectorAll("a.copy").forEach(function (a) {
+  a.addEventListener("click", function () {
+    var t = a.parentNode.parentNode.querySelector("pre").textContent;
+    function ok() { a.textContent = "[copied]"; setTimeout(function () { a.textContent = "[copy]"; }, 1200); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(ok, function () { fb(t, ok); });
+    } else { fb(t, ok); }
+  });
+});
+function fb(t, done) {
+  var x = document.createElement("textarea");
+  x.value = t; x.style.position = "fixed"; x.style.opacity = "0";
+  document.body.appendChild(x); x.select();
+  try { document.execCommand("copy"); done(); } catch (e) {}
+  document.body.removeChild(x);
+}
+</script>
+</body>
+</html>
