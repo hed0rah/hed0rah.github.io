@@ -117,6 +117,8 @@ a{color:inherit;text-decoration:none}
 .amiga  .tab{background:#2F5EA8} .amiga  .name{color:#284f8c}
 .labx   .tab{background:#7A4A78} .labx   .name{color:#663e64}
 .sigmf  .tab{background:#3B7A4A} .sigmf  .name{color:#33673f}
+.caf  .tab{background:#3d6b63} .caf  .name{color:#7fd6c4}
+.voc  .tab{background:#6b5a3d} .voc  .name{color:#d6bd7f}
 
 footer{margin-top:3rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent);border-color:var(--accent)}
@@ -130,7 +132,7 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div><h1>Audio File Anatomy</h1></div><acidcat-toggle aria-label="Cycle theme: light, dark, acid, house light, house dark"></acidcat-toggle></div>
-      <div class="stamp"><b>36 formats</b>interactive<br>rev 2026.07</div>
+      <div class="stamp"><b>38 formats</b>interactive<br>rev 2026.09</div>
     </div>
     <div class="strip">
       <div>view <b>byte / bit maps</b></div>
@@ -369,6 +371,18 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
       <div><div class="name">AU</div>
         <div class="d">Sun and NeXT audio, where the .snd magic and the mu-law codec of early Unix workstations were written down. Six big-endian words, an encoding code rather than a bit depth, and a size field that may say it does not know.</div></div>
       <span class="t">byte</span>
+    </a>
+    <a class="row caf" href="caf-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">CAF</div>
+        <div class="d">Apple's answer to the 4 GB problem, and the third answer in a family that already had two. Big-endian throughout, SIGNED 64-bit sizes where -1 legally means 'to the end of the file', and no chunk alignment at all.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row voc" href="voc-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">VOC</div>
+        <div class="d">The sample format of the DOS era, inside almost every Build-engine archive. A chain of typed blocks whose terminator is one byte with no length field, and whose continuation block carries no format bytes of its own.</div></div>
+      <span class="t">byte map</span>
     </a>
   </div>
 
