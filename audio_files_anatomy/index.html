@@ -119,6 +119,9 @@ a{color:inherit;text-decoration:none}
 .sigmf  .tab{background:#3B7A4A} .sigmf  .name{color:#33673f}
 .caf  .tab{background:#3d6b63} .caf  .name{color:#7fd6c4}
 .voc  .tab{background:#6b5a3d} .voc  .name{color:#d6bd7f}
+.dsd  .tab{background:#5B7F9E} .dsd  .name{color:#48657E}
+.pdx  .tab{background:#35625E} .pdx  .name{color:#294B48}
+.s3p  .tab{background:#6B4A7D} .s3p  .name{color:#553D63}
 
 footer{margin-top:3rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent);border-color:var(--accent)}
@@ -132,7 +135,7 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div><h1>Audio File Anatomy</h1></div><acidcat-toggle aria-label="Cycle theme: light, dark, acid, house light, house dark"></acidcat-toggle></div>
-      <div class="stamp"><b>38 formats</b>interactive<br>rev 2026.09</div>
+      <div class="stamp"><b>41 formats</b>interactive<br>rev 2026.09</div>
     </div>
     <div class="strip">
       <div>view <b>byte / bit maps</b></div>
@@ -382,6 +385,24 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
       <span class="tab"></span>
       <div><div class="name">VOC</div>
         <div class="d">The sample format of the DOS era, inside almost every Build-engine archive. A chain of typed blocks whose terminator is one byte with no length field, and whose continuation block carries no format bytes of its own.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row dsd" href="dsd-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">DSD</div>
+        <div class="d">The two containers behind SACD, and they disagree about almost everything: Sony's DSF is little-endian with a 64-bit size that counts the header, Philips' DSDIFF is big-endian IFF with a size that does not. One bit per sample at 2.8 MHz, so a PCM reader that opens one reports the byte count wrong by sixteen times.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row pdx" href="pdx-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">PDX</div>
+        <div class="d">The ADPCM sample bank an MDX plays from, and a pointer table with nothing else in it: no magic, no version, no count, no names. Ninety-six rows of offset and length, and the row NUMBER is the sample's identity, so an empty row is not padding to be tidied away.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row s3p" href="s3p-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">S3P</div>
+        <div class="d">An Akai S1000 program, which is not a file format at all: the sampler had only a MIDI System Exclusive dump, so the program was recorded message by message. The payload is nibble-split because SysEx cannot carry a byte with bit 7 set, and three fields that look like offsets are addresses in the sampler's own memory.</div></div>
       <span class="t">byte map</span>
     </a>
   </div>
