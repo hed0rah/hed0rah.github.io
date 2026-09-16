@@ -126,6 +126,10 @@ a{color:inherit;text-decoration:none}
 .gbs  .tab{background:#4E7A5C} .gbs  .name{color:#3D5F48}
 .psf  .tab{background:#6E4E7A} .psf  .name{color:#573D60}
 .spc  .tab{background:#7A5E3D} .spc  .name{color:#5F4930}
+.hes  .tab{background:#7A3D5A} .hes  .name{color:#5F3046}
+.kss  .tab{background:#5A7A3D} .kss  .name{color:#465F30}
+.pt3  .tab{background:#3D6A7A} .pt3  .name{color:#30525F}
+.vgm  .tab{background:#7A6A3D} .vgm  .name{color:#5F5230}
 
 footer{margin-top:3rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent);border-color:var(--accent)}
@@ -139,7 +143,7 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div><h1>Audio File Anatomy</h1></div><acidcat-toggle aria-label="Cycle theme: light, dark, acid, house light, house dark"></acidcat-toggle></div>
-      <div class="stamp"><b>45 formats</b>interactive<br>rev 2026.09</div>
+      <div class="stamp"><b>49 formats</b>interactive<br>rev 2026.09</div>
     </div>
     <div class="strip">
       <div>view <b>byte / bit maps</b></div>
@@ -432,6 +436,30 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
       <div><div class="name">SPC</div>
         <div class="d">A Super Nintendo's sound chip, frozen: the CPU registers, all 64 KB of its RAM, the DSP's 128 registers. No score to parse; a bank of BRR samples the DSP's own registers point at, and a tag whose flag byte real files never set.</div></div>
       <span class="t">byte + bit</span>
+    </a>
+    <a class="row hes" href="hes-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">HES</div>
+        <div class="d">A PC Engine game's music with the game removed: sixteen bytes naming the call address and presetting the HuC6280's eight page registers, then a DATA block of the engine and its data.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row kss" href="kss-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">KSS</div>
+        <div class="d">An MSX (or, in Sega mode, Master System) Z80 sound driver: sixteen bytes of addresses and chip flags, the init data, then the banks it switches through, the last of which the file may end inside.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row pt3" href="pt3-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">PT3</div>
+        <div class="d">A score for the ZX Spectrum's AY chip: samples that are tables of per-tick settings, ornaments that are semitone offsets, three channel streams per pattern, and every one of them reached by an absolute 16-bit pointer, so the file tiles by sorting them.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row vgm" href="vgm-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">VGM</div>
+        <div class="d">Every byte a game wrote to its sound chips, in order, with the time between: a header of chip clocks where a non-zero clock is the only presence flag, a byte-code stream of writes and waits, and a UTF-16 tag at the end. A .vgz is the same file in gzip.</div></div>
+      <span class="t">byte map</span>
     </a>
   </div>
 
