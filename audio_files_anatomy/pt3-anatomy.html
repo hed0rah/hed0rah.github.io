@@ -157,7 +157,7 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
 <div class="sheet">
   <div class="head">
     <div class="row">
-      <div class="title"><div class="tt"><div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div><h1>PT3 Anatomy</h1></div></div>
+      <div class="title"><div class="tt"><div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div><h1>PT3 Anatomy</h1></div><acidcat-toggle aria-label="Cycle theme: light, dark, acid, house light, house dark"></acidcat-toggle></div>
       <div class="stamp"><b>ZX Spectrum</b>ProTracker 3 / Vortex Tracker<br>rev 2026.09</div>
     </div>
     <div class="strip">
@@ -176,6 +176,16 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
     address and played in place, so <b>every pointer in it is an absolute offset</b>, 16 bits, and
     the whole file can be tiled by sorting them: each region begins where a pointer says and ends
     where the next one begins.</p>
+    <aside class="sig" aria-label="color key">
+      <div class="legrows">
+        <div class="row"><span class="sw dark k-enum">mauve</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
+        <div class="row"><span class="sw dark k-sync">slate</span><span class="swsep">&#8594;</span><span class="sw light k-sync">structural</span></div>
+      </div>
+      <div class="siglabel">color key</div>
+    </aside>
+  </div>
+
+  <div class="sec">file regions</div>
 
     <details class="region" open>
       <summary><span class="chev">&#9656;</span><span class="rname">the header</span><span class="rspan">0x00 . drawn below</span></summary>
@@ -253,6 +263,28 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
     </details>
 
     <details class="region">
+      <summary><span class="chev">&#9656;</span><span class="rname">Sound Tracker (STC)</span><span class="rspan">the ancestor . fixed blocks</span></summary>
+      <div class="rbody">
+        <p class="note">STC is the Sound Tracker 1.x module as its Song Compiler wrote it, the
+        format PT2 and PT3 grew out of. No magic. The header is 27 bytes of pointers and the four
+        blocks come in a fixed order with fixed record sizes, so the file tiles by arithmetic up to
+        the pattern table and by pointers after it:</p>
+        <div class="kv">
+          <div><span class="k">0x00</span><span class="v">delay; then pointers to the positions block, the ornaments and the pattern table</span></div>
+          <div><span class="k">0x07</span><span class="v">18-character identifier, usually <code>SONG BY ST COMPILE</code>; then the module's size</span></div>
+          <div><span class="k">0x1B</span><span class="v">samples, 99 bytes each: number, 32 rows of 3 bytes, repeat position, repeat length</span></div>
+          <div><span class="k">positions</span><span class="v">count &minus; 1, then (pattern, transposition) pairs, ending exactly at the ornaments</span></div>
+          <div><span class="k">ornaments</span><span class="v">33 bytes each: number, 32 semitone offsets</span></div>
+          <div><span class="k">pattern table</span><span class="v">7 bytes each: number, three stream pointers; ended by 0xFF</span></div>
+        </div>
+        <p class="note">Records carry their own numbers, so sample 9 can follow sample 7 with nothing
+        between. Some compilers write the ornaments before the positions block; the pointers say
+        which, and each block ends where the next begins either way. Some leave a line of text
+        before the pattern table; it is the author's, and it is reported as a comment.</p>
+      </div>
+    </details>
+
+    <details class="region">
       <summary><span class="chev">&#9656;</span><span class="rname">identification</span><span class="rspan">text at zero</span></summary>
       <div class="rbody">
         <p class="note"><code>ProTracker 3.</code> or <code>Vortex Tracker II</code> at offset
@@ -260,7 +292,6 @@ footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);disp
         identified by their pointer arithmetic instead; this is the one that says its name.</p>
       </div>
     </details>
-  </div>
 
   <footer>
     <span>acidcat / pt3 anatomy</span>
