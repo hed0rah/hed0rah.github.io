@@ -123,6 +123,9 @@ a{color:inherit;text-decoration:none}
 .pdx  .tab{background:#35625E} .pdx  .name{color:#294B48}
 .s3p  .tab{background:#6B4A7D} .s3p  .name{color:#553D63}
 .pmd  .tab{background:#7A4E3D} .pmd  .name{color:#5F3D30}
+.gbs  .tab{background:#4E7A5C} .gbs  .name{color:#3D5F48}
+.psf  .tab{background:#6E4E7A} .psf  .name{color:#573D60}
+.spc  .tab{background:#7A5E3D} .spc  .name{color:#5F4930}
 
 footer{margin-top:3rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent);border-color:var(--accent)}
@@ -136,7 +139,7 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div><h1>Audio File Anatomy</h1></div><acidcat-toggle aria-label="Cycle theme: light, dark, acid, house light, house dark"></acidcat-toggle></div>
-      <div class="stamp"><b>42 formats</b>interactive<br>rev 2026.09</div>
+      <div class="stamp"><b>45 formats</b>interactive<br>rev 2026.09</div>
     </div>
     <div class="strip">
       <div>view <b>byte / bit maps</b></div>
@@ -411,6 +414,24 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
       <div><div class="name">PMD</div>
         <div class="d">A compiled score for the PC-9801's Professional Music Driver, the format most of the PC-98's game music was written in. MML is the source, MC.EXE compiles it, and the memo block at the end is the part of the source the compiler kept: title, composer, and which sample banks to load. Every offset counts from byte 1.</div></div>
       <span class="t">byte map</span>
+    </a>
+    <a class="row gbs" href="gbs-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">GBS</div>
+        <div class="d">A Game Boy's music cut out of the game: a 112-byte header naming where to load the code and which routine to call, then the code. The same idea as NSF and simpler, because the Game Boy has no expansion chips and nothing in the header is reserved.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row psf" href="psf-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">PSF</div>
+        <div class="d">A console's sound program and the memory it runs in, zlib-compressed with a CRC32 of its own. Eight machines share the container and differ in one byte. A whole GBA mini is 221 bytes, and two of those are the tune: the song number, patched over a library file the tag names.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row spc" href="spc-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">SPC</div>
+        <div class="d">A Super Nintendo's sound chip, frozen: the CPU registers, all 64 KB of its RAM, the DSP's 128 registers. No score to parse; a bank of BRR samples the DSP's own registers point at, and a tag whose flag byte real files never set.</div></div>
+      <span class="t">byte + bit</span>
     </a>
   </div>
 
