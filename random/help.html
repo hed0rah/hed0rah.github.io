@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0" />
 <meta name="robots" content="noindex,nofollow" />
-<title>Windows Cleanup Command Reference</title>
+<title>Windows Triage Reference</title>
 <style>
 /* Flat. No webfonts, no radii, no shadows, no gradients. Loads on any signal. */
 * { box-sizing: border-box; }
@@ -24,9 +24,29 @@ body {
 .masthead h1 { font-size: 18px; font-weight: bold; margin: 2px 0 0; }
 .subbar {
   background: #DDDDDD; border-bottom: 1px solid #999999;
-  padding: 5px 12px; margin: 0 -12px 18px;
+  padding: 5px 12px; margin: 0 -12px 0;
   font-size: 12px; color: #333333;
 }
+
+/* tabs: flat buttons, sticky so a phone can switch without scrolling up */
+.tabs {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; flex-wrap: wrap;
+  background: #FFFFFF; border-bottom: 2px solid #003366;
+  margin: 0 -12px 18px; padding: 6px 12px 0;
+}
+.tabs a {
+  display: block; padding: 5px 10px; margin: 0 4px 0 0;
+  border: 1px solid #999999; border-bottom: 0;
+  background: #DDDDDD; color: #003366;
+  font-size: 12px; font-weight: bold; text-decoration: none;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.tabs a.active { background: #003366; color: #FFFFFF; border-color: #003366; }
+.js .tab { display: none; }
+.js .tab.active { display: block; }
+.tab > h2:first-child { margin-top: 0; }
+.tabname { font-size: 11px; color: #666666; margin: 0 0 4px; }
 
 h2 {
   font-size: 13px; font-weight: bold; color: #003366;
@@ -34,10 +54,10 @@ h2 {
   margin: 26px 0 0; padding: 3px 0;
   border-bottom: 2px solid #003366;
 }
-h2:first-of-type { margin-top: 18px; }
+h3 { font-size: 13px; font-weight: bold; color: #000000; margin: 14px 0 0; }
 
 p { margin: 6px 0 0; font-size: 13px; color: #333333; }
-p b, li b { color: #000000; }
+p b, li b, td b { color: #000000; }
 code {
   font-family: "Courier New", Courier, monospace;
   font-size: 12px; background: #EEEEEE; padding: 0 2px;
@@ -51,6 +71,7 @@ code {
   display: flex; justify-content: space-between; align-items: center;
 }
 .box .hdr span { font-family: "Courier New", Courier, monospace; }
+.box .hdr span.w { color: #CC0000; font-family: Arial, Helvetica, sans-serif; font-weight: bold; }
 .box a.copy { color: #0000CC; text-decoration: underline; font-size: 11px; cursor: pointer; }
 .box a.copy:visited { color: #0000CC; }
 .box pre {
@@ -69,6 +90,7 @@ table { border-collapse: collapse; margin: 8px 0 0; width: 100%; font-size: 12px
 th, td { border: 1px solid #999999; padding: 3px 6px; text-align: left; vertical-align: top; }
 th { background: #DDDDDD; font-weight: bold; }
 td code { background: transparent; padding: 0; }
+.wrap { overflow-x: auto; }
 
 hr { border: 0; border-top: 1px solid #CCCCCC; margin: 26px 0 0; }
 .foot { margin-top: 10px; font-size: 11px; color: #666666; }
@@ -79,32 +101,138 @@ hr { border: 0; border-top: 1px solid #CCCCCC; margin: 26px 0 0; }
 
 <div class="masthead">
   <div class="kicker">Reference</div>
-  <h1>Windows Cleanup Command Reference</h1>
+  <h1>Windows Triage: Malware and Slowness</h1>
 </div>
 <div class="subbar">
-  Elevated PowerShell required: <b>Win+X</b>, then <b>A</b>. Title bar must read Administrator.
+  Elevated PowerShell required: <b>Win+X</b>, then <b>A</b>. The title bar must read Administrator.
+  Commands are read-only unless the block header says <b style="color:#CC0000">writes changes</b>.
 </div>
+
+<div class="tabs" id="tabs">
+  <a href="#start" data-tab="start">Start here</a>
+  <a href="#malware" data-tab="malware">Malware &amp; cleanup</a>
+  <a href="#slow" data-tab="slow">Slowness</a>
+  <a href="#tools" data-tab="tools">Tools &amp; kit</a>
+</div>
+
+<!-- ================================================================ START HERE -->
+<section class="tab" id="start">
+<p class="tabname">Start here</p>
+
+<h2>Before touching anything</h2>
+<ol>
+  <li><b>Back up the user profile first.</b> Every step after this one can destroy evidence or
+  data. The command is below.</li>
+  <li><b>Do not download tools on the affected machine.</b> A modified proxy, DNS or hosts
+  file changes what a download returns. Carry the kit on a USB stick (see Tools &amp; kit).</li>
+  <li><b>Change one thing at a time</b> and note what you changed. When the machine is fixed you
+  want to know which step did it; when it is not, you want to know what to undo.</li>
+  <li><b>Read on the phone, type on the PC.</b> Every command block has a copy link; it is
+  easier to read this page on a phone than to alt-tab on the machine you are fixing.</li>
+</ol>
 
 <h2>Back up the user profile</h2>
 <div class="box">
   <div class="hdr"><span>robocopy</span><a class="copy">[copy]</a></div>
 <pre>robocopy "$env:USERPROFILE" "D:\rescue" /E /R:1 /W:1 /XJ /XA:SH</pre>
 </div>
-<p><code>/XJ</code> prevents junction loops. Format the target <b>exFAT</b>; FAT32 fails
-silently over 4 GB. Copying from a Linux live stick is safer where practical.</p>
+<p>Change <code>D:\rescue</code> to the stick or external drive. <code>/XJ</code> prevents
+junction loops. Format the target <b>exFAT</b>; FAT32 fails silently over 4 GB. Copying from
+a Linux live stick is safer where practical, because nothing on the sick disk runs.</p>
+
+<h2>Open an elevated PowerShell</h2>
+<p><b>Win+X</b>, then <b>A</b>. Or: right-click Start, choose <b>Terminal (Admin)</b> or
+<b>Windows PowerShell (Admin)</b>. Accept the prompt. If the account cannot elevate, it is not
+an administrator; log in as one. The window title must say <b>Administrator</b> or half the
+commands below return nothing useful.</p>
+
+<h2>The five-minute snapshot</h2>
+<p>One paste. Prints what the machine is and what state it is in. Save the output and send it
+to whoever is helping remotely: this block answers most of their first questions.</p>
+<div class="box">
+  <div class="hdr"><span>snapshot: paste as one block</span><a class="copy">[copy]</a></div>
+<pre>$os=gcim Win32_OperatingSystem; $cs=gcim Win32_ComputerSystem; $cpu=gcim Win32_Processor
+"=== $($cs.Manufacturer) $($cs.Model)"
+"OS      : $($os.Caption) build $($os.BuildNumber)"
+"Uptime  : $([int]((Get-Date)-$os.LastBootUpTime).TotalHours) h since last real boot"
+"CPU     : $($cpu.Name)  cores=$($cpu.NumberOfCores) load=$($cpu.LoadPercentage)%"
+"RAM     : total $([math]::Round($os.TotalVisibleMemorySize/1MB,1)) GB, free $([math]::Round($os.FreePhysicalMemory/1MB,1)) GB"
+"Power   : $(powercfg /getactivescheme)"
+"FastBoot: HiberbootEnabled=$((Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power').HiberbootEnabled)"
+"--- disks"
+Get-PhysicalDisk | Select FriendlyName,MediaType,HealthStatus,@{n='GB';e={[math]::Round($_.Size/1GB)}} | Format-Table -AutoSize
+Get-Volume | ? DriveLetter | Select DriveLetter,FileSystemType,@{n='FreeGB';e={[math]::Round($_.SizeRemaining/1GB,1)}},@{n='SizeGB';e={[math]::Round($_.Size/1GB,1)}} | Format-Table -AutoSize
+"--- security products"
+Get-CimInstance -Namespace root\SecurityCenter2 -ClassName AntiVirusProduct | Select displayName | Format-Table -AutoSize
+Get-MpComputerStatus | Select AMRunningMode,RealTimeProtectionEnabled,AntivirusSignatureLastUpdated | Format-List
+"--- last 3 updates"
+Get-HotFix | Sort InstalledOn -Desc | Select -First 3 HotFixID,InstalledOn | Format-Table -AutoSize</pre>
+</div>
+<p>To save it: append <code>| Out-File "$env:USERPROFILE\Desktop\snapshot.txt"</code> is
+awkward across many lines, so instead press <b>Ctrl+A</b> then <b>Ctrl+C</b> in the terminal
+and paste into a message, or photograph the screen.</p>
+
+<h3>How to read it</h3>
+<ul>
+  <li><b>Uptime in the hundreds of hours</b> on a machine that is "shut down every night":
+  Fast Startup is on (<code>HiberbootEnabled=1</code>), so shutdown is a hibernate and the
+  machine has not actually rebooted in weeks. <code>shutdown /r /t 0</code> does a real
+  restart. This alone fixes a surprising amount.</li>
+  <li><b>MediaType HDD</b> on the system disk: the machine is slow because it is a spinning
+  disk running a modern Windows. Nothing in software fixes that; an SSD does. See Slowness.</li>
+  <li><b>HealthStatus</b> anything but <code>Healthy</code>: back up now, replace the disk.</li>
+  <li><b>FreeGB under 10%</b> of the system volume, or under 15 GB: Windows itself stalls.
+  Free space before anything else.</li>
+  <li><b>Two security products</b> listed, or <code>RealTimeProtectionEnabled : False</code>:
+  go to Malware &amp; cleanup. Two resident antivirus engines is a common cause of both
+  slowness and "the antivirus keeps popping up".</li>
+  <li><b>RAM total 4 GB</b>: a browser alone fills it. See the memory section under Slowness.</li>
+  <li><b>Power plan "Power saver"</b>, or a laptop that is always on battery: expect throttled
+  clocks. See CPU and thermal under Slowness.</li>
+</ul>
+
+<h2>Where to go next</h2>
+<div class="wrap">
+<table>
+  <tr><th>What they describe</th><th>Most likely</th><th>Go to</th></tr>
+  <tr><td>Pop-ups, a fake warning, a "call this number" screen, the browser opens to a page
+  they did not choose, an antivirus they never installed</td><td>hijack / unwanted software</td>
+  <td>Malware &amp; cleanup</td></tr>
+  <tr><td>Someone "from Microsoft" was on the PC remotely; a bank or gift card was involved</td>
+  <td>remote access left behind, plus everything above</td><td>Malware &amp; cleanup, remote
+  access section first</td></tr>
+  <tr><td>Slow to boot, slow to open anything, the disk light is always on, "100% disk"</td>
+  <td>HDD, full disk, or background work</td><td>Slowness: disk</td></tr>
+  <tr><td>Fine at first, slows after 10 to 30 minutes, fans loud, laptop hot</td>
+  <td>thermal throttling</td><td>Slowness: CPU and heat</td></tr>
+  <tr><td>Audio crackles, video stutters, mouse hitches, games hitch on a fast PC</td>
+  <td>DPC latency (a driver)</td><td>Slowness: stutter</td></tr>
+  <tr><td>Only the internet is slow; everything local is fine</td><td>network, not the PC</td>
+  <td>Slowness: network vs PC</td></tr>
+  <tr><td>Slow and also behaving strangely</td><td>both</td><td>Malware first, then Slowness.
+  Malware is a common cause of slowness; slowness is not a cause of malware.</td></tr>
+</table>
+</div>
+</section>
+
+<!-- ================================================================ MALWARE -->
+<section class="tab" id="malware">
+<p class="tabname">Malware &amp; cleanup</p>
 
 <h2>Detect remote access software</h2>
 <div class="box">
   <div class="hdr"><span>Get-Process / Get-Service</span><a class="copy">[copy]</a></div>
-<pre>$rat='anydesk|teamviewer|logmein|screenconnect|connectwise|supremo|ultraviewer|ammyy|gotoassist|splashtop|remotepc'
+<pre>$rat='anydesk|teamviewer|logmein|screenconnect|connectwise|supremo|ultraviewer|ammyy|gotoassist|splashtop|remotepc|rustdesk|zoho|dwagent|atera|quickassist'
 Get-Process | ? {$_.Name -match $rat} | Select Name,Path
-Get-Service | ? {$_.Name -match $rat -or $_.DisplayName -match $rat} | Select Name,DisplayName,Status</pre>
+Get-Service | ? {$_.Name -match $rat -or $_.DisplayName -match $rat} | Select Name,DisplayName,Status,StartType</pre>
 </div>
 <div class="warn"><b>Run first.</b> These are legitimately signed commercial products, so
-antivirus does not flag them and they do not appear in malware scan results. Correlate any hit
-against the installed-programs list below: a service with no corresponding uninstall entry, or
-an install date inside the cluster identified there, indicates unattended deployment rather than
-deliberate installation.</div>
+antivirus does not flag them and they do not appear in malware scan results. A scammer who was
+"fixing the computer" usually leaves one installed, set to start with Windows, with unattended
+access enabled. Correlate any hit against the installed-programs list below: a service with no
+uninstall entry, or an install date inside the cluster identified there, indicates unattended
+deployment rather than deliberate installation. Uninstall it, then check the vendor's web
+console if the owner has an account (a scammer may have registered the machine to their own).</div>
 
 <h2>List installed programs by install date</h2>
 <div class="box">
@@ -116,38 +244,100 @@ Get-ItemProperty $k | ? DisplayName | Select DisplayName,Publisher,InstallDate |
   Sort InstallDate -Desc | Format-Table -AutoSize</pre>
 </div>
 <p>A group of installations sharing one date identifies the incident. Treat the whole group as
-suspect regardless of publisher name.</p>
+suspect regardless of publisher name. Keep <code>$k</code> defined; the uninstall step below
+reuses it.</p>
 
 <h2>Report registered security products</h2>
 <div class="box">
   <div class="hdr"><span>SecurityCenter2 / Get-MpComputerStatus</span><a class="copy">[copy]</a></div>
 <pre>Get-CimInstance -Namespace root\SecurityCenter2 -ClassName AntiVirusProduct |
   Select displayName,pathToSignedProductExe
-Get-MpComputerStatus | Select AMRunningMode,RealTimeProtectionEnabled,AntivirusEnabled</pre>
+Get-MpComputerStatus | Select AMRunningMode,RealTimeProtectionEnabled,AntivirusEnabled,AntivirusSignatureLastUpdated</pre>
 </div>
 <p><code>RealTimeProtectionEnabled : False</code> indicates Defender was disabled by another
-product.</p>
+product. Two products listed means two resident engines fighting over every file.</p>
 
-<h2>Enumerate startup items and scheduled tasks</h2>
+<h2>Accounts and remote desktop</h2>
 <div class="box">
-  <div class="hdr"><span>Win32_StartupCommand / Get-ScheduledTask</span><a class="copy">[copy]</a></div>
-<pre>Get-CimInstance Win32_StartupCommand | Select Name,Command,Location | Format-List
-Get-ScheduledTask | ? {$_.TaskPath -notlike '\Microsoft\*'} |
-  Select State,TaskPath,TaskName | Sort State | Format-Table -AutoSize</pre>
+  <div class="hdr"><span>Get-LocalUser / Administrators / RDP</span><a class="copy">[copy]</a></div>
+<pre>Get-LocalUser | Select Name,Enabled,LastLogon,PasswordLastSet | Format-Table -AutoSize
+Get-LocalGroupMember Administrators | Select Name,PrincipalSource
+(Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server').fDenyTSConnections</pre>
 </div>
-<p>Persistence is more commonly in the task scheduler than in the Run key.</p>
+<p>Every enabled account should be one the owner recognises. An extra local administrator is
+a backdoor. <code>fDenyTSConnections</code> is <code>1</code> on a home machine; <code>0</code>
+means Remote Desktop is enabled, which almost no home user did on purpose.</p>
 
-<h2>Inspect browser shortcuts for appended arguments</h2>
+<h2>Live network connections, by process</h2>
 <div class="box">
-  <div class="hdr"><span>WScript.Shell</span><a class="copy">[copy]</a></div>
+  <div class="hdr"><span>Get-NetTCPConnection</span><a class="copy">[copy]</a></div>
+<pre>Get-NetTCPConnection -State Established | % {
+  $p=Get-Process -Id $_.OwningProcess -EA 0
+  [pscustomobject]@{Proc=$p.Name;Pid=$_.OwningProcess;Remote="$($_.RemoteAddress):$($_.RemotePort)";Path=$p.Path}
+} | Sort Proc | Format-Table -AutoSize</pre>
+</div>
+<p>Close the browser first so the list is short. Anything holding a connection from
+<code>AppData</code>, <code>Temp</code> or <code>ProgramData</code> deserves a look. A process
+with an empty Path is running as a different user or is protected; Process Explorer or System
+Informer will show it.</p>
+
+<h2>Running code that is not signed</h2>
+<div class="box">
+  <div class="hdr"><span>Get-AuthenticodeSignature</span><a class="copy">[copy]</a></div>
+<pre>Get-Process | ? Path | Select -Unique -Expand Path | % { Get-AuthenticodeSignature $_ } |
+  ? Status -ne 'Valid' | Select Status,Path | Format-Table -AutoSize</pre>
+</div>
+<p>Legitimate software is occasionally unsigned, so this is a shortlist, not a verdict. Anything
+unsigned <b>and</b> in a user-writable folder <b>and</b> not in the installed-programs list is
+the intersection that matters.</p>
+
+<h2>Enumerate persistence</h2>
+<p>Persistence is where malware and unwanted software survive a reboot. Check all four places;
+the task scheduler is used more often than the Run keys.</p>
+<div class="box">
+  <div class="hdr"><span>Run keys / StartupCommand / scheduled tasks</span><a class="copy">[copy]</a></div>
+<pre>Get-ItemProperty 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Run',
+  'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run',
+  'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce',
+  'HKCU:\Software\Microsoft\Windows\CurrentVersion\RunOnce' -EA 0 |
+  Select * -Exclude PS* | Format-List
+Get-CimInstance Win32_StartupCommand | Select Name,Command,Location | Format-List
+Get-ScheduledTask | ? {$_.TaskPath -notlike '\Microsoft\*'} |
+  Select State,TaskPath,TaskName,@{n='Run';e={$_.Actions.Execute + ' ' + $_.Actions.Arguments}} |
+  Sort State | Format-Table -AutoSize</pre>
+</div>
+<div class="box">
+  <div class="hdr"><span>third-party services</span><a class="copy">[copy]</a></div>
+<pre>Get-CimInstance Win32_Service | ? {$_.PathName -notmatch '\\Windows\\'} |
+  Select Name,State,StartMode,PathName | Sort State | Format-Table -AutoSize</pre>
+</div>
+<div class="box">
+  <div class="hdr"><span>WMI event subscriptions (normally empty)</span><a class="copy">[copy]</a></div>
+<pre>Get-CimInstance -Namespace root\subscription -ClassName __EventFilter | Select Name,Query
+Get-CimInstance -Namespace root\subscription -ClassName CommandLineEventConsumer | Select Name,CommandLineTemplate
+Get-CimInstance -Namespace root\subscription -ClassName __FilterToConsumerBinding | Select Filter,Consumer</pre>
+</div>
+<p>WMI subscriptions run a command when a system event fires and survive most cleanups because
+nothing in the normal UI shows them. A home machine has none, or only Microsoft's own
+<code>SCM Event Log</code> entries. Anything else is a finding.</p>
+
+<h2>Browser: shortcuts, forced extensions, policies</h2>
+<div class="box">
+  <div class="hdr"><span>WScript.Shell / ExtensionInstallForcelist</span><a class="copy">[copy]</a></div>
 <pre>$w=New-Object -ComObject WScript.Shell
-Get-ChildItem "$env:USERPROFILE\Desktop","$env:PUBLIC\Desktop" -Filter *.lnk -EA 0 |
-  % { $s=$w.CreateShortcut($_.FullName)
-      [pscustomobject]@{Name=$_.Name;Target=$s.TargetPath;Args=$s.Arguments} } |
-  Format-Table -AutoSize</pre>
+Get-ChildItem "$env:USERPROFILE\Desktop","$env:PUBLIC\Desktop","$env:APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar" -Filter *.lnk -Recurse -EA 0 |
+  % { $s=$w.CreateShortcut($_.FullName); [pscustomobject]@{Name=$_.Name;Target=$s.TargetPath;Args=$s.Arguments} } |
+  ? {$_.Target -match 'chrome|msedge|firefox|brave|opera'} | Format-Table -AutoSize
+Get-ItemProperty 'HKLM:\Software\Policies\Google\Chrome\ExtensionInstallForcelist',
+  'HKLM:\Software\Policies\Microsoft\Edge\ExtensionInstallForcelist',
+  'HKCU:\Software\Policies\Google\Chrome\ExtensionInstallForcelist' -EA 0 | Select * -Exclude PS*</pre>
 </div>
 <p><b>Args must be empty</b> for a normal browser shortcut. A URL or
-<code>--load-extension=</code> reinstates the hijack at every launch.</p>
+<code>--load-extension=</code> reinstates the hijack at every launch. <b>ExtensionInstallForcelist
+must not exist</b> on a home machine: it is the enterprise policy that installs an extension the
+user cannot remove, and it is how a "managed by your organization" banner appears on a family
+PC. Open <code>chrome://policy</code> or <code>edge://policy</code> to see every policy in
+force, and <code>chrome://extensions</code> to review what is installed.</p>
 
 <h2>Check proxy, DNS and hosts file</h2>
 <div class="box">
@@ -158,101 +348,581 @@ Get-DnsClientServerAddress -AddressFamily IPv4 | ? ServerAddresses |
   Select InterfaceAlias,ServerAddresses
 Get-Content $env:WINDIR\System32\drivers\etc\hosts | ? {$_ -notmatch '^\s*#' -and $_.Trim()}</pre>
 </div>
-<p>A populated <code>AutoConfigURL</code> is a hijack. The hosts file should return no output.</p>
+<p>A populated <code>AutoConfigURL</code> is a hijack. DNS should be the router's address or a
+known public resolver, not an unfamiliar IP. The hosts file should return no output.</p>
 
 <h2>Reset proxy and DNS</h2>
 <div class="box">
-  <div class="hdr"><span>writes changes</span><a class="copy">[copy]</a></div>
+  <div class="hdr"><span class="w">writes changes</span><a class="copy">[copy]</a></div>
 <pre>Remove-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' -Name AutoConfigURL -EA 0
 Set-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' -Name ProxyEnable -Value 0
-Set-DnsClientServerAddress -InterfaceAlias '&lt;alias from above&gt;' -ResetServerAddresses</pre>
+Set-DnsClientServerAddress -InterfaceAlias '&lt;alias from above&gt;' -ResetServerAddresses
+ipconfig /flushdns</pre>
 </div>
 
 <h2>Find recently written executables</h2>
 <div class="box">
   <div class="hdr"><span>Get-ChildItem</span><a class="copy">[copy]</a></div>
-<pre>Get-ChildItem $env:APPDATA,$env:LOCALAPPDATA,$env:ProgramData -Recurse -Include *.exe,*.dll -EA 0 |
+<pre>Get-ChildItem $env:APPDATA,$env:LOCALAPPDATA,$env:ProgramData,$env:TEMP,"$env:USERPROFILE\Downloads" -Recurse -Include *.exe,*.dll,*.ps1,*.vbs,*.js,*.bat,*.scr -EA 0 |
   ? {$_.LastWriteTime -gt (Get-Date).AddDays(-60)} |
-  Sort LastWriteTime -Desc | Select -First 40 LastWriteTime,FullName</pre>
+  Sort LastWriteTime -Desc | Select -First 40 LastWriteTime,Length,FullName</pre>
 </div>
+<p>Adjust the 60 days to bracket the incident. Script files in Downloads or Temp with a recent
+date are as important as executables.</p>
 
 <h2>Retrieve an uninstall string</h2>
 <div class="box">
   <div class="hdr"><span>UninstallString</span><a class="copy">[copy]</a></div>
-<pre>Get-ItemProperty $k | ? {$_.DisplayName -like '*partial name*'} | Select DisplayName,UninstallString</pre>
+<pre>Get-ItemProperty $k | ? {$_.DisplayName -like '*partial name*'} | Select DisplayName,UninstallString,QuietUninstallString</pre>
 </div>
-<p>Execute the returned string. MSI packages accept
-<code>msiexec /x {GUID} /qn</code>.</p>
+<p>Execute the returned string. MSI packages accept <code>msiexec /x {GUID} /qn</code>. Prefer
+the vendor's own uninstaller over deleting folders; a half-removed antivirus is worse than a
+whole one.</p>
 
 <h2>Re-enable Defender and scan</h2>
 <div class="box">
-  <div class="hdr"><span>writes changes</span><a class="copy">[copy]</a></div>
+  <div class="hdr"><span class="w">writes changes</span><a class="copy">[copy]</a></div>
 <pre>Set-MpPreference -DisableRealtimeMonitoring $false
 Update-MpSignature
 Start-MpScan -ScanType QuickScan
 Get-MpThreatDetection | Select -Last 20 ThreatID,InitialDetectionTime,Resources</pre>
 </div>
+<p>If the quick scan finds anything, or the machine still misbehaves: <code>Start-MpWDOScan</code>
+reboots into <b>Defender Offline</b>, which scans before Windows and its rootkit-capable
+malware load. Save work first; it restarts immediately. Microsoft Safety Scanner
+(<code>msert.exe</code>, in the kit) is a second opinion that needs no install.</p>
 
 <h2>Confirm patch level</h2>
 <div class="box">
   <div class="hdr"><span>Get-HotFix</span><a class="copy">[copy]</a></div>
-<pre>Get-HotFix | Sort InstalledOn -Desc | Select -First 5</pre>
+<pre>Get-HotFix | Sort InstalledOn -Desc | Select -First 5 HotFixID,Description,InstalledOn
+Get-Service wuauserv,bits,TrustedInstaller | Select Name,Status,StartType</pre>
 </div>
+<p>Months without an update means Windows Update is broken or disabled; both are worth fixing
+before handing the machine back.</p>
 
 <h2>Removal sequence</h2>
 <ol>
-  <li>Uninstall the unwanted security product first. It obstructs removal and commonly holds
+  <li>Uninstall any remote access tool that the owner did not install.</li>
+  <li>Uninstall the unwanted security product. It obstructs removal and commonly holds
   Defender disabled.</li>
-  <li>Run AdwCleaner. Add a Malwarebytes on-demand scan only if results are unclear.</li>
-  <li>Run Autoruns with <b>Options &gt; Hide Microsoft entries</b>. Review Logon and
-  Scheduled Tasks.</li>
-  <li>Re-enable Defender, update signatures, quick scan.</li>
+  <li>Run AdwCleaner. Add a Malwarebytes on-demand scan if results are unclear.</li>
+  <li>Run Autoruns with <b>Options &gt; Hide Microsoft entries</b>. Review Logon, Scheduled
+  Tasks, Services and WMI. Uncheck rather than delete; you can re-check if something breaks.</li>
+  <li>Re-enable Defender, update signatures, quick scan. Offline scan if anything was found.</li>
   <li>Reset browser search engine, homepage and startup pages. Remove all extensions; restore
-  an ad blocker only.</li>
+  an ad blocker only. Delete any forced-extension policy key found above.</li>
+  <li>Remove extra accounts, disable Remote Desktop, reset proxy and DNS.</li>
+  <li>Change passwords <b>from a different device</b> for anything used on this PC during the
+  incident: email first, then banking. Turn on two-factor.</li>
+  <li>Reboot, re-run the snapshot on the Start tab, compare.</li>
 </ol>
-<div class="info">Carry tools on removable media rather than downloading them on the affected
-machine; a modified proxy or DNS can alter what is retrieved. Autoruns, Process Explorer and
-AdwCleaner require no installation.</div>
+<div class="warn">If money moved, a bank was called, or a gift card was bought: this is fraud,
+not just malware. Contact the bank from a known-good phone number, not one from the screen or
+a call-back. Report it; the technical cleanup can wait an hour, the bank cannot.</div>
+<div class="info">Reinstalling the operating system discards the profile, the installed-program
+history and every persistence artifact above. Enumerate before considering it. If you do reset,
+<b>Reset this PC &gt; Remove everything</b> is the only option that removes what a scammer
+left; "Keep my files" keeps their extensions and tasks too.</div>
+</section>
 
-<h2>PowerShell equivalents for Unix users</h2>
+<!-- ================================================================ SLOWNESS -->
+<section class="tab" id="slow">
+<p class="tabname">Slowness</p>
+
+<h2>Shape the problem first</h2>
+<p>"It's slow" is five different problems. Ten minutes of questions saves an afternoon of
+guessing. Ask, or watch:</p>
+<div class="wrap">
+<table>
+  <tr><th>Slow when</th><th>Points at</th><th>Section</th></tr>
+  <tr><td>Booting and the first ten minutes after login</td><td>startup load, HDD, Windows
+  catching up on updates and indexing</td><td>Disk, Startup, Windows' own work</td></tr>
+  <tr><td>All the time, everything</td><td>HDD, full disk, too little RAM, or a second
+  antivirus</td><td>Disk, Memory</td></tr>
+  <tr><td>After 10 to 30 minutes, fans loud</td><td>thermal throttling</td><td>CPU and heat</td></tr>
+  <tr><td>In bursts: hitches, audio crackle, cursor freezes</td><td>DPC latency, a driver</td>
+  <td>Stutter</td></tr>
+  <tr><td>Only in the browser</td><td>extensions, tabs, hardware acceleration</td><td>Browser</td></tr>
+  <tr><td>Only online things</td><td>the network, not the PC</td><td>Network vs PC</td></tr>
+  <tr><td>Since a specific day</td><td>an update, an install, or an incident</td><td>Reliability
+  Monitor below, then the Malware tab's install-date list</td></tr>
+</table>
+</div>
+<div class="box">
+  <div class="hdr"><span>real uptime, and what changed recently</span><a class="copy">[copy]</a></div>
+<pre>(Get-Date) - (gcim Win32_OperatingSystem).LastBootUpTime | Select Days,Hours
+perfmon /rel</pre>
+</div>
+<p><b>Reliability Monitor</b> (<code>perfmon /rel</code>) opens a timeline of every crash,
+hang, failed update and install, by day. If the slowness "started last Tuesday", this is where
+Tuesday is. Look for a red X cluster or a new install on that date.</p>
+<div class="info"><b>Reboot first, for real.</b> With Fast Startup on, "Shut down" hibernates
+the kernel; the machine may not have rebooted in weeks and leaked memory and stuck services
+accumulate. <code>shutdown /r /t 0</code> is a genuine restart. Re-test after it. A large share of
+"slow" reports end here.</div>
+
+<h2>Watch it live: Task Manager and Resource Monitor</h2>
+<p><b>Ctrl+Shift+Esc</b> opens Task Manager. On the Processes tab, click the column headers to
+sort by <b>CPU</b>, <b>Memory</b>, <b>Disk</b> and <b>Network</b> in turn. The question is not
+"what is high" but "what is high while the user is doing nothing". Let it sit two minutes.</p>
+<ul>
+  <li><b>Disk at 100% with low CPU</b> is the signature of a spinning disk that cannot keep up,
+  or of a background job (indexing, updates, antivirus scan, OneDrive sync) saturating it.
+  Sort by Disk to see who. See the Disk section.</li>
+  <li><b>Memory at 90%+</b> means Windows is paging to disk; on an HDD that is catastrophic.
+  Sort by Memory. A browser with many tabs is the usual answer.</li>
+  <li><b>CPU pinned</b> by one process: note its name and look it up. Pinned by "System" or
+  "System interrupts": a driver; see Stutter.</li>
+  <li>The <b>Startup apps</b> tab lists what runs at login with a measured impact. Disable
+  everything that is not antivirus, audio, or something the user opens daily. This is safe and
+  reversible.</li>
+</ul>
+<p><b>Resource Monitor</b> (<code>resmon</code>) goes one level deeper: the Disk tab shows
+per-file activity and the <b>Response Time (ms)</b> column, and Memory shows the hard fault
+rate. Sustained disk response times over 50 ms, or hard faults in the hundreds per second, are
+the machine telling you it is I/O-bound.</p>
+
+<h2>Disk: the usual answer on an older machine</h2>
+<div class="box">
+  <div class="hdr"><span>type, health, wear, free space</span><a class="copy">[copy]</a></div>
+<pre>Get-PhysicalDisk | Select FriendlyName,MediaType,BusType,HealthStatus,@{n='GB';e={[math]::Round($_.Size/1GB)}} | Format-Table -AutoSize
+Get-PhysicalDisk | Get-StorageReliabilityCounter | Select DeviceId,Wear,Temperature,ReadErrorsTotal,WriteErrorsTotal,PowerOnHours | Format-Table -AutoSize
+Get-Volume | ? DriveLetter | Select DriveLetter,FileSystemType,HealthStatus,@{n='FreeGB';e={[math]::Round($_.SizeRemaining/1GB,1)}},@{n='SizeGB';e={[math]::Round($_.Size/1GB,1)}} | Format-Table -AutoSize</pre>
+</div>
+<ul>
+  <li><b>MediaType HDD as the system disk</b>: this is the diagnosis. Windows 10 and 11 assume
+  an SSD; on a spinning disk every login, update and antivirus scan competes for a hundred
+  random reads a second. Cleaning helps at the margins. A 500 GB SATA SSD and a clone or
+  reinstall turns a ten-year-old laptop into a usable machine. Nothing else on this page comes
+  close.</li>
+  <li><b>HealthStatus not Healthy</b>, <b>ReadErrorsTotal</b> climbing, or CrystalDiskInfo
+  saying Caution: back up today, replace the disk. A failing disk retries reads for seconds at a
+  time, which presents exactly as "randomly freezes".</li>
+  <li><b>Wear</b> on an SSD is percent used; a value in the 90s means it is near end of life.</li>
+  <li><b>Free space under 10%</b>, or under about 15 GB: Windows cannot update, cannot page,
+  and the SSD cannot garbage-collect. Free space before anything else.</li>
+</ul>
+<div class="box">
+  <div class="hdr"><span>is the disk the bottleneck right now</span><a class="copy">[copy]</a></div>
+<pre>Get-Counter '\PhysicalDisk(_Total)\Avg. Disk Queue Length','\PhysicalDisk(_Total)\% Disk Time','\PhysicalDisk(_Total)\Avg. Disk sec/Transfer' -SampleInterval 2 -MaxSamples 10 |
+  % { $_.CounterSamples | Select Path,@{n='Value';e={[math]::Round($_.CookedValue,3)}} } | Format-Table -AutoSize</pre>
+</div>
+<p>On an idle machine the queue length should sit under 1 and <b>sec/Transfer</b> under 0.02
+(20 ms). Sustained queue over 2 with the user idle: something is hammering the disk; go to Task
+Manager, sort by Disk. Counter names are English-locale; on a non-English Windows use
+<code>resmon</code> instead.</p>
+<div class="box">
+  <div class="hdr"><span>what is taking the space</span><a class="copy">[copy]</a></div>
+<pre>Get-ChildItem C:\ -Directory -Force -EA 0 | % { [pscustomobject]@{GB=[math]::Round((Get-ChildItem $_.FullName -Recurse -Force -EA 0 | Measure-Object Length -Sum).Sum/1GB,1);Dir=$_.FullName} } | Sort GB -Desc
+Get-ChildItem "$env:USERPROFILE" -Directory -Force -EA 0 | % { [pscustomobject]@{GB=[math]::Round((Get-ChildItem $_.FullName -Recurse -Force -EA 0 | Measure-Object Length -Sum).Sum/1GB,1);Dir=$_.Name} } | Sort GB -Desc | Select -First 12</pre>
+</div>
+<p>Slow on a big disk; let it run. Usual offenders: <b>Downloads</b>, a game library, a
+phone-photo dump, <code>C:\Windows\Installer</code>, an old <code>Windows.old</code>, and
+<code>hiberfil.sys</code> (the size of RAM). <b>Settings &gt; System &gt; Storage &gt; Cleanup
+recommendations</b> handles the Windows side safely. <code>cleanmgr</code> with
+<b>Clean up system files</b> removes old update files and <code>Windows.old</code>.</p>
+<div class="box">
+  <div class="hdr"><span class="w">writes changes</span><span>repair and optimise</span><a class="copy">[copy]</a></div>
+<pre>chkdsk C: /scan
+sfc /scannow
+DISM /Online /Cleanup-Image /RestoreHealth
+Optimize-Volume -DriveLetter C -Analyze -Verbose
+Optimize-Volume -DriveLetter C -ReTrim -Verbose      # SSD
+Optimize-Volume -DriveLetter C -Defrag -Verbose      # HDD only, and only if Analyze said so</pre>
+</div>
+<p><code>chkdsk /scan</code> runs online without a reboot and reports whether a repair is
+needed. <code>sfc</code> and <code>DISM</code> repair Windows' own files; run DISM first if sfc
+says it could not fix something, then sfc again. Scheduled optimisation is on by default
+(Optimize Drives app); if it shows "Never run", turn it back on. <b>Never defragment an
+SSD</b>; ReTrim is the SSD equivalent.</p>
+
+<h2>Memory</h2>
+<div class="box">
+  <div class="hdr"><span>how much, how used, who</span><a class="copy">[copy]</a></div>
+<pre>$os=gcim Win32_OperatingSystem
+[pscustomobject]@{TotalGB=[math]::Round($os.TotalVisibleMemorySize/1MB,1);FreeGB=[math]::Round($os.FreePhysicalMemory/1MB,1)}
+gcim Win32_PhysicalMemory | Select @{n='GB';e={$_.Capacity/1GB}},Speed,Manufacturer,DeviceLocator | Format-Table -AutoSize
+gcim Win32_PageFileUsage | Select Name,AllocatedBaseSize,CurrentUsage,PeakUsage
+Get-Process | Sort WS -Desc | Select -First 15 Name,Id,@{n='MB';e={[math]::Round($_.WS/1MB)}},@{n='CommitMB';e={[math]::Round($_.PM/1MB)}} | Format-Table -AutoSize</pre>
+</div>
+<ul>
+  <li><b>4 GB total</b> is not enough for current Windows plus a browser. 8 GB is the floor,
+  16 GB is comfortable. The <code>DeviceLocator</code> rows show how many slots are populated;
+  one stick in a two-slot laptop means an upgrade is a ten-minute job.</li>
+  <li><b>PeakUsage</b> on the page file near <b>AllocatedBaseSize</b> means the machine has been
+  running out of RAM. On an HDD that is the "everything freezes when I switch windows" feeling.</li>
+  <li>Sum the browser's processes (<code>chrome</code>, <code>msedge</code>, <code>firefox</code>
+  each spawn many). Twenty tabs on 8 GB is the whole problem more often than not. Fewer tabs, a
+  tab-suspending extension, or the browser's own memory saver setting.</li>
+  <li>A single process growing over hours until a reboot fixes it is a <b>leak</b>. Note the
+  name; update or replace that program. If nothing in the list accounts for used memory, the
+  leak is in a driver: <b>RAMMap</b> (Sysinternals, in the kit) shows nonpaged pool, and
+  <code>poolmon</code> from the Windows Driver Kit names the tag.</li>
+</ul>
+
+<h2>CPU, heat and power</h2>
+<div class="box">
+  <div class="hdr"><span>clocks, load, plan, and who is burning it</span><a class="copy">[copy]</a></div>
+<pre>gcim Win32_Processor | Select Name,NumberOfCores,NumberOfLogicalProcessors,MaxClockSpeed,CurrentClockSpeed,LoadPercentage
+powercfg /getactivescheme
+Get-Process | Sort CPU -Desc | Select -First 15 Name,Id,@{n='CPUsec';e={[math]::Round($_.CPU)}},StartTime | Format-Table -AutoSize</pre>
+</div>
+<ul>
+  <li><b>CurrentClockSpeed far below MaxClockSpeed under load</b> is throttling. Two causes:
+  heat, or power. Run <b>HWiNFO</b> (kit) with Sensors open: CPU package temperature at
+  95 to 100 &deg;C and a "Thermal Throttling: Yes" flag means dust in the heatsink, a dead fan,
+  or dried thermal paste. A laptop that gets slow after twenty minutes and has a hot underside is
+  this. Compressed air through the vents is the first fix; a repaste is the second.</li>
+  <li><b>Power saver</b> as the active plan, or a laptop that lives on battery, caps clocks.
+  <b>Balanced</b> is right for almost everyone; <b>High performance</b> for a desktop that
+  feels sluggish. In Settings, check <b>Power mode</b> is not "Best power efficiency" while
+  plugged in.</li>
+  <li><b>CPUsec</b> is total processor time since the process started. Something with a huge
+  number and a StartTime of today has been burning a core all day. Common: a stuck updater, a
+  cloud-sync client re-scanning, a second antivirus, a browser tab running a miner, an indexer
+  that never finishes.</li>
+</ul>
+<div class="box">
+  <div class="hdr"><span>the built-in power and battery reports</span><a class="copy">[copy]</a></div>
+<pre>powercfg /energy /output "$env:USERPROFILE\Desktop\energy.html" /duration 60
+powercfg /batteryreport /output "$env:USERPROFILE\Desktop\battery.html"</pre>
+</div>
+<p>The energy report traces for 60 seconds and lists processes that keep the CPU awake, devices
+that block sleep, and platform timer abuse. The battery report shows design versus current
+capacity: a battery at 40% of design makes a laptop throttle on battery even when charged.</p>
+
+<h2>Startup load and third-party services</h2>
+<div class="box">
+  <div class="hdr"><span>what starts, what runs</span><a class="copy">[copy]</a></div>
+<pre>Get-CimInstance Win32_StartupCommand | Select Name,Command,Location | Format-Table -AutoSize
+Get-CimInstance Win32_Service | ? {$_.State -eq 'Running' -and $_.PathName -notmatch '\\Windows\\'} |
+  Select Name,DisplayName,StartMode,PathName | Format-Table -AutoSize
+Get-ScheduledTask | ? {$_.State -eq 'Ready' -and $_.TaskPath -notlike '\Microsoft\*'} | Select TaskPath,TaskName | Format-Table -AutoSize</pre>
+</div>
+<p>The pattern on a family PC: an OEM updater or three (Dell SupportAssist, HP Support Assistant,
+Lenovo Vantage), a trial antivirus from the factory (McAfee, Norton), two game launchers, a
+printer suite, Spotify, Discord, a cloud sync client, and a driver-update utility nobody
+installed on purpose. Each is small; together they are the first five minutes after login.
+Disable at startup (Task Manager &gt; Startup apps) rather than uninstall, unless the program
+itself is unwanted. <b>Autoruns</b> (kit) shows all of this in one window with a checkbox per
+entry and <b>Hide Microsoft entries</b>; it is the fastest tool for this job.</p>
+<div class="box">
+  <div class="hdr"><span>factory and Store bloat</span><a class="copy">[copy]</a></div>
+<pre>Get-AppxPackage | Select Name,Publisher | Sort Name | Format-Table -AutoSize
+Get-ItemProperty $k | ? DisplayName | Select DisplayName,Publisher | Sort Publisher | Format-Table -AutoSize</pre>
+</div>
+<p>(<code>$k</code> is defined on the Malware tab's installed-programs block.) Uninstall through
+Settings &gt; Apps. A second antivirus is the single most valuable removal on this list; two
+resident engines scan every file twice and lock each other out.</p>
+
+<h2>Windows' own background work</h2>
+<div class="box">
+  <div class="hdr"><span>the services that saturate a disk</span><a class="copy">[copy]</a></div>
+<pre>Get-Service WSearch,SysMain,wuauserv,bits,TrustedInstaller,DoSvc,DiagTrack | Select Name,DisplayName,Status,StartType | Format-Table -AutoSize
+Get-DeliveryOptimizationStatus -EA 0 | Select FileId,Status,BytesDownloaded | Select -First 5
+Get-Process -Name SearchIndexer,TiWorker,MsMpEng,CompatTelRunner -EA 0 | Select Name,@{n='CPUsec';e={[math]::Round($_.CPU)}},@{n='MB';e={[math]::Round($_.WS/1MB)}}</pre>
+</div>
+<ul>
+  <li><b>SearchIndexer</b> (WSearch) rebuilding its index after an update or a big file copy
+  saturates an HDD for hours. Benign if it finishes. Settings &gt; Search &gt; Searching Windows
+  shows indexing status; if it says "indexing in progress" for days, rebuild it from Advanced
+  indexing options.</li>
+  <li><b>TiWorker</b> (TrustedInstaller) is Windows Update installing. High disk for an hour
+  after an update is normal; high disk for days means an update is stuck. Settings &gt; Windows
+  Update &gt; Update history shows failures; the Windows Update troubleshooter fixes most.</li>
+  <li><b>MsMpEng</b> is Defender scanning. A scheduled full scan on an HDD is a slow afternoon.
+  Check Windows Security &gt; Virus protection &gt; Scan options is not stuck on a full scan.
+  If a second antivirus is installed, Defender should be passive (<code>AMRunningMode :
+  Passive</code>); if both are active, remove one.</li>
+  <li><b>SysMain</b> (formerly Superfetch) preloads to RAM. Helps on HDDs, does nothing useful
+  on SSDs, and on a few HDD machines causes constant disk activity; disabling it is a legitimate
+  test, and reversible.</li>
+  <li><b>CompatTelRunner</b> is telemetry; it runs and finishes. If it is always running, it is
+  stuck.</li>
+</ul>
+
+<h2>Boot time: what Windows measured</h2>
+<div class="box">
+  <div class="hdr"><span>Diagnostics-Performance log</span><a class="copy">[copy]</a></div>
+<pre>Get-WinEvent -LogName 'Microsoft-Windows-Diagnostics-Performance/Operational' -MaxEvents 400 |
+  ? {$_.Id -eq 100} | Select -First 10 TimeCreated,@{n='Boot';e={($_.Message -split "`n")[0]}}
+Get-WinEvent -LogName 'Microsoft-Windows-Diagnostics-Performance/Operational' -MaxEvents 400 |
+  ? {$_.Id -ge 101 -and $_.Id -le 110} | Select -First 25 TimeCreated,Id,@{n='Culprit';e={($_.Message -split "`n")[0]}} | Format-Table -Wrap</pre>
+</div>
+<p>Windows times every boot. <b>Event 100</b> carries the boot duration in its message: under
+30 s is an SSD, 60 to 120 s is an HDD, and several minutes is a problem. <b>Events 101 to 110</b>
+name what was slow: 101 an application, 102 a driver, 103 a service, 106 a background
+optimisation, 109 a device. The culprits named there are the startup list above, measured
+rather than guessed. A driver (102) or device (109) that repeats across boots is worth updating
+or removing.</p>
+<div class="box">
+  <div class="hdr"><span class="w">advanced</span><span>full boot trace, WPR</span><a class="copy">[copy]</a></div>
+<pre>wpr -boottrace -addboot GeneralProfile
+shutdown /r /t 0
+# after login:
+wpr -boottrace -stopboot "$env:USERPROFILE\Desktop\boot.etl"</pre>
+</div>
+<p>Windows Performance Recorder (part of the Windows ADK, or the Windows Performance Analyzer
+Store app) records the entire boot for analysis in WPA. Deep, and rarely needed once the events
+above have named the culprit.</p>
+
+<h2>Stutter, crackle and hitches: DPC latency</h2>
+<p>A fast machine that hitches, crackles audio, or freezes the cursor for a moment is usually
+not slow; a driver is holding the CPU in a deferred procedure call for too long. Task Manager
+shows this as <b>System interrupts</b> or <b>System</b> using CPU. The tool for it is
+<b>LatencyMon</b> (kit).</p>
+<ol>
+  <li>Run LatencyMon as administrator, press the green start button, and use the machine
+  normally for five to ten minutes, including whatever triggers the stutter.</li>
+  <li>The Main tab gives a verdict. <b>Highest reported DPC routine execution time</b> under
+  about 500 &micro;s is fine; over 1000 &micro;s (1 ms) will be audible and visible.</li>
+  <li>The <b>Drivers</b> tab, sorted by <b>Highest execution (ms)</b>, names the driver. The
+  usual suspects and what they mean:</li>
+</ol>
+<div class="wrap">
+<table>
+  <tr><th>Driver</th><th>Is</th><th>Try</th></tr>
+  <tr><td><code>ndis.sys</code>, <code>*wifi*.sys</code>, <code>rt640x64.sys</code>, <code>Netwtw*.sys</code></td>
+  <td>the network stack and the NIC or Wi-Fi driver</td><td>update the Wi-Fi driver from the
+  laptop vendor; disable Wi-Fi briefly to confirm; turn off the adapter's power saving in Device
+  Manager</td></tr>
+  <tr><td><code>nvlddmkm.sys</code>, <code>amdkmdag.sys</code>, <code>igdkmd64.sys</code></td>
+  <td>the graphics driver</td><td>clean-install the current driver; disable hardware acceleration
+  in the browser as a test</td></tr>
+  <tr><td><code>ACPI.sys</code></td><td>power management and battery</td><td>update BIOS and
+  chipset drivers; switch the power plan; on a laptop, test on AC versus battery</td></tr>
+  <tr><td><code>storport.sys</code>, <code>stornvme.sys</code>, <code>iaStorAC.sys</code></td>
+  <td>the disk stack</td><td>a failing disk or a stalled SSD; check disk health above</td></tr>
+  <tr><td><code>dxgkrnl.sys</code></td><td>the DirectX graphics kernel</td><td>usually the
+  graphics driver in disguise</td></tr>
+  <tr><td><code>Wdf01000.sys</code>, <code>USBXHCI.sys</code></td><td>a USB or framework
+  device</td><td>unplug USB devices one at a time; a bad hub or webcam is common</td></tr>
+  <tr><td><code>tcpip.sys</code></td><td>network stack under load</td><td>a download,
+  sync client or torrent in the background</td></tr>
+</table>
+</div>
+<p>Two settings that fix a large share of laptop DPC problems, both under Power Options &gt;
+Change plan settings &gt; Advanced: <b>PCI Express &gt; Link State Power Management: Off</b>, and
+<b>USB settings &gt; USB selective suspend: Disabled</b>. Test one at a time.</p>
+
+<h2>Per-process forensics: System Informer and Process Explorer</h2>
+<p>Task Manager answers "who is busy". These answer "why, and what is it touching".</p>
+<p><b>System Informer</b> (formerly Process Hacker 2; kit) run as administrator. What to use:</p>
+<ul>
+  <li>The process tree shows the real <b>parent</b>: a <code>powershell.exe</code> under
+  <code>winword.exe</code>, or anything under a browser that is not the browser, is a
+  finding. Task Manager hides this.</li>
+  <li>Right-click a process &gt; <b>Properties</b>: the <b>Disk</b> and <b>Network</b> tabs show
+  bytes per second for that one process, which Task Manager only totals. This is how you find
+  the one thing hammering the disk when the total says 100%.</li>
+  <li>The <b>Services</b> tab maps each service to the <code>svchost.exe</code> hosting it, so a
+  busy svchost stops being anonymous.</li>
+  <li>Colours: <b>purple</b> is a packed or compressed executable (common for malware, also
+  some games), <b>pink</b> a service, <b>light blue</b> your own processes. Hover for the legend.</li>
+  <li><b>Terminate tree</b> kills a process and everything it spawned, which is what you want
+  for a browser hijack or a runaway installer.</li>
+</ul>
+<p><b>Process Explorer</b> (Sysinternals, kit) does most of the same and is Microsoft-signed,
+which matters when an antivirus objects to System Informer's kernel driver. Two features worth
+the download on their own: <b>Options &gt; Verify Image Signatures</b> adds a column that says
+whether each running file is signed and by whom, and <b>Options &gt; VirusTotal.com &gt; Check
+VirusTotal.com</b> adds a detection ratio per process. A hash the world has never seen, unsigned,
+in AppData, is the malware-tab intersection again, now with numbers.</p>
+
+<h2>Browser</h2>
+<ul>
+  <li><b>Shift+Esc</b> in Chrome and Edge opens the browser's own task manager: per-tab and
+  per-extension memory and CPU. Sort by CPU. One tab or one extension is usually the answer.</li>
+  <li><code>chrome://extensions</code>, <code>edge://extensions</code>: remove everything
+  the user cannot name. Coupon finders, "PDF converters", search assistants and weather bars
+  are adware, and they run on every page.</li>
+  <li>Hardware acceleration: on for a good GPU, but on an old integrated GPU or a bad driver it
+  causes stutter and tearing. Toggle it in Settings &gt; System and restart the browser to test.</li>
+  <li>Memory saver / sleeping tabs (in the browser's Performance settings) frees RAM from
+  background tabs. Turn it on for any machine with 8 GB or less.</li>
+  <li>Reset settings (Settings &gt; Reset) restores search engine, homepage and startup pages
+  and disables extensions without deleting bookmarks or passwords. Safe first move.</li>
+</ul>
+
+<h2>Network versus PC</h2>
+<div class="box">
+  <div class="hdr"><span>is it the PC or the connection</span><a class="copy">[copy]</a></div>
+<pre>Test-Connection 1.1.1.1 -Count 10 | Select Address,ResponseTime
+Test-Connection (Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Select -First 1 -Expand NextHop) -Count 10 | Select Address,ResponseTime
+Measure-Command { Resolve-DnsName example.com -Server 1.1.1.1 } | Select TotalMilliseconds
+Measure-Command { Resolve-DnsName example.com } | Select TotalMilliseconds
+Get-NetAdapter | ? Status -eq Up | Select Name,LinkSpeed,MediaType
+netsh wlan show interfaces | Select-String 'Signal|Receive rate|Transmit rate|Channel'</pre>
+</div>
+<ul>
+  <li>Ping to the router (second line) over 5 ms, or with drops, is a Wi-Fi problem, not a PC
+  problem. Signal under 60% or a receive rate far below the link speed means move closer, change
+  the channel, or use a cable.</li>
+  <li>DNS to <code>1.1.1.1</code> fast but the default resolver slow: the router's DNS, or a
+  hijacked one (Malware tab). </li>
+  <li>Everything above fine but pages slow: run the browser section. Everything fine and one
+  site slow: that site.</li>
+  <li>A cloud client (OneDrive, Google Drive, iCloud, Steam, a Windows update) saturating the
+  uplink makes everything else feel slow; Task Manager sorted by Network shows it.</li>
+</ul>
+
+<h2>The fix ladder</h2>
+<p>In order of effort against payoff, once the diagnosis is in:</p>
+<ol>
+  <li><b>Real reboot</b>, and turn Fast Startup off if uptime was absurd.</li>
+  <li><b>Free space</b> to at least 15% of the system volume.</li>
+  <li><b>Remove the second antivirus</b>, and every startup entry that is not needed.</li>
+  <li><b>Remove adware extensions</b>, reset the browser, enable memory saver.</li>
+  <li><b>Update</b>: Windows, then the graphics and Wi-Fi drivers from the vendor, then BIOS if
+  ACPI or throttling was implicated.</li>
+  <li><b>Clean the vents</b>, or repaste, if temperatures said so.</li>
+  <li><b>SSD</b>, if the system disk is an HDD. Clone with the SSD vendor's tool or reinstall.
+  This is the step that changes the machine.</li>
+  <li><b>RAM to 8 GB minimum</b>, 16 if the slot allows.</li>
+  <li><b>Reset this PC &gt; Keep my files</b>, when software is the problem and you cannot find
+  it. Reinstalls Windows, keeps documents, removes programs. Back up first anyway.</li>
+</ol>
+<div class="info">A machine with an HDD, 4 GB and a trial antivirus is not slow because
+something is wrong with it. It is slow because that is what it is. Steps 7 and 8 are cheaper
+than the hours spent on steps 1 to 6, and they last.</div>
+</section>
+
+<!-- ================================================================ TOOLS -->
+<section class="tab" id="tools">
+<p class="tabname">Tools &amp; kit</p>
+
+<h2>The USB stick</h2>
+<p>Prepare it on a clean machine before going. Format exFAT. Download each tool from the
+vendor's own site listed here and nowhere else; search results for these names are full of
+lookalikes. None of these require installation; the ones marked run-as-admin need a right-click.</p>
+<div class="wrap">
+<table>
+  <tr><th>Tool</th><th>For</th><th>Source</th></tr>
+  <tr><td><b>Autoruns</b></td><td>shows every startup location in one window; it does most of the cleanup work</td>
+  <td><code>learn.microsoft.com/sysinternals</code> or run live: <code>\\live.sysinternals.com\tools\autoruns64.exe</code></td></tr>
+  <tr><td><b>Process Explorer</b></td><td>tells you whether each running file is signed and how VirusTotal rates it, and shows the real parent tree</td>
+  <td>Sysinternals, as above</td></tr>
+  <tr><td><b>RAMMap</b></td><td>shows where memory went when no process accounts for it</td><td>Sysinternals</td></tr>
+  <tr><td><b>TCPView</b></td><td>shows live connections per process in a window that refreshes</td><td>Sysinternals</td></tr>
+  <tr><td><b>System Informer</b> (was Process Hacker 2)</td><td>shows disk and network per process, maps services to
+  their svchost, and can terminate a whole process tree</td><td><code>systeminformer.sourceforge.io</code> (GitHub:
+  <code>winsiderss/systeminformer</code>). Some antivirus flags its driver; use Process Explorer
+  if so</td></tr>
+  <tr><td><b>LatencyMon</b></td><td>measures DPC latency and names the driver that causes stutter</td>
+  <td><code>resplendence.com/latencymon</code>, free for home use</td></tr>
+  <tr><td><b>HWiNFO</b></td><td>reads temperatures, clocks, throttling flags and fan speeds</td>
+  <td><code>hwinfo.com</code>, portable build</td></tr>
+  <tr><td><b>CrystalDiskInfo</b></td><td>reports SMART health in plain words: Good, Caution or Bad</td>
+  <td><code>crystalmark.info</code>, portable zip</td></tr>
+  <tr><td><b>AdwCleaner</b></td><td>removes adware, toolbars and hijacked browser settings; a single exe</td>
+  <td><code>malwarebytes.com/adwcleaner</code></td></tr>
+  <tr><td><b>Malwarebytes</b></td><td>runs a second-opinion on-demand scan (it installs; decline the trial)</td>
+  <td><code>malwarebytes.com</code></td></tr>
+  <tr><td><b>Microsoft Safety Scanner</b></td><td>gives a Microsoft second opinion without installing;
+  it expires after 10 days, so download it fresh</td><td><code>msert.exe</code> from
+  <code>learn.microsoft.com</code>, search "Safety Scanner"</td></tr>
+  <tr><td><b>A Linux live USB</b></td><td>copies files off a disk without running anything on
+  it, and tests whether the hardware is slow without Windows in the way</td><td>any mainstream
+  distribution's installer image</td></tr>
+</table>
+</div>
+<p>Built in and often enough: <b>Task Manager</b> (Ctrl+Shift+Esc), <b>Resource Monitor</b>
+(<code>resmon</code>), <b>Reliability Monitor</b> (<code>perfmon /rel</code>), <b>Event Viewer</b>
+(<code>eventvwr</code>), <b>Defender Offline</b> (<code>Start-MpWDOScan</code>), and
+<code>powercfg</code>.</p>
+
+<h2>Sysinternals live, without the stick</h2>
+<div class="box">
+  <div class="hdr"><span>run straight from Microsoft's share</span><a class="copy">[copy]</a></div>
+<pre>\\live.sysinternals.com\tools\autoruns64.exe
+\\live.sysinternals.com\tools\procexp64.exe
+\\live.sysinternals.com\tools\RAMMap64.exe</pre>
+</div>
+<p>Paste a line into <b>Win+R</b>. It runs the current build directly over WebDAV. Only do this
+after the proxy and DNS checks on the Malware tab came back clean, for the reason given at the
+top of this page.</p>
+
+<h2>PowerShell for Unix users</h2>
 <div class="box">
   <div class="hdr"><span>built-in aliases</span><a class="copy">[copy]</a></div>
 <pre>ls  cd  pwd  cat  cp  mv  rm  ps  kill  echo  clear  history</pre>
 </div>
+<div class="wrap">
 <table>
   <tr><th>Unix</th><th>PowerShell</th><th>Note</th></tr>
   <tr><td>grep</td><td><code>Select-String</code></td><td>text</td></tr>
-  <tr><td>grep</td><td><code>? {$_.Name -match 'x'}</code></td><td>objects</td></tr>
+  <tr><td>grep</td><td><code>? {$_.Name -match 'x'}</code></td><td>objects; <code>?</code> is Where-Object</td></tr>
   <tr><td>awk / cut</td><td><code>select a,b</code></td><td>pipes carry objects, not text</td></tr>
-  <tr><td>xargs</td><td><code>% {...}</code></td><td>ForEach-Object</td></tr>
+  <tr><td>xargs</td><td><code>% {...}</code></td><td><code>%</code> is ForEach-Object</td></tr>
   <tr><td>find</td><td><code>Get-ChildItem -Recurse</code></td><td></td></tr>
   <tr><td>man</td><td><code>Get-Help &lt;cmd&gt; -Examples</code></td><td></td></tr>
   <tr><td>which</td><td><code>Get-Command &lt;name&gt;</code></td><td></td></tr>
+  <tr><td>top</td><td><code>Get-Process | Sort CPU -Desc | Select -First 15</code></td><td>one shot, not live</td></tr>
+  <tr><td>df -h</td><td><code>Get-Volume</code></td><td></td></tr>
+  <tr><td>du -sh *</td><td>the "what is taking the space" block</td><td>no built-in</td></tr>
+  <tr><td>netstat -tup</td><td><code>Get-NetTCPConnection</code></td><td>see the Malware tab for the joined version</td></tr>
+  <tr><td>uptime</td><td><code>(Get-Date) - (gcim Win32_OperatingSystem).LastBootUpTime</code></td><td></td></tr>
   <tr><td>sudo</td><td>none</td><td>elevate the shell once, up front</td></tr>
+  <tr><td>2&gt;/dev/null</td><td><code>-EA 0</code></td><td>ErrorAction SilentlyContinue</td></tr>
 </table>
+</div>
 
 <h2>Operational notes</h2>
 <ul>
   <li>A full-screen browser window exits with <b>F11</b>, then <b>Esc</b>. If the window
-  persists, identify the owning process in Task Manager (<b>Ctrl+Shift+Esc</b>) and terminate it
-  there. <code>chrome.exe</code> or <code>msedge.exe</code> indicates a web page rather than an
-  installed application.</li>
+  persists, identify the owning process in Task Manager (<b>Ctrl+Shift+Esc</b>) and terminate
+  it there. <code>chrome.exe</code> or <code>msedge.exe</code> indicates a web page rather than
+  an installed application, however alarming it looks. Nothing on a web page can "lock" a PC.</li>
   <li>Session restore reinstates the previous tab set on next launch. Decline it, or clear
   <code>Continue where you left off</code> in browser settings first.</li>
   <li>Two resident antivirus products produce scan conflicts, file-lock contention and
   substantially degraded I/O. Confirm only one is registered under SecurityCenter2.</li>
+  <li>Read-only means read-only: none of the enumeration commands change anything, so run them
+  freely and often. The blocks marked <b style="color:#CC0000">writes changes</b> are the only
+  ones that do.</li>
+  <li>When helping remotely: have them run the snapshot on the Start tab first and send the
+  output. Then decide which tab. Most calls need one tab.</li>
   <li>Reinstalling the operating system discards the profile, the installed-program history and
-  the persistence artifacts above. Enumerate before considering it.</li>
+  every persistence artifact. Enumerate before considering it.</li>
 </ul>
+</section>
 
 <hr>
 <p class="foot">
   Unlisted. Not linked from the site index.<br>
-  All commands are read-only except the two blocks marked <b>writes changes</b>.
+  All commands are read-only except the blocks marked <b>writes changes</b>.
 </p>
 
 </div>
 <script>
+// tabs. without javascript every section simply shows, stacked.
+document.documentElement.className += " js";
+(function () {
+  var links = document.querySelectorAll("#tabs a");
+  var tabs = document.querySelectorAll(".tab");
+  function show(id) {
+    var found = false;
+    tabs.forEach(function (t) { t.className = t.className.replace(" active", ""); });
+    links.forEach(function (a) { a.className = a.className.replace(" active", ""); });
+    tabs.forEach(function (t) { if (t.id === id) { t.className += " active"; found = true; } });
+    links.forEach(function (a) { if (a.getAttribute("data-tab") === id) a.className += " active"; });
+    if (!found) show("start");
+  }
+  links.forEach(function (a) {
+    a.addEventListener("click", function (e) {
+      e.preventDefault();
+      var id = a.getAttribute("data-tab");
+      show(id);
+      if (history.replaceState) history.replaceState(null, "", "#" + id); else location.hash = id;
+      window.scrollTo(0, 0);
+    });
+  });
+  window.addEventListener("hashchange", function () { show(location.hash.slice(1) || "start"); });
+  show(location.hash.slice(1) || "start");
+})();
+
+// copy links
 document.querySelectorAll("a.copy").forEach(function (a) {
   a.addEventListener("click", function () {
     var t = a.parentNode.parentNode.querySelector("pre").textContent;
