@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diodes Deep Dive // Clipping, Vf and the Knee</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* masthead */
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+.masthead .companion {
+  margin-top: 14px;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 2px;
+}
+
+/* nav */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-brand {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.nav-current {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-current:hover { border-color: var(--orange); color: var(--orange); }
+.nav-current .num { color: var(--orange); }
+.nav-hint { color: var(--dim2); margin-left: 6px; }
+
+/* sidebar */
+.side {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 248px;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  z-index: 150;
+  padding: 26px 0 20px;
+  overflow-y: auto;
+}
+.side-brand {
+  padding: 0 20px 16px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--bright);
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 12px;
+}
+.side-brand span { color: var(--orange); }
+.side a {
+  display: block;
+  padding: 7px 24px 7px 21px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.side a span { color: var(--dim2); margin-right: 7px; }
+.side a:hover { color: var(--orange); }
+.side a.active { color: var(--orange); border-left-color: var(--orange); background: var(--surface); }
+.side a.active span { color: var(--orange); }
+.side-dial {
+  display: block;
+  margin: 16px 20px 0 17px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--border2);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.side-dial:hover { color: var(--orange); border-color: var(--orange); }
+@media (min-width: 1100px) {
+  .side { display: block; }
+  body { padding-left: 248px; }
+  .nav { display: none; }
+}
+
+/* radial dial */
+.radial {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(242, 241, 238, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.radial.open { opacity: 1; pointer-events: auto; }
+body.dial-open { overflow: hidden; }
+.radial-ring {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+}
+.radial-center {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  cursor: pointer;
+}
+.radial-center:hover { color: var(--orange); }
+.radial-item {
+  position: absolute;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--dim);
+  padding: 4px 6px;
+}
+.radial-item span { color: var(--dim2); margin-right: 5px; }
+.radial-item:hover, .radial-item.active { color: var(--orange); }
+.radial-item:hover span, .radial-item.active span { color: var(--orange); }
+.radial-dot {
+  position: absolute;
+  width: 5px; height: 5px;
+  background: var(--dim2);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.radial-dot.active { background: var(--orange); }
+@media (max-width: 620px) {
+  .radial.open { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .radial-ring, .radial-dot, .radial-center { display: none; }
+  .radial-item { position: static !important; transform: none !important; font-size: 12px; padding: 7px; }
+}
+
+/* layout */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+}
+section { padding: 52px 0; display: none; }
+section.active { display: block; }
+section::before {
+  content: attr(data-num) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+/* headings */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--yellow); }
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+.section-bar.yl { background: var(--yellow); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+h3.cy { color: var(--cyan); }
+h3.yl { color: var(--yellow); }
+h3.rd { color: var(--red); }
+h4 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  margin: 20px 0 8px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+
+/* code */
+code {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--bright);
+}
+pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre.yl { border-left-color: var(--yellow); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .flag   { color: #7A7870; }
+
+/* diagrams */
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #8A8880;
+}
+.diagram.cy { border-left-color: var(--cyan); }
+.diagram.yl { border-left-color: var(--yellow); }
+.diagram.rd { border-left-color: var(--red); }
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .acc3 { color: #C8A030; }
+.diagram .dim  { color: #4A4942; }
+.diagram .hi   { color: #CCCBC4; }
+
+/* info boxes */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy    { border-left-color: var(--cyan); }
+.info-box.warn  { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; vertical-align: top; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; white-space: nowrap; }
+td.cy   { color: var(--cyan); }
+td.rd   { color: var(--red); }
+td.yl   { color: var(--yellow); }
+td.meth a { color: inherit; text-decoration: none; border-bottom: 1px dashed currentColor; }
+td.meth a:hover { color: var(--bright); }
+h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
+
+/* two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; align-items: stretch; }
+.two-col > div { display: flex; flex-direction: column; }
+.two-col > div > pre { flex: 1; margin-bottom: 0; }
+
+/* step list */
+.step-list { list-style: none; counter-reset: step; margin: 16px 0; }
+.step-list li {
+  counter-increment: step;
+  position: relative;
+  padding: 10px 0 10px 42px;
+  border-bottom: 1px dashed var(--border2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-list li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  width: 34px;
+}
+.step-list li strong { color: var(--bright); display: block; margin-bottom: 2px; }
+.step-list.cy li::before { color: var(--cyan); }
+.step-list.rd li::before { color: var(--red); }
+
+/* footer */
+.footer {
+  border-top: 1px solid var(--border2);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+.footer a { color: var(--orange); text-decoration: none; }
+
+/* spine */
+.spine {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* responsive */
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .masthead { padding: 40px 20px 28px; }
+}
+@media (max-width: 1280px) { .spine { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- masthead -->
+<div class="masthead">
+  <h1>Diodes <em>Deep</em> Dive</h1>
+  <div class="subtitle">
+    <span>PN Junction · Clipping Circuits · Vf &amp; the Knee · Audio Distortion</span>
+  </div>
+  <div class="companion">silicon · germanium · schottky · zener · LED // shunt vs feedback clipping // rectify · clamp · ring-mod · varactor // most of the focus is audio</div>
+</div>
+
+<!-- sidebar -->
+<nav class="side">
+  <div class="side-brand">Diodes <span>//</span> Deep Dive</div>
+  <a href="#intro"><span>01</span>Intro</a>
+  <a href="#junction"><span>02</span>The Junction</a>
+  <a href="#types"><span>03</span>Diode Types</a>
+  <a href="#measure"><span>04</span>Read &amp; Measure</a>
+  <a href="#clip"><span>05</span>Clipping Basics</a>
+  <a href="#topologies"><span>06</span>Clipper Topologies</a>
+  <a href="#tone"><span>07</span>Tone Design</a>
+  <a href="#beyond"><span>08</span>Beyond Clipping</a>
+  <a href="#dsp"><span>09</span>Emulating It</a>
+  <a href="#further"><span>10</span>Further</a>
+  <button class="side-dial" id="sideDial" title="radial section dial">◎ dial</button>
+</nav>
+
+<!-- nav -->
+<div class="nav">
+  <div class="nav-inner">
+    <span class="nav-brand">Diodes Deep Dive</span>
+    <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
+      <span class="num" id="navNum">01 //</span> <span id="navLabel">Intro</span> <span class="nav-hint">◎</span>
+    </button>
+  </div>
+</div>
+
+<!-- radial dial -->
+<div class="radial" id="radial">
+  <div class="radial-ring" id="radialRing"></div>
+  <button class="radial-center" id="radialCenter" title="close (Esc)">01</button>
+</div>
+
+<div class="container">
+
+<!-- intro -->
+<section id="intro" data-num="01">
+  <h2>A One-Way <em class="or">Valve</em></h2>
+  <div class="section-bar"></div>
+  <p>A diode does one deceptively simple thing: it passes current one way and blocks the other. Everything interesting in audio comes from <em>how</em> it makes that transition, not that it makes it. The turn-on is not a switch; it is a smooth exponential curve with a soft corner (the <strong>knee</strong>) at a threshold voltage <code>Vf</code>. Bend a signal against that corner and you get distortion whose entire character is set by the shape of one small piece of a curve.</p>
+
+  <p>This page is mostly about that: clipping, overdrive, fuzz, and how diode choice sculpts the sound. But the same junction shows up all over the signal chain, so the general physics comes first and the audio-only tricks build on it.</p>
+
+  <h3>The symbol and the part</h3>
+
+  <pre class="diagram"><span class="dim">          the arrow points the way conventional current flows</span>
+
+                <span class="acc">anode (+)</span>                       <span class="acc2">cathode (−)</span>
+                    <span class="dim">│</span>                               <span class="dim">│</span>
+                    <span class="dim">▼</span>                               <span class="dim">▼</span>
+          <span class="acc">──────────</span><span class="hi">▶|</span><span class="acc2">──────────</span>            <span class="dim">real part:</span>  <span class="acc">──[</span><span class="hi"> 1N4148 </span><span class="acc2">▮</span><span class="acc">]──</span>
+                    <span class="dim">P</span>   <span class="dim">N</span>                                   <span class="acc2">▲</span>
+                <span class="dim">forward     block</span>                       <span class="acc2">band = cathode</span>
+
+     current flows <span class="acc">anode → cathode</span> only, and only once V across it &gt; <span class="hi">Vf</span></pre>
+
+  <h3 class="cy">The whole story in one curve</h3>
+
+  <pre class="diagram cy"><span class="dim">                     I  ▲  forward current</span>
+<span class="dim">                        │              ╱</span>
+<span class="dim">                        │             ╱  ← runaway exponential</span>
+<span class="dim">                        │            ╱      I = Is(e^(V/nVt) − 1)</span>
+<span class="dim">                        │          ╱</span>
+<span class="dim">                        │       _╱  ←── the KNEE (the soft corner)</span>
+<span class="dim">        reverse leakage │  ____╱</span>
+<span class="dim">   ─────────────────────┼──╱──┼───────────▶  V</span>
+<span class="dim">      ╱                 │     </span><span class="hi">Vf</span><span class="dim"> ~0.7 (Si)</span>
+<span class="dim">     ╱ ← Zener / reverse │      the clip threshold</span>
+<span class="dim">    ▼   breakdown        │</span>
+
+  <span class="acc2">forward:</span> almost nothing until <span class="hi">Vf</span>, then current explodes  ·  <span class="acc2">reverse:</span> tiny leak until breakdown</pre>
+
+  <div class="info-box">
+    <strong>The knee is the instrument</strong>
+    A perfect switch would clip a signal into a hard square. A real diode rounds the corner over a few tens of millivolts. That rounding is why a germanium fuzz sounds different from a silicon one at the same threshold. Everything in <a href="#tone">Tone Design</a> is a consequence of the curve in <a href="#junction">The Junction</a>.
+  </div>
+</section>
+
+<!-- junction -->
+<section id="junction" data-num="02">
+  <h2>The <em class="cy">Junction</em></h2>
+  <div class="section-bar cy"></div>
+  <p>Dope one side of a silicon crystal with extra electrons (N) and the other with holes (P). At the boundary they diffuse across and cancel, leaving a thin <strong>depletion region</strong> with a built-in field. Forward bias collapses that field and current pours across; reverse bias widens it and current stops. The math is the Shockley diode equation, and every audio parameter is one term of it.</p>
+
+  <pre class="diagram cy">   <span class="hi">I = Is · ( e</span><span class="acc">^(V / (n·Vt))</span><span class="hi"> − 1 )</span>
+
+     <span class="acc">Is</span>  saturation (leakage) current  ─ how leaky in reverse; sets noise floor
+     <span class="acc">V</span>   voltage across the diode
+     <span class="acc">n</span>   ideality factor (~1-2)         ─ <span class="hi">how SOFT the knee is</span>
+     <span class="acc">Vt</span>  thermal voltage ≈ <span class="hi">25.85 mV</span> @ 300K  (Vt = kT/q, rises with temperature)
+
+   because it is exponential, current changes ~<span class="hi">10×</span> for every ~60 mV (n=1),
+   so "Vf" is not a hard number -- it is just where the curve gets steep enough to matter</pre>
+
+  <h3>The four properties that shape a sound</h3>
+
+  <table>
+    <tr><th>Property</th><th>Symbol</th><th>What it does to audio</th></tr>
+    <tr><td class="meth cy">Forward voltage</td><td><code>Vf</code></td><td>Sets the clip <strong>threshold</strong>. Lower Vf clips earlier and quieter; higher Vf passes more signal before clipping and is louder.</td></tr>
+    <tr><td class="meth cy">Knee softness</td><td><code>n</code></td><td>Sharp knee = hard, buzzy, high-order harmonics. Gradual knee = soft, warm, low-order harmonics.</td></tr>
+    <tr><td class="meth cy">Junction cap.</td><td><code>Cj</code></td><td>Acts as a small parallel capacitor = a lowpass. High Cj rolls off treble; low Cj keeps the top end clear.</td></tr>
+    <tr><td class="meth cy">Reverse leakage</td><td><code>Ir</code></td><td>High leakage (germanium) adds hiss and can shift DC bias; low leakage stays quiet when not clipping.</td></tr>
+  </table>
+
+  <h3 class="rd">The reverse side matters too</h3>
+  <p>Push a diode backwards hard enough and it breaks down and conducts anyway. In a rectifier that is failure; in a <a href="#types">Zener</a> it is the whole point (a fixed reference voltage). Two other reverse-bias effects earn their own audio uses: the depletion region behaves as a voltage-variable capacitor (a <a href="#beyond">varactor</a>), and the time it takes to stop conducting when the voltage flips (<code>trr</code>, reverse recovery) is what makes slow rectifiers "snappy" and fast ones clean.</p>
+
+  <div class="info-box warn">
+    <strong>Temperature is in the equation</strong>
+    <code>Vt</code> scales with absolute temperature and <code>Is</code> roughly doubles every 10&deg;C. Germanium, with its already-large leakage, drifts audibly with heat. This is the real reason vintage germanium fuzz "behaves differently on a cold stage" -- it is not mojo, it is <code>Is(T)</code>.
+  </div>
+</section>
+
+<!-- types -->
+<section id="types" data-num="03">
+  <h2>The <em class="yl">Family</em></h2>
+  <div class="section-bar yl"></div>
+  <p>Same junction, different materials and geometry, wildly different Vf and knee. For clipping, the choice of type <em>is</em> the tone control before any resistor value.</p>
+
+  <table>
+    <tr><th>Type</th><th>Vf (typical)</th><th>Knee</th><th>Audio character</th><th>Examples</th></tr>
+    <tr><td class="meth yl">Silicon signal</td><td>0.6-0.7 V</td><td>fairly sharp</td><td>hard, punchy, bright; the default</td><td><code>1N4148</code> / <code>1N914</code></td></tr>
+    <tr><td class="meth yl">Silicon rectifier</td><td>0.7-1.0 V</td><td>sharp</td><td>power supplies; higher Vf, slower</td><td><code>1N4001-4007</code></td></tr>
+    <tr><td class="meth yl">Germanium</td><td>0.2-0.3 V</td><td>soft</td><td>warm, smooth, compressed, "vintage"; leaky + temp-drifty</td><td><code>1N34A</code>, OA90</td></tr>
+    <tr><td class="meth yl">Schottky</td><td>0.15-0.45 V</td><td>soft-ish</td><td>very low threshold, very fast, low Cj; asymmetric pairings</td><td><code>1N5817</code>, BAT54</td></tr>
+    <tr><td class="meth yl">LED</td><td>1.5-3.4 V</td><td>fairly soft</td><td>loud, dynamic, "open" -- high threshold = more headroom before clip</td><td>red ~1.8, grn ~2.1, blue ~3.0</td></tr>
+    <tr><td class="meth yl">Zener</td><td>set in reverse</td><td>hard</td><td>back-to-back = symmetric hard clip at a chosen higher voltage</td><td>3V3, 5V1 zeners</td></tr>
+    <tr><td class="meth yl">Diode-connected Q / body diode</td><td>~0.6 V</td><td>varies</td><td>a transistor wired as a diode, or a MOSFET body diode; used for unusual asymmetric curves</td><td>2N3904 B-C, MOSFET</td></tr>
+  </table>
+
+  <h3 class="yl">LEDs have a second life in audio</h3>
+  <p>An LED is a diode you can also see. As a clipper its high Vf gives loud, dynamic distortion (the "Turbo Rat" trick). But an LED glued to a light-dependent resistor is a <strong>vactrol</strong>, and a vactrol is the heart of a Buchla-style <strong>lowpass gate</strong> -- the LED's brightness (its forward current) squeezes the LDR and controls a filter/VCA in one soft, organic "bongo" pluck. So the same part sits in two very different audio stories: as a junction it clips, as an emitter it gates.</p>
+
+  <div class="info-box">
+    <strong>Higher Vf is louder, not "more distortion"</strong>
+    A common confusion: swapping silicon for LEDs does not add gain, it <em>raises the ceiling</em>. The signal has to get bigger before it hits the clip, so more of it passes clean and the clipped result is louder with a wider dynamic range. Germanium is the opposite -- a low ceiling that grabs the signal early and compresses.
+  </div>
+</section>
+
+<!-- measure -->
+<section id="measure" data-num="04">
+  <h2>Read &amp; <em class="or">Measure</em></h2>
+  <div class="section-bar"></div>
+  <p>You can characterize a clipping diode with a multimeter and a bench supply -- no fancy rig. Two measurements tell you almost everything that matters for tone: the forward voltage at a real current, and whether a batch is matched.</p>
+
+  <h3>The multimeter diode test</h3>
+  <pre><span class="cm"># most DMMs have a diode-test mode (the ▶| symbol) --</span>
+<span class="cm"># it pushes ~1 mA through and reads the voltage drop</span>
+
+  red probe → <span class="kw">anode</span>,  black probe → <span class="kw">cathode</span> (the band)
+    reading = <span class="val">Vf</span> at ~1 mA   <span class="cm"># 0.55-0.65 Si · 0.15-0.30 Ge · OL if reversed/open</span>
+
+  reversed probes  → <span class="val">OL</span>   <span class="cm"># good: it blocks the other way</span>
+  OL both ways     → <span class="cm">open (dead)</span>
+  ~0 both ways     → <span class="cm">shorted (dead)</span></pre>
+
+  <div class="info-box cy">
+    <strong>Vf depends on current -- quote the current</strong>
+    A diode's "0.7 V" is at some test current. The DMM's ~1 mA gives a low reading; at 10-20 mA the same diode reads higher. For matching what you'll actually hear, measure at a current near where the circuit runs it, using a bench supply and a series resistor: <code>Vf = Vsupply − (I &middot; R)</code>, read across the diode.
+  </div>
+
+  <h3 class="cy">Matching for tone (and why it matters)</h3>
+  <p>Two "identical" 1N34A germaniums can differ by 50-100 mV and a lot in leakage. For a <strong>symmetric</strong> clipper you often want the up-diode and down-diode close, so the two halves of the waveform clip the same. For a <strong>ring modulator</strong> (four diodes) matching is critical -- mismatch bleeds carrier into the output. Sort a bag: measure Vf (and, for germanium, reverse leakage) and group them.</p>
+
+  <pre class="diagram cy"><span class="dim">   sorting a bag of germaniums -- measure two things, group by both</span>
+
+     Vf @ 1 mA   Ir (reverse leak, µA)     use
+     <span class="hi">0.28 V</span>       <span class="hi">low</span>                      matched pair for symmetric clip
+     0.24 V       high                     asymmetric side / character
+     0.31 V       low                       ring-mod quad candidate
+
+   <span class="acc2">for asymmetry you WANT a mismatch</span> -- pick it on purpose, don't fight it</pre>
+
+  <p>The relevant datasheet parameters, if you have the sheet: <code>Vf</code> (with its test current), <code>Ir</code> (reverse leakage), <code>Cj</code> or <code>Ct</code> (junction capacitance), <code>trr</code> (reverse recovery, for rectifiers), and <code>If</code>/<code>Vrrm</code> ratings. These live in <a href="#further">partinfo</a> for the common audio diodes.</p>
+</section>
+
+<!-- clip -->
+<section id="clip" data-num="05">
+  <h2>Clipping <em class="rd">Basics</em></h2>
+  <div class="section-bar rd"></div>
+  <p>Clipping is the act of limiting a signal's amplitude. A diode clipper does it by clamping the voltage: once the signal tries to exceed the diode's threshold, the diode conducts and holds the node near <code>&plusmn;Vf</code>. The corners it lops off are new harmonics -- that is the distortion.</p>
+
+  <h3 class="rd">Hard vs soft -- the transfer curve</h3>
+  <p>Think of a clipper as a memoryless map <code>y = f(x)</code>: for each input voltage, one output voltage. The <em>shape</em> of that map is the sound.</p>
+
+  <div class="two-col">
+    <pre class="diagram rd"><span class="dim">        HARD CLIP (to ground)</span>
+<span class="dim">   out ▲</span>
+<span class="dim">       │      ┌────────</span>  <span class="hi">+Vf</span>
+<span class="dim">       │     ╱</span>
+<span class="dim">       │    ╱  ← linear</span>
+<span class="dim">   ────┼───╱────────▶ in</span>
+<span class="dim">       │  ╱</span>
+<span class="dim">    ───┘</span>          <span class="hi">−Vf</span>
+<span class="dim">   sharp corners = odd + HIGH-order harmonics</span>
+<span class="dim">   buzzy, aggressive, "solid state"</span></pre>
+    <pre class="diagram cy"><span class="dim">        SOFT CLIP (feedback)</span>
+<span class="dim">   out ▲</span>
+<span class="dim">       │       __---‾‾‾</span>
+<span class="dim">       │    _╱</span>
+<span class="dim">       │   ╱  ← rounded</span>
+<span class="dim">   ────┼──╱─────────▶ in</span>
+<span class="dim">       │ ╱</span>
+<span class="dim">    ___╱</span>
+<span class="dim">   ‾‾‾</span>
+<span class="dim">   rounded corners = LOW-order harmonics</span>
+<span class="dim">   warm, smooth, "tube-like", compressed</span></pre>
+  </div>
+
+  <h3 class="rd">Symmetry sets the harmonic flavour</h3>
+  <pre class="diagram rd"><span class="dim">   SYMMETRIC  (equal clip both halves)          ASYMMETRIC (one side clips first)</span>
+
+<span class="dim">     ╱‾‾‾‾‾╲        clips +peak and −peak          ╱‾‾‾‾‾╲     +peak clipped,</span>
+<span class="dim">    ╱       ╲       the same                       ╱       ╲    −peak passes bigger</span>
+<span class="dim">   ‾‾‾‾╲___╱‾‾‾                                    ‾‾‾‾╲__________</span>
+
+   <span class="acc2">→ ODD harmonics</span> (3rd,5th…)                     <span class="acc">→ ODD + EVEN</span> (2nd is musical)
+   squarer, "hollow"                              richer, + a <span class="hi">DC offset</span> to block</pre>
+
+  <div class="info-box warn">
+    <strong>Asymmetry makes DC -- block it</strong>
+    When one half clips more than the other, the average of the waveform is no longer zero: you get a DC offset. Left alone it shifts the operating point of the next stage and can thump on switching. Fix: a gentle highpass (a series cap, corner around 1-20 Hz) after the clipper. See the DC-blocking note in <a href="#topologies">Topologies</a>.
+  </div>
+</section>
+
+<!-- topologies -->
+<section id="topologies" data-num="06">
+  <h2>Clipper <em class="cy">Topologies</em></h2>
+  <div class="section-bar cy"></div>
+  <p>Two circuits dominate guitar/audio distortion, and they sound different for a structural reason, not just a diode reason. Where you put the diodes decides hard vs soft as much as which diodes you pick.</p>
+
+  <h3 class="cy">Shunt clipper -- diodes to ground (hard)</h3>
+  <p>A series resistor feeds a node with anti-parallel diodes to ground. Below <code>Vf</code> the diodes are open and the signal passes; above it they conduct and clamp the node hard to <code>&plusmn;Vf</code>. Because the clamp is abrupt, this is the <strong>hard</strong>-clipping topology (ProCo Rat, DOD 250, MXR Distortion+).</p>
+
+  <pre class="diagram cy"><span class="dim">                    R (sets how hard it slams the diodes)</span>
+       <span class="hi">in</span> <span class="dim">○──────[</span> <span class="acc">R</span> <span class="dim">]──────┬────────○</span> <span class="hi">out</span>
+<span class="dim">                            │</span>
+<span class="dim">                    ┌───────┼───────┐</span>
+<span class="dim">                    │       │       │</span>
+<span class="dim">                  </span><span class="acc">──▶|──</span><span class="dim">        </span><span class="acc">──|◀──</span>   <span class="dim">anti-parallel pair</span>
+<span class="dim">                    │       │       │   (one conducts each half)</span>
+<span class="dim">                    └───────┼───────┘</span>
+<span class="dim">                          </span><span class="acc3">═╪═</span><span class="dim"> GND</span>
+
+  clamps the node to <span class="hi">±Vf</span> · add diodes in SERIES per leg to raise the ceiling (n·Vf)
+  mix a different diode on one leg → <span class="acc">asymmetric</span></pre>
+
+  <h3 class="cy">Feedback clipper -- diodes across the op-amp (soft)</h3>
+  <p>Put the diodes in the op-amp's feedback path, in parallel with the feedback resistor. At low levels the amp has full gain; as the output rises past <code>Vf</code> the diodes start conducting and progressively <em>reduce</em> the gain. The limiting is gradual, so this is the <strong>soft</strong>-clipping topology (Tube Screamer, Klon, Bluesbreaker). The output is the clean input plus a smoothly limited overdrive.</p>
+
+  <pre class="diagram cy"><span class="dim">                    ┌──────[</span> <span class="acc">Rf</span> <span class="dim">]──────┐</span>
+<span class="dim">                    │   ┌───</span><span class="acc">▶|</span><span class="dim">───┐      │      diodes across the</span>
+<span class="dim">                    ├───┤         ├──────┤      feedback → gain folds</span>
+<span class="dim">                    │   └───</span><span class="acc">|◀</span><span class="dim">───┘      │      down past ±Vf</span>
+<span class="dim">        in ○─[</span><span class="acc">Ri</span><span class="dim">]──┤ −                    │</span>
+<span class="dim">                    │      </span><span class="hi">＼</span><span class="dim">                     │</span>
+<span class="dim">                    │       </span><span class="hi">＼____</span><span class="dim">───────────────┴──○ out</span>
+<span class="dim">                    │       </span><span class="hi">／</span>
+<span class="dim">        ref ○───────┤ +</span><span class="hi">／</span>
+<span class="dim">                    │</span>
+
+  softer because gain is <span class="hi">reduced</span>, not slammed · the dry signal is always present underneath</pre>
+
+  <h3 class="rd">Series clipping &amp; biased variants</h3>
+  <p>Less common but worth knowing: a diode in <em>series</em> with the signal chops off the part of the wave below its threshold (used in older fuzz and in envelope/rectifier stages). Adding a bias voltage to a shunt clipper shifts <em>where</em> on the wave the clip happens, giving gated or "sputtery" textures (velcro fuzz). Stacking N diodes in series in each leg multiplies the threshold to roughly <code>N&middot;Vf</code>.</p>
+
+  <table>
+    <tr><th>Move</th><th>Effect</th></tr>
+    <tr><td class="meth rd">More diodes in series per leg</td><td>Higher threshold → louder, more headroom, less compression</td></tr>
+    <tr><td class="meth rd">Different diode on one leg</td><td>Asymmetric clip → even harmonics + DC offset</td></tr>
+    <tr><td class="meth rd">Smaller series R (shunt)</td><td>Harder slam, more aggressive clip</td></tr>
+    <tr><td class="meth rd">Small cap across the diodes</td><td>Rolls off fizzy high harmonics (a built-in treble tame)</td></tr>
+    <tr><td class="meth rd">Socket the diodes</td><td>Swap Si/Ge/LED by ear -- the classic "clipping options" mod</td></tr>
+  </table>
+</section>
+
+<!-- tone -->
+<section id="tone" data-num="07">
+  <h2>Tone <em class="or">Design</em></h2>
+  <div class="section-bar"></div>
+  <p>Put the physics and the topology together and you can predict a sound before you build it. This is the map from the four junction properties to what you hear.</p>
+
+  <pre class="diagram"><span class="dim">   PROPERTY            →  WHAT YOU HEAR</span>
+
+   <span class="acc">Vf (threshold)</span>       →  loudness &amp; headroom   low Vf = early, quiet, squishy
+                                                high Vf = late, loud, open
+   <span class="acc">knee (n, softness)</span>   →  harmonic ORDER        sharp = harsh/buzzy (high-order)
+                                                soft  = warm/round (low-order)
+   <span class="acc">symmetry</span>            →  harmonic FLAVOUR      symmetric = odd (hollow)
+                                                asymmetric = +even (2nd, musical)
+   <span class="acc">junction cap Cj</span>      →  treble               high Cj = darker top end
+   <span class="acc">reverse leakage Ir</span>   →  noise / bias         high Ir = hiss, DC drift (Ge)
+   <span class="acc2">topology</span>            →  hard vs soft         shunt-to-gnd = hard
+                                                across-feedback = soft</pre>
+
+  <h3>The canon -- what the classics actually use</h3>
+  <table>
+    <tr><th>Pedal</th><th>Hard/Soft</th><th>Diodes</th><th>Placement</th><th>Character</th></tr>
+    <tr><td class="meth">Tube Screamer</td><td>soft</td><td>2&times; <code>1N4148</code></td><td>feedback</td><td>smooth, mid-hump, low gain</td></tr>
+    <tr><td class="meth">ProCo Rat</td><td>hard</td><td>2&times; Si</td><td>shunt to gnd</td><td>aggressive, buzzy, cutting</td></tr>
+    <tr><td class="meth">MXR Distortion+</td><td>soft-ish</td><td>2&times; Ge <code>1N34A</code></td><td>shunt to gnd</td><td>warm, compressed</td></tr>
+    <tr><td class="meth">DOD 250</td><td>soft-ish</td><td>2&times; Si</td><td>shunt to gnd</td><td>brighter cousin of the +</td></tr>
+    <tr><td class="meth">Big Muff Pi</td><td>soft &times;2</td><td><code>1N4148</code></td><td>2 feedback stages</td><td>huge sustain, very compressed</td></tr>
+    <tr><td class="meth">Klon Centaur</td><td>soft</td><td>2&times; Ge <code>1N34A</code></td><td>feedback + clean blend</td><td>transparent, "still your amp"</td></tr>
+    <tr><td class="meth">Turbo Rat</td><td>hard</td><td>2&times; LED</td><td>shunt to gnd</td><td>loud, open, more headroom</td></tr>
+  </table>
+  <p class="fine">Values and exact placements vary between revisions and clones; treat this as the classic configuration, not gospel for every unit.</p>
+
+  <div class="info-box">
+    <strong>Design a distortion in one sentence</strong>
+    "Loud and open but smooth" → LEDs (high Vf) in a feedback (soft) topology. "Vintage and squishy" → germanium (low Vf, soft knee, leaky) shunt to ground. "Aggressive and cutting" → silicon shunt to ground with a small series R. "Asymmetric bark" → mismatched legs, then block the DC.
+  </div>
+</section>
+
+<!-- beyond -->
+<section id="beyond" data-num="08">
+  <h2>Beyond <em class="rd">Clipping</em></h2>
+  <div class="section-bar rd"></div>
+  <p>The clipper is one job. The same junction does a half-dozen others in audio gear, and they are worth knowing because they show up when you open any real box.</p>
+
+  <h3 class="rd">Rectification &amp; envelope detection</h3>
+  <p>Rectifiers turn AC into DC -- the bridge in every power supply (<code>1N400x</code>), and the "rectifier sag" that gives tube amps their bounce. Downstream of a signal, a diode + RC is an <strong>envelope follower</strong>: rectify the audio, smooth it, and you have its amplitude over time. That envelope is exactly what a compressor's sidechain, a noise gate, and an auto-wah run on -- which is why <a href="#dsp">compressor attack/release</a> measurement lives right next door to this.</p>
+
+  <pre class="diagram rd"><span class="dim">   envelope follower -- the guts of a comp/gate sidechain</span>
+
+     audio ○──<span class="acc">▶|</span><span class="dim">──┬─────┬──────○ envelope (a slow DC that tracks level)</span>
+<span class="dim">          rectify │     │</span>
+<span class="dim">                 </span><span class="acc2">═╪═ C</span><span class="dim">    </span><span class="acc2">▉ R</span><span class="dim">   ← R·C sets the RELEASE; the diode+source R the ATTACK</span>
+<span class="dim">                  │     │</span>
+<span class="dim">                 </span><span class="acc3">═╪═</span><span class="dim">   </span><span class="acc3">═╪═</span><span class="dim"> GND</span></pre>
+
+  <h3 class="rd">The precision rectifier -- beating Vf</h3>
+  <p>A plain rectifier loses everything below <code>Vf</code>, useless for small signals. Put the diode inside an op-amp feedback loop and the amp's gain "divides out" the Vf, so it rectifies down to millivolts. This is how accurate meters, level detectors, and clean envelope followers are built.</p>
+
+  <h3 class="rd">Clamps, ring mods, varactors, references</h3>
+  <table>
+    <tr><th>Role</th><th>How</th><th>Where in audio</th></tr>
+    <tr><td class="meth rd">Protection / clamp</td><td>diodes to the rails catch overvoltage/ESD; back-to-back across an input</td><td>op-amp inputs, jacks, phantom-power blocking</td></tr>
+    <tr><td class="meth rd">Ring modulator</td><td>4 matched diodes in a ring + transformers multiply two signals</td><td>bells, robots, classic sci-fi (Dalek) tones</td></tr>
+    <tr><td class="meth rd">Varactor (varicap)</td><td>reverse-bias <code>Cj</code> becomes a voltage-controlled capacitor</td><td>VCOs, tuning, some analog chorus/vibrato</td></tr>
+    <tr><td class="meth rd">Voltage reference</td><td>Zener breakdown holds a fixed voltage</td><td>bias rails, regulators, clamp thresholds</td></tr>
+    <tr><td class="meth rd">Vactrol (LED + LDR)</td><td>LED light drives a resistor; not a junction effect but the LED's other life</td><td><strong>lowpass gates</strong>, opto compressors, tremolo</td></tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>The opto thread</strong>
+    Two of the most-loved "soft" behaviours in audio -- the LA-2A opto compressor and the Buchla lowpass gate -- are an LED (or lamp) shining on a photocell. The softness comes from the LDR's slow, non-linear light response, not from a PN junction at all. If you like how those breathe, that is the part to study next.
+  </div>
+</section>
+
+<!-- dsp -->
+<section id="dsp" data-num="09">
+  <h2>Emulating <em class="cy">It</em></h2>
+  <div class="section-bar cy"></div>
+  <p>Because a diode clipper is (mostly) memoryless, it is one of the cleanest things to model in software: a single transfer curve <code>y = f(x)</code>. That is also why it is the "hello world" of analog emulation -- the whole measure-model-null loop fits on one circuit.</p>
+
+  <h3 class="cy">Three ways to get the curve</h3>
+  <pre class="diagram cy"><span class="dim">   WHITE BOX   solve Shockley for the node -- physically true, needs the schematic</span>
+<span class="dim">               diode current = Is(e^(V/nVt) − 1), Kirchhoff at the clip node,</span>
+<span class="dim">               solved per sample (Newton-Raphson for the implicit loop)</span>
+
+<span class="dim">   GRAY BOX    hypothesize tanh-ish curve + a pre/post filter, FIT to measurements</span>
+<span class="dim">               f(x) = threshold · tanh(x / threshold)   ← Vf sets the threshold,</span>
+<span class="dim">               the softer the real knee, the better tanh already fits</span>
+
+<span class="dim">   BLACK BOX   train a tiny neural net on input/output audio pairs (NAM-style)</span></pre>
+
+  <p>The catch is the same one every non-linearity has: a sharp curve makes harmonics without limit, and everything above half the sample rate folds back as <strong>aliasing</strong> -- the inharmonic "digital fizz". Hard clipping is the worst case. The fixes are oversampling (run the curve at 4-16&times; rate, then filter down) or antiderivative anti-aliasing (ADAA). SPICE is the useful bridge here: simulate the real schematic to get the <em>true</em> curve, then fit the cheap runtime model to it and null-test the difference.</p>
+
+  <div class="info-box cy">
+    <strong>Companion reference</strong>
+    The full modeling method -- the three schools, TPT/ZDF filters, the null-driven fit loop, aliasing/ADAA in detail -- is written up separately in the analog-hardware-emulation notes. This section is just the diode-shaped doorway into it: measure Vf, model the knee as <code>tanh</code>, mind the aliasing.
+  </div>
+</section>
+
+<!-- further -->
+<section id="further" data-num="10">
+  <h2>Further <em class="or">Reading</em></h2>
+  <div class="section-bar"></div>
+  <p>Where to go deeper, and the parts in the offline reference.</p>
+
+  <h3>Clipping &amp; pedals</h3>
+  <ul class="step-list">
+    <li><strong>Electronics Tutorials -- Diode Clipping Circuits</strong> the clean fundamentals of series/shunt/biased clippers.</li>
+    <li><strong>uveffects -- Clipping Diodes Guide</strong> the best single practical guide to picking diodes by ear.</li>
+    <li><strong>GuitarPedalX -- Clipping Diodes Primer</strong> a hobbyist tour of the common types and pedals.</li>
+    <li><strong>distortaudio.org</strong> a standalone app cataloguing low-level distortion/waveshaping techniques -- a menu of transfer curves.</li>
+  </ul>
+
+  <h3 class="cy">The opto / lowpass-gate side</h3>
+  <ul class="step-list">
+    <li><strong>Noise Engineering -- Getting Started with Lowpass Gates</strong> the vactrol (LED+LDR) story, the LED's other audio life.</li>
+  </ul>
+
+  <h3 class="yl">Parts in the offline reference (partinfo)</h3>
+  <pre><span class="cm"># the common audio diodes, datasheet params on hand</span>
+  <span class="fn">partinfo</span> 1n4148        <span class="cm"># silicon signal -- the default clipper</span>
+  <span class="fn">partinfo</span> 1n34a         <span class="cm"># germanium -- warm, soft, leaky</span>
+  <span class="fn">partinfo</span> 1n5817        <span class="cm"># schottky -- low Vf, fast</span>
+  <span class="fn">partinfo</span> <span class="kw">search</span> diode    <span class="cm"># the whole family in the db</span></pre>
+
+  <div class="info-box">
+    <strong>Next in this series</strong>
+    An <em>Op-Amps</em> deep dive is the natural companion -- the feedback clipper above only makes sense once the op-amp does, and the same gain stage drives nearly every distortion, filter, and precision rectifier on this page.
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <div>Diodes Deep Dive // one junction, most of the noise</div>
+</footer>
+
+<div class="spine">// junction · types · measure · clip · topologies · tone · beyond · dsp · further //</div>
+
+<script>
+const LABELS = {
+  intro: 'Intro',
+  junction: 'The Junction',
+  types: 'Diode Types',
+  measure: 'Read &amp; Measure',
+  clip: 'Clipping Basics',
+  topologies: 'Clipper Topologies',
+  tone: 'Tone Design',
+  beyond: 'Beyond Clipping',
+  dsp: 'Emulating It',
+  further: 'Further'
+};
+const sections = [...document.querySelectorAll('.container > section[id]')];
+const sideLinks = [...document.querySelectorAll('.side a')];
+const radial = document.getElementById('radial');
+const ring = document.getElementById('radialRing');
+const center = document.getElementById('radialCenter');
+const navNum = document.getElementById('navNum');
+const navLabel = document.getElementById('navLabel');
+
+const items = sections.map(s => {
+  const a = document.createElement('a');
+  a.href = '#' + s.id;
+  a.className = 'radial-item';
+  a.innerHTML = '<span>' + s.dataset.num + '</span>' + (LABELS[s.id] || s.id);
+  radial.appendChild(a);
+  const dot = document.createElement('span');
+  dot.className = 'radial-dot';
+  radial.appendChild(dot);
+  return { sec: s, a, dot };
+});
+
+function layout() {
+  const rx = Math.max(140, Math.min(innerWidth * 0.5 - 150, 330));
+  const ry = Math.max(150, Math.min(innerHeight * 0.5 - 100, 330));
+  ring.style.width = (rx - 26) * 2 + 'px';
+  ring.style.height = (ry - 26) * 2 + 'px';
+  items.forEach((it, i) => {
+    const ang = -Math.PI / 2 + i * 2 * Math.PI / items.length;
+    const x = Math.cos(ang), y = Math.sin(ang);
+    it.a.style.left = 'calc(50% + ' + (rx * x).toFixed(1) + 'px)';
+    it.a.style.top = 'calc(50% + ' + (ry * y).toFixed(1) + 'px)';
+    const tx = x > 0.35 ? '0%' : x < -0.35 ? '-100%' : '-50%';
+    const ty = y > 0.35 ? '0%' : y < -0.35 ? '-100%' : '-50%';
+    it.a.style.transform = 'translate(' + tx + ', ' + ty + ')';
+    it.dot.style.left = 'calc(50% + ' + ((rx - 26) * x).toFixed(1) + 'px)';
+    it.dot.style.top = 'calc(50% + ' + ((ry - 26) * y).toFixed(1) + 'px)';
+  });
+}
+function openDial() { layout(); radial.classList.add('open'); document.body.classList.add('dial-open'); }
+function closeDial() { radial.classList.remove('open'); document.body.classList.remove('dial-open'); }
+
+function activate(id) {
+  const el = document.getElementById(id);
+  const sec = el ? (el.closest('.container > section[id]') || sections[0]) : sections[0];
+  sections.forEach(s => s.classList.toggle('active', s === sec));
+  items.forEach(it => {
+    it.a.classList.toggle('active', it.sec === sec);
+    it.dot.classList.toggle('active', it.sec === sec);
+  });
+  sideLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + sec.id));
+  navNum.textContent = sec.dataset.num + ' //';
+  navLabel.textContent = LABELS[sec.id] || sec.id;
+  center.textContent = sec.dataset.num;
+  closeDial();
+  if (el && el !== sec) el.scrollIntoView();
+  else window.scrollTo(0, 0);
+}
+function go(id) { history.replaceState(null, '', '#' + id); activate(id); }
+
+document.getElementById('navCurrent').addEventListener('click', openDial);
+document.getElementById('sideDial').addEventListener('click', openDial);
+center.addEventListener('click', closeDial);
+radial.addEventListener('click', e => { if (e.target === radial) closeDial(); });
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  e.preventDefault();
+  go(a.getAttribute('href').slice(1));
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') return closeDial();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const cur = sections.findIndex(s => s.classList.contains('active'));
+    const next = (cur + (e.key === 'ArrowRight' ? 1 : sections.length - 1)) % sections.length;
+    go(sections[next].id);
+  }
+});
+window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
+window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
+activate(location.hash.slice(1));
+</script>
+</body>
+</html>

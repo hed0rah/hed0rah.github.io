@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Op-Amps Deep Dive // Feedback, Slew and Noise</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* masthead */
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+.masthead .companion {
+  margin-top: 14px;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 2px;
+}
+
+/* nav */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-brand {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.nav-current {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-current:hover { border-color: var(--orange); color: var(--orange); }
+.nav-current .num { color: var(--orange); }
+.nav-hint { color: var(--dim2); margin-left: 6px; }
+
+/* sidebar */
+.side {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 248px;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  z-index: 150;
+  padding: 26px 0 20px;
+  overflow-y: auto;
+}
+.side-brand {
+  padding: 0 20px 16px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--bright);
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 12px;
+}
+.side-brand span { color: var(--orange); }
+.side a {
+  display: block;
+  padding: 7px 24px 7px 21px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.side a span { color: var(--dim2); margin-right: 7px; }
+.side a:hover { color: var(--orange); }
+.side a.active { color: var(--orange); border-left-color: var(--orange); background: var(--surface); }
+.side a.active span { color: var(--orange); }
+.side-dial {
+  display: block;
+  margin: 16px 20px 0 17px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--border2);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.side-dial:hover { color: var(--orange); border-color: var(--orange); }
+@media (min-width: 1100px) {
+  .side { display: block; }
+  body { padding-left: 248px; }
+  .nav { display: none; }
+}
+
+/* radial dial */
+.radial {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(242, 241, 238, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.radial.open { opacity: 1; pointer-events: auto; }
+body.dial-open { overflow: hidden; }
+.radial-ring {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+}
+.radial-center {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  cursor: pointer;
+}
+.radial-center:hover { color: var(--orange); }
+.radial-item {
+  position: absolute;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--dim);
+  padding: 4px 6px;
+}
+.radial-item span { color: var(--dim2); margin-right: 5px; }
+.radial-item:hover, .radial-item.active { color: var(--orange); }
+.radial-item:hover span, .radial-item.active span { color: var(--orange); }
+.radial-dot {
+  position: absolute;
+  width: 5px; height: 5px;
+  background: var(--dim2);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.radial-dot.active { background: var(--orange); }
+@media (max-width: 620px) {
+  .radial.open { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .radial-ring, .radial-dot, .radial-center { display: none; }
+  .radial-item { position: static !important; transform: none !important; font-size: 12px; padding: 7px; }
+}
+
+/* layout */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+}
+section { padding: 52px 0; display: none; }
+section.active { display: block; }
+section::before {
+  content: attr(data-num) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+/* headings */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--yellow); }
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+.section-bar.yl { background: var(--yellow); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+h3.cy { color: var(--cyan); }
+h3.yl { color: var(--yellow); }
+h3.rd { color: var(--red); }
+h4 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  margin: 20px 0 8px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+
+/* code */
+code {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--bright);
+}
+pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre.yl { border-left-color: var(--yellow); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .flag   { color: #7A7870; }
+
+/* diagrams */
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #8A8880;
+}
+.diagram.cy { border-left-color: var(--cyan); }
+.diagram.yl { border-left-color: var(--yellow); }
+.diagram.rd { border-left-color: var(--red); }
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .acc3 { color: #C8A030; }
+.diagram .dim  { color: #4A4942; }
+.diagram .hi   { color: #CCCBC4; }
+
+/* info boxes */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy    { border-left-color: var(--cyan); }
+.info-box.warn  { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; vertical-align: top; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; white-space: nowrap; }
+td.cy   { color: var(--cyan); }
+td.rd   { color: var(--red); }
+td.yl   { color: var(--yellow); }
+td.meth a { color: inherit; text-decoration: none; border-bottom: 1px dashed currentColor; }
+td.meth a:hover { color: var(--bright); }
+h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
+
+/* two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; align-items: stretch; }
+.two-col > div { display: flex; flex-direction: column; }
+.two-col > div > pre { flex: 1; margin-bottom: 0; }
+
+/* step list */
+.step-list { list-style: none; counter-reset: step; margin: 16px 0; }
+.step-list li {
+  counter-increment: step;
+  position: relative;
+  padding: 10px 0 10px 42px;
+  border-bottom: 1px dashed var(--border2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-list li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  width: 34px;
+}
+.step-list li strong { color: var(--bright); display: block; margin-bottom: 2px; }
+.step-list.cy li::before { color: var(--cyan); }
+.step-list.rd li::before { color: var(--red); }
+
+/* footer */
+.footer {
+  border-top: 1px solid var(--border2);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+.footer a { color: var(--orange); text-decoration: none; }
+
+/* spine */
+.spine {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* responsive */
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .masthead { padding: 40px 20px 28px; }
+}
+@media (max-width: 1280px) { .spine { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- masthead -->
+<div class="masthead">
+  <h1>Op-Amps <em>Deep</em> Dive</h1>
+  <div class="subtitle">
+    <span>Feedback &amp; the Golden Rules · Slew · Noise · Every Spec and How to Measure It</span>
+  </div>
+  <div class="companion">inverting · non-inverting · buffer · summing · filter · overdrive // TL072 · NE5532 · 4558 // most of the focus is audio // companion to the Diodes dive</div>
+</div>
+
+<!-- sidebar -->
+<nav class="side">
+  <div class="side-brand">Op-Amps <span>//</span> Deep Dive</div>
+  <a href="#intro"><span>01</span>Intro</a>
+  <a href="#topologies"><span>02</span>Topologies</a>
+  <a href="#props"><span>03</span>Properties</a>
+  <a href="#measure"><span>04</span>How to Measure</a>
+  <a href="#inputs"><span>05</span>Input Stages</a>
+  <a href="#sound"><span>06</span>The Sound</a>
+  <a href="#canon"><span>07</span>The Canon</a>
+  <a href="#history"><span>08</span>History</a>
+  <a href="#dsp"><span>09</span>Math &amp; DSP</a>
+  <a href="#further"><span>10</span>Glossary &amp; Further</a>
+  <button class="side-dial" id="sideDial" title="radial section dial">◎ dial</button>
+</nav>
+
+<!-- nav -->
+<div class="nav">
+  <div class="nav-inner">
+    <span class="nav-brand">Op-Amps Deep Dive</span>
+    <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
+      <span class="num" id="navNum">01 //</span> <span id="navLabel">Intro</span> <span class="nav-hint">◎</span>
+    </button>
+  </div>
+</div>
+
+<!-- radial dial -->
+<div class="radial" id="radial">
+  <div class="radial-ring" id="radialRing"></div>
+  <button class="radial-center" id="radialCenter" title="close (Esc)">01</button>
+</div>
+
+<div class="container">
+
+<!-- intro -->
+<section id="intro" data-num="01">
+  <h2>Gain, <em class="or">Tamed</em></h2>
+  <div class="section-bar"></div>
+  <p>An op-amp amplifies the <em>difference</em> between its two inputs by an enormous factor (100000x and up). Raw, that gain is useless. You wrap it in <strong>negative feedback</strong> (route the output back to the inverting input) and the circuit's behaviour becomes set by the resistors around it, not the messy chip. Nearly every preamp, mixer, EQ, active filter, and overdrive pedal is this one block plus a few passives.</p>
+
+  <pre class="diagram"><span class="dim">                              </span><span class="acc3">+Vs</span>
+<span class="dim">                               │</span>
+<span class="hi">        V+  (non-inv)</span><span class="dim"> ──────────┤+\</span>
+<span class="dim">                               │  \</span>
+<span class="dim">                               │   >──────────</span><span class="acc">○ out</span>
+<span class="dim">                               │  /</span>
+<span class="hi">        V-  (inverting)</span><span class="dim"> ───────┤-/</span>
+<span class="dim">                               │</span>
+<span class="dim">                              </span><span class="acc3">-Vs</span>
+   powered from <span class="acc3">+Vs / -Vs</span> (studio, eurorack) or <span class="acc3">+Vs / GND</span> (single-supply pedals)</pre>
+
+  <div class="info-box">
+    <strong>The two golden rules (ideal, with feedback)</strong>
+    1. No current flows into the inputs (input impedance is infinite). 2. The output does whatever it must to make V+ = V-. Solve almost any op-amp circuit by applying these two and reading off the resistors. When V- is pinned to a grounded V+, that node is a <strong>virtual ground</strong>: 0 V but not wired to ground.
+  </div>
+
+  <p>The ideal op-amp has infinite gain, infinite input impedance, zero output impedance, infinite bandwidth, zero noise, zero offset. Every real-world <em>departure</em> from that list is a spec in <a href="#props">Properties</a>, and every one is audible somewhere.</p>
+</section>
+
+<!-- topologies -->
+<section id="topologies" data-num="02">
+  <h2>Core <em class="cy">Topologies</em></h2>
+  <div class="section-bar cy"></div>
+  <p>The handful of circuits that make up almost all audio electronics. Each one falls out of the two golden rules.</p>
+
+  <h3 class="cy">Non-inverting, and the buffer</h3>
+  <pre class="diagram cy">     <span class="hi">in</span> <span class="dim">○───────────────┤+\</span>
+<span class="dim">                        │  >─────┬──────</span><span class="acc">○ out</span>
+<span class="dim">                 ┌──────┤-/      │</span>
+<span class="dim">                 │               │</span>
+<span class="dim">                 └────[</span> <span class="acc">Rf</span> <span class="dim">]──────┘</span>
+<span class="dim">                 │</span>
+<span class="dim">               [</span> <span class="acc">Rg</span> <span class="dim">]</span>
+<span class="dim">                 │</span>
+<span class="dim">               </span><span class="acc3">Vref</span>            <span class="hi">Vout = (1 + Rf/Rg) * Vin</span>
+
+  tie the output straight to V- (drop Rf/Rg) => <span class="acc">BUFFER</span>, gain 1, hi-Z in / lo-Z out
+  the workhorse: isolates a delicate hi-Z source (guitar, piezo, the pickup coil) from its load</pre>
+
+  <h3 class="cy">Inverting, and the virtual-earth mixer</h3>
+  <pre class="diagram cy"><span class="dim">               ┌──────[</span> <span class="acc">Rf</span> <span class="dim">]──────┐</span>
+<span class="dim">               │                  │</span>
+<span class="hi">   in</span> <span class="dim">○─[</span><span class="acc">Rin</span><span class="dim">]──┼──────┤-\         │</span>
+<span class="dim">                  </span><span class="acc2">(0V)</span><span class="dim">  │  >────────┴──</span><span class="acc">○ out</span>
+<span class="dim">            </span><span class="acc3">Vref</span><span class="dim"> ────────┤+/</span>
+                              <span class="hi">Vout = -(Rf/Rin) * Vin</span>   <span class="acc2">V- = virtual ground</span>
+
+  V- is a virtual ground, so many input resistors to it do NOT interact:
+  that is a <span class="acc">SUMMING MIXER</span> -- the heart of every console.  Vout = -(Rf/R1*V1 + Rf/R2*V2 + ...)</pre>
+
+  <table>
+    <tr><th>Circuit</th><th>Does</th><th>Audio use</th></tr>
+    <tr><td class="meth cy">Difference / instrumentation</td><td>amplifies (V+ - V-), rejects common mode</td><td>balanced line receivers, DI boxes, hum rejection</td></tr>
+    <tr><td class="meth cy">Integrator</td><td>output = -1/RC times the integral of input</td><td>ramp/LFO cores, state-variable filters</td></tr>
+    <tr><td class="meth cy">Sallen-Key filter</td><td>2nd-order lowpass / highpass / bandpass</td><td>synth VCFs, active crossovers, tone stacks</td></tr>
+    <tr><td class="meth cy">Precision rectifier</td><td>rectifies below Vf (diode in the loop)</td><td>envelope detection, meters (<a href="#dsp">see Diodes</a>)</td></tr>
+    <tr><td class="meth cy">Feedback clipper</td><td>soft overdrive (diodes across Rf)</td><td>Tube Screamer, Klon, most soft-clip pedals</td></tr>
+  </table>
+
+  <h3 class="rd">The feedback clipper: op-amp meets diode</h3>
+  <pre class="diagram rd"><span class="dim">              ┌──────[</span> <span class="acc">Rf</span> <span class="dim">]──────┐</span>
+<span class="dim">              │   ┌───</span><span class="acc">▶|</span><span class="dim">───┐      │      diodes across the feedback:</span>
+<span class="dim">              ├───┤         ├──────┤      full gain at low level, gain</span>
+<span class="dim">              │   └───</span><span class="acc">|◀</span><span class="dim">───┘      │      FOLDS DOWN as output passes ±Vf</span>
+<span class="hi">   in</span> <span class="dim">○─[</span><span class="acc">Ri</span><span class="dim">]──┤-                  │</span>
+<span class="dim">              │      </span><span class="hi">＼</span><span class="dim">                    │      => SOFT clipping</span>
+<span class="dim">              │       </span><span class="hi">＼____</span><span class="dim">──────────────┴──</span><span class="acc">○ out</span>
+<span class="dim">   </span><span class="acc3">ref</span><span class="dim"> ○───────┤+</span><span class="hi">／</span>
+<span class="dim">              │</span>
+
+  this is why the two dives are companions: the op-amp sets the gain + drive, the diode sets the clip</pre>
+</section>
+
+<!-- props -->
+<section id="props" data-num="03">
+  <h2>Properties <em class="yl">&amp; the Waveform</em></h2>
+  <div class="section-bar yl"></div>
+  <p>The master table. The ideal value is in parentheses; the real number is the departure that matters, and every departure is audible somewhere.</p>
+
+  <table>
+    <tr><th>Property (ideal)</th><th>What it is</th><th>Effect on the waveform</th></tr>
+    <tr><td class="meth yl">Open-loop gain Aol (inf)</td><td>raw gain before feedback, ~100-120 dB, falls with freq</td><td>more Aol = more loop gain = more feedback = lower distortion</td></tr>
+    <tr><td class="meth yl">GBW (inf)</td><td>gain x bandwidth is constant above the dominant pole</td><td>closed-loop BW = GBW/gain; too little rolls off highs and raises HF distortion</td></tr>
+    <tr><td class="meth yl">Slew rate (inf)</td><td>fastest the output can move, V/us</td><td>caps undistorted output at HF+level; too low = slew/TIM distortion, smeared transients</td></tr>
+    <tr><td class="meth yl">Offset voltage Vos (0)</td><td>tiny DC imbalance between inputs</td><td>DC at output (x gain): wasted headroom, thumps/clicks on switching</td></tr>
+    <tr><td class="meth yl">Offset drift (0)</td><td>how Vos moves with temperature</td><td>slow warm-up drift; the op-amp analogue of germanium temp drift</td></tr>
+    <tr><td class="meth yl">Bias current Ib (0)</td><td>DC current the inputs actually draw</td><td>through a high source R makes offset + noise; matters on hi-Z sources</td></tr>
+    <tr><td class="meth yl">Input impedance (inf)</td><td>differential + common-mode input Z</td><td>loads the source; hi-Z sources need FET inputs or a buffer</td></tr>
+    <tr><td class="meth yl">Output drive (0 Zout)</td><td>how low-Z a load it can swing</td><td>headphones/long cable/600 ohm: weak drive = sag + distortion under load</td></tr>
+    <tr><td class="meth yl">CMRR (inf)</td><td>common-mode rejection ratio</td><td>how well a balanced stage rejects hum/noise common to both inputs</td></tr>
+    <tr><td class="meth yl">PSRR (inf)</td><td>power-supply rejection ratio</td><td>how much supply ripple/hum leaks into the signal</td></tr>
+    <tr><td class="meth yl">Noise en / in (0)</td><td>input-referred voltage + current noise density</td><td>the hiss floor; low-noise parts for mic/phono preamps</td></tr>
+    <tr><td class="meth yl">THD+N (0)</td><td>total harmonic distortion + noise</td><td>the purity when clean, before you overdrive on purpose</td></tr>
+    <tr><td class="meth yl">Supply / Iq</td><td>rail span, quiescent current</td><td>higher rails = more headroom; Iq sets pedal battery life</td></tr>
+    <tr><td class="meth yl">Output swing</td><td>how close output gets to the rails</td><td>old parts lose ~1.5 V per rail; rail-to-rail swings almost fully</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>Crossover distortion -- the class-B gotcha</strong>
+    Cheap single-supply parts (LM358, LM324) have a class-B output stage that kinks right at the zero crossing. At LOW levels this makes nasty little steps (crossover distortion) exactly where the ear is sensitive. Fine for a comparator, poor for a clean audio path. The op-amp equivalent of a diode's knee gotcha.
+  </div>
+</section>
+
+<!-- measure -->
+<section id="measure" data-num="04">
+  <h2>How to <em class="or">Measure</em></h2>
+  <div class="section-bar"></div>
+  <p>Almost all of it yields to a scope, a signal generator, a DMM, and a soundcard running an FFT (REW, Plugin Doctor, or Python). The one rule: your measurement chain must be cleaner than the part under test, or you are measuring your own rig.</p>
+
+  <table>
+    <tr><th>Property</th><th>Bench method</th></tr>
+    <tr><td class="meth">Offset Vos</td><td>build a x100 stage, short the input, measure output DC, divide by gain</td></tr>
+    <tr><td class="meth">Offset drift</td><td>same, then warm the chip (finger, heat gun) and watch the DC crawl</td></tr>
+    <tr><td class="meth">Bias current Ib</td><td>1M in series with an input, measure the offset it creates: Ib = dV / R</td></tr>
+    <tr><td class="meth">GBW</td><td>sweep a small sine, plot gain vs freq, find -3 dB; GBW = f(-3dB) x gain</td></tr>
+    <tr><td class="meth">Slew rate</td><td>feed a fast square wave, scope the output edge, measure volts per microsecond</td></tr>
+    <tr><td class="meth">Full-power BW</td><td>big sine, raise freq until peaks triangle: that onset is slew limiting</td></tr>
+    <tr><td class="meth">Noise en</td><td>terminate input (low R), gain up a lot, FFT the output, refer to input, divide by root-BW</td></tr>
+    <tr><td class="meth">THD+N</td><td>clean sine in, FFT out (or notch + AC meter), harmonics/residual vs fundamental</td></tr>
+    <tr><td class="meth">CMRR</td><td>drive both inputs with the same signal, measure the tiny output, ratio to normal-mode gain</td></tr>
+    <tr><td class="meth">PSRR</td><td>inject ripple (100 Hz) onto the rail, measure how much appears at the output</td></tr>
+    <tr><td class="meth">Output drive</td><td>load the output down (600 / 150 / 32 ohm), watch level sag and THD rise</td></tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>The single most useful audio measurement</strong>
+    A THD+N vs level sweep and a noise spectrum, together, tell you ~90% of what an audio op-amp will sound like. Douglas Self built an entire (excellent) book out of exactly these two, applied ruthlessly. See <a href="#history">History</a>.
+  </div>
+</section>
+
+<!-- inputs -->
+<section id="inputs" data-num="05">
+  <h2>Input <em class="cy">Stages</em></h2>
+  <div class="section-bar cy"></div>
+  <p>The input transistor type sets noise, bias current, and impedance, so it decides what the chip is <em>for</em>.</p>
+
+  <table>
+    <tr><th>Input type</th><th>Bias current</th><th>Voltage noise</th><th>Best at</th><th>Examples</th></tr>
+    <tr><td class="meth cy">Bipolar (BJT)</td><td>higher (nA)</td><td>lowest possible</td><td>low source-Z: mic pres, phono, line</td><td>NE5532/5534, LT1028, AD797</td></tr>
+    <tr><td class="meth cy">JFET</td><td>tiny (pA)</td><td>low</td><td>high source-Z: guitar, piezo, synth, pedals</td><td>TL07x, OPA2134, OPA627</td></tr>
+    <tr><td class="meth cy">CMOS</td><td>tiny</td><td>higher</td><td>low power, single-supply, rail-to-rail</td><td>TLC2262, MCP600x</td></tr>
+  </table>
+
+  <p>Rule of thumb: <strong>low source impedance wants a bipolar input</strong> (its current noise is irrelevant into a low R and its voltage noise is the lowest); <strong>high source impedance wants a FET input</strong> (bipolar bias current through a big resistor would make offset and noise). That is why a mic pre is a 5534 and a fuzz input buffer is a TL072.</p>
+
+  <h3 class="cy">Dual supply vs single supply</h3>
+  <p>Studio and eurorack gear runs <strong>dual rails</strong> (+/-15 V, +/-12 V): signals swing around real 0 V ground. Pedals and battery gear run a <strong>single supply</strong> (9 V): you fake a "ground" at half the rail (a Vref bias, often 4.5 V) and AC-couple everything with capacitors. The math is identical, you just reference V+ to Vref instead of ground. That is why every pedal schematic is littered with a 4.5 V bias network and coupling caps.</p>
+</section>
+
+<!-- sound -->
+<section id="sound" data-num="06">
+  <h2>The <em class="rd">Sound</em> (and the myth)</h2>
+  <div class="section-bar rd"></div>
+  <p>How the section-3 numbers map to what you hear, plus the honest part.</p>
+
+  <pre class="diagram rd"><span class="dim">   PROPERTY          →  WHAT YOU HEAR</span>
+
+   <span class="acc">slew rate</span>         →  HF transients + top end   low SR = dull/soft or harsh (TIM), misses fast peaks
+   <span class="acc">GBW</span>               →  bandwidth + HF dist       too little = rolled highs, distortion climbs with freq
+   <span class="acc">noise (en,in)</span>     →  the hiss floor            the quiet-passage character; the mic-pre spec
+   <span class="acc">THD</span>               →  purity when clean         how transparent before you overdrive on purpose
+   <span class="acc">offset / drift</span>    →  DC, thumps, headroom      clicks on switching, wasted swing, warm-up drift
+   <span class="acc">output drive</span>      →  behaviour under load      headphones/long cable: sag + distortion if weak
+   <span class="acc">rails / swing</span>     →  headroom                  higher rails + rail-to-rail = more clean level
+   <span class="acc">crossover dist</span>    →  low-level grunge          class-B parts (358/324) get ugly near zero</pre>
+
+  <div class="info-box">
+    <strong>Do op-amps have a sound? Mostly no, sometimes yes.</strong>
+    A modern op-amp run well inside its specs (comfortable load, enough GBW/slew, no rail-clipping) is, by measurement, effectively transparent, and swaps are usually inaudible. Where a "sound" is real it is because the chip is pushed PAST a spec: a 4558 in a Tube Screamer is band-limited and modest-slew, so it softens and colours; an LM358 grunges at low level from crossover distortion; a weak output stage sags into headphones. The character is the limitation, not magic, which is also exactly what makes a chip fun in a distortion box.
+  </div>
+</section>
+
+<!-- canon -->
+<section id="canon" data-num="07">
+  <h2>The <em class="or">Canon</em></h2>
+  <div class="section-bar"></div>
+  <p>The chips audio gear actually uses, and what each brings.</p>
+
+  <table>
+    <tr><th>Chip</th><th>Input</th><th>Where it lives</th><th>Character</th></tr>
+    <tr><td class="meth">TL071/072/074</td><td>JFET</td><td>pedals, synths (Juno, DX7 analog), general</td><td>the default: clean, quiet, hi-Z, cheap</td></tr>
+    <tr><td class="meth">NE5532 / NE5534</td><td>bipolar</td><td>mixing consoles, studio outboard, DIs</td><td>the studio workhorse; low noise, drives 600 ohm</td></tr>
+    <tr><td class="meth">JRC/NJM4558</td><td>bipolar</td><td>Tube Screamer TS808 "magic" chip, cheap combos</td><td>741-class: band-limited, modest slew, softens the OD</td></tr>
+    <tr><td class="meth">uA741</td><td>bipolar</td><td>historic general-purpose</td><td>slow, noisy by modern standards; the teaching classic</td></tr>
+    <tr><td class="meth">LM358 / LM324</td><td>bipolar, single-supply</td><td>cheap battery gear, non-audio</td><td>crossover distortion at low level; cautionary for clean audio</td></tr>
+    <tr><td class="meth">OPA2134 / OPA134</td><td>FET</td><td>hi-fi, DIY audiophile</td><td>very low THD, easy drop-in upgrade</td></tr>
+    <tr><td class="meth">OPA627</td><td>FET</td><td>premium hi-fi front ends</td><td>excellent, expensive</td></tr>
+    <tr><td class="meth">LT1028 / AD797</td><td>bipolar</td><td>mic preamps, RIAA phono</td><td>ultra-low noise, the bottom of the hiss floor</td></tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>Not an op-amp but it lives here: the LM386</strong>
+    A small power amp, not an op-amp, but it shows up constantly in lo-fi builds (noise toys, mini amps, the Smokey amp). Overdriven, it is a whole aesthetic. Know it is a different animal (fixed-ish gain, drives a speaker) when a schematic looks op-amp-shaped but is really a 386.
+  </div>
+</section>
+
+<!-- history -->
+<section id="history" data-num="08">
+  <h2><em class="yl">History</em></h2>
+  <div class="section-bar yl"></div>
+  <p>"Operational amplifier" is older than the chip: it meant an amplifier that performed math <em>operations</em> for analog computers.</p>
+
+  <ul class="step-list">
+    <li><strong>Analog computers (1940s-50s)</strong> George Philbrick's K2-W (1952) was the first commercial op-amp: two 12AX7 tubes in an octal can, used to sum and integrate.</li>
+    <li><strong>uA709 (1965)</strong> Bob Widlar at Fairchild: the first widely used monolithic IC op-amp. Tricky to stabilize, prone to latch-up.</li>
+    <li><strong>uA741 (1968)</strong> Dave Fullagar at Fairchild: internally compensated, idiot-proof, the op-amp everyone learned on and the reference for "slow and noisy but bulletproof".</li>
+    <li><strong>Discrete console op-amps (1970s)</strong> before good IC audio parts, top consoles used discrete op-amp modules: API 2520, Deane Jensen's 990, Melcor. Much of the revered "vintage console" sound is these plus their transformers.</li>
+    <li><strong>NE5532/5534 (late 1970s, Signetics)</strong> the IC that made discrete audio op-amps largely unnecessary; still the studio default decades later.</li>
+    <li><strong>TL07x (TI, late 1970s)</strong> JFET input, low noise, high input impedance, cheap enough to become the pedal/synth default.</li>
+    <li><strong>The measurement era (Douglas Self, 1990s-2000s)</strong> careful measurement showed most op-amp "sound" claims were the part being run out of spec, reframing audio design around loop gain, loading, and noise rather than mystique.</li>
+  </ul>
+</section>
+
+<!-- dsp -->
+<section id="dsp" data-num="09">
+  <h2>Math <em class="cy">&amp; DSP</em></h2>
+  <div class="section-bar cy"></div>
+
+  <h3 class="cy">Core equations</h3>
+  <pre class="diagram cy">   inverting gain        Vout = -(Rf / Rin) * Vin
+   non-inverting gain    Vout = (1 + Rf / Rg) * Vin
+   closed-loop bandwidth f(-3dB) = GBW / gain          <span class="dim">gain trades directly for bandwidth</span>
+   full-power bandwidth  f_max  = SR / (2*pi*Vpeak)     <span class="dim">where slew limiting begins</span>
+   total input noise     En = en * sqrt(BW)   + source Johnson noise sqrt(4kTR*BW)
+   Sallen-Key cutoff     fc = 1 / (2*pi*sqrt(R1*R2*C1*C2))
+   integrator            Vout = -(1/RC) * integral(Vin dt)</pre>
+
+  <h3 class="cy">Modeling it in DSP</h3>
+  <p>For a linear stage, the op-amp circuit <em>is</em> a transfer function you implement directly (bilinear or TPT). The non-ideal behaviours worth adding when you want the <em>character</em>:</p>
+  <pre class="diagram cy"><span class="dim">   overdrive pedal as a gray-box chain (op-amp stage + diodes):</span>
+
+     in ─▶ <span class="hi">gain</span> ─▶ <span class="hi">1-pole LPF</span> ─▶ <span class="hi">slew limiter</span> ─▶ <span class="acc">diode f(x)</span> ─▶ <span class="hi">rail clip</span> ─▶ out
+              <span class="dim">Rf/Rin      finite GBW      |dV/dt|<=SR    tanh knee      swing</span>
+
+   finite GBW  = a one-pole lowpass on the ideal response
+   slew limit  = a rate limiter (a real nonlinearity: "slew distortion")
+   diode f(x)  = the soft-clip curve from the Diodes dive (diodes steal the feedback)
+   rail clip   = hard clip at the swing limit (aliases: oversample or ADAA)</pre>
+
+  <div class="info-box cy">
+    <strong>Why the two dives are one project</strong>
+    A distortion pedal is an op-amp gain stage (this note) with diodes in or after it (the Diodes dive). Model the stage as gain + one-pole (GBW) + slew limiter, add the diode transfer curve, mind the aliasing. That is a complete gray-box overdrive model, and the smallest end-to-end example in the analog-emulation notes.
+  </div>
+</section>
+
+<!-- further -->
+<section id="further" data-num="10">
+  <h2>Glossary <em class="or">&amp; Further</em></h2>
+  <div class="section-bar"></div>
+
+  <table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td class="meth">Virtual ground</td><td>the inverting input held at (not wired to) 0 V by feedback</td></tr>
+    <tr><td class="meth">Loop gain</td><td>the feedback in hand (open-loop minus closed-loop gain) that lowers distortion</td></tr>
+    <tr><td class="meth">GBW</td><td>gain-bandwidth product; gain x bandwidth is constant above the dominant pole</td></tr>
+    <tr><td class="meth">Slew rate</td><td>max output dV/dt; sets full-power bandwidth</td></tr>
+    <tr><td class="meth">TIM</td><td>transient intermodulation, from hitting the slew limit on fast signals</td></tr>
+    <tr><td class="meth">Offset / bias current</td><td>DC input imbalance / DC current the inputs draw; both make output DC</td></tr>
+    <tr><td class="meth">CMRR / PSRR</td><td>rejection of common-mode input / power-supply noise, in dB</td></tr>
+    <tr><td class="meth">en / in</td><td>input-referred voltage / current noise density</td></tr>
+    <tr><td class="meth">Rail-to-rail</td><td>output (or input) swings to within millivolts of the supplies</td></tr>
+    <tr><td class="meth">Compensation</td><td>the internal pole that keeps it stable; unity-gain stable = safe at gain 1</td></tr>
+    <tr><td class="meth">Crossover distortion</td><td>zero-crossing kink from a class-B output stage at low level</td></tr>
+    <tr><td class="meth">Headroom</td><td>clean level available before clipping into the rails</td></tr>
+  </table>
+
+  <h3>References</h3>
+  <ul class="step-list">
+    <li><strong>Douglas Self, Small Signal Audio Design</strong> the audio op-amp book; measurement-driven and definitive.</li>
+    <li><strong>Horowitz &amp; Hill, The Art of Electronics</strong> the general op-amp chapter to read once.</li>
+    <li><strong>Walt Jung (ed.), Op Amp Applications Handbook</strong> (Analog Devices, free PDF) the deep reference.</li>
+    <li><strong>TI / Analog Devices app notes</strong> on noise, stability, single-supply design (primary source, free).</li>
+  </ul>
+
+  <h3 class="yl">Parts in the offline reference (partinfo)</h3>
+  <pre><span class="fn">partinfo</span> tl072        <span class="cm"># JFET dual, the pedal/synth default</span>
+<span class="fn">partinfo</span> ne5532       <span class="cm"># bipolar low-noise studio dual</span>
+<span class="fn">partinfo</span> opa4134      <span class="cm"># FET audiophile quad</span>
+<span class="fn">partinfo</span> tle2071      <span class="cm"># precision JFET single</span>
+<span class="fn">partinfo</span> <span class="kw">search</span> opamp</pre>
+
+  <div class="info-box">
+    <strong>Companions and what's next</strong>
+    Read alongside the <em>Diodes</em> dive (clipping, the feedback-clipper half) and the analog-hardware-emulation notes (the full modeling method). Next candidates in the series: transistors/JFETs, or filters (Sallen-Key / state-variable) as their own deep dive.
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <div>Op-Amps Deep Dive // infinite gain, tamed by feedback</div>
+</footer>
+
+<div class="spine">// topologies · properties · measure · inputs · sound · canon · history · dsp · further //</div>
+
+<script>
+const LABELS = {
+  intro: 'Intro',
+  topologies: 'Topologies',
+  props: 'Properties',
+  measure: 'How to Measure',
+  inputs: 'Input Stages',
+  sound: 'The Sound',
+  canon: 'The Canon',
+  history: 'History',
+  dsp: 'Math &amp; DSP',
+  further: 'Glossary &amp; Further'
+};
+const sections = [...document.querySelectorAll('.container > section[id]')];
+const sideLinks = [...document.querySelectorAll('.side a')];
+const radial = document.getElementById('radial');
+const ring = document.getElementById('radialRing');
+const center = document.getElementById('radialCenter');
+const navNum = document.getElementById('navNum');
+const navLabel = document.getElementById('navLabel');
+
+const items = sections.map(s => {
+  const a = document.createElement('a');
+  a.href = '#' + s.id;
+  a.className = 'radial-item';
+  a.innerHTML = '<span>' + s.dataset.num + '</span>' + (LABELS[s.id] || s.id);
+  radial.appendChild(a);
+  const dot = document.createElement('span');
+  dot.className = 'radial-dot';
+  radial.appendChild(dot);
+  return { sec: s, a, dot };
+});
+
+function layout() {
+  const rx = Math.max(140, Math.min(innerWidth * 0.5 - 150, 330));
+  const ry = Math.max(150, Math.min(innerHeight * 0.5 - 100, 330));
+  ring.style.width = (rx - 26) * 2 + 'px';
+  ring.style.height = (ry - 26) * 2 + 'px';
+  items.forEach((it, i) => {
+    const ang = -Math.PI / 2 + i * 2 * Math.PI / items.length;
+    const x = Math.cos(ang), y = Math.sin(ang);
+    it.a.style.left = 'calc(50% + ' + (rx * x).toFixed(1) + 'px)';
+    it.a.style.top = 'calc(50% + ' + (ry * y).toFixed(1) + 'px)';
+    const tx = x > 0.35 ? '0%' : x < -0.35 ? '-100%' : '-50%';
+    const ty = y > 0.35 ? '0%' : y < -0.35 ? '-100%' : '-50%';
+    it.a.style.transform = 'translate(' + tx + ', ' + ty + ')';
+    it.dot.style.left = 'calc(50% + ' + ((rx - 26) * x).toFixed(1) + 'px)';
+    it.dot.style.top = 'calc(50% + ' + ((ry - 26) * y).toFixed(1) + 'px)';
+  });
+}
+function openDial() { layout(); radial.classList.add('open'); document.body.classList.add('dial-open'); }
+function closeDial() { radial.classList.remove('open'); document.body.classList.remove('dial-open'); }
+
+function activate(id) {
+  const el = document.getElementById(id);
+  const sec = el ? (el.closest('.container > section[id]') || sections[0]) : sections[0];
+  sections.forEach(s => s.classList.toggle('active', s === sec));
+  items.forEach(it => {
+    it.a.classList.toggle('active', it.sec === sec);
+    it.dot.classList.toggle('active', it.sec === sec);
+  });
+  sideLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + sec.id));
+  navNum.textContent = sec.dataset.num + ' //';
+  navLabel.textContent = LABELS[sec.id] || sec.id;
+  center.textContent = sec.dataset.num;
+  closeDial();
+  if (el && el !== sec) el.scrollIntoView();
+  else window.scrollTo(0, 0);
+}
+function go(id) { history.replaceState(null, '', '#' + id); activate(id); }
+
+document.getElementById('navCurrent').addEventListener('click', openDial);
+document.getElementById('sideDial').addEventListener('click', openDial);
+center.addEventListener('click', closeDial);
+radial.addEventListener('click', e => { if (e.target === radial) closeDial(); });
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  e.preventDefault();
+  go(a.getAttribute('href').slice(1));
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') return closeDial();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const cur = sections.findIndex(s => s.classList.contains('active'));
+    const next = (cur + (e.key === 'ArrowRight' ? 1 : sections.length - 1)) % sections.length;
+    go(sections[next].id);
+  }
+});
+window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
+window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
+activate(location.hash.slice(1));
+</script>
+</body>
+</html>
