@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contract-Driven Multi-Agent Development // contracts, adversarial review, pre-mortem, oracles</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* masthead */
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+.masthead .companion {
+  margin-top: 14px;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 2px;
+}
+
+/* nav */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-brand {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.nav-current {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-current:hover { border-color: var(--orange); color: var(--orange); }
+.nav-current .num { color: var(--orange); }
+.nav-hint { color: var(--dim2); margin-left: 6px; }
+
+/* sidebar */
+.side {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 248px;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  z-index: 150;
+  padding: 26px 0 20px;
+  overflow-y: auto;
+}
+.side-brand {
+  padding: 0 20px 16px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--bright);
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 12px;
+}
+.side-brand span { color: var(--orange); }
+.side a {
+  display: block;
+  padding: 7px 24px 7px 21px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.side a span { color: var(--dim2); margin-right: 7px; }
+.side a:hover { color: var(--orange); }
+.side a.active { color: var(--orange); border-left-color: var(--orange); background: var(--surface); }
+.side a.active span { color: var(--orange); }
+.side-dial {
+  display: block;
+  margin: 16px 20px 0 17px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--border2);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.side-dial:hover { color: var(--orange); border-color: var(--orange); }
+@media (min-width: 1100px) {
+  .side { display: block; }
+  body { padding-left: 248px; }
+  .nav { display: none; }
+}
+
+/* radial dial */
+.radial {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(242, 241, 238, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.radial.open { opacity: 1; pointer-events: auto; }
+body.dial-open { overflow: hidden; }
+.radial-ring {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+}
+.radial-center {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  cursor: pointer;
+}
+.radial-center:hover { color: var(--orange); }
+.radial-item {
+  position: absolute;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--dim);
+  padding: 4px 6px;
+}
+.radial-item span { color: var(--dim2); margin-right: 5px; }
+.radial-item:hover, .radial-item.active { color: var(--orange); }
+.radial-item:hover span, .radial-item.active span { color: var(--orange); }
+.radial-dot {
+  position: absolute;
+  width: 5px; height: 5px;
+  background: var(--dim2);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.radial-dot.active { background: var(--orange); }
+@media (max-width: 620px) {
+  .radial.open { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .radial-ring, .radial-dot, .radial-center { display: none; }
+  .radial-item { position: static !important; transform: none !important; font-size: 12px; padding: 7px; }
+}
+
+/* layout */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+}
+section { padding: 52px 0; display: none; }
+section.active { display: block; }
+section::before {
+  content: attr(data-num) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+/* headings */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--yellow); }
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+.section-bar.yl { background: var(--yellow); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+h3.cy { color: var(--cyan); }
+h3.yl { color: var(--yellow); }
+h3.rd { color: var(--red); }
+h4 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  margin: 20px 0 8px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+
+/* code */
+code {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--bright);
+}
+pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre.yl { border-left-color: var(--yellow); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .flag   { color: #7A7870; }
+
+/* diagrams */
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #8A8880;
+}
+.diagram.cy { border-left-color: var(--cyan); }
+.diagram.yl { border-left-color: var(--yellow); }
+.diagram.rd { border-left-color: var(--red); }
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .acc3 { color: #C8A030; }
+.diagram .dim  { color: #4A4942; }
+.diagram .hi   { color: #CCCBC4; }
+
+/* info boxes */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy    { border-left-color: var(--cyan); }
+.info-box.warn  { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; vertical-align: top; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; white-space: nowrap; }
+td.cy   { color: var(--cyan); }
+td.rd   { color: var(--red); }
+td.yl   { color: var(--yellow); }
+td.meth a { color: inherit; text-decoration: none; border-bottom: 1px dashed currentColor; }
+td.meth a:hover { color: var(--bright); }
+h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
+
+/* two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; align-items: stretch; }
+.two-col > div { display: flex; flex-direction: column; }
+.two-col > div > pre { flex: 1; margin-bottom: 0; }
+
+/* step list */
+.step-list { list-style: none; counter-reset: step; margin: 16px 0; }
+.step-list li {
+  counter-increment: step;
+  position: relative;
+  padding: 10px 0 10px 42px;
+  border-bottom: 1px dashed var(--border2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-list li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  width: 34px;
+}
+.step-list li strong { color: var(--bright); display: block; margin-bottom: 2px; }
+.step-list.cy li::before { color: var(--cyan); }
+.step-list.rd li::before { color: var(--red); }
+
+/* footer */
+.footer {
+  border-top: 1px solid var(--border2);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+.footer a { color: var(--orange); text-decoration: none; }
+
+/* spine */
+.spine {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* responsive */
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .masthead { padding: 40px 20px 28px; }
+}
+@media (max-width: 1280px) { .spine { display: none; } }
+
+/* dark mode -- ink + gunmetal + teal/orange accents */
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:        #121213;
+  --surface:   #0e0e0f;
+  --surface2:  #1c1c1e;
+  --border:    #313135;
+  --border2:   #26262a;
+  --orange:    #FF4D00;
+  --cyan:      #08F9DF;
+  --yellow:    #E0913E;
+  --red:       #E04858;
+  --green:     #4DC26B;
+  --magenta:   #C97FD4;
+  --dim:       #8b8b88;
+  --dim2:      #5a5a5c;
+  --text:      #cbcbc9;
+  --bright:    #ececea;
+}
+:root[data-theme="dark"] ::selection { background: #08F9DF; color: #121213; }
+:root[data-theme="dark"] pre,
+:root[data-theme="dark"] .diagram {
+  background: #0e0e0f;
+  border-top-color: #2b2b30;
+  border-right-color: #2b2b30;
+  border-bottom-color: #2b2b30;
+}
+:root[data-theme="dark"] pre .label { color: #5a5a5e; }
+:root[data-theme="dark"] pre .cm, :root[data-theme="dark"] .diagram .dim { color: #66666b; }
+:root[data-theme="dark"] pre .kw { color: #F56A31; }
+:root[data-theme="dark"] pre .key, :root[data-theme="dark"] .diagram .acc2 { color: #5CD9CE; }
+:root[data-theme="dark"] .radial { background: rgba(18,18,19,0.96); }
+.theme-toggle { white-space: nowrap; }
+</style>
+</head>
+<body>
+<script>
+(function () {
+  const saved = localStorage.getItem('theme');
+  const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+})();
+</script>
+
+<!-- masthead -->
+<div class="masthead">
+  <h1>Contract-Driven <em>Multi-Agent</em> Development</h1>
+  <div class="subtitle">
+    <span>Contracts · Decomposition · Adversarial Review · Pre-mortem · Oracles · Correlated Failure</span>
+  </div>
+  <div class="companion">coordination without shared memory // the idea is from 1986, the constraint is new // what to actually run, and what it costs</div>
+</div>
+
+<!-- sidebar -->
+<nav class="side">
+  <div class="side-brand">Contracts <span>//</span> Multi-Agent</div>
+  <a href="#orient"><span>01</span>The Core Idea</a>
+  <a href="#lineage"><span>02</span>Not New</a>
+  <a href="#contract"><span>03</span>What A Contract Is</a>
+  <a href="#decompose"><span>04</span>Decomposition</a>
+  <a href="#review"><span>05</span>Styles Of Review</a>
+  <a href="#verify"><span>06</span>The Oracle Problem</a>
+  <a href="#failures"><span>07</span>Failure Modes</a>
+  <a href="#tooling"><span>08</span>Tooling</a>
+  <a href="#schools"><span>09</span>Philosophies</a>
+  <button class="side-dial" id="sideDial" title="radial section dial">&#9678; dial</button>
+  <button class="side-dial theme-toggle" title="toggle dark mode">&#9680; dark</button>
+</nav>
+
+<div class="nav">
+  <div class="nav-inner">
+    <span class="nav-brand">Contract-Driven Multi-Agent</span>
+    <span style="display:flex;gap:6px">
+      <button class="nav-current" id="navCurrent" title="open section dial (arrow keys switch tabs)">
+        <span class="num" id="navNum">01 //</span> <span id="navLabel">The Core Idea</span> <span class="nav-hint">&#9678;</span>
+      </button>
+      <button class="nav-current theme-toggle" title="toggle dark mode">&#9680;</button>
+    </span>
+  </div>
+</div>
+
+<!-- radial dial -->
+<div class="radial" id="radial">
+  <div class="radial-ring" id="radialRing"></div>
+  <button class="radial-center" id="radialCenter" title="close (Esc)">01</button>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ 01 -->
+<section id="orient" data-num="01">
+<h2>The Core <em>Idea</em></h2>
+<div class="section-bar"></div>
+
+<p>Agents coordinate through explicit, mechanically checkable interface specifications
+rather than through shared context or prose handoff. The contract is the coordination
+primitive, and it is the only thing two agents are required to agree on.</p>
+
+<p>Humans working this way get a nice-to-have. Agents get a necessity, for one reason:
+<strong>there is no shared working memory.</strong> Each agent's context is private,
+finite, and lossy. Two humans at a whiteboard hold a common picture; two agents hold two
+pictures and no way to diff them.</p>
+
+<pre class="diagram"><span class="dim">                 the only shared surface</span>
+                          <span class="dim">│</span>
+   <span class="hi">agent A</span>                  <span class="dim">▼</span>                  <span class="hi">agent B</span>
+  <span class="dim">┌─────────┐</span>        <span class="acc">┌──────────────┐</span>        <span class="dim">┌─────────┐</span>
+  <span class="dim">│</span> private <span class="dim">│</span>        <span class="acc">│  CONTRACT    │</span>        <span class="dim">│</span> private <span class="dim">│</span>
+  <span class="dim">│</span> context <span class="dim">│</span><span class="acc">◄──────►│  schema      │</span><span class="acc">◄──────►</span><span class="dim">│</span> context <span class="dim">│</span>
+  <span class="dim">│</span>         <span class="dim">│</span>        <span class="acc">│  invariants  │</span>        <span class="dim">│</span>         <span class="dim">│</span>
+  <span class="dim">└─────────┘</span>        <span class="acc">│  examples    │</span>        <span class="dim">└─────────┘</span>
+                      <span class="acc">└──────────────┘</span>
+   <span class="dim">never merged</span>        <span class="acc2">checkable by both</span>        <span class="dim">never merged</span>
+                      <span class="acc2">without talking</span></pre>
+
+<h3>What the contract buys</h3>
+
+<table>
+  <tr><th>Property</th><th>Why it follows from the contract</th></tr>
+  <tr><td class="meth">Parallelism</td><td>Producer and consumer are built at the same time. Neither waits on the other's implementation, only on the agreement.</td></tr>
+  <tr><td class="meth">Verifiability</td><td>Conformance is a test, not a judgement. No reviewer opinion required.</td></tr>
+  <tr><td class="meth">Replaceability</td><td>Any agent can be swapped, restarted, or run on a different model. The contract survives the worker.</td></tr>
+  <tr><td class="meth">Bounded context</td><td>The subagent is handed the contract, not the repository. Context spend drops from the whole tree to one interface.</td></tr>
+</table>
+
+<div class="info-box">
+  <strong>The load-bearing claim</strong>
+  A contract that an agent cannot check mechanically is not a contract. It is a
+  suggestion, and it will be interpreted differently by every agent that reads it. The
+  test of a contract is whether conformance can be decided without a conversation.
+</div>
+
+<p>Everything downstream in this reference follows from that one test. <a href="#contract">Section
+03</a> grades contract kinds by whether they pass it.</p>
+</section>
+
+<!-- ============================================================ 02 -->
+<section id="lineage" data-num="02">
+<h2>Not <em>New</em></h2>
+<div class="section-bar cy"></div>
+
+<p>Worth knowing before pitching it, because someone in the room will have shipped this
+in 2009 under a different name. The idea is forty years old. What changed is the
+constraint, not the technique.</p>
+
+<table>
+  <tr><th>Origin</th><th>Year</th><th>What it contributed</th></tr>
+  <tr><td class="meth cy">Conway's Law</td><td>1967</td><td>Melvin Conway: system structure mirrors the communication structure of the org that built it. Applies unchanged to agent topology -- fan out by service and you get service-shaped code, whether or not that is the right architecture.</td></tr>
+  <tr><td class="meth cy">Design by Contract</td><td>1986</td><td>Bertrand Meyer, Eiffel. Preconditions, postconditions, class invariants as first-class language constructs. The vocabulary everything since uses.</td></tr>
+  <tr><td class="meth cy">N-version programming</td><td>1977</td><td>Chen and Avizienis. Build it independently N times, compare. See <a href="#verify">section 06</a> for the 1986 result that broke it, which is the single most important caveat in multi-agent verification.</td></tr>
+  <tr><td class="meth cy">Consumer-driven contracts</td><td>2006</td><td>Ian Robinson. The <em>consumer</em> states what it needs; the producer proves it still satisfies every consumer. Inverts who owns the spec. Pact (2013) is the tooling.</td></tr>
+  <tr><td class="meth cy">Property-based testing</td><td>2000</td><td>QuickCheck (Claessen and Hughes). Contracts as generators plus invariants rather than as examples. The closest thing to a machine-checkable behavioural contract in wide use.</td></tr>
+  <tr><td class="meth cy">Formal specification</td><td>1999</td><td>TLA+ (Lamport), Alloy (Jackson). Contracts strong enough to model-check. Expensive, and occasionally the only thing that works.</td></tr>
+</table>
+
+<h3>So what is actually new</h3>
+
+<ul class="step-list">
+  <li><strong>The contract became the context boundary.</strong> Historically a contract was a correctness device. For agents it is also a compression device: it is what you hand a subagent <em>instead of</em> your context. That is a new job for an old artifact.</li>
+  <li><strong>Adversarial review got cheap.</strong> Running five independent critiques of a design used to cost five engineers a day. The economics of review changed, so techniques that were reserved for aviation and nuclear are now affordable on a pull request.</li>
+  <li><strong>The workers are correlated.</strong> This is the genuinely unsolved part. Human reviewers fail independently-ish. Agents from one model family share training and share blind spots. <a href="#verify">Section 06</a>.</li>
+</ul>
+
+<div class="info-box cy">
+  <strong>Framing that survives contact with a skeptic</strong>
+  Do not pitch it as a new methodology. Pitch it as consumer-driven contract testing
+  where the consumers happen to be agents, and the reason it matters more than it used to
+  is that the coordination medium got worse: private lossy context instead of a shared
+  whiteboard.
+</div>
+</section>
+
+<!-- ============================================================ 03 -->
+<section id="contract" data-num="03">
+<h2>What A <em>Contract</em> Is</h2>
+<div class="section-bar"></div>
+
+<p>Contracts form a ladder. Each rung catches more and costs more to write. The useful
+skill is picking the lowest rung that catches the failure you actually fear.</p>
+
+<pre class="diagram"><span class="dim">  weaker, cheaper</span>                                    <span class="dim">stronger, dearer</span>
+  <span class="dim">├──────────────────────────────────────────────────────────────┤</span>
+
+  <span class="hi">1 type</span>        <span class="hi">2 schema</span>      <span class="hi">3 behavioural</span>   <span class="hi">4 property</span>     <span class="hi">5 formal</span>
+  signature     JSON Schema   pre/post       invariants    TLA+
+  <span class="dim">fn(A) -&gt; B</span>    <span class="dim">required,</span>     <span class="dim">"nonempty in,</span>   <span class="dim">"sorted for</span>    <span class="dim">model-checked</span>
+                <span class="dim">enum, range</span>   <span class="dim">sorted out"</span>     <span class="dim">ALL inputs"</span>    <span class="dim">state space</span>
+
+  <span class="acc2">catches:</span>      <span class="acc2">catches:</span>      <span class="acc2">catches:</span>       <span class="acc2">catches:</span>      <span class="acc2">catches:</span>
+  wrong shape   bad values    wrong logic    edge cases    concurrency
+                                             <span class="acc">you did not</span>   <span class="acc">interleavings</span>
+                                             <span class="acc">think of</span>      <span class="acc">nobody would</span></pre>
+
+<table>
+  <tr><th>Rung</th><th>Machine-checkable</th><th>Good for</th><th>Cost</th></tr>
+  <tr><td class="meth">Type signature</td><td>yes, at compile time</td><td>Structural agreement. The floor, not a strategy.</td><td>free</td></tr>
+  <tr><td class="meth">Schema</td><td>yes, at runtime and in CI</td><td>The workhorse. JSON Schema, Protobuf, Pydantic. Enums and ranges kill a surprising share of integration bugs.</td><td>minutes</td></tr>
+  <tr><td class="meth">Behavioural</td><td>yes, as assertions</td><td>Preconditions and postconditions. Encodes intent the type cannot.</td><td>hours</td></tr>
+  <tr><td class="meth">Property</td><td>yes, by generation</td><td>Invariants over generated inputs. Finds cases no author enumerates.</td><td>hours to days</td></tr>
+  <tr><td class="meth rd">Formal</td><td>yes, exhaustively</td><td>Concurrency, consensus, anything where the bug is an interleaving. Rarely worth it. Occasionally the only option.</td><td>weeks</td></tr>
+</table>
+
+<h3>The three parts worth writing every time</h3>
+
+<ul class="step-list">
+  <li><strong>The schema.</strong> Shape, types, required fields, allowed values. Machine-checked on both sides, in CI, not by inspection.</li>
+  <li><strong>The invariants.</strong> What must hold that the schema cannot say. "Ids are unique across the response." "Timestamps are monotonic." One sentence each, each one testable.</li>
+  <li><strong>The examples.</strong> At least one valid, and <em>at least one invalid with the reason</em>. The negative example is the one that transfers understanding. It is also the one everybody skips.</li>
+</ul>
+
+<div class="info-box warn">
+  <strong>Prose in a contract is a defect</strong>
+  "Handles errors gracefully" is not a contract term. Neither is "reasonable
+  performance". If an agent cannot turn the clause into an assertion, it will turn it into
+  an assumption, and two agents will assume differently. Either make it checkable or move
+  it out of the contract and into the notes.
+</div>
+</section>
+
+<!-- ============================================================ 04 -->
+<section id="decompose" data-num="04">
+<h2>Decomposition</h2>
+<div class="section-bar yl"></div>
+
+<p>Contracts let you parallelize, but only across the seams they isolate. Split anywhere
+else and you have bought coordination cost without buying independence.</p>
+
+<pre class="diagram"><span class="hi">  CONTRACT-FIRST FAN-OUT</span>
+  <span class="dim">the serial part is the agreement, and it is not compressible</span>
+
+  <span class="acc">┌── negotiate the contract ──┐</span>            <span class="dim">serial</span>
+  <span class="acc">│  schema + invariants +     │</span>            <span class="dim">one agent, or a human</span>
+  <span class="acc">│  one valid, one invalid    │</span>
+  <span class="acc">└─────────────┬──────────────┘</span>
+                <span class="dim">│</span>
+      <span class="dim">┌─────────┼─────────┐</span>                      <span class="dim">parallel</span>
+      <span class="dim">▼</span>         <span class="dim">▼</span>         <span class="dim">▼</span>                      <span class="dim">n agents, no talking</span>
+  <span class="hi">producer</span>  <span class="hi">consumer</span>  <span class="hi">conformance</span>
+  <span class="dim">impl</span>      <span class="dim">impl</span>      <span class="dim">tests</span>
+      <span class="dim">│</span>         <span class="dim">│</span>         <span class="dim">│</span>
+      <span class="dim">└─────────┼─────────┘</span>
+                <span class="dim">▼</span>
+        <span class="acc2">integrate: the tests</span>                      <span class="dim">serial again</span>
+        <span class="acc2">already exist and</span>
+        <span class="acc2">neither side wrote</span>
+        <span class="acc2">them for itself</span></pre>
+
+<p>Writing the conformance tests in a <em>third</em> agent is the part people drop, and
+it is the part that makes the pattern work. A producer that writes its own tests tests
+what it built. <a href="#verify">Section 06</a>.</p>
+
+<h3>Slicing</h3>
+
+<table>
+  <tr><th>Split</th><th>Parallelizes when</th><th>Fails when</th></tr>
+  <tr><td class="meth yl">By interface</td><td>The seam is a real API, queue, or file format. Contract is obvious and narrow.</td><td>Rarely. This is the good case.</td></tr>
+  <tr><td class="meth yl">By layer</td><td>Layers are genuinely independent and the contract between them is stable.</td><td>The contract changes as you learn, so every agent redoes work. Common.</td></tr>
+  <tr><td class="meth yl">By feature</td><td>Features touch disjoint files.</td><td>They never do. Merge conflicts become the dominant cost.</td></tr>
+  <tr><td class="meth yl">By review dimension</td><td>Always. Each reviewer reads the same diff for a different failure class.</td><td>Never fails, and it is the cheapest real win. Start here.</td></tr>
+</table>
+
+<div class="info-box">
+  <strong>The over-decomposition trap</strong>
+  Coordination cost grows with the number of agents; the work does not shrink as fast.
+  Three agents with a clean contract beat nine with a muddy one, every time. Before
+  fanning out, ask what the contract between the pieces actually is. If you cannot state
+  it in a schema, you have found the reason not to split there.
+</div>
+
+<p>Note also that Conway's Law runs in this direction: <strong>the agent topology you pick
+becomes the architecture you get.</strong> Fan out by microservice and you will be handed
+microservices whether or not that was the design.</p>
+</section>
+
+<!-- ============================================================ 05 -->
+<section id="review" data-num="05">
+<h2>Styles Of <em>Review</em></h2>
+<div class="section-bar rd"></div>
+
+<p>The heart of it. Each style is a lens tuned to a different failure class, and the
+reason to name them is that a reviewer told "review this" defaults to style checking.
+A reviewer told "assume it is broken and find out how" does something else entirely.</p>
+
+<pre class="diagram"><span class="hi">  WHICH LENS FOR WHICH FAILURE</span>
+
+  <span class="dim">the design is</span>          <span class="dim">the plan will</span>        <span class="dim">the group is</span>
+  <span class="dim">wrong</span>                  <span class="dim">fail</span>                 <span class="dim">agreeing too fast</span>
+       <span class="dim">│</span>                      <span class="dim">│</span>                    <span class="dim">│</span>
+       <span class="dim">▼</span>                      <span class="dim">▼</span>                    <span class="dim">▼</span>
+  <span class="acc">adversarial</span>            <span class="acc">pre-mortem</span>           <span class="acc">devil's advocate</span>
+  <span class="acc">red team</span>               <span class="acc">fault tree</span>           <span class="acc">dialectic</span>
+  <span class="acc">inversion</span>              <span class="acc">FMEA</span>                 <span class="acc">wideband delphi</span>
+
+  <span class="dim">we do not know</span>         <span class="dim">it broke and we</span>      <span class="dim">we are about to</span>
+  <span class="dim">why this exists</span>        <span class="dim">need the cause</span>       <span class="dim">delete something</span>
+       <span class="dim">│</span>                      <span class="dim">│</span>                    <span class="dim">│</span>
+       <span class="dim">▼</span>                      <span class="dim">▼</span>                    <span class="dim">▼</span>
+  <span class="acc2">socratic</span>               <span class="acc2">five whys</span>            <span class="acc2">chesterton's fence</span>
+  <span class="acc2">rubber duck</span>            <span class="acc2">blameless PM</span></pre>
+
+<h3 class="rd">Adversarial review / red team</h3>
+<p>The reviewer's job is to <strong>break it, not improve it</strong>. Brief is "assume
+the author is wrong; produce the input that proves it". Structurally different from
+ordinary review because success is a counterexample, not a comment.</p>
+<p><strong>Catches:</strong> wrong designs, missing validation, happy-path thinking.
+<strong>Trap:</strong> unbounded adversaries produce unfalsifiable objections. Bound it:
+"within the documented threat model" or "reachable from a real caller".</p>
+
+<h3 class="rd">Pre-mortem</h3>
+<p>Gary Klein, HBR 2007. <em>Before</em> starting, state that the project has already
+failed completely, then work backwards to explain why. The mechanism is <strong>prospective
+hindsight</strong>: Mitchell, Russo and Pennington (1989) found that imagining an outcome
+as <em>certain</em> rather than <em>possible</em> raises the number of causes people can
+generate by roughly thirty percent.</p>
+<p><strong>Catches:</strong> plan-level risk, optimism bias, the thing everyone privately
+doubted and nobody said. <strong>Trap:</strong> it is not risk assessment. Do not let it
+become a probability-weighted register. The framing "it failed, why" is the active
+ingredient, and softening it removes the effect.</p>
+
+<h3 class="rd">Devil's advocate</h3>
+<p>Literally the <em>advocatus diaboli</em>, the office of Promoter of the Faith
+established 1587 to argue against canonization; the role was cut back in 1983. One party
+is assigned to argue the opposing case regardless of belief.</p>
+<p><strong>Catches:</strong> premature consensus. <strong>Trap, and it is a serious one:</strong>
+Charlan Nemeth's work found that <em>authentic</em> minority dissent produces better
+divergent thinking than a known-assigned advocate. Everyone discounts the person
+role-playing. For agents this partly dissolves, since there is no social cost to
+disagreeing and no visible name badge -- but an agent told "argue against this" also has
+no genuine belief, so treat its output as a checklist of objections rather than as
+evidence anyone is actually unconvinced.</p>
+
+<h3 class="rd">Steelman</h3>
+<p>Strengthen the opposing position to its best form before attacking it. The inverse of
+a strawman.</p>
+<p><strong>Catches:</strong> arguing against a weak version of the alternative, which is
+how teams talk themselves into the thing they already wanted. <strong>Use it when</strong>
+rejecting an approach, not when accepting one.</p>
+
+<h3 class="rd">Inversion</h3>
+<p>Carl Jacobi's <em>"man muss immer umkehren"</em>, invert, always invert; popularized by
+Munger. Instead of "how do we make this work", ask <strong>"what would guarantee this
+fails"</strong>, then check whether you are doing any of it.</p>
+<p><strong>Catches:</strong> the difference between a plan with no known flaws and a plan
+that has been attacked. Cheap, fast, and unreasonably effective as a first pass.</p>
+
+<h3 class="rd">Five Whys</h3>
+<p>Sakichi Toyoda, Toyota Production System. Ask why five times, each answer feeding the
+next question.</p>
+<p><strong>Catches:</strong> proximate-cause fixation. <strong>Trap:</strong> it produces
+a single causal chain, and real incidents are trees. Use fault-tree or FMEA when there is
+more than one contributing branch, which there usually is.</p>
+
+<h3 class="rd">FMEA and fault tree analysis</h3>
+<p>Systematic enumeration rather than inspiration. FMEA walks every component and asks how
+it fails, how that is detected, and what it costs. Fault tree starts at the undesired
+event and decomposes backwards through AND and OR gates.</p>
+<p><strong>Catches:</strong> failure modes nobody would think to name. <strong>Cost:</strong>
+tedious, which is precisely why it is a good thing to hand an agent.</p>
+
+<h3 class="rd">Chesterton's Fence</h3>
+<p>Chesterton, 1929. Do not remove what you cannot explain the purpose of. State the
+reason the thing exists <em>before</em> proposing its deletion.</p>
+<p><strong>Catches:</strong> agents confidently deleting load-bearing code that looks
+redundant. This is a live failure mode, not a theoretical one, and it is worth a standing
+rule rather than a review pass.</p>
+
+<h3 class="rd">Six Thinking Hats</h3>
+<p>Edward de Bono, 1985. Parallel thinking: the whole group wears one hat at a time --
+facts, feelings, caution, benefits, creativity, process -- rather than each person
+defending a position.</p>
+<p><strong>Catches:</strong> debate-as-identity, where changing your mind is a loss.
+<strong>For agents:</strong> maps cleanly onto one pass per hat over the same artifact,
+and the caution pass is the one that pays.</p>
+
+<h3 class="rd">Wideband Delphi</h3>
+<p>Barry Boehm, from RAND's Delphi method. Reviewers assess <strong>independently and
+without seeing each other</strong>, then the spread is examined and only then discussed.</p>
+<p><strong>Catches:</strong> anchoring and cascade. <strong>Why it matters here more than
+anywhere:</strong> the moment agent B sees agent A's review, B's independence is gone.
+Sequential review is contaminated review. Fan out blind, converge after.</p>
+
+<h3 class="rd">Dialectic</h3>
+<p>Thesis, antithesis, synthesis. Two agents argue opposing positions; a third, which has
+not argued, synthesizes.</p>
+<p><strong>Catches:</strong> false binaries. <strong>Requirement:</strong> the synthesizer
+must not have participated. An arguer asked to synthesize will find its own position
+persuasive.</p>
+
+<h3 class="rd">Socratic questioning</h3>
+<p>Interrogate the assumptions rather than the conclusion. "What must be true for this to
+work?" then test each item.</p>
+<p><strong>Catches:</strong> unstated premises, which is where most bad designs actually
+live. Pairs well with pre-mortem: Socratic finds the assumptions, pre-mortem kills them.</p>
+
+<h3 class="rd">Blameless post-mortem</h3>
+<p>John Allspaw and Etsy, around 2012. Separate learning from accountability, on the
+grounds that people asked to explain a failure they may be punished for will explain
+something else.</p>
+<p><strong>Catches:</strong> the real sequence of events. <strong>Note for agents:</strong>
+there is nobody to blame, so the discipline is free -- but the other half of the practice
+still applies: write down what was <em>believed at the time</em>, not what is known now.</p>
+
+<h3 class="rd">Debate and critique-revise</h3>
+<p>Two lineages specific to models. <strong>Debate</strong> (Irving, Christiano and Amodei,
+2018) has two agents argue to a judge, on the theory that lying is harder to defend than
+telling the truth. <strong>Critique-revise</strong> (Constitutional AI, Bai et al. 2022)
+has a model critique an output against written principles, then revise against the
+critique.</p>
+<p><strong>Trap for both:</strong> they inherit the judge's biases and the critic's blind
+spots. <a href="#verify">Section 06</a> is about exactly that.</p>
+
+<div class="info-box danger">
+  <strong>The one rule that matters more than the style</strong>
+  Whoever built it does not grade it. Self-review shares the blind spot that caused the
+  defect -- that is what a blind spot is. Every style above is weakened, and some are
+  neutralized entirely, when the reviewer and the author are the same agent.
+</div>
+</section>
+
+<!-- ============================================================ 06 -->
+<section id="verify" data-num="06">
+<h2>The Oracle <em>Problem</em></h2>
+<div class="section-bar cy"></div>
+
+<p>You can only verify what you can check. The hard part of verification is almost never
+running the test; it is having something to compare against. That thing is the oracle,
+and most of the time you do not have one.</p>
+
+<table>
+  <tr><th>When you have</th><th>Use</th><th>How it works</th></tr>
+  <tr><td class="meth cy">A known-correct answer</td><td>Assertion</td><td>The easy case. Rare outside toy problems.</td></tr>
+  <tr><td class="meth cy">A second implementation</td><td>Differential testing</td><td>McKeeman, 1998. Same input to both, diff the output. Any disagreement is a bug in one of them.</td></tr>
+  <tr><td class="meth cy">A known relationship</td><td>Metamorphic testing</td><td>Chen, 1998. No oracle needed. If <code>sort(x)</code> is right then <code>sort(shuffle(x))</code> equals it; if a search is right, narrowing the query cannot add results.</td></tr>
+  <tr><td class="meth cy">An invariant</td><td>Property testing</td><td>Generate inputs, assert the invariant. The generator finds the edge case you would not.</td></tr>
+  <tr><td class="meth cy">Only judgement</td><td>Adversarial review</td><td>The weakest case. Bound it and get independent passes. <a href="#review">Section 05</a>.</td></tr>
+</table>
+
+<p><strong>Metamorphic testing is the underused one.</strong> It applies exactly where
+agent output is hardest to check -- no ground truth, but plenty of known relationships
+between outputs. Most tasks have one if you look for it.</p>
+
+<h3 class="cy">Why self-verification is weak</h3>
+
+<p>Not a matter of taste. Huang et al. (2023), <em>Large Language Models Cannot Self-Correct
+Reasoning Yet</em>, found that intrinsic self-correction -- revising with no external
+signal -- often <strong>degrades</strong> performance rather than improving it. The model
+has no new information at revision time, and its confidence is not calibrated to its
+correctness.</p>
+
+<p>Model-as-judge carries its own documented biases. Zheng et al. (2023), the MT-Bench
+and Chatbot Arena work, identified <strong>position bias</strong> (order of presentation
+changes the verdict), <strong>verbosity bias</strong> (longer answers score higher
+independent of quality), and <strong>self-enhancement bias</strong> (judges prefer text
+from their own model).</p>
+
+<div class="info-box cy">
+  <strong>Three cheap mitigations, all of them mechanical</strong>
+  Swap the presentation order and require the verdict to survive it. Strip formatting and
+  length cues before judging. Have a different model family judge than the one that
+  produced the work. None of these need cleverness, and skipping them is how a review
+  pipeline becomes theatre.
+</div>
+
+<h3 class="cy">The 1986 result that everyone rediscovers</h3>
+
+<p>N-version programming assumed independently built implementations fail independently,
+so a majority vote is safe. <strong>Knight and Leveson (1986) tested it and it is
+false.</strong> Twenty-seven independently developed programs, from separate teams, to the
+same specification, showed <em>correlated</em> failures -- because the hard parts of the
+problem are hard for everyone, and shared misreadings of the spec cluster.</p>
+
+<pre class="diagram"><span class="hi">  WHAT INDEPENDENCE WAS ASSUMED TO LOOK LIKE</span>
+
+  agent A  <span class="dim">████░░░░░░░░░░░░░░░░</span>  <span class="dim">fails here</span>
+  agent B  <span class="dim">░░░░░░░░████░░░░░░░░</span>  <span class="dim">and here</span>
+  agent C  <span class="dim">░░░░░░░░░░░░░░░░████</span>  <span class="dim">and here</span>
+           <span class="acc2">majority vote is safe everywhere</span>
+
+<span class="hi">  WHAT KNIGHT-LEVESON FOUND, AND WHAT ONE MODEL FAMILY DOES</span>
+
+  agent A  <span class="dim">░░░░░░</span><span class="acc">████</span><span class="dim">░░░░░░░░░░</span>
+  agent B  <span class="dim">░░░░░░</span><span class="acc">███</span><span class="dim">░░░░░░░░░░░</span>   <span class="acc">the hard part is</span>
+  agent C  <span class="dim">░░░░░</span><span class="acc">█████</span><span class="dim">░░░░░░░░░</span>   <span class="acc">hard for all of them</span>
+           <span class="acc">majority vote CONFIRMS the shared error</span></pre>
+
+<p>This transfers directly and it is worse for agents than for humans. Five agents on one
+base model are not five independent reviewers; they are one reviewer sampled five times.
+Agreement between them measures consistency, <strong>not correctness</strong>, and rising
+consensus feels exactly like rising confidence.</p>
+
+<ul class="step-list">
+  <li><strong>Vary the model family</strong> where the decision matters. Genuine architectural difference is the only real source of independence you can buy.</li>
+  <li><strong>Vary the lens, not just the worker.</strong> Five agents doing "review this" correlate hard. One doing pre-mortem, one adversarial, one Chesterton's-fence, one FMEA correlate much less, because the prompt is doing the decorrelating.</li>
+  <li><strong>Prefer a mechanical oracle to any vote.</strong> One differential test outranks five agreeing agents, and costs less.</li>
+</ul>
+</section>
+
+<!-- ============================================================ 07 -->
+<section id="failures" data-num="07">
+<h2>Failure <em>Modes</em></h2>
+<div class="section-bar rd"></div>
+
+<p>Named so they can be spotted in a standup rather than discovered in a post-mortem.</p>
+
+<table>
+  <tr><th>Failure</th><th>What it looks like</th><th>Counter</th></tr>
+  <tr><td class="meth rd">Context telephone</td><td>Fidelity drops at every prose handoff. By hop four the brief has drifted and nobody can point at where.</td><td>Hand over the contract artifact, not a summary. Handoffs carry files, not paraphrase.</td></tr>
+  <tr><td class="meth rd">Sycophantic convergence</td><td>Agents agree with each other and with you. Confidence climbs, accuracy does not.</td><td>Blind independent passes before any sharing. Wideband Delphi, <a href="#review">section 05</a>.</td></tr>
+  <tr><td class="meth rd">Correlated failure</td><td>Five agents, one blind spot. The vote confirms the error. <a href="#verify">Section 06</a>.</td><td>Vary model family, vary the lens, prefer a mechanical oracle.</td></tr>
+  <tr><td class="meth rd">Contract drift</td><td>The implementation moved, the contract did not. Everyone still passes tests written against last month's agreement.</td><td>Contract lives in the repo, in CI, and fails the build. Never in a doc.</td></tr>
+  <tr><td class="meth rd">The verification gap</td><td>Nobody checks the checker. A broken conformance test passes everything, silently.</td><td>Mutation testing, or one deliberately invalid fixture per contract that MUST fail.</td></tr>
+  <tr><td class="meth rd">Over-decomposition</td><td>Nine agents, six merge conflicts, and it would have been faster alone.</td><td>State the contract before splitting. If you cannot, do not split.</td></tr>
+  <tr><td class="meth rd">Confident wrong</td><td>Output is fluent, well-structured, and false. Fluency reads as competence.</td><td>Never accept a claim that is checkable without checking it. Fluency is not evidence.</td></tr>
+  <tr><td class="meth rd">Cost blowup</td><td>Fan-out multiplies spend linearly and quality sublinearly.</td><td>Fan out on review dimensions, which is cheap and pays. Be stingy fanning out on implementation.</td></tr>
+</table>
+
+<div class="info-box danger">
+  <strong>The failure that eats the others</strong>
+  A review pipeline that never returns "this is wrong" is not working, it is decorative.
+  If every adversarial pass comes back with polish suggestions, the brief is too soft or
+  the reviewer is grading its own work. Track how often review changes the outcome. If
+  that number is near zero, the pipeline is a cost with no product.
+</div>
+</section>
+
+<!-- ============================================================ 08 -->
+<section id="tooling" data-num="08">
+<h2>Tooling</h2>
+<div class="section-bar"></div>
+
+<p>Almost all of it predates agents. That is the point -- the contract layer is mature and
+boring, which is exactly what you want load-bearing.</p>
+
+<table>
+  <tr><th>Layer</th><th>Tools</th><th>Note</th></tr>
+  <tr><td class="meth">Contract testing</td><td>Pact, Schemathesis, Dredd</td><td>Pact is the consumer-driven original: the consumer records expectations, the provider is verified against every consumer's recording.</td></tr>
+  <tr><td class="meth">Interface schema</td><td>OpenAPI, AsyncAPI, Protobuf, JSON Schema, Avro</td><td>Pick one and generate both sides from it. Hand-written clients drift; generated ones cannot.</td></tr>
+  <tr><td class="meth">Runtime validation</td><td>Pydantic, zod, dataclasses, serde</td><td>The contract enforced at the boundary at runtime, not just in CI.</td></tr>
+  <tr><td class="meth">Property testing</td><td>Hypothesis, QuickCheck, fast-check, proptest</td><td>The highest value per hour of anything in this table for agent-written code. Generators find what enumeration misses.</td></tr>
+  <tr><td class="meth">Mutation testing</td><td>mutmut, Stryker, PIT</td><td>Answers "who checks the checker" mechanically. Deliberately breaks the code and asks whether any test noticed.</td></tr>
+  <tr><td class="meth">Formal</td><td>TLA+, Alloy</td><td>For interleavings and consensus. Expensive; occasionally the only thing that works.</td></tr>
+  <tr><td class="meth cy">Structured output</td><td>JSON-schema-constrained decoding, tool/function schemas</td><td>The contract enforced during generation rather than checked after. Turns "please return JSON" into a guarantee.</td></tr>
+  <tr><td class="meth cy">Tool contracts</td><td>MCP</td><td>A tool interface is a contract between an agent and a capability. Same discipline, same failure modes.</td></tr>
+  <tr><td class="meth cy">Isolation</td><td>git worktrees, containers</td><td>Parallel agents need separate filesystems or they fight. Cheap, and skipping it produces baffling bugs.</td></tr>
+  <tr><td class="meth cy">Code maps</td><td>call-graph indexers</td><td>Hand an agent a ranked map before it reads. Cuts orientation cost by an order of magnitude on code-heavy trees.</td></tr>
+</table>
+
+<div class="info-box">
+  <strong>If you adopt exactly two things</strong>
+  Property-based testing and mutation testing. The first generates the cases nobody
+  enumerated; the second proves the tests can actually fail. Together they close the
+  verification gap without any agent-specific machinery at all, and they work whether or
+  not the code was written by a model.
+</div>
+</section>
+
+<!-- ============================================================ 09 -->
+<section id="schools" data-num="09">
+<h2>Philosophies</h2>
+<div class="section-bar yl"></div>
+
+<p>The positions people are actually arguing from. Worth being able to name the one you
+hold, and the one the person disagreeing with you holds.</p>
+
+<h3 class="yl">Unix philosophy, applied to agents</h3>
+<p>Small, composable, one job each, text at the boundaries. An agent that does one thing
+against a stated contract can be tested, replaced and reasoned about. An agent that "owns
+the feature" cannot. The oldest position here and still the strongest.</p>
+
+<h3 class="yl">Least context</h3>
+<p>The direct analogue of least privilege: give an agent the minimum context the task
+requires. Not primarily an efficiency argument -- extra context is extra surface for the
+agent to be confused by, and it makes the failure harder to attribute afterwards.</p>
+
+<h3 class="yl">Deterministic orchestration, stochastic execution</h3>
+<p>The workflow is code: ordinary, versioned, reviewable, replayable. The steps inside it
+are agents. The argument is that you want exactly one source of nondeterminism, at a known
+place, rather than an emergent system whose control flow is itself a model output.</p>
+
+<h3 class="yl">Strict contracts over robustness</h3>
+<p>Postel's law says be liberal in what you accept. For contracts between agents, invert
+it: <strong>be strict, and fail loudly.</strong> Liberal acceptance hides drift until it
+is expensive, and the protocol-ossification critique of Postel's law applies double when
+the party on the other end will happily invent a plausible field name.</p>
+
+<h3 class="yl">Reversibility as the safety property</h3>
+<p>Since you cannot fully verify agent output, optimise for cheap undo instead: small
+commits, feature branches, idempotent operations, staged rollout. Correctness you cannot
+guarantee, recoverability you can.</p>
+
+<h3 class="yl">Conway's Law awareness</h3>
+<p>Your agent topology becomes your architecture. Choosing how to fan out <em>is</em> an
+architectural decision, made early, usually implicitly, and usually by whoever wrote the
+orchestration script. Worth making on purpose.</p>
+
+<div class="info-box warn">
+  <strong>The honest state of the field</strong>
+  The contract half is mature: forty years of design-by-contract and twenty of
+  consumer-driven contract testing, and it transfers essentially unchanged. The
+  multi-agent half is not. Correlated failure across one model family is unsolved,
+  model-as-judge is measurably biased, and the returns on fan-out are poorly
+  characterised. Adopt the contract discipline with confidence. Treat the orchestration
+  patterns as promising and instrument them, because the field does not yet know which
+  ones pay.
+</div>
+</section>
+
+</div>
+
+<div class="footer">
+  <span>Contract-Driven Multi-Agent Development</span>
+  <span>hed0rah // <a href="https://martinfowler.com/articles/consumerDrivenContracts.html">consumer-driven contracts</a></span>
+</div>
+<div class="spine">// contracts · decomposition · adversarial · pre-mortem · oracles · correlated failure · philosophies //</div>
+
+<script>
+const LABELS = {
+  orient: 'The Core Idea',
+  lineage: 'Not New',
+  contract: 'What A Contract Is',
+  decompose: 'Decomposition',
+  review: 'Styles Of Review',
+  verify: 'The Oracle Problem',
+  failures: 'Failure Modes',
+  tooling: 'Tooling',
+  schools: 'Philosophies'
+};
+const sections = [...document.querySelectorAll('.container > section[id]')];
+const sideLinks = [...document.querySelectorAll('.side a')];
+const radial = document.getElementById('radial');
+const ring = document.getElementById('radialRing');
+const center = document.getElementById('radialCenter');
+const navNum = document.getElementById('navNum');
+const navLabel = document.getElementById('navLabel');
+
+const items = sections.map(s => {
+  const a = document.createElement('a');
+  a.href = '#' + s.id;
+  a.className = 'radial-item';
+  a.innerHTML = '<span>' + s.dataset.num + '</span>' + (LABELS[s.id] || s.id);
+  radial.appendChild(a);
+  const dot = document.createElement('span');
+  dot.className = 'radial-dot';
+  radial.appendChild(dot);
+  return { sec: s, a, dot };
+});
+
+function layout() {
+  const rx = Math.max(140, Math.min(innerWidth * 0.5 - 150, 330));
+  const ry = Math.max(150, Math.min(innerHeight * 0.5 - 100, 330));
+  ring.style.width = (rx - 26) * 2 + 'px';
+  ring.style.height = (ry - 26) * 2 + 'px';
+  items.forEach((it, i) => {
+    const ang = -Math.PI / 2 + i * 2 * Math.PI / items.length;
+    const x = Math.cos(ang), y = Math.sin(ang);
+    it.a.style.left = 'calc(50% + ' + (rx * x).toFixed(1) + 'px)';
+    it.a.style.top = 'calc(50% + ' + (ry * y).toFixed(1) + 'px)';
+    const tx = x > 0.35 ? '0%' : x < -0.35 ? '-100%' : '-50%';
+    const ty = y > 0.35 ? '0%' : y < -0.35 ? '-100%' : '-50%';
+    it.a.style.transform = 'translate(' + tx + ', ' + ty + ')';
+    it.dot.style.left = 'calc(50% + ' + ((rx - 26) * x).toFixed(1) + 'px)';
+    it.dot.style.top = 'calc(50% + ' + ((ry - 26) * y).toFixed(1) + 'px)';
+  });
+}
+function openDial() { layout(); radial.classList.add('open'); document.body.classList.add('dial-open'); }
+function closeDial() { radial.classList.remove('open'); document.body.classList.remove('dial-open'); }
+
+function activate(id) {
+  const el = document.getElementById(id);
+  const sec = el ? (el.closest('.container > section[id]') || sections[0]) : sections[0];
+  sections.forEach(s => s.classList.toggle('active', s === sec));
+  items.forEach(it => {
+    it.a.classList.toggle('active', it.sec === sec);
+    it.dot.classList.toggle('active', it.sec === sec);
+  });
+  sideLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + sec.id));
+  navNum.textContent = sec.dataset.num + ' //';
+  navLabel.textContent = LABELS[sec.id] || sec.id;
+  center.textContent = sec.dataset.num;
+  closeDial();
+  if (el && el !== sec) el.scrollIntoView();
+  else window.scrollTo(0, 0);
+}
+function go(id) { history.replaceState(null, '', '#' + id); activate(id); }
+
+document.getElementById('navCurrent').addEventListener('click', openDial);
+document.getElementById('sideDial').addEventListener('click', openDial);
+center.addEventListener('click', closeDial);
+radial.addEventListener('click', e => { if (e.target === radial) closeDial(); });
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  e.preventDefault();
+  go(a.getAttribute('href').slice(1));
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') return closeDial();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const cur = sections.findIndex(s => s.classList.contains('active'));
+    const next = (cur + (e.key === 'ArrowRight' ? 1 : sections.length - 1)) % sections.length;
+    go(sections[next].id);
+  }
+});
+window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
+window.addEventListener('hashchange', () => activate(location.hash.slice(1)));
+activate(location.hash.slice(1));
+
+// dark mode toggle (initial theme set by the inline script in <body>)
+const themeButtons = [...document.querySelectorAll('.theme-toggle')];
+function paintTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  themeButtons.forEach(b => b.textContent = (b.classList.contains('side-dial') ? (dark ? '◑ light' : '◐ dark') : (dark ? '◑' : '◐')));
+}
+themeButtons.forEach(b => b.addEventListener('click', () => {
+  const dark = document.documentElement.getAttribute('data-theme') !== 'dark';
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+  paintTheme();
+}));
+paintTheme();
+</script>
+</body>
+</html>

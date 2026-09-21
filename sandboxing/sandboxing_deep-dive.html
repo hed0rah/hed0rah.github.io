@@ -825,6 +825,11 @@ sysctl dev.tty.legacy_tiocsti=0</pre>
 <span class="fn">box</span> /dev/null sh -c <span class="st">'cat /etc/shadow'</span>    <span class="cm"># must fail: not bound</span>
 <span class="fn">box</span> /dev/null sh -c <span class="st">'ps aux | wc -l'</span>     <span class="cm"># must be tiny: own pid ns</span></pre>
 
+  <div class="info-box warn">
+    <strong>The minimal-filesystem symlink trap</strong>
+    On Debian and Ubuntu, <code>cc</code>, <code>awk</code>, <code>vi</code> and a long tail of others are not binaries. They are symlinks into <code>/etc/alternatives/</code>. Bind <code>/usr</code> without <code>/etc/alternatives</code> and they exist and dangle, so <code>make</code> reports <code>cc: No such file or directory</code> (errno 127, which reads like a missing compiler) and <code>awk</code> reports <code>not found</code> (which reads like it was never installed). Bind <code>/etc/alternatives</code> read-only: it grants nothing, because the real binaries were already reachable under <code>/usr</code>. And anything you write to run <em>inside</em> a sandbox should prefer shell builtins and <code>/proc</code> over external commands, including redirects to <code>/dev/null</code>, which fail when there is no <code>/dev</code>.
+  </div>
+
   <div class="info-box cy">
     <strong>In this repo</strong>
     <code>check</code> reports what your kernel can actually do and why a sandbox is refusing to start, naming the failing stage rather than guessing from one sysctl. <code>escape-test</code> runs assertions inside a sandbox and reports what leaked, graded against a profile. <code>nsview</code> decides namespace membership by comparing against the kernel's fixed initial-namespace inodes, which beats counting processes. <code>capdecode</code> reads all five capability sets from <code>/proc</code> with no libcap, and calls out the <code>CapEff=0</code> with a full bounding set shape that reads clean and is not. <code>01_namespaces_by_hand.sh</code> walks the five primitives with nothing but util-linux, and <code>examples/sandbox.c</code> is self-restriction in C: no_new_privs, Landlock, seccomp, exec, in the order the kernel demands.

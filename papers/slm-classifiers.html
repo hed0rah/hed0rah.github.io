@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Small Models and Classifiers</title>
+<style>
+/* ============================================================================
+   SPEC house style -- an editorial, print-friendly systems specification.
+   Calm and rigorous, not a dashboard. Georgia longform paired with system-sans
+   apparatus (labels, tables, controls) and a monospace for diagrams and code.
+   One structural hue (slate blue); teal and orange are branding-nod section
+   accents; green/amber/red are reserved for status only. Deliberately a single
+   light "paper" look -- a spec is light -- so every colour is painted
+   explicitly and no webfont is fetched (Georgia and the system stacks are
+   resilient and print-faithful).
+   ============================================================================ */
+:root{
+  --canvas:#E6E8EB;          /* light grey desk the paper sits on */
+  --paper:#FDFDFC;           /* bright, barely-warm white page (change per use) */
+  --ink:#20252A;             /* near-black, faintly warm */
+  --ink-2:#4B545D;           /* secondary text */
+  --ink-3:#79838D;           /* muted labels, captions */
+  --rule:#E7E5DE;            /* hairline rules on the paper */
+  --rule-2:#CDD1D6;          /* structural rules */
+  --slate:#3E5A73;           /* the one structural hue */
+  --slate-2:#5B7288;
+  --slate-soft:#EAEFF4;      /* slate wash for the active TOC item, quiet fills */
+  --teal:#2C776D;            /* branding nod */
+  --orange:#B15A2C;          /* branding nod */
+  --ok:#3F7A48;              /* implemented / pass */
+  --warn:#98671C;            /* warning / partial */
+  --crit:#A5382F;            /* critical / fail */
+  --code-bg:#F2F3F1;         /* soft neutral code panel, no beige */
+  --code-ink:#2A3035;
+  --kw:#3E5A73; --str:#3F7A48; --num:#98671C; --cm:#8A8578; --fn:#B15A2C;
+  --serif:Georgia,"Iowan Old Style","Palatino Linotype","Book Antiqua",serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --measure:70rem;          /* the paper: wide, web-optimised; dense blocks fill it */
+  --prose:62rem;            /* long-form prose is reined in a touch for legibility */
+  --rail:16rem;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--canvas);color:var(--ink);
+  font-family:var(--serif);font-size:17px;line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* skip link ---------------------------------------------------------------- */
+.skip{position:absolute;left:-999px;top:0;background:var(--ink);color:#fff;
+  padding:.5rem .9rem;font-family:var(--sans);font-size:.8rem;z-index:50;border-radius:0 0 3px 0}
+.skip:focus{left:0}
+
+/* layout: sticky TOC rail + centred paper column --------------------------- */
+.doc{
+  display:grid;
+  grid-template-columns:var(--rail) minmax(0,var(--measure));
+  gap:4rem;justify-content:center;align-items:start;
+  padding:2.5rem 2rem 6rem;
+}
+
+/* --- the rail ------------------------------------------------------------- */
+.rail{position:sticky;top:1.5rem;font-family:var(--sans);align-self:start}
+.rail .doc-id{font-size:.72rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 1rem}
+.rail nav ol{list-style:none;margin:0;padding:0;counter-reset:toc}
+.rail nav a{
+  display:block;text-decoration:none;color:var(--ink-2);
+  font-size:.92rem;line-height:1.4;padding:.32rem 0 .32rem .85rem;
+  border-left:2px solid var(--rule);transition:color .15s,border-color .15s;
+}
+.rail nav a .n{color:var(--ink-3);font-variant-numeric:tabular-nums;margin-right:.45rem}
+.rail nav a:hover{color:var(--ink)}
+.rail nav a[aria-current="true"]{color:var(--slate);border-left-color:var(--slate);font-weight:600}
+.rail nav .sub a{padding-left:1.8rem;font-size:.84rem;color:var(--ink-3)}
+.rail nav .sub a[aria-current="true"]{color:var(--slate)}
+/* rail references: internal cross-refs and external citations, under the TOC */
+.rail-refs{margin-top:1.5rem;padding-top:1.1rem;border-top:1px solid var(--rule)}
+.rail-refs .grp{margin-bottom:1rem}
+.rail-refs .grp:last-child{margin-bottom:0}
+.rail-refs .glbl{font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 .55rem}
+.rail-refs ul{list-style:none;margin:0;padding:0}
+.rail-refs li{margin:.32rem 0}
+.rail-refs a{display:flex;gap:.45rem;text-decoration:none;color:var(--ink-2);
+  font-size:.84rem;line-height:1.35;transition:color .15s}
+.rail-refs a:hover{color:var(--ink)}
+.rail-refs .internal a::before{content:"\00a7";color:var(--slate);flex:none;font-weight:600}
+.rail-refs .external a::before{content:"\2197";color:var(--ink-3);flex:none;font-size:.7rem;line-height:1.6}
+.rail-refs .external a:hover::before{color:var(--teal)}
+.rail-refs .cnum{color:var(--ink-3);font-variant-numeric:tabular-nums;flex:none}
+.rail .rail-foot{margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid var(--rule)}
+.rail-foot .stat-row{display:flex;align-items:center;gap:.55rem;margin-bottom:.75rem}
+.rail-foot .stat-row .k{font-size:.66rem;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3)}
+.rail-foot p{font-size:.78rem;line-height:1.6;color:var(--ink-3);margin:0;max-width:none}
+
+/* --- the paper ------------------------------------------------------------ */
+.paper{
+  background:var(--paper);
+  border:1px solid var(--rule);
+  box-shadow:0 1px 2px rgba(30,40,50,.05),0 8px 24px -18px rgba(30,40,50,.25);
+  padding:3.5rem clamp(1.5rem,5vw,4rem) 4rem;
+  counter-reset:chap;
+  max-width:100%;
+}
+
+/* cover / masthead --------------------------------------------------------- */
+.cover{border-bottom:2px solid var(--ink);padding-bottom:1.6rem;margin-bottom:2rem}
+.eyebrow{font-family:var(--sans);font-size:.68rem;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--slate);margin:0 0 .9rem;font-weight:600}
+.cover h1{font-size:clamp(1.9rem,4.4vw,2.7rem);line-height:1.12;font-weight:400;
+  letter-spacing:-.01em;margin:0;text-wrap:balance}
+.cover .sub{font-size:1.12rem;color:var(--ink-2);margin:.7rem 0 0;font-style:italic;max-width:34rem}
+
+/* metadata grid (sans apparatus) ------------------------------------------ */
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));
+  gap:.1rem 1.5rem;margin:1.6rem 0 0;font-family:var(--sans)}
+.meta div{padding:.35rem 0;border-top:1px solid var(--rule)}
+.meta dt{font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin:0}
+.meta dd{font-size:.86rem;margin:.15rem 0 0;color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* status pill -------------------------------------------------------------- */
+.pill{display:inline-block;font-family:var(--sans);font-size:.66rem;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;padding:.12rem .45rem;border-radius:2px;
+  border:1px solid currentColor;line-height:1.4}
+.pill.ok{color:var(--ok)} .pill.warn{color:var(--warn)} .pill.crit{color:var(--crit)}
+.pill.slate{color:var(--slate)} .pill.draft{color:var(--ink-3)}
+
+/* abstract ----------------------------------------------------------------- */
+.abstract{font-size:.96rem;color:var(--ink-2);margin:2rem 0;padding-left:1.1rem;
+  border-left:2px solid var(--slate)}
+.abstract .lbl{font-family:var(--sans);font-size:.64rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--slate);display:block;margin-bottom:.5rem;font-weight:600}
+.abstract p{margin:.5rem 0 0}
+
+/* chapters and sections (auto-numbered) ------------------------------------ */
+.chapter{margin-top:3.2rem}
+.chapter>h2{counter-increment:chap;counter-reset:sec;
+  font-size:1.5rem;font-weight:600;line-height:1.2;margin:0 0 .3rem;
+  padding-bottom:.5rem;border-bottom:1px solid var(--rule-2)}
+.chapter>h2::before{content:counter(chap) "\00a0\00a0";color:var(--slate);
+  font-family:var(--sans);font-weight:600;font-size:1.15rem}
+h3{counter-increment:sec;font-size:1.06rem;font-weight:600;margin:2rem 0 .5rem;letter-spacing:.005em}
+h3::before{content:counter(chap) "." counter(sec) "\00a0\00a0";
+  color:var(--ink-3);font-family:var(--sans);font-weight:500;font-size:.85rem}
+h4{font-family:var(--sans);font-size:.72rem;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);margin:1.6rem 0 .5rem}
+p{margin:0 0 1rem;max-width:var(--prose)}
+a.ref{color:var(--slate);text-decoration:none;border-bottom:1px solid var(--rule-2)}
+a.ref:hover{border-bottom-color:var(--slate)}
+sup.cite{font-family:var(--sans);font-size:.7rem;color:var(--slate);font-weight:600}
+sup.cite a{color:inherit;text-decoration:none}
+em{font-style:italic}
+strong{font-weight:600}
+code{font-family:var(--mono);font-size:.82em;background:var(--code-bg);
+  padding:.05rem .3rem;border-radius:2px;color:var(--code-ink)}
+
+/* editorial columns -- top rule only, never a boxed panel ------------------ */
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1.6rem 2rem;margin:1.4rem 0}
+.col{border-top:2px solid var(--slate);padding-top:.7rem}
+.col.teal{border-top-color:var(--teal)} .col.orange{border-top-color:var(--orange)}
+.col .lbl{font-family:var(--sans);font-size:.66rem;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 .4rem}
+.col p{font-size:.9rem;margin:0 0 .6rem}
+.col .lbl.s-slate{color:var(--slate)} .col .lbl.s-teal{color:var(--teal)} .col .lbl.s-orange{color:var(--orange)}
+
+/* note -- editorial aside, thin left rule, not a box ----------------------- */
+.note{margin:1.3rem 0;padding-left:1rem;border-left:2px solid var(--rule-2);
+  font-size:.9rem;color:var(--ink-2)}
+.note.warn{border-left-color:var(--warn)} .note.crit{border-left-color:var(--crit)}
+.note .lbl{font-family:var(--sans);font-size:.62rem;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:.3rem}
+.note.warn .lbl{color:var(--warn)} .note.crit .lbl{color:var(--crit)}
+
+/* diagrams and code -------------------------------------------------------- */
+.scroll{overflow-x:auto;margin:1.3rem 0}
+pre{margin:0}
+pre.diagram,pre.code{background:var(--code-bg);border:1px solid var(--rule);
+  border-radius:3px;padding:1rem 1.1rem;font-family:var(--mono);font-size:.76rem;
+  line-height:1.5;color:var(--code-ink);white-space:pre}
+/* diagrams live or die on a fixed character cell: kill ligatures and contextual
+   substitution so box-drawing glyphs keep a 1ch advance. The art is generated on a
+   grid by flowgen.py -- never hand-align, and never use ambiguous-width triangles. */
+pre.diagram{border-left:2px solid var(--slate);font-variant-ligatures:none;
+  font-feature-settings:"liga" 0,"calt" 0;-webkit-font-feature-settings:"liga" 0,"calt" 0}
+.diagram .dim{color:var(--ink-3)} .diagram .hi{color:var(--ink);font-weight:600}
+.diagram .ac{color:var(--slate)} .diagram .ac2{color:var(--teal)} .diagram .ac3{color:var(--orange)}
+.code .kw{color:var(--kw)} .code .str{color:var(--str)} .code .num{color:var(--num)}
+.code .cm{color:var(--cm);font-style:italic} .code .fn{color:var(--fn)} .code .key{color:var(--slate)}
+
+/* .flow -- a CSS-grid flow rail. The polished alternative to the ASCII diagram for a
+   path/pipeline figure: equal-width node cards on one row, arrows (with optional edge
+   labels) drawn in the columns between them, and optional labeled bands grouping the
+   stages underneath. Pick a width class .n2 .. .n6 for the node count; the grid
+   alternates 1fr node tracks with auto arrow tracks. Collapses to a vertical stack
+   with downward arrows below 640px. Use this OR pre.diagram, not both, per figure. */
+.flow{display:grid;align-items:stretch;margin:.3rem 0}
+.flow.n2{grid-template-columns:1fr auto 1fr}
+.flow.n3{grid-template-columns:1fr auto 1fr auto 1fr}
+.flow.n4{grid-template-columns:1fr auto 1fr auto 1fr auto 1fr}
+.flow.n5{grid-template-columns:1fr auto 1fr auto 1fr auto 1fr auto 1fr}
+.flow.n6{grid-template-columns:1fr auto 1fr auto 1fr auto 1fr auto 1fr auto 1fr}
+.flow-node{background:var(--paper);border:1px solid var(--rule-2);
+  border-top:2px solid var(--slate);border-radius:3px;padding:.7rem .8rem .75rem;
+  display:flex;flex-direction:column;gap:.28rem;min-width:0}
+.flow-node .k{font-family:var(--sans);font-size:.6rem;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3)}
+.flow-node .t{font-family:var(--sans);font-size:.82rem;font-weight:600;color:var(--ink);
+  line-height:1.2;text-wrap:balance}
+.flow-node .s{font-family:var(--mono);font-size:.67rem;color:var(--ink-3);line-height:1.3}
+.flow-node.teal{border-top-color:var(--teal)}
+.flow-node.orange{border-top-color:var(--orange)}
+.flow-node.solid{background:var(--slate-soft);border-color:var(--slate-2)}
+.flow-arrow{position:relative;align-self:center;min-width:2.6rem;height:1.3rem;
+  display:flex;align-items:center;justify-content:center}
+.flow-arrow::before{content:"";position:absolute;top:50%;left:.1rem;right:.4rem;
+  border-top:1.5px solid var(--rule-2);transform:translateY(-50%)}
+.flow-arrow::after{content:"";position:absolute;top:50%;right:.2rem;width:.42rem;height:.42rem;
+  border-top:1.6px solid var(--slate-2);border-right:1.6px solid var(--slate-2);
+  transform:translateY(-50%) rotate(45deg)}
+.flow-arrow span{position:relative;top:-.72rem;font-family:var(--sans);font-size:.62rem;
+  text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);
+  background:var(--paper);padding:0 .3rem;white-space:nowrap;z-index:1}
+/* bands are a second grid row INSIDE .flow, so each spans its exact node columns
+   (set grid-column inline: for n5, 1/8 covers nodes 1-4, 9/10 covers node 5). The
+   arrow gap between the groups is left uncovered, giving a clean break. */
+.flow-band{grid-row:2;margin-top:.5rem;border-top:1.5px solid var(--rule-2);
+  padding-top:.4rem;text-align:center;font-family:var(--sans);font-size:.66rem;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3)}
+.flow-band.slate{border-top-color:var(--slate);color:var(--slate)}
+.flow-band.teal{border-top-color:var(--teal);color:var(--teal)}
+.flow-band.orange{border-top-color:var(--orange);color:var(--orange)}
+@media (max-width:640px){
+  .flow{grid-template-columns:1fr!important}
+  .flow-arrow{height:1.9rem;min-width:0;justify-self:center;width:1.4rem}
+  .flow-arrow::before{left:50%;right:auto;top:.1rem;bottom:.45rem;width:0;height:auto;
+    border-top:none;border-left:1.5px solid var(--rule-2);transform:translateX(-50%)}
+  .flow-arrow::after{top:auto;bottom:.2rem;right:auto;left:50%;
+    transform:translateX(-50%) rotate(135deg)}
+  .flow-arrow span{top:0}
+  .flow-band{grid-column:1/-1!important;grid-row:auto;margin-top:.3rem}
+}
+
+figcaption,.cap{font-family:var(--sans);font-size:.72rem;color:var(--ink-3);
+  margin:.5rem 0 0;counter-increment:fig}
+.cap::before{content:"Fig. " counter(chap) "." counter(fig) " \2014 ";color:var(--ink-2)}
+.paper{counter-reset:chap fig}
+.chapter>h2{counter-reset:sec fig}
+
+/* equation ----------------------------------------------------------------- */
+.equation{display:flex;align-items:center;gap:1rem;margin:1.4rem 0;
+  font-family:var(--serif);font-size:1.02rem}
+.equation .body{flex:1;text-align:center;font-style:italic}
+.equation .num{font-family:var(--sans);font-size:.75rem;color:var(--ink-3)}
+.frac{display:inline-flex;flex-direction:column;text-align:center;vertical-align:middle;margin:0 .2rem}
+.frac .over{border-bottom:1px solid var(--ink);padding:0 .4rem}
+.frac .under{padding:0 .4rem}
+
+/* tables ------------------------------------------------------------------- */
+table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:.82rem;margin:.4rem 0}
+caption{font-family:var(--sans);font-size:.72rem;color:var(--ink-3);text-align:left;
+  margin-bottom:.5rem;counter-increment:tab}
+caption::before{content:"Table " counter(chap) "." counter(tab) " \2014 ";color:var(--ink-2)}
+.chapter>h2{counter-reset:sec fig tab}
+th,td{text-align:left;padding:.45rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);
+  border-bottom:1.5px solid var(--rule-2);font-weight:600}
+tbody tr:hover{background:var(--slate-soft)}
+td.meth{font-weight:600;color:var(--ink);font-family:var(--mono);font-size:.78rem}
+td .st{font-weight:600} .st-ok{color:var(--ok)} .st-warn{color:var(--warn)} .st-crit{color:var(--crit)}
+table code{background:none;padding:0}
+tbody td{font-variant-numeric:tabular-nums}
+
+/* checklist ---------------------------------------------------------------- */
+ul.check{list-style:none;margin:1.2rem 0;padding:0;font-family:var(--sans);font-size:.86rem}
+ul.check li{display:flex;gap:.6rem;padding:.35rem 0;border-bottom:1px solid var(--rule)}
+ul.check .box{flex:none;width:1rem;height:1rem;border:1.5px solid var(--rule-2);border-radius:2px;
+  margin-top:.15rem;position:relative}
+ul.check li.done .box{background:var(--ok);border-color:var(--ok)}
+ul.check li.done .box::after{content:"";position:absolute;left:.28rem;top:.06rem;
+  width:.24rem;height:.5rem;border:solid #fff;border-width:0 1.5px 1.5px 0;transform:rotate(42deg)}
+ul.check li.done .txt{color:var(--ink-3)}
+
+/* timeline -- subtle engineering detail on the light paper ----------------- */
+.timeline{position:relative;margin:1.6rem 0 1.6rem;padding-left:0;font-family:var(--sans)}
+.timeline .track{position:absolute;left:6.5rem;top:.4rem;bottom:.4rem;width:1px;background:var(--rule-2)}
+.timeline .ev{position:relative;display:grid;grid-template-columns:6rem 1fr;gap:1.3rem;
+  padding:.45rem 0;font-size:.82rem}
+.timeline .ev .t{color:var(--ink-3);font-variant-numeric:tabular-nums;text-align:right}
+.timeline .ev .d{position:relative}
+.timeline .ev .d::before{content:"";position:absolute;left:-.85rem;top:.4rem;width:.5rem;height:.5rem;
+  border-radius:50%;background:var(--paper);border:1.5px solid var(--slate)}
+.timeline .ev.crit .d::before{border-color:var(--crit)}
+.timeline .ev .d b{font-weight:600}
+
+/* event-trace slider (the signature light interaction) --------------------- */
+.trace{margin:1.6rem 0;font-family:var(--sans)}
+.trace .lane{display:flex;gap:2px;margin-bottom:.9rem}
+.trace .lane .span{flex:1;height:2.1rem;background:var(--slate-soft);border:1px solid var(--rule-2);
+  border-radius:2px;display:flex;align-items:center;justify-content:center;
+  font-size:.66rem;color:var(--ink-3);cursor:pointer;transition:background .15s,color .15s}
+.trace .lane .span.cur{background:var(--slate);border-color:var(--slate);color:#fff;font-weight:600}
+.trace .lane .span.past{background:#DCE4EB;color:var(--slate-2)}
+.trace input[type=range]{width:100%;accent-color:var(--slate);margin:.2rem 0 1rem}
+.trace .readout{border-top:2px solid var(--slate);padding-top:.7rem;min-height:5.2rem}
+.trace .readout .lbl{font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin:0 0 .35rem}
+.trace .readout .k{font-family:var(--mono);font-size:.78rem;color:var(--slate);font-weight:600}
+.trace .readout p{font-family:var(--serif);font-size:.9rem;color:var(--ink-2);margin:.4rem 0 0;max-width:36rem}
+
+/* progressive disclosure --------------------------------------------------- */
+details{border-top:1px solid var(--rule);padding:.6rem 0;margin:0}
+details summary{font-family:var(--sans);font-size:.86rem;font-weight:600;color:var(--ink);
+  cursor:pointer;list-style:none;display:flex;align-items:center;gap:.5rem}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"+";font-family:var(--mono);color:var(--slate);width:1rem}
+details[open] summary::before{content:"\2212"}
+details summary:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
+details .body{padding:.7rem 0 .3rem 1rem;font-size:.9rem;color:var(--ink-2)}
+
+/* references --------------------------------------------------------------- */
+ol.refs{font-family:var(--sans);font-size:.8rem;color:var(--ink-2);line-height:1.5;
+  padding-left:2.2rem;margin:1rem 0}
+ol.refs li{margin:.5rem 0;padding-left:.3rem}
+ol.refs li::marker{color:var(--ink-3)}
+ol.refs cite{font-style:italic;color:var(--ink)}
+
+/* footer ------------------------------------------------------------------- */
+.paper>footer{margin-top:3.5rem;padding-top:1.2rem;border-top:1px solid var(--rule);
+  font-family:var(--sans);font-size:.72rem;color:var(--ink-3);display:flex;
+  justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+
+/* focus states everywhere -------------------------------------------------- */
+a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible,.span:focus-visible{
+  outline:2px solid var(--slate);outline-offset:2px}
+
+/* responsive: collapse to a single reading column -------------------------- */
+@media (max-width:72rem){
+  .doc{grid-template-columns:minmax(0,var(--measure));gap:0}
+  .rail{position:static;margin-bottom:1.5rem;border-bottom:1px solid var(--rule);padding-bottom:1.2rem}
+  .rail nav ol{columns:2;column-gap:1.5rem}
+  .rail-refs{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+  .rail-refs .grp{margin-bottom:0}
+  .cols{grid-template-columns:1fr}
+  .paper{padding:2rem clamp(1rem,5vw,1.6rem) 2.5rem}
+}
+
+/* reduced motion ----------------------------------------------------------- */
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+/* print: drop the apparatus, format the paper for A4/Letter ---------------- */
+@media print{
+  body{background:#fff;font-size:11pt}
+  .doc{display:block;padding:0}
+  .rail,.trace input,.skip{display:none}
+  .paper{box-shadow:none;border:none;padding:0;max-width:none}
+  .chapter{break-inside:avoid-page}
+  h2,h3{break-after:avoid}
+  pre.diagram,pre.code,table,.trace{break-inside:avoid}
+  .trace .lane .span.cur{background:#000;color:#fff}
+  a.ref,sup.cite a{color:#000}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the paper</a>
+
+<div class="doc">
+
+  <aside class="rail" aria-label="Table of contents">
+    <p class="doc-id">SLM-REF &middot; rev 2026.09</p>
+    <nav aria-label="Sections">
+      <ol id="toc">
+        <li><a href="#abstract"><span class="n">0</span>Abstract</a></li>
+        <li><a href="#case"><span class="n">1</span>The case</a></li>
+        <li><a href="#tiny"><span class="n">2</span>Tiny models</a></li>
+        <li><a href="#classifiers"><span class="n">3</span>Classifiers</a></li>
+        <li><a href="#system1"><span class="n">4</span>The System 1 class</a></li>
+        <li><a href="#compression"><span class="n">5</span>Compression</a></li>
+        <li><a href="#catalogue"><span class="n">6</span>The catalogue</a></li>
+        <li><a href="#practice"><span class="n">7</span>In practice</a></li>
+        <li><a href="#glossary"><span class="n">8</span>Glossary</a></li>
+        <li><a href="#refs"><span class="n">R</span>References</a></li>
+      </ol>
+    </nav>
+    <div class="rail-refs">
+      <div class="grp internal" aria-label="Internal cross-references">
+        <p class="glbl">Cross-references</p>
+        <ul>
+          <li><a href="#catalogue">The catalogue &sect;6</a></li>
+          <li><a href="#practice">Tiers Table 7.1</a></li>
+          <li><a href="#practice">Calibration &sect;7.3</a></li>
+        </ul>
+      </div>
+      <div class="grp external" aria-label="External citations">
+        <p class="glbl">Cited works</p>
+        <ul>
+          <li><a href="#r1"><span class="cnum">1</span>Belcak et al., 2025</a></li>
+          <li><a href="#r10"><span class="cnum">10</span>Huang et al., 2024</a></li>
+          <li><a href="#refs"><span class="cnum">R</span>All references</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="rail-foot">
+      <div class="stat-row"><span class="k">Status</span><span class="pill slate">Living</span></div>
+      <p>A reference, not a benchmark. Parameter counts and version names drift within
+      months; verify a specific figure against the vendor's own card before citing it.</p>
+    </div>
+  </aside>
+
+  <main class="paper" id="main">
+
+    <header class="cover">
+      <p class="eyebrow">Reference</p>
+      <h1>Small Models and Classifiers</h1>
+      <p class="sub">The working case for a swarm of small, specialised models and
+        classifiers instead of one large generalist calling itself for every step, and a
+        catalogue of what you can actually use.</p>
+      <dl class="meta">
+        <div><dt>Document</dt><dd>SLM-REF</dd></div>
+        <div><dt>Revision</dt><dd>2026.09</dd></div>
+        <div><dt>Status</dt><dd><span class="pill slate">Living</span></dd></div>
+        <div><dt>Scope</dt><dd>Routing, triage, review</dd></div>
+        <div><dt>Assumes</dt><dd>Some ML vocabulary</dd></div>
+      </dl>
+    </header>
+
+    <section id="abstract" class="abstract" aria-labelledby="abstract-h">
+      <span class="lbl" id="abstract-h">Abstract</span>
+      <p>Most decisions inside an agent system are narrow: is this finding a blocker, which
+        team handles this, is this input safe, is this noise. A frontier model answers such
+        a question by writing prose that a program must then parse, which is a reliable way
+        to build something that fails silently. This document makes the case for the
+        opposite arrangement, surveys the research that supports it, and catalogues the
+        models and classifiers that can actually hold those positions today, grouped by
+        what they do rather than by who made them.</p>
+    </section>
+
+    <!-- 1 -->
+    <section class="chapter" id="case" aria-labelledby="case-h">
+      <h2 id="case-h">The case for specialisation</h2>
+
+      <p>An octopus arm's nerve cord is segmented rather than centrally wired: each segment
+        handles local sucker and muscle control independently, and the central brain is
+        involved only in higher-level coordination.<sup class="cite"><a href="#r2">2</a></sup>
+        That is the mental model for an agent graph. Most nodes should be a small, local
+        decision-maker, and only the parts that need genuinely global judgment should reach
+        for something bigger.</p>
+
+      <div class="note">
+        <span class="lbl">The mental model to keep</span>
+        Do not route every decision through the frontier model. Give each arm of the graph
+        its own local judgment, and reserve the expensive model for cross-cutting synthesis
+        that nothing smaller could do.
+      </div>
+
+      <h3>Three papers that ground it beyond analogy</h3>
+
+      <div class="cols">
+        <div class="col teal">
+          <p class="lbl s-teal">Economic</p>
+          <p>Small models beat large ones on cost, latency and controllability for most
+            agent subtasks, and modern small models are already capable enough at
+            function-calling and tool-use style work.<sup class="cite"><a href="#r1">1</a></sup>
+            The practical reading: use the small model unless the task genuinely needs the
+            big one.</p>
+        </div>
+        <div class="col orange">
+          <p class="lbl s-orange">Philosophical</p>
+          <p>General intelligence as a goal may be incoherent. Human intelligence is itself
+            a bundle of survival-relevant specialisations, and the No Free Lunch result
+            plus biological precedent both favour targeted systems over universal
+            ones.<sup class="cite"><a href="#r3">3</a></sup></p>
+        </div>
+        <div class="col">
+          <p class="lbl s-slate">Empirical</p>
+          <p>Large models develop internally modular substructure during training on their
+            own.<sup class="cite"><a href="#r4">4</a></sup> The specialisation the field is
+            now doing by hand, one small model per task, mirrors something the models
+            already do to themselves.</p>
+        </div>
+      </div>
+
+      <h3>The failure this replaces</h3>
+      <p>The argument is not only about cost. A model asked for an opinion returns prose,
+        and a program that must act on prose ends up searching it for substrings. A review
+        gate that searched its input for the word <em>approve</em> will happily pass the
+        sentence "I do not approve". The bug is not the regular expression; it is that the
+        decision was expressed in prose at all.</p>
+
+      <figure class="scroll">
+<pre class="diagram">  <span class="dim">the failure this replaces</span>
+  <span class="hi">┌──────────────┐</span> <span class="dim">an essay</span>   <span class="ac3">┌──────────────┐</span> <span class="dim">substring</span>    <span class="ac3">┌────────────┐</span>
+  <span class="hi">│  a reviewer  │</span>───────────&gt;<span class="ac3">│    a grep    │</span>─────────────&gt;<span class="ac3">│   WRONG    │</span>
+  <span class="hi">└──────────────┘</span>            <span class="ac3">└──────────────┘</span>              <span class="ac3">└────────────┘</span>
+    <span class="ac3">"I do not approve" matched the word approve</span>
+
+  <span class="dim">the contract</span>
+  <span class="hi">┌──────────────┐</span> <span class="dim">one token</span>  <span class="ac">┌──────────────┐</span> <span class="dim">a field</span>      <span class="ac">┌────────────┐</span>
+  <span class="hi">│  a reviewer  │</span>───────────&gt;<span class="ac">│</span><span class="hi">   a check    </span><span class="ac">│</span>─────────────&gt;<span class="ac">│</span><span class="hi">  a decision</span><span class="ac">│</span>
+  <span class="hi">└──────────────┘</span>            <span class="ac">└──────────────┘</span>              <span class="ac">└────────────┘</span>
+    <span class="dim">the decoder cannot emit anything but pass, fail or escalate</span>
+</pre>
+        <figcaption class="cap">move the decision into a field and the parser disappears. This is also what makes a three-billion-parameter model safe in the position.</figcaption>
+      </figure>
+
+      <p>A 3B model choosing between two enumerated values is a different object from a 3B
+        model asked for an opinion. The first is frequently good enough; the second never
+        is. That distinction, not parameter count, is what makes small models usable as
+        deciders.</p>
+    </section>
+
+    <!-- 2 -->
+    <section class="chapter" id="tiny" aria-labelledby="tiny-h">
+      <h2 id="tiny-h">Tiny language models</h2>
+
+      <p>The lineage runs from n-grams through Word2Vec and the RNN and LSTM era to the
+        transformer, and the constraint that motivates going small is blunt: weights at
+        GPT-3 scale are hundreds of gigabytes in half precision and simply do not fit on
+        edge hardware.<sup class="cite"><a href="#r5">5</a></sup> Distillation, quantisation
+        and purpose-built small architectures are the three answers, and all three are now
+        mature enough to use without ceremony.</p>
+
+      <h3>The cascade, which is the shape that matters</h3>
+      <p>Put a tiny model in front of a large one: the tiny model handles the input when it
+        is confident, and falls through to the big model when it is not. This gives large
+        compute reductions with negligible accuracy loss on vision workloads at ImageNet
+        scale.<sup class="cite"><a href="#r6">6</a></sup> The notable design choice there is
+        a fully independent tiny model rather than an early exit branching off the large
+        model's backbone, which avoids the usual problem that intermediate features lack
+        task-relevant semantics. It is the same structure as a boosted cascade in classical
+        detection.<sup class="cite"><a href="#r7">7</a></sup></p>
+
+      <figure class="scroll">
+<pre class="diagram">        <span class="dim">an input</span>
+            │
+            v
+  <span class="hi">┌────────────────────┐</span>  <span class="dim">confident</span>     <span class="ac">┌────────────────────┐</span>
+  <span class="hi">│ tier 1  embeddings │</span>───────────────&gt;<span class="ac">│</span><span class="hi">     a decision     </span><span class="ac">│</span>
+  <span class="hi">│ plus a linear head │</span>                <span class="ac">│</span><span class="hi"> milliseconds, CPU  </span><span class="ac">│</span>
+  <span class="hi">└────────────────────┘</span>                <span class="ac">└────────────────────┘</span>
+            │
+            v  <span class="dim">unsure</span>
+  <span class="hi">┌────────────────────┐</span>  <span class="dim">confident</span>     <span class="ac">┌────────────────────┐</span>
+  <span class="hi">│ tier 3  a 3B model │</span>───────────────&gt;<span class="ac">│</span><span class="hi">     a decision     </span><span class="ac">│</span>
+  <span class="hi">│ decoder = the enum │</span>                <span class="ac">│</span><span class="hi">  about one second  </span><span class="ac">│</span>
+  <span class="hi">└────────────────────┘</span>                <span class="ac">└────────────────────┘</span>
+            │
+            v  <span class="ac3">escalate</span>
+  <span class="ac3">┌────────────────────┐</span>
+  <span class="ac3">│</span><span class="hi">  a frontier model  </span><span class="ac3">│</span>
+  <span class="ac3">└────────────────────┘</span>
+                          <span class="dim">only the hard cases reach the expensive tier</span>
+</pre>
+        <figcaption class="cap">the cascade. Each rung answers what it can and passes the rest up; the escalation edge is a token the next stage already reads.</figcaption>
+      </figure>
+    </section>
+
+    <!-- 3 -->
+    <section class="chapter" id="classifiers" aria-labelledby="classifiers-h">
+      <h2 id="classifiers-h">Non-generative classifiers</h2>
+
+      <p>Prior art for "do not generate text to make a decision, classify instead". These
+        run in production at scale today, and they are the existence proof that a
+        sub-two-megabyte purpose-built model beats both a hand-written heuristic and a call
+        to a language model.</p>
+
+      <div class="scroll">
+      <table>
+        <caption>classifiers already doing this job</caption>
+        <thead><tr><th>system</th><th>size</th><th>latency</th><th>task</th></tr></thead>
+        <tbody>
+          <tr><td class="meth"><a class="ref" href="https://github.com/google/magika">Magika</a></td><td>~1 MB, ONNX</td><td>single-digit ms</td>
+              <td>file type from sparse byte samples, 100+ types</td></tr>
+          <tr><td class="meth"><a class="ref" href="https://virustotal.github.io/yara-x/">YARA-X</a></td><td>compiled rules</td><td>near-instant</td>
+              <td>malware and structural signature matching</td></tr>
+          <tr><td class="meth"><a class="ref" href="https://fasttext.cc/">fastText</a></td><td>&lt;10 MB compressed</td><td>microseconds</td>
+              <td>language ID across 170+ languages; general linear text classification</td></tr>
+          <tr><td class="meth">TrID</td><td>signature database</td><td>fast</td>
+              <td>binary file identification by statistical point scoring</td></tr>
+          <tr><td class="meth"><code>libmagic</code></td><td>tiny</td><td>instant</td>
+              <td>magic bytes at fixed offsets; the deterministic fallback</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <p>Two mechanisms here are worth stealing directly, independent of the models.
+        <strong>Sparse ingestion</strong>: read only the first, middle and last few
+        kilobytes rather than the whole payload, which is how a file classifier stays fast
+        on a large file. <strong>A deterministic fallback underneath a learned one</strong>:
+        magic bytes catch the easy cases and the model handles the rest, which is the
+        cascade again at a smaller scale.</p>
+
+      <div class="note warn">
+        <span class="lbl">The deployment detail that dominates everything else</span>
+        Inference is not the expensive part. On a typical workstation, starting a Python
+        interpreter costs around 14 ms and importing an ONNX runtime on top of that costs
+        around 83 ms, while a small compiled binary starts in about 25 ms. A 5 ms
+        classifier invoked as a fresh Python process is therefore roughly 94% overhead.
+        Either amortise one process across a whole batch, or use a compiled command-line
+        build with the weights embedded, which is what Magika and fastText both ship.
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="chapter" id="system1" aria-labelledby="system1-h">
+      <h2 id="system1-h">The System 1 class</h2>
+
+      <p>A category named after Kahneman's fast, intuitive cognition: a model that is
+        non-autoregressive, evaluates a whole schema of typed questions in one parallel
+        forward pass rather than generating text token by token, and is trained so its
+        stated probabilities are calibrated. The category reduces decision-making to three
+        question shapes, and those three are the right API to build against whatever sits
+        behind them.</p>
+
+      <div class="scroll">
+      <table>
+        <caption>the three question shapes</caption>
+        <thead><tr><th>primitive</th><th>asks</th><th>returns</th><th>consumed as</th></tr></thead>
+        <tbody>
+          <tr><td class="meth">choice</td><td>pick one of N</td><td>the option, and a probability over all N</td><td>an exit code: the index</td></tr>
+          <tr><td class="meth">yes/no</td><td>is X true</td><td>the probability of yes</td><td>a gate: above threshold or not</td></tr>
+          <tr><td class="meth">score</td><td>rate on a scale</td><td>a number</td><td>a tally, or a ranking</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <div class="note warn">
+        <span class="lbl">Discount the headline number</span>
+        The commercial entrant in this category claims a 40 to 200 times speed and cost
+        advantage. A technical teardown<sup class="cite"><a href="#r8">8</a></sup> argues it
+        is largely an inference-time arrangement, parallel per-field decoding with cache
+        reuse over an existing open base model, and reproduces a comparable two to three
+        times speedup with plain constrained single-token decoding on a 1.5B open model.
+        The category is real; the specific multiple is marketing.
+      </div>
+
+      <h3>The three candidates</h3>
+      <div class="scroll">
+      <table>
+        <caption>what each is actually good for</caption>
+        <thead><tr><th>candidate</th><th>what it is</th><th>verdict</th></tr></thead>
+        <tbody>
+          <tr><td class="meth">Jev</td><td>hosted, proprietary, no open weights, priced per decision</td>
+              <td><span class="st st-crit">Not local</span> a hosted service in a decision path is a dependency, not a component</td></tr>
+          <tr><td class="meth"><a class="ref" href="https://github.com/receptron/laya">Laya</a></td>
+              <td>421M bidirectional encoder, Apache 2.0, about 33 ms, ONNX runner exists, degrades past roughly 20 options</td>
+              <td><span class="st st-ok">The local pick</span> the right shape with no API key, but an encoder embeds an input, it does not read one</td></tr>
+          <tr><td class="meth"><a class="ref" href="https://github.com/vtavakkoli/simple-jev">SimpleJev</a></td>
+              <td>a technique, not a model: read next-token logits per question from any open model</td>
+              <td><span class="st st-warn">Needs raw logits</span> so a runtime that exposes them, not a chat API that hides them</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <p>The distinction that decides between them: a bidirectional encoder produces a
+        representation of a text and classifies it, which is ideal for "is this finding a
+        blocker" and useless for "does this change introduce a use-after-free". A position
+        that needs comprehension of the input wants an instruct model with its decoder
+        constrained. The two are complementary rather than competing.</p>
+
+      <div class="note crit">
+        <span class="lbl">A prior-art claim, corrected</span>
+        A widely circulated claim holds that an earlier reinforcement-learning sales model
+        both predates and matches this approach. Half of that is true. That
+        model<sup class="cite"><a href="#r9">9</a></sup> is legitimate prior art for "a
+        small model trained to output calibrated probabilities instead of generating text",
+        using policy optimisation over conversation embeddings. The second paper usually
+        cited alongside it is about confidence-based routing for hallucination mitigation,
+        a different problem. Mechanically the two differ: one emits a turn-by-turn
+        probability trajectory over sequence embeddings, the other emits choices across a
+        whole schema in one pass.
+        <br><br>
+        <strong>Security note that generalises.</strong> That model ships as a
+        reinforcement-learning framework archive, which contains pickled Python objects.
+        Loading one executes the author's code. The same is true of any <code>.pkl</code>
+        from a source you do not control, including artefacts your own tooling produces.
+        Study a stranger's model in a throwaway environment or not at all.
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section class="chapter" id="compression" aria-labelledby="compression-h">
+      <h2 id="compression-h">Compression represents intelligence</h2>
+
+      <p>The deepest available argument for the small-model thesis is information-theoretic.
+        If capability tracks how well a model compresses, then parameter count is a proxy
+        and not the quantity itself, and a small model trained tightly on a narrow
+        distribution is not a degraded general model but a well-compressed specialist.</p>
+
+      <p>The empirical version reports a near-linear relationship between compression
+        ability and benchmark performance across a range of
+        models.<sup class="cite"><a href="#r10">10</a></sup> The epistemic version argues
+        compression is foundational to intelligence rather than merely correlated with
+        it.<sup class="cite"><a href="#r11">11</a></sup> Taken together they reframe the
+        question from <em>how large</em> to <em>how well matched to the distribution</em>,
+        which is exactly the bet a specialised graph makes.</p>
+
+      <h3>Prompt compression, the same idea pointed the other way</h3>
+      <p>A small encoder-style token classifier can decide which tokens in a prompt carry
+        information and drop the rest, typically two to five times compression with little
+        loss.<sup class="cite"><a href="#r12">12</a></sup> Architecturally that is a small
+        classifier used to shrink a large model's input rather than to replace the large
+        model. Worth measuring anywhere several positions read the same large input, which
+        in a review panel is the common case.</p>
+    </section>
+
+    <!-- 6 -->
+    <section class="chapter" id="catalogue" aria-labelledby="catalogue-h">
+      <h2 id="catalogue-h">The catalogue</h2>
+
+      <p>Everything below is something you could actually put behind a decision. Grouped by
+        what it does, because that is how you choose one.</p>
+
+      <div class="note warn">
+        <span class="lbl">This section ages faster than the rest</span>
+        Parameter counts, version numbers and even family names drift within months, and
+        several figures here are as-advertised rather than measured. Treat it as a map of
+        the categories and verify a specific number against the vendor's own model card
+        before citing it.
+      </div>
+
+      <h3>Generative small models</h3>
+      <p>For a position that must read something and judge it.</p>
+      <div class="scroll">
+      <table>
+        <caption>compact generative families</caption>
+        <thead><tr><th>family</th><th>compact members</th><th>why you would pick it</th></tr></thead>
+        <tbody>
+          <tr><td class="meth">Qwen</td><td>0.5B / 0.6B / 1.5B / 1.7B / 3B, plus coder variants at 1.5B and 3B</td>
+              <td>the strongest coding ability per byte at the small end, long context, permissive licence. The coder variants are the default reviewer candidate on a 4 GB card</td></tr>
+          <tr><td class="meth">Llama</td><td>3.2 at 1B and 3B</td>
+              <td>built for on-device, with the widest tooling support, so it runs on anything</td></tr>
+          <tr><td class="meth">Phi</td><td>Phi-4-mini around 3.8B, Phi-3.5-mini</td>
+              <td>heavily trained on synthetic reasoning data; punches above its size on structured tasks, weaker on open-ended prose</td></tr>
+          <tr><td class="meth">Gemma</td><td>270M, 1B, 2B, 4B</td>
+              <td>the 270M is small enough to be interesting as a classifier substrate; the 1B and 2B are genuine instruction-followers</td></tr>
+          <tr><td class="meth">SmolLM</td><td>SmolLM2 1.7B, SmolLM3 3B</td>
+              <td>fully open training data and recipe, which matters if you need to explain or reproduce behaviour</td></tr>
+          <tr><td class="meth">Granite</td><td>2B and small mixture-of-experts variants</td>
+              <td>aimed at enterprise retrieval and security work; unusually clear licensing and provenance</td></tr>
+          <tr><td class="meth">Ministral</td><td>3B, 8B</td><td>edge-focused with very long context for the size</td></tr>
+          <tr><td class="meth">DeepSeek distilled</td><td>R1-Distill-Qwen-1.5B and relatives</td>
+              <td>reasoning traces distilled into a tiny model; strong where the answer is verifiable</td></tr>
+          <tr><td class="meth">Falcon</td><td>the tiny series</td><td>worth watching; check current parameter counts before citing</td></tr>
+          <tr><td class="meth">OLMo</td><td>1B</td><td>fully open corpus and checkpoints; the reference point for reproducibility work</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <p>On a 4 GB consumer card with roughly 3.6 GB usable, 3B at 4-bit quantisation is the
+        practical ceiling. Anything larger wants a machine with real memory.</p>
+
+      <h3>Encoders for classification</h3>
+      <p>For a decision with a stable label set. Fine-tune on a few hundred labelled
+        examples, export to ONNX, and run with no deep-learning framework at all.</p>
+      <div class="scroll">
+      <table>
+        <caption>the BERT lineage</caption>
+        <thead><tr><th>model</th><th>size</th><th>note</th></tr></thead>
+        <tbody>
+          <tr><td class="meth">BERT base</td><td>110M</td><td>the reference architecture; everything below is a response to it</td></tr>
+          <tr><td class="meth">DistilBERT</td><td>66M</td><td>40% smaller, substantially faster, keeps most of the accuracy. The safe default</td></tr>
+          <tr><td class="meth">TinyBERT</td><td>14M</td><td>when 66M is still too much. Edge and microcontroller territory</td></tr>
+          <tr><td class="meth">ALBERT</td><td>12M+</td><td>parameter sharing; small on disk, not proportionally faster at inference</td></tr>
+          <tr><td class="meth">ELECTRA small</td><td>14M</td><td>trained by discriminating replaced tokens rather than masking; strong for the size</td></tr>
+          <tr><td class="meth">RoBERTa</td><td>125M+</td><td>better-trained BERT; the base for many ready-made fine-tuned classifiers</td></tr>
+          <tr><td class="meth">DeBERTa v3 small</td><td>44M</td><td>disentangled attention; consistently the best accuracy per parameter here for language understanding</td></tr>
+          <tr><td class="meth">ModernBERT</td><td>149M / 395M</td><td>the 2024 refresh: long context, faster inference, drop-in. Prefer it for new work</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3>Embeddings, rerankers and entailment</h3>
+      <div class="scroll">
+      <table>
+        <caption>the retrieval and scoring layer</caption>
+        <thead><tr><th>model</th><th>kind</th><th>note</th></tr></thead>
+        <tbody>
+          <tr><td class="meth">all-MiniLM-L6-v2</td><td>bi-encoder</td><td>~90 MB. The classic default: fast, good enough, runs anywhere</td></tr>
+          <tr><td class="meth">bge-small-en-v1.5</td><td>bi-encoder</td><td>~130 MB. Better retrieval quality at a similar size</td></tr>
+          <tr><td class="meth">E5 small, GTE small</td><td>bi-encoder</td><td>direct competitors to bge-small. Benchmark all three on your own labels; the ranking flips by domain</td></tr>
+          <tr><td class="meth">bge-m3</td><td>bi-encoder</td><td>multilingual and multi-granularity when you need it</td></tr>
+          <tr><td class="meth">nomic-embed-text</td><td>bi-encoder</td><td>long context, open training data</td></tr>
+          <tr><td class="meth">SetFit</td><td>method</td><td>contrastive fine-tuning over any embedder; useful accuracy from 8 to 16 examples per class<sup class="cite"><a href="#r13">13</a></sup></td></tr>
+          <tr><td class="meth">bge-reranker</td><td>cross-encoder</td><td>scores a query and candidate jointly. Slower than comparing embeddings and much more accurate. This is the <em>score</em> primitive off the shelf</td></tr>
+          <tr><td class="meth">jina-reranker</td><td>cross-encoder</td><td>same shape, different training. Worth comparing directly</td></tr>
+          <tr><td class="meth">bart-large-mnli</td><td>entailment</td><td>the original zero-shot classifier: scores "this text entails LABEL" per label, with no training at all</td></tr>
+          <tr><td class="meth">deberta-v3 zeroshot</td><td>entailment</td><td>smaller and usually better than the bart baseline for the same job</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3>Guard and policy classifiers</h3>
+      <p>An under-used category, and exactly the right shape for an admission check on
+        untrusted input.</p>
+      <div class="scroll">
+      <table>
+        <caption>safety and policy</caption>
+        <thead><tr><th>model</th><th>note</th></tr></thead>
+        <tbody>
+          <tr><td class="meth">Llama Guard</td><td>classifies prompts and responses against a taxonomy you can edit</td></tr>
+          <tr><td class="meth">ShieldGemma</td><td>the same job on a Gemma base, in several sizes</td></tr>
+          <tr><td class="meth">Prompt Guard</td><td>a small classifier specifically for injection and jailbreak detection. Tiny, fast, and the right thing in front of untrusted input</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3>Beyond text</h3>
+      <div class="scroll">
+      <table>
+        <caption>small multimodal</caption>
+        <thead><tr><th>model</th><th>size</th><th>note</th></tr></thead>
+        <tbody>
+          <tr><td class="meth">Moondream2</td><td>~1.8B</td><td>a position that can look at a screenshot or a diagram on modest hardware</td></tr>
+          <tr><td class="meth">SmolVLM</td><td>256M to 2.2B</td><td>the smallest genuinely usable vision-language family</td></tr>
+          <tr><td class="meth">Florence-2</td><td>230M / 770M</td><td>detection, captioning and OCR in one small model</td></tr>
+          <tr><td class="meth">Whisper tiny / base</td><td>39M / 74M</td><td>speech to text, if anything needs to read audio</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3>Constrained decoding</h3>
+      <p>Not models, but what makes a small generative model safe as a decider.</p>
+      <div class="scroll">
+      <table>
+        <caption>guided generation tooling</caption>
+        <thead><tr><th>tool</th><th>note</th></tr></thead>
+        <tbody>
+          <tr><td class="meth"><a class="ref" href="https://github.com/dottxt-ai/outlines">Outlines</a></td>
+              <td>regex and JSON-schema guided generation; the reference implementation of the idea<sup class="cite"><a href="#r14">14</a></sup></td></tr>
+          <tr><td class="meth">XGrammar</td><td>fast grammar-constrained decoding, integrated into several serving stacks</td></tr>
+          <tr><td class="meth">llama.cpp GBNF</td><td>grammar files native to llama.cpp, and the practical path to reading raw logits that chat APIs hide</td></tr>
+          <tr><td class="meth">Structured output APIs</td><td>a JSON schema in the request. The easiest version, and enough for most work</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section class="chapter" id="practice" aria-labelledby="practice-h">
+      <h2 id="practice-h">In practice</h2>
+
+      <h3>Five tiers, cheapest first</h3>
+      <p>The discipline is to start at the top and descend only when the tier above
+        demonstrably cannot do the job. Every step down costs an order of magnitude of
+        latency and buys correspondingly less determinism.</p>
+
+      <div class="scroll">
+      <table>
+        <caption>the tiers</caption>
+        <thead><tr><th>tier</th><th>what it is</th><th>cost</th><th>training</th></tr></thead>
+        <tbody>
+          <tr><td class="meth">1</td><td>sentence embeddings plus logistic regression</td><td>milliseconds, CPU</td><td>20 to 50 labelled lines per class</td></tr>
+          <tr><td class="meth">1.5</td><td>a purpose-built decision encoder</td><td>tens of milliseconds</td><td>none</td></tr>
+          <tr><td class="meth">2</td><td>zero-shot entailment</td><td>slower than tier 1</td><td>none</td></tr>
+          <tr><td class="meth">3</td><td>a small instruct model, decoder constrained to the enum</td><td>about a second on a small GPU</td><td>none</td></tr>
+          <tr><td class="meth">4</td><td>a fine-tuned small encoder, exported to ONNX</td><td>best accuracy per millisecond</td><td>a few hundred labelled examples</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3>Four rules for tier 3</h3>
+      <ul class="step-list">
+        <li><strong>Temperature zero gives an answer, not a confidence.</strong> One
+          deterministic sample is always certain of itself. For a probability, sample five
+          to nine times at a nonzero temperature and count the votes.</li>
+        <li><strong>Put the enumeration in the schema, not the prompt.</strong> The prompt
+          is a request; the schema is an enforcement.</li>
+        <li><strong>Ask for a reason field even if you discard it.</strong> It costs tokens,
+          it makes a wrong answer diagnosable, and a model required to justify tends to
+          answer better.</li>
+        <li><strong>A large enumeration is the wrong tier.</strong> Dozens of labels slow
+          decoding and hurt accuracy; that is tier 1 work.</li>
+      </ul>
+
+      <h3>Calibration, the part nobody checks</h3>
+      <p>A probability is only useful if 0.8 means right about eight times in ten. Logistic
+        regression is roughly calibrated by construction; vote counts from a sampled
+        language model are not, and an entailment score is not a probability at all.</p>
+
+      <ul class="step-list">
+        <li>Hold out thirty to fifty labelled examples the model has never seen.</li>
+        <li>Bucket predictions by stated confidence in bands of 0.1 and compute the actual
+          accuracy within each bucket. A well-calibrated model's buckets sit on the
+          diagonal.</li>
+        <li>Compute the Brier score,<sup class="cite"><a href="#r15">15</a></sup> the mean
+          squared difference between stated confidence and outcome. Lower is better, and
+          0.25 is what a coin flip scores.</li>
+        <li>Correct what you find. An overconfident linear head wants stronger
+          regularisation; an overconfident sampled model wants more samples, or a decision
+          threshold raised to 0.7.</li>
+      </ul>
+
+      <div class="equation">
+        <span class="body">BS &nbsp;=&nbsp;
+          <span class="frac"><span class="over">1</span><span class="under">N</span></span>
+          &nbsp;&sum;<sub>i</sub>&nbsp;(p<sub>i</sub> &minus; o<sub>i</sub>)<sup>2</sup></span>
+        <span class="num">(7.1)</span>
+      </div>
+
+      <div class="note crit">
+        <span class="lbl">The rule</span>
+        No confidence number drives a gate before its reliability table exists. Until then a
+        model's stated certainty is decoration, and a threshold applied to it is a number
+        chosen by vibe.
+      </div>
+
+      <h3>Choosing, in four questions</h3>
+      <div class="scroll">
+      <table>
+        <caption>picking a tier</caption>
+        <thead><tr><th>question</th><th>if yes</th></tr></thead>
+        <tbody>
+          <tr><td>Is the label set stable and small?</td><td>a trained classifier or a purpose-built one. Do not use a language model for this</td></tr>
+          <tr><td>Does the decision require understanding the input?</td><td>a generative small model with constrained decoding</td></tr>
+          <tr><td>Do you need a calibrated probability rather than a label?</td><td>a decision encoder, a logistic head over embeddings, or a reranker</td></tr>
+          <tr><td>Is the input untrusted?</td><td>put a guard classifier in front, as a gate, not as a participant</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section class="chapter" id="glossary" aria-labelledby="glossary-h">
+      <h2 id="glossary-h">Glossary</h2>
+      <div class="scroll">
+      <table>
+        <caption>terms used here in a specific sense</caption>
+        <thead><tr><th>term</th><th>meaning</th></tr></thead>
+        <tbody>
+          <tr><td class="meth">SLM</td><td>a language model small enough to run cheaply and locally, traded against a frontier model's raw capability</td></tr>
+          <tr><td class="meth">System 1 model</td><td>a non-autoregressive model returning typed decisions in one parallel pass instead of generating text</td></tr>
+          <tr><td class="meth">constrained decoding</td><td>sampling restricted to tokens that keep the output valid against a schema or grammar, so an enumerated answer is guaranteed rather than requested</td></tr>
+          <tr><td class="meth">logits</td><td>raw per-token scores before they become probabilities. Reading them per option gives a true one-pass distribution, which is why an API that hides them cannot do the trick</td></tr>
+          <tr><td class="meth">bi-encoder</td><td>embeds query and candidate separately and compares vectors. Fast enough to search millions; less accurate than a cross-encoder</td></tr>
+          <tr><td class="meth">cross-encoder / reranker</td><td>scores a pair jointly. Slower, much more accurate, and the score primitive available off the shelf</td></tr>
+          <tr><td class="meth">zero-shot NLI</td><td>scoring "this text entails LABEL" with an entailment model, so a classifier exists before any training data does</td></tr>
+          <tr><td class="meth">guard classifier</td><td>a small model judging whether input or output violates a policy. Belongs in a gate, never in a reporting position</td></tr>
+          <tr><td class="meth">calibration / Brier score</td><td>whether stated confidence matches observed accuracy; mean of (confidence &minus; outcome) squared, where 0.25 is a coin flip</td></tr>
+          <tr><td class="meth">quantisation (Q4, Q8)</td><td>storing weights at reduced precision so a larger model fits a smaller card. Q4 is what puts a 3B model on 4 GB</td></tr>
+          <tr><td class="meth">distillation</td><td>training a small model on a large model's outputs. Where most compact reasoning models come from</td></tr>
+          <tr><td class="meth">early exit vs cascade</td><td>an early exit taps an intermediate layer of one large model; a cascade runs a fully separate small model first, whose features are complete rather than intermediate</td></tr>
+          <tr><td class="meth">sparse ingestion</td><td>classifying from a few byte ranges rather than the whole payload</td></tr>
+          <tr><td class="meth">magic bytes</td><td>fixed-offset signature bytes for deterministic file typing; the fallback beneath a learned classifier</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <!-- R -->
+    <section class="chapter" id="refs" aria-labelledby="refs-h">
+      <h2 id="refs-h">References</h2>
+      <ol class="refs">
+        <li id="r1">Belcak, P., Heinrich, G., Diao, S., Fu, Y., Dong, X., Muralidharan, S.,
+          Lin, Y. C., Molchanov, P. Small language models are the future of agentic AI.
+          <cite><a class="ref" href="https://arxiv.org/abs/2506.02153">arXiv:2506.02153</a></cite>, 2025.</li>
+        <li id="r2">Kuuspalu, A., Cody, S., Hale, M. E. Multiple nerve cords connect the arms
+          of octopuses, providing alternative paths for inter-arm signaling.
+          <cite>Current Biology</cite>, 2022.</li>
+        <li id="r3">Goldfeder, J., Wyder, P., LeCun, Y., Shwartz-Ziv, R. AI must embrace
+          specialization via superhuman adaptable intelligence.
+          <cite><a class="ref" href="https://arxiv.org/html/2602.23643v1">arXiv:2602.23643</a></cite>, 2026.</li>
+        <li id="r4">Han, P. et al. Modular cognitive architecture emerges in large language
+          models. <cite><a class="ref" href="https://pengrui-han.github.io/LLM_Modularity_Page/assets/paper.pdf">Preprint</a></cite>.</li>
+        <li id="r5">Penman, T. Tiny language models.
+          <cite><a class="ref" href="https://tristanpenman.com/blog/posts/2025/12/07/tiny-language-models/">tristanpenman.com</a></cite>, 2025.</li>
+        <li id="r6">Wang, J. et al. Tiny models are the computational saver for large models.
+          <cite><a class="ref" href="https://arxiv.org/html/2403.17726v1">arXiv:2403.17726</a></cite>, 2024.</li>
+        <li id="r7">Viola, P., Jones, M. Rapid object detection using a boosted cascade of
+          simple features. <cite>CVPR</cite>, 2001.</li>
+        <li id="r8">Goedecke, S. Jev means structured output is interesting again.
+          <cite><a class="ref" href="https://www.seangoedecke.com/jev-means-structured-output-is-interesting-again/">seangoedecke.com</a></cite>, 2026.</li>
+        <li id="r9">DeepMost Innovations. Sales conversion prediction with reinforcement
+          learning. <cite><a class="ref" href="https://arxiv.org/abs/2503.23303">arXiv:2503.23303</a></cite>, 2025.</li>
+        <li id="r10">Huang, Y. et al. Compression represents intelligence linearly.
+          <cite><a class="ref" href="https://arxiv.org/html/2404.09937v1">arXiv:2404.09937</a></cite>, 2024.</li>
+        <li id="r11">The information-theoretic imperative: compression and the epistemic
+          foundations of intelligence.
+          <cite><a class="ref" href="https://arxiv.org/html/2510.25883v1">arXiv:2510.25883</a></cite>, 2025.</li>
+        <li id="r12">Jiang, H. et al. LLMLingua: compressing prompts for accelerated
+          inference. <cite><a class="ref" href="https://arxiv.org/abs/2310.05736">arXiv:2310.05736</a></cite>, 2023.
+          See also LLMLingua-2, <cite><a class="ref" href="https://arxiv.org/abs/2403.12968">arXiv:2403.12968</a></cite>, 2024.</li>
+        <li id="r13">Tunstall, L. et al. Efficient few-shot learning without prompts (SetFit).
+          <cite><a class="ref" href="https://arxiv.org/abs/2209.11055">arXiv:2209.11055</a></cite>, 2022.</li>
+        <li id="r14">Willard, B. T., Louf, R. Efficient guided generation for large language
+          models. <cite><a class="ref" href="https://arxiv.org/abs/2307.09702">arXiv:2307.09702</a></cite>, 2023.</li>
+        <li id="r15">Brier, G. W. Verification of forecasts expressed in terms of
+          probability. <cite>Monthly Weather Review</cite> 78(1), 1950.</li>
+        <li id="r16">Curated lists, for going wider:
+          <a class="ref" href="https://github.com/Hannibal046/Awesome-LLM">Awesome-LLM</a> and
+          <a class="ref" href="https://github.com/ro-ko/Awesome-SLM">Awesome-SLM</a>, the
+          latter organised into milestone papers, a leaderboard and an open-model catalogue
+          by vendor.</li>
+      </ol>
+    </section>
+
+    <footer>
+      <span>SLM-REF &middot; rev 2026.09</span>
+      <span>A typed question, a token, a program.</span>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+/* ----------------------------------------------------------------------------
+   Two light behaviours only, both progressive enhancement -- the document reads
+   and prints fully without them. (1) scroll-spy that marks the current TOC item.
+   (2) the event-trace scrubber. Reduced-motion is respected by the CSS; nothing
+   here animates layout.
+   ---------------------------------------------------------------------------- */
+(function(){
+  // ---- scroll-spy ----------------------------------------------------------
+  var links = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  var targets = Object.keys(map).map(function(id){ return document.getElementById(id); }).filter(Boolean);
+  if ('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting){
+          links.forEach(function(a){ a.removeAttribute('aria-current'); });
+          var a = map[e.target.id];
+          if (a) a.setAttribute('aria-current','true');
+        }
+      });
+    }, { rootMargin:'-10% 0px -75% 0px', threshold:0 });
+    targets.forEach(function(t){ io.observe(t); });
+  }
+
+  // ---- event-trace scrubber ------------------------------------------------
+  var EVENTS = [
+    { k:'offset 00000 · say',         p:'The developer posts an initial implementation, no input validation yet.' },
+    { k:'offset 40318 · tool_result', p:'The build tool returns success; its stdout is content-addressed by hash.' },
+    { k:'offset 40961 · find',        p:'reviewer-security raises a blocker: an unvalidated field, null dereference reachable.' },
+    { k:'offset 41502 · say',         p:'The developer posts a fix addressing the flagged field.' },
+    { k:'offset 42088 · find',        p:'reviewer-security clears the finding; the tally routes the task to merged.' }
+  ];
+  var lane = document.getElementById('lane');
+  var scrub = document.getElementById('scrub');
+  var roK = document.getElementById('ro-k'), roP = document.getElementById('ro-p');
+  if (lane && scrub){
+    EVENTS.forEach(function(ev, i){
+      var s = document.createElement('button');
+      s.type = 'button'; s.className = 'span'; s.textContent = i;
+      s.setAttribute('aria-label', 'Record ' + i + ': ' + ev.k);
+      s.addEventListener('click', function(){ scrub.value = i; render(); });
+      lane.appendChild(s);
+    });
+    function render(){
+      var cur = +scrub.value;
+      Array.prototype.forEach.call(lane.children, function(s, i){
+        s.classList.toggle('cur', i === cur);
+        s.classList.toggle('past', i < cur);
+      });
+      roK.textContent = EVENTS[cur].k;
+      roP.textContent = EVENTS[cur].p;
+    }
+    scrub.addEventListener('input', render);
+    render();
+  }
+})();
+</script>
+</body>
+</html>
