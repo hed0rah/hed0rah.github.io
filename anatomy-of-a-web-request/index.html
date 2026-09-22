@@ -271,6 +271,10 @@ body{line-height:1.5}
 .atable td.p{white-space:normal;line-height:1.6}
 .atable td.n{font-family:var(--mono);color:var(--accent2);white-space:nowrap;font-weight:500}
 
+@supports not selector(:focus-visible){
+  .work .row:focus,.seg button:focus,.fseg:focus{outline:2px solid var(--accent);outline-offset:1px}
+}
+
 /* reduced motion: state still changes, it just stops moving */
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}
@@ -550,8 +554,7 @@ body{line-height:1.5}
           </div>
 
           <div class="callout hot"><b>the summary that is too clean.</b> "Akamai uses DNS, Cloudflare uses
-          anycast" is the usual line, and it is only half right. Akamai does select <i>edges</i> through DNS
-          mapping, but its Edge DNS <i>nameservers</i> are themselves reached by IP anycast. Both vendors use
+          anycast" is the usual line, and it is only half right. Akamai does select <i>edges</i> through DNS mapping, but the nameservers you ask are themselves fronted by IP anycast, with the mapping decision made behind that by servers picked to sit near your resolver. Both vendors use
           anycast; they use it at different layers. Cloudflare anycasts the edge that serves your content,
           Akamai anycasts the nameservers that tell you which edge to use. The real distinction is
           <b>where the per-client decision is made</b>: in a computed DNS answer, or in the routing table.</div>
@@ -651,7 +654,7 @@ body{line-height:1.5}
             <div class="pbody">
               <div class="row" tabindex="0" data-n="max-age" data-d="How long the response stays fresh, in seconds, for any cache." data-k1="applies to" data-v1="all caches"><span class="name">max-age</span><span class="lead"></span><span class="meta">freshness, everyone</span></div>
               <div class="row" tabindex="0" data-n="s-maxage" data-d="Freshness for shared caches only, overriding max-age for them. This is how you give the CDN a long TTL and the browser a short one from a single response." data-t="CDN lever" data-k1="applies to" data-v1="shared caches"><span class="name">s-maxage</span><span class="lead"></span><span class="meta">shared caches only</span></div>
-              <div class="row" tabindex="0" data-n="public / private" data-d="private forbids shared caches from storing the response at all, which is the correct marking for anything personalised. public allows storage even when heuristics would say otherwise." data-k1="private means" data-v1="browser only"><span class="name">public / private</span><span class="lead"></span><span class="meta">who may store it</span></div>
+              <div class="row" tabindex="0" data-n="public / private" data-d="private forbids shared caches from storing the response at all, which is the correct marking for anything personalised. public permits storage that would otherwise be refused, most usefully for a response to a request that carried an Authorization header." data-k1="private means" data-v1="browser only"><span class="name">public / private</span><span class="lead"></span><span class="meta">who may store it</span></div>
               <div class="row k-warn" tabindex="0" data-n="no-cache is not no-store" data-d="no-cache means store it, but revalidate before every reuse. no-store means never write it down at all. These two are confused constantly, and the confusion runs in the expensive direction: people write no-cache believing nothing is kept, when a copy is on disk." data-t="the classic mistake" data-w="If the requirement is that no copy exists anywhere, the directive is no-store." data-k1="no-cache stores" data-v1="yes"><span class="name">no-cache vs no-store</span><span class="lead"></span><span class="meta">not the same thing</span></div>
               <div class="row" tabindex="0" data-n="must-revalidate" data-d="Forbids serving a stale copy when the origin cannot be reached. Without it, a cache is permitted to serve stale on error." data-k1="on origin error" data-v1="fail, do not serve"><span class="name">must-revalidate</span><span class="lead"></span><span class="meta">no stale on error</span></div>
               <div class="row k-hit" tabindex="0" data-n="immutable" data-d="Promises the body will never change for this URL, so the browser skips revalidation even on a reload. Correct only alongside content-hashed filenames." data-t="fingerprinted assets" data-k1="pairs with" data-v1="hashed filenames"><span class="name">immutable</span><span class="lead"></span><span class="meta">never revalidate</span></div>
@@ -671,8 +674,7 @@ body{line-height:1.5}
               <div class="row k-warn" tabindex="0" data-n="Unkeyed inputs" data-d="Any request input that changes the response but is left out of the key. The stored response then gets served to everyone, including whatever the attacker put in it. This is the entire mechanism of web cache poisoning." data-t="the bug class" data-w="Defence is strict key hygiene and normalisation: if it changes the response, it belongs in the key, or it must be ignored entirely." data-k1="see" data-v1="the DEFENCE tab"><span class="name">unkeyed input</span><span class="lead"></span><span class="meta">the poisoning primitive</span></div>
             </div>
           </div>
-          <div class="callout"><b>Surrogate-Control and CDN-Cache-Control</b> are directives the CDN consumes
-          and strips before the response continues downstream. They let the edge and the browser be given
+          <div class="callout"><b>Surrogate-Control and CDN-Cache-Control</b> are aimed at the CDN rather than the browser. Surrogate-Control is consumed and stripped by any CDN that honours it. CDN-Cache-Control is newer and is specified to survive: a CDN that does not use it passes it through, and one that does may still forward it so a second CDN downstream can read it. They let the edge and the browser be given
           entirely different policies for the same object, and they are invisible in a browser devtools panel,
           which makes them a recurring source of "but the header says".</div>
         </div>
@@ -695,7 +697,7 @@ body{line-height:1.5}
               <tr><td class="f">SQLi, XSS, traversal, RCE</td><td class="x">WAF</td><td class="p">Signature match plus anomaly scoring, usually an OWASP-derived ruleset.</td></tr>
               <tr><td class="f">Cache poisoning</td><td class="x">cache key design</td><td class="p">An unkeyed input that still changes the response gets stored and served to everyone. Defence is strict key hygiene and normalisation.</td></tr>
               <tr><td class="f">Cache deception</td><td class="x">cache rules</td><td class="p">Request <code>/account.php/x.css</code>; a CDN caching by extension stores private data as a public asset. Defence is never caching on extension alone, and checking <code>Content-Type</code>.</td></tr>
-              <tr><td class="f">Request smuggling</td><td class="x">edge to origin boundary</td><td class="p">HTTP/1.1 <code>Content-Length</code> and <code>Transfer-Encoding</code> desync between two parsers. Defence is HTTP/2 to origin and strict parsing.</td></tr>
+              <tr><td class="f">Request smuggling</td><td class="x">edge to origin boundary</td><td class="p">HTTP/1.1 <code>Content-Length</code> and <code>Transfer-Encoding</code> desync between two parsers. Native HTTP/2 end to end removes the ambiguity; an edge that downgrades to HTTP/1.1 on the origin leg reopens it.</td></tr>
               <tr><td class="f">Origin bypass</td><td class="x">origin ACL</td><td class="p">If the origin address is reachable directly, every control above is optional. Defence is allowlisting edge addresses, or mTLS.</td></tr>
               <tr><td class="f">DNS hijack</td><td class="x">registrar, DNSSEC</td><td class="p">Registrar lock, and DNSSEC where it is deployed.</td></tr>
               <tr><td class="f">Subdomain takeover</td><td class="x">DNS hygiene</td><td class="p">A dangling CNAME pointing at a deprovisioned service someone else can now claim.</td></tr>
@@ -705,7 +707,7 @@ body{line-height:1.5}
           <div class="callout hot"><b>a CDN in front of an origin is exactly the two-parser condition request
           smuggling needs.</b> Smuggling requires two HTTP implementations that disagree about where one
           request ends and the next begins. An edge that terminates the client connection and forwards over a
-          reused connection to the origin is that arrangement by construction. That is the normal arrangement, not an exotic one. HTTP/2 to the origin removes the ambiguity the attack depends on.</div>
+          reused connection to the origin is that arrangement by construction. That is the normal arrangement, not an exotic one. HTTP/2 removes the CL/TE ambiguity only where it runs the whole way to the app server. Most edges still speak HTTP/2 to the client and downgrade to HTTP/1.1 behind it, and that downgrade is its own live attack surface, so treat "we use HTTP/2" as a question about the origin leg rather than an answer.</div>
 
           <div class="callout"><b>the one that is routinely forgotten.</b> Every control on this page lives at
           the edge, and the edge is only in the path because DNS says so. If your origin answers on a public
@@ -877,15 +879,19 @@ body{line-height:1.5}
   }
 
   function pin(t){
-    if(pinned) pinned.classList.remove("pinned");
+    if(pinned){ pinned.classList.remove("pinned"); pinned.setAttribute("aria-expanded","false"); }
     pinned = (pinned === t) ? null : t;
-    if(pinned){ pinned.classList.add("pinned"); openNow(t); }
+    if(pinned){ pinned.classList.add("pinned"); pinned.setAttribute("aria-expanded","true"); openNow(t); }
     else closeNow();
   }
 
   var triggers = [].slice.call(document.querySelectorAll("[data-n]"));
   triggers.forEach(function(t){
     if(!t.hasAttribute("tabindex")) t.setAttribute("tabindex", "0");
+    /* the inspector is where this row's description appears; say so rather
+       than leaving a screen reader to infer it from a live region */
+    t.setAttribute("aria-describedby", "ins-desc");
+    t.setAttribute("aria-expanded", "false");
 
     t.addEventListener("pointerenter", function(e){
       if(e.pointerType !== "mouse" || !fine.matches) return;   /* no hover on touch, ever */
@@ -910,15 +916,22 @@ body{line-height:1.5}
     if(e.key !== "Escape") return;
     var t = pinned || current;
     if(!t) return;
-    if(pinned){ pinned.classList.remove("pinned"); pinned = null; }
+    /* only put focus back if it was already on a trigger. stealing it from
+       wherever the user actually is would scroll the page out from under them */
+    var restoreFocus = document.activeElement &&
+                       document.activeElement.hasAttribute &&
+                       document.activeElement.hasAttribute("data-n");
+    if(pinned){ pinned.setAttribute("aria-expanded","false"); pinned.classList.remove("pinned"); pinned = null; }
     closeNow();
-    if(t && t.focus) t.focus();
+    if(restoreFocus && t.focus) t.focus();
   });
 
   /* tap outside releases a pin on a coarse pointer */
   document.addEventListener("click", function(e){
     if(!pinned) return;
-    if(e.target.closest && e.target.closest("[data-n]")) return;
+    if(!e.target.closest) return;
+    if(e.target.closest("[data-n]") || e.target.closest(".insp-card")) return;
+    pinned.setAttribute("aria-expanded","false");
     pinned.classList.remove("pinned"); pinned = null; closeNow();
   });
 
@@ -926,23 +939,43 @@ body{line-height:1.5}
   var tabs = [].slice.call(document.querySelectorAll(".tab"));
   var panels = [].slice.call(document.querySelectorAll(".panel"));
   function activate(name){
-    var found = false;
+    /* decide first: a stale hash must leave the page as it was, not strip
+       every tab of its selected state */
+    if(!tabs.some(function(t){ return t.dataset.p === name; })) return false;
     tabs.forEach(function(t){
       var on = t.dataset.p === name;
       t.classList.toggle("on", on);
       t.setAttribute("aria-selected", on ? "true" : "false");
-      if(on) found = true;
+      t.tabIndex = on ? 0 : -1;
     });
-    if(!found) return false;
     panels.forEach(function(p){ p.classList.toggle("on", p.dataset.panel === name); });
     if(pinned){ pinned.classList.remove("pinned"); pinned = null; }
     closeNow();
     return true;
   }
-  tabs.forEach(function(t){
+  tabs.forEach(function(t, i){
+    var panel = document.querySelector('[data-panel="' + t.dataset.p + '"]');
+    t.id = "tab-" + t.dataset.p;
+    if(panel){
+      panel.id = "panel-" + t.dataset.p;
+      panel.setAttribute("role", "tabpanel");
+      panel.setAttribute("aria-labelledby", t.id);
+      panel.setAttribute("tabindex", "0");
+      t.setAttribute("aria-controls", panel.id);
+    }
+    t.tabIndex = t.classList.contains("on") ? 0 : -1;
     t.addEventListener("click", function(){
       activate(t.dataset.p);
       if(history.replaceState) history.replaceState(null, "", "#" + t.dataset.p);
+    });
+    /* role=tab promises arrow-key navigation, so provide it */
+    t.addEventListener("keydown", function(e){
+      var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 :
+              e.key === "Home" ? -i : e.key === "End" ? tabs.length - 1 - i : 0;
+      if(!d && e.key !== "Home" && e.key !== "End") return;
+      e.preventDefault();
+      var n = tabs[(i + d + tabs.length) % tabs.length];
+      activate(n.dataset.p); n.focus();
     });
   });
   var init = (location.hash || "").replace("#", "");

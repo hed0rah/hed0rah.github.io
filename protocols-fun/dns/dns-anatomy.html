@@ -167,6 +167,9 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 /* hover contract: focus parity and reduced motion */
 .bit:focus,.bcell:focus,.field:focus,.station:focus,.tleaf:focus,.jseg:focus{outline:none}
 .bit:focus-visible,.bcell:focus-visible,.field:focus-visible,.station:focus-visible,.tleaf:focus-visible,.jseg:focus-visible{outline:2px solid var(--enum);outline-offset:1px}
+@supports not selector(:focus-visible){
+.bit:focus,.bcell:focus,.field:focus,.station:focus,.tleaf:focus,.jseg:focus{outline:2px solid var(--enum);outline-offset:1px}
+}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}}
 </style>
 </head>
@@ -282,40 +285,57 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
      hovers. every trigger focusable, Enter/Space pins, Escape releases.
      ----------------------------------------------------------------------- */
   var HOV=(function(){
-    var OPEN=100,CLOSE=250,ot=null,ct=null,fr=null,q=null,cur=null;
+    var OPEN=100,CLOSE=250,ot=null,ct=null,fr=null,q=null,cur=null,curRestore=null;
     var fine=window.matchMedia("(hover: hover) and (pointer: fine)");
     function flush(){fr=null;var f=q;q=null;if(f)f();}
     function frame(fn){q=fn;if(fr)return;fr=requestAnimationFrame(flush);}
     function mouse(e){return e.pointerType==="mouse"&&fine.matches;}
-    function open(el,show){
+    function open(el,show,restore){
       clearTimeout(ct);clearTimeout(ot);
       if(cur===el)return;
-      ot=setTimeout(function(){cur=el;frame(show);},OPEN);
+      ot=setTimeout(function(){
+        /* one open at a time, across every widget on the page: whatever was
+           showing gets restored now, not after its own close delay */
+        if(cur&&cur!==el&&curRestore)curRestore();
+        cur=el;curRestore=restore;frame(show);
+      },OPEN);
     }
     function shut(restore){
       clearTimeout(ot);clearTimeout(ct);
-      ct=setTimeout(function(){cur=null;frame(restore);},CLOSE);
+      ct=setTimeout(function(){cur=null;curRestore=null;frame(restore);},CLOSE);
     }
     return {
       bind:function(el,show,restore,pin){
         if(el.tabIndex<0)el.tabIndex=0;
-        el.addEventListener("pointerenter",function(e){if(mouse(e))open(el,show);});
+        el.addEventListener("pointerenter",function(e){if(mouse(e))open(el,show,restore);});
         el.addEventListener("pointerleave",function(e){if(mouse(e))shut(restore);});
-        el.addEventListener("focus",function(){clearTimeout(ot);clearTimeout(ct);cur=el;frame(show);});
+        el.addEventListener("focus",function(){
+          clearTimeout(ot);clearTimeout(ct);
+          if(cur&&cur!==el&&curRestore)curRestore();
+          cur=el;curRestore=restore;frame(show);
+        });
         el.addEventListener("blur",function(){shut(restore);});
-        if(pin){
-          el.addEventListener("click",pin);
-          el.addEventListener("keydown",function(e){
-            if(e.key==="Enter"||e.key===" "){e.preventDefault();pin();}});
-        }
+        /* no pin action still needs tap and Enter/Space, or the payload is
+           unreachable on a touch screen and by keyboard */
+        var act=pin||function(){
+          clearTimeout(ot);clearTimeout(ct);
+          if(cur&&cur!==el&&curRestore)curRestore();
+          cur=el;curRestore=restore;frame(show);
+        };
+        el.addEventListener("click",act);
+        el.addEventListener("keydown",function(e){
+          if(e.key==="Enter"||e.key===" "){e.preventDefault();act();}});
       },
       leave:function(el,restore){
         el.addEventListener("pointerleave",function(e){if(mouse(e))shut(restore);});
       },
       esc:function(fn){
+        /* several widgets each register one of these. the frame queue holds a
+           single callback, so coalescing here would drop every cleanup but the
+           last. Escape is one discrete action: run it now. */
         document.addEventListener("keydown",function(e){
           if(e.key!=="Escape")return;
-          clearTimeout(ot);clearTimeout(ct);cur=null;frame(fn);});
+          clearTimeout(ot);clearTimeout(ct);cur=null;curRestore=null;fn();});
       }
     };
   })();
