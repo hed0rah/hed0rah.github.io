@@ -205,6 +205,9 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   .flow .fhead,.flow .step{grid-template-columns:1fr 2.4rem 1fr}
   .flow .m{padding:0.45rem 0.5rem;font-size:0.68rem}
 }
+
+/* hover contract: state still changes under reduced motion, it just stops moving */
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}}
 </style>
 </head>
 <body>
@@ -568,6 +571,7 @@ C2 A2 11 16 7A BB 8C 5E 07 9E 09 E2 C8 A8 33 9C</div>
   <footer><span>protocols-fun / TLS 1.3 handshake</span><span>RFC 8446 &middot; 8701 &middot; 7301 &middot; 6066</span><span><a href="../ja4/ja4plus-breakdown.html">ja4+</a> &middot; <a href="../quic/quic-http3-breakdown.html">quic / http3</a> &middot; <a href="../ebpf/ebpf-networking.html">ebpf</a> &middot; <a href="../attacks/attack-anatomy.html">attacks</a> &middot; <a href="../index.html">the map</a></span></footer>
 </div>
 
+<script src="../assets/hover.js"></script>
 <script>
 (function(){
   var KINDS={sync:"structural",enum:"value",flag:"flag / grease",rsv:"legacy / pad"};
@@ -589,7 +593,7 @@ C2 A2 11 16 7A BB 8C 5E 07 9E 09 E2 C8 A8 33 9C</div>
       cell.textContent=hx(b); col.appendChild(cell); diagram.appendChild(col);
     });
     var list=document.createElement("div"); list.className="fields";
-    var aside=document.createElement("aside"); aside.className="detail";
+    var aside=document.createElement("aside"); aside.className="detail"; aside.setAttribute("role","status"); aside.setAttribute("aria-live","polite");
     aside.innerHTML="<div class='dl'><span>field detail</span><span class='kind'></span></div>"+
       "<h3>Hover a field or byte</h3><div class='dc'>"+bytes.length+" bytes</div>"+
       "<p>Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.</p><div class='dn'></div>";
@@ -614,21 +618,20 @@ C2 A2 11 16 7A BB 8C 5E 07 9E 09 E2 C8 A8 33 9C</div>
         bw.innerHTML="<table>"+f.branch.map(function(p,i){return "<tr class='"+(i===f.sel?"sel":"")+"'><td class='k'>"+p[0]+"</td><td>"+p[1]+"</td></tr>";}).join("")+"</table>";
         row.appendChild(bw);
       }
-      row.addEventListener("mouseenter",function(){cue(fi);});
-      row.addEventListener("click",function(){pin(fi);});
+      HOV.bind(row,function(){cue(fi);},restore,function(){pin(fi);});
       rows.push(row); list.appendChild(row);
     });
     cells.forEach(function(c){
       var fi=owner[+c.dataset.idx];
-      c.addEventListener("mouseenter",function(){cue(fi);});
-      c.addEventListener("click",function(){pin(fi);});
+      HOV.bind(c,function(){cue(fi);},restore,function(){pin(fi);});
     });
     var left=document.createElement("div"); left.className="left";
     left.appendChild(diagram); left.appendChild(list);
     var dcol=document.createElement("div"); dcol.className="detailcol"; dcol.appendChild(aside);
     var block=document.createElement("div"); block.className="block";
     block.appendChild(left); block.appendChild(dcol);
-    block.addEventListener("mouseleave",restore);
+    HOV.leave(block,restore);
+    HOV.esc(function(){rows.forEach(function(r){r.classList.remove("active");});restore();});
     mount.appendChild(block);
     var maxH=aside.scrollHeight;
     fields.forEach(function(f){ show(f); if(aside.scrollHeight>maxH) maxH=aside.scrollHeight; });
@@ -971,7 +974,7 @@ C2 A2 11 16 7A BB 8C 5E 07 9E 09 E2 C8 A8 33 9C</div>
     var el=document.createElement("span"); el.className="jseg k-"+s.k; el.textContent=s.t;
     function show(){ segs.forEach(function(x){x.classList.remove("on");}); el.classList.add("on");
       dl.textContent=s.n; h3.textContent=s.t; dv.textContent=s.v; pp.textContent=s.d; }
-    el.addEventListener("mouseenter",show); el.addEventListener("click",show);
+    HOV.bind(el, show, function(){}, show);
     jstrEl.appendChild(el); segs.push(el);
   });
 
