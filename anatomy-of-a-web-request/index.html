@@ -142,21 +142,39 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
 /* prose in sans, the apparatus stays mono */
 .lede,.plede,.note,.callout,.desc,.pcap,.atable td.p{font-family:var(--sans);font-weight:400}
-.lede,.plede{font-size:0.88rem;line-height:1.72}
+/* one prose measure, not four. 13px Plex Sans sits optically level with the
+   12.5px mono apparatus because the two share an x-height. */
+.lede,.plede,.note,.callout{font-size:13px;line-height:1.5;max-width:60ch}
 
-/* this page carries a sidebar the siblings do not, so the sheet is wider:
-   the stack still lands at the protocols-fun content width of ~1040px */
-.sheet{max-width:1420px}
-.tabs{flex-wrap:nowrap;overflow-x:auto}
-.tab{flex:0 0 auto}
+/* geometry lifted from linux_network_stack so the two pages are the same
+   object: 1180 outer, 730 content, 360 inspector, 34 gap, sticky at 24 */
+.sheet{max-width:1180px;padding-left:28px;padding-right:28px}
+body{line-height:1.5}
+
+/* ---- control strip: the tabs live here, spanning the content+inspector
+   pair they both govern. lifted from linux_network_stack's .seg. ---- */
+.rule{margin:22px 0 0}
+.rule .bar{height:3px;background:var(--accent)}
+.rule .bar::after{content:"";display:block;height:1px;background:var(--line);margin-top:5px}
+.bar-controls{margin:18px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:22px}
+.grp{display:flex;align-items:center;gap:10px}
+.grp > .lab{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim)}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:3px;overflow:hidden;flex-wrap:wrap}
+.seg button{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--ink-mid);
+  background:transparent;border:0;border-right:1px solid var(--line-2);padding:5px 13px;cursor:pointer;transition:.13s}
+.seg button:last-child{border-right:0}
+.seg button:hover{color:var(--ink)}
+.seg button.on{background:var(--accent);color:var(--paper);font-weight:600}
+.seg button:focus{outline:none}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 
 /* ---- two column work area, one inspector for every tab ---- */
-.work{display:grid;grid-template-columns:minmax(0,1fr) 316px;gap:1.5rem;align-items:start}
+.work{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:34px;align-items:start;margin-top:26px}
 .stack{min-width:0}
-.inspector{position:sticky;top:1rem;align-self:start}
+.inspector{position:sticky;top:24px;align-self:start}
 @media(max-width:900px){
   .work{grid-template-columns:1fr}
-  .inspector{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:40;max-height:52vh;overflow:auto;box-shadow:0 -16px 40px rgba(0,0,0,.45)}
+  .inspector{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:40;max-height:52vh;overflow:auto;border-top:1px solid var(--line-2)}
   .insp-card{border-radius:10px 10px 0 0;border-bottom:0}
   .stack{padding-bottom:46vh}
 }
@@ -164,8 +182,8 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 /* ---- numbered stage panel ---- */
 .stage{border:1px solid var(--line);border-radius:5px;background:var(--panel);overflow:hidden}
 .phead{display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--line);background:var(--panel-2)}
-.idx{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--paper);background:var(--accent);border-radius:3px;padding:2px 6px;flex:0 0 auto}
-.pname{font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink)}
+.idx{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--accent);flex:0 0 auto}
+.pname{font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--ink)}
 .ptag{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim)}
 .pcap{font-size:11.5px;color:var(--ink-dim);padding:9px 16px 3px;line-height:1.6}
 .pbody{padding:5px 16px 12px}
@@ -175,7 +193,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 .work .row:hover,.row.active{background:var(--accent-soft)}
 .work .row:focus{outline:none}
 .work .row:focus-visible{outline:1px solid var(--accent);outline-offset:1px}
-.work .row .name{font-family:var(--mono);font-size:12.5px;color:var(--ink);white-space:nowrap;padding-left:2px}
+.work .row .name{font-family:var(--mono);font-size:13px;color:var(--ink);white-space:nowrap;padding-left:2px}
 .work .row .lead{flex:1 1 auto;min-width:14px;align-self:center;margin:0 9px;border-bottom:1px dotted var(--line-2)}
 .work .row:hover .lead,.row.active .lead{border-bottom-color:var(--accent)}
 .work .row .meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);white-space:nowrap;padding-right:2px}
@@ -194,7 +212,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 /* ---- cache branch: hangs off a stage, reads as a side exit ---- */
 .branch{margin:0 0 0 16px;border-left:1px dotted var(--line-2);padding:0 0 4px 14px}
 .branch .bhead{display:flex;align-items:baseline;gap:9px;padding:6px 0 2px}
-.branch .bn{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--paper);background:var(--accent2);border-radius:2px;padding:1px 5px;flex:0 0 auto}
+.branch .bn{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);flex:0 0 auto}
 .branch .bt{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mid)}
 
 /* ---- full width rule with a centred caps label ---- */
@@ -237,13 +255,13 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 .chello{border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:0.8rem 1rem;margin:0.4rem 0 1rem;font-family:var(--mono);font-size:0.95rem;line-height:2.2;overflow-x:auto}
 .chain{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;align-items:baseline;font-size:0.9rem;line-height:2}
 .chain .rr{font-family:var(--mono);font-size:0.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim);text-align:right;white-space:nowrap}
-.chain .seg{justify-self:start}
-.seg{padding:0.15rem 0.3rem;border-bottom:2px solid transparent;cursor:pointer;border-radius:2px;white-space:nowrap}
-.seg:focus{outline:none}
-.seg:focus-visible{outline:1px solid var(--accent);outline-offset:1px}
-.seg.k-sync{color:var(--sync)} .seg.k-enum{color:var(--enum)}
-.seg.k-flag{color:var(--flag)} .seg.k-rsv{color:var(--rsv)}
-.seg:hover,.seg.active{background:var(--accent-soft);border-bottom-color:currentColor}
+.chain .fseg{justify-self:start}
+.fseg{padding:0.15rem 0.3rem;border-bottom:2px solid transparent;cursor:pointer;border-radius:2px;white-space:nowrap}
+.fseg:focus{outline:none}
+.fseg:focus-visible{outline:1px solid var(--accent);outline-offset:1px}
+.fseg.k-sync{color:var(--sync)} .fseg.k-enum{color:var(--enum)}
+.fseg.k-flag{color:var(--flag)} .fseg.k-rsv{color:var(--rsv)}
+.fseg:hover,.fseg.active{background:var(--accent-soft);border-bottom-color:currentColor}
 
 /* ---- key ---- */
 .keyrow{display:flex;flex-wrap:wrap;gap:0 1.4rem;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);margin:0.2rem 0 1.1rem}
@@ -279,25 +297,30 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
   </div>
 
-  <p class="lede">Every explainer of this stops at eight steps and "the browser renders the page". The parts
-  worth knowing are the ones that get skipped. There are <b>nine separate caches</b> on the path, each with its
-  own key and its own invalidation story, and any one of them can be why you are looking at a stale page.
-  Choosing a CDN edge is <b>two genuinely different mechanisms</b> depending on the vendor, and the usual
-  one-line summary of that difference is wrong. And the TLS handshake that protects the request is also the
-  thing that fingerprints the client well enough to block it. Hover or focus any row to read it out in the
-  margin.</p>
+  <p class="lede">Every explainer of this stops at eight steps and "the browser renders the page".
+  The parts worth knowing get skipped: <b>nine separate caches</b> sit on the path, each with its own key
+  and its own way of going stale; choosing a CDN edge is <b>two different mechanisms</b> and the usual
+  one-line summary of the difference is wrong; and the handshake that protects the request is the same one
+  that fingerprints the client well enough to block it.</p>
+
+  <div class="rule"><div class="bar"></div></div>
+  <div class="bar-controls">
+    <div class="grp">
+      <span class="lab">section</span>
+      <div class="seg" id="tabs" role="tablist">
+        <button class="tab on" data-p="path" role="tab" aria-selected="true">Path</button>
+        <button class="tab" data-p="dns" role="tab" aria-selected="false">DNS + Routing</button>
+        <button class="tab" data-p="handshakes" role="tab" aria-selected="false">Handshakes</button>
+        <button class="tab" data-p="cache" role="tab" aria-selected="false">Cache</button>
+        <button class="tab" data-p="defence" role="tab" aria-selected="false">Defence</button>
+        <button class="tab" data-p="render" role="tab" aria-selected="false">Render</button>
+      </div>
+    </div>
+  </div>
 
   <div class="work">
     <div class="stack">
 
-      <div class="tabs" id="tabs" role="tablist">
-        <button class="tab on" data-p="path" role="tab" aria-selected="true">Path<small>all eleven stages</small></button>
-        <button class="tab" data-p="dns" role="tab" aria-selected="false">DNS + Routing<small>how an edge is chosen</small></button>
-        <button class="tab" data-p="handshakes" role="tab" aria-selected="false">Handshakes<small>TCP, QUIC, TLS</small></button>
-        <button class="tab" data-p="cache" role="tab" aria-selected="false">Cache<small>nine layers</small></button>
-        <button class="tab" data-p="defence" role="tab" aria-selected="false">Defence<small>what stops what</small></button>
-        <button class="tab" data-p="render" role="tab" aria-selected="false">Render<small>parse to composite</small></button>
-      </div>
 
       <div class="panelwrap">
 
@@ -493,13 +516,13 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
           <div class="sec">the CNAME chain a real lookup walks</div>
           <div class="chello chain" aria-label="CNAME chain">
 <span class="rr">name</span>
-<span class="seg k-sync" tabindex="0" data-n="The name you asked for" data-d="The hostname in the URL. This is the only name the user ever sees.">www.example.com</span>
+<span class="fseg k-sync" tabindex="0" data-n="The name you asked for" data-d="The hostname in the URL. This is the only name the user ever sees.">www.example.com</span>
 <span class="rr">CNAME</span>
-<span class="seg k-enum" tabindex="0" data-n="The customer's CDN alias" data-d="A per-customer name inside the CDN's zone. Pointing at this is the entire act of putting a site behind a CDN, and it is why onboarding is a DNS change rather than a migration." data-t="the handoff" data-k1="controlled by" data-v1="the CDN">example.com.cdn-provider.net</span>
+<span class="fseg k-enum" tabindex="0" data-n="The customer's CDN alias" data-d="A per-customer name inside the CDN's zone. Pointing at this is the entire act of putting a site behind a CDN, and it is why onboarding is a DNS change rather than a migration." data-t="the handoff" data-k1="controlled by" data-v1="the CDN">example.com.cdn-provider.net</span>
 <span class="rr">CNAME</span>
-<span class="seg k-flag" tabindex="0" data-n="The mapped edge name" data-d="A name the CDN's mapping system resolves per query. Two clients on different networks asking at the same moment can get different answers here, and that is the mechanism, not a caching artefact." data-t="per query" data-w="This is the record that makes DNS-based request routing work." data-k1="varies by" data-v1="who is asking">a1234.dscx.akamaiedge.net</span>
+<span class="fseg k-flag" tabindex="0" data-n="The mapped edge name" data-d="A name the CDN's mapping system resolves per query. Two clients on different networks asking at the same moment can get different answers here, and that is the mechanism, not a caching artefact." data-t="per query" data-w="This is the record that makes DNS-based request routing work." data-k1="varies by" data-v1="who is asking">a1234.dscx.akamaiedge.net</span>
 <span class="rr">A</span>
-<span class="seg k-sync" tabindex="0" data-n="The edge address" data-d="The address your packets actually go to. Short TTL, because the mapping system wants the freedom to move you.">203.0.113.42</span>
+<span class="fseg k-sync" tabindex="0" data-n="The edge address" data-d="The address your packets actually go to. Short TTL, because the mapping system wants the freedom to move you.">203.0.113.42</span>
           </div>
           <div class="note">Addresses here use the RFC 5737 documentation range. The TTL on the last hop is
           typically seconds to a couple of minutes, which is what gives the mapping system room to move traffic.</div>
@@ -568,14 +591,14 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
           <p class="plede">The first message of a TLS handshake is unencrypted by necessity: the two sides have
           no shared key yet. Hover any field.</p>
           <div class="chello" aria-label="ClientHello fields">
-<span class="seg k-sync" tabindex="0" data-n="Record version" data-d="Pinned at TLS 1.2 for compatibility with middleboxes that reject anything newer. The real version is negotiated in the supported_versions extension instead." data-t="a lie for compatibility" data-k1="actual version" data-v1="in an extension">0x0303</span>
-<span class="seg k-enum" tabindex="0" data-n="Cipher suites" data-d="The ordered list of ciphers the client will accept. The exact set and order is characteristic of the TLS library and its version." data-t="fingerprint input" data-w="Order matters to a fingerprint. A client that reorders these on every connection defeats naive matching, which is why JA4 sorts before hashing." data-k1="feeds" data-v1="JA3 / JA4">cipher_suites[18]</span>
-<span class="seg k-flag" tabindex="0" data-n="SNI" data-d="Server Name Indication: the hostname being requested, sent in plaintext so a server hosting many sites knows which certificate to present." data-t="plaintext,privacy" data-w="This is the single field that makes encrypted browsing observable. ECH exists to close it." data-k1="encrypted" data-v1="not without ECH">server_name</span>
-<span class="seg k-enum" tabindex="0" data-n="ALPN" data-d="Application-Layer Protocol Negotiation: the client lists h2, http/1.1 and so on, and the server picks one, so the protocol is settled inside the handshake with no extra round trip." data-k1="typical" data-v1="h2, http/1.1">alpn</span>
-<span class="seg k-enum" tabindex="0" data-n="supported_groups" data-d="The elliptic curves and finite-field groups the client can do key exchange with. Another list whose order is a library tell." data-t="fingerprint input">supported_groups</span>
-<span class="seg k-enum" tabindex="0" data-n="key_share" data-d="A speculative public key for the group the client guesses the server will pick. Guessing right is what makes TLS 1.3 one round trip; guessing wrong costs a HelloRetryRequest and an extra one." data-t="the 1-RTT trick" data-k1="wrong guess costs" data-v1="1 RTT">key_share</span>
-<span class="seg k-sync" tabindex="0" data-n="supported_versions" data-d="Where the real TLS version lives. The highest non-GREASE value here is the version, not the legacy field at the front of the message." data-k1="read by" data-v1="JA4">supported_versions</span>
-<span class="seg k-rsv" tabindex="0" data-n="GREASE" data-d="Deliberately invalid values sprinkled into the lists so that servers and middleboxes are forced to ignore unknown values correctly, keeping the protocol extensible. Both JA3 and JA4 strip them before hashing." data-t="RFC 8701" data-w="A common myth is that GREASE is what distinguishes JA4 from JA3. Both strip it. Sorting is the real difference." data-k1="stripped" data-v1="by both JA3 and JA4">GREASE</span>
+<span class="fseg k-sync" tabindex="0" data-n="Record version" data-d="Pinned at TLS 1.2 for compatibility with middleboxes that reject anything newer. The real version is negotiated in the supported_versions extension instead." data-t="a lie for compatibility" data-k1="actual version" data-v1="in an extension">0x0303</span>
+<span class="fseg k-enum" tabindex="0" data-n="Cipher suites" data-d="The ordered list of ciphers the client will accept. The exact set and order is characteristic of the TLS library and its version." data-t="fingerprint input" data-w="Order matters to a fingerprint. A client that reorders these on every connection defeats naive matching, which is why JA4 sorts before hashing." data-k1="feeds" data-v1="JA3 / JA4">cipher_suites[18]</span>
+<span class="fseg k-flag" tabindex="0" data-n="SNI" data-d="Server Name Indication: the hostname being requested, sent in plaintext so a server hosting many sites knows which certificate to present." data-t="plaintext,privacy" data-w="This is the single field that makes encrypted browsing observable. ECH exists to close it." data-k1="encrypted" data-v1="not without ECH">server_name</span>
+<span class="fseg k-enum" tabindex="0" data-n="ALPN" data-d="Application-Layer Protocol Negotiation: the client lists h2, http/1.1 and so on, and the server picks one, so the protocol is settled inside the handshake with no extra round trip." data-k1="typical" data-v1="h2, http/1.1">alpn</span>
+<span class="fseg k-enum" tabindex="0" data-n="supported_groups" data-d="The elliptic curves and finite-field groups the client can do key exchange with. Another list whose order is a library tell." data-t="fingerprint input">supported_groups</span>
+<span class="fseg k-enum" tabindex="0" data-n="key_share" data-d="A speculative public key for the group the client guesses the server will pick. Guessing right is what makes TLS 1.3 one round trip; guessing wrong costs a HelloRetryRequest and an extra one." data-t="the 1-RTT trick" data-k1="wrong guess costs" data-v1="1 RTT">key_share</span>
+<span class="fseg k-sync" tabindex="0" data-n="supported_versions" data-d="Where the real TLS version lives. The highest non-GREASE value here is the version, not the legacy field at the front of the message." data-k1="read by" data-v1="JA4">supported_versions</span>
+<span class="fseg k-rsv" tabindex="0" data-n="GREASE" data-d="Deliberately invalid values sprinkled into the lists so that servers and middleboxes are forced to ignore unknown values correctly, keeping the protocol extensible. Both JA3 and JA4 strip them before hashing." data-t="RFC 8701" data-w="A common myth is that GREASE is what distinguishes JA4 from JA3. Both strip it. Sorting is the real difference." data-k1="stripped" data-v1="by both JA3 and JA4">GREASE</span>
           </div>
           <div class="keyrow">
             <span><i style="background:var(--sync)"></i>version and framing</span>
