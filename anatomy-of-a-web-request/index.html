@@ -384,8 +384,8 @@ body{line-height:1.5}
 <div class="row" tabindex="0" data-n="Browser DNS cache" data-t="" data-d="Chromium keeps its own resolver cache, independent of the operating system&#x27;s." data-w="" data-k1="scope" data-v1="one browser"><span class="name">browser DNS cache</span><span class="lead"></span><span class="meta">first stop</span></div>
 <div class="row" tabindex="0" data-n="OS resolver cache" data-t="" data-d="The system cache, consulted after the browser&#x27;s own and before the hosts file and the stub resolver." data-w="" data-k1="" data-v1=""><span class="name">OS resolver cache</span><span class="lead"></span><span class="meta">then the stub</span></div>
 <div class="row" tabindex="0" data-n="Recursive resolver" data-t="privacy" data-d="The resolver that actually walks the hierarchy. Whether it is your ISP&#x27;s or a DoH endpoint reached over HTTPS changes who can see, and who can answer for, your lookups." data-w="It also changes what the CDN learns about your location, which is the subject of the DNS + Routing tab." data-k1="" data-v1=""><span class="name">recursive resolver</span><span class="lead"></span><span class="meta">ISP, or DoH / DoT</span></div>
-<div class="row" tabindex="0" data-n="The hierarchy walk" data-t="" data-d="Root serves the TLD&#x27;s nameservers, the TLD serves the zone&#x27;s, the authoritative server answers." data-w="" data-k1="" data-v1=""><span class="name">root, TLD, authoritative</span><span class="lead"></span><span class="meta">the walk</span></div>
-<div class="row" tabindex="0" data-n="CNAME into the CDN zone" data-t="the handoff" data-d="For a CDN-fronted site the authoritative answer is not an address, it is a CNAME pointing into the CDN&#x27;s own zone. From that point the CDN&#x27;s nameservers, not the site&#x27;s, decide which edge you get." data-w="This single record is what makes DNS-based request routing possible at all." data-k1="answered by" data-v1="the CDN"><span class="name">CNAME into the CDN</span><span class="lead"></span><span class="meta">the handoff</span></div>
+<div class="row" tabindex="0" data-n="The hierarchy walk" data-t="" data-d="Root serves the TLD&#x27;s nameservers, the TLD serves the zone&#x27;s, the authoritative server answers." data-w="" data-k1="" data-v1=""><span class="name">root, TLD, authoritative</span><span class="lead"></span><span class="meta">three questions, three answers</span></div>
+<div class="row" tabindex="0" data-n="CNAME into the CDN zone" data-t="the handoff" data-d="For a CDN-fronted site the authoritative answer is not an address, it is a CNAME pointing into the CDN&#x27;s own zone. From that point the CDN&#x27;s nameservers, not the site&#x27;s, decide which edge you get." data-w="This single record is what makes DNS-based request routing possible at all." data-k1="answered by" data-v1="the CDN"><span class="name">CNAME into the CDN</span><span class="lead"></span><span class="meta">the CDN takes over here</span></div>
 </div>
 </div>
 <div class="wire hot"><span class="ln"></span><span class="tag">the packet leaves the machine</span><span class="ln"></span></div>
@@ -400,7 +400,7 @@ body{line-height:1.5}
 <div class="flow"><span class="stem"></span><span class="chev">&#9662;</span><span class="step">negotiate keys, identity and protocol</span></div>
 <div class="stage">
 <div class="phead"><span class="idx">06</span><span class="pname">TLS</span><span class="ptag">network</span></div>
-<div class="pcap">TLS 1.3. One round trip, or zero on resumption, with a caveat that matters.</div>
+<div class="pcap">TLS 1.3. One round trip, or zero on resumption, and the zero has a replay problem.</div>
 <div class="pbody">
 <div class="row" tabindex="0" data-n="ClientHello" data-t="cleartext" data-d="The first message, and it is in the clear. It announces the host you want (SNI), the protocols you speak (ALPN), the curves you support, and a speculative key share." data-w="" data-k1="encrypted" data-v1="no"><span class="name">ClientHello</span><span class="lead"></span><span class="meta">SNI, ALPN, groups, key_share</span></div>
 <div class="row k-warn" tabindex="0" data-n="TLS fingerprinting" data-t="fingerprint,defence" data-d="The exact set and order of ciphers, extensions and curves in that ClientHello fingerprints the client&#x27;s TLS library and build. It identifies the stack, not the person, and it is stable enough to block on." data-w="The same value reappears on the DEFENCE tab as a bot signal." data-k1="derived from" data-v1="ClientHello"><span class="name">JA3 / JA4 fingerprint</span><span class="lead"></span><span class="meta">computed here</span></div>
@@ -422,17 +422,17 @@ body{line-height:1.5}
 <div class="row" tabindex="0" data-n="TLS termination" data-t="" data-d="Your TLS session terminates at the edge. A second, separate connection carries the request onward." data-w="" data-k1="" data-v1=""><span class="name">TLS termination</span><span class="lead"></span><span class="meta">connection ends here</span></div>
 <div class="row" tabindex="0" data-n="Web application firewall" data-t="" data-d="Signature matching plus anomaly scoring, usually over an OWASP-derived ruleset, against the decrypted request." data-w="" data-k1="" data-v1=""><span class="name">WAF</span><span class="lead"></span><span class="meta">signatures + anomaly score</span></div>
 <div class="row" tabindex="0" data-n="Bot management" data-t="uses stage 06" data-d="Combines the TLS fingerprint from stage 06 with HTTP/2 frame ordering, behavioural scoring and challenges, to decide whether a client is what it claims to be." data-w="" data-k1="" data-v1=""><span class="name">bot management</span><span class="lead"></span><span class="meta">JA4, HTTP/2 frames, behaviour</span></div>
-<div class="row k-warn" tabindex="0" data-n="Cache key construction" data-t="cache key" data-d="The default key is method plus URL. A CDN can be configured to fold in specific headers, cookies, query parameters or device class. Everything about correctness, and about poisoning, follows from this choice." data-w="Every input that changes the response but is left out of the key is a poisoning primitive." data-k1="default key" data-v1="method + URL"><span class="name">cache key construction</span><span class="lead"></span><span class="meta">the subtle part</span></div>
+<div class="row k-warn" tabindex="0" data-n="Cache key construction" data-t="cache key" data-d="The default key is method plus URL. A CDN can be configured to fold in specific headers, cookies, query parameters or device class. Everything about correctness, and about poisoning, follows from this choice." data-w="Every input that changes the response but is left out of the key is a poisoning primitive." data-k1="default key" data-v1="method + URL"><span class="name">cache key construction</span><span class="lead"></span><span class="meta">decides what counts as the same request</span></div>
 </div>
 </div>
 <div class="branch">
 <div class="bhead"><span class="bn">cache 5</span><span class="bt">edge cache</span></div>
-<div class="row k-hit" tabindex="0" data-n="Cache 5: CDN edge" data-t="cache 5" data-d="The nearest point of presence. A hit is answered without any part of your infrastructure being involved, which is the entire economic argument for a CDN." data-w="" data-k1="keyed by" data-v1="the cache key"><span class="name">edge PoP</span><span class="lead"></span><span class="meta">HIT: served here</span></div>
+<div class="row k-hit" tabindex="0" data-n="Cache 5: CDN edge" data-t="cache 5" data-d="The nearest point of presence. A hit is answered without any part of your infrastructure being involved. This is what people are buying when they buy a CDN." data-w="" data-k1="keyed by" data-v1="the cache key"><span class="name">edge PoP</span><span class="lead"></span><span class="meta">HIT: served here</span></div>
 </div>
 <div class="flow"><span class="stem"></span><span class="chev">&#9662;</span><span class="step">edge miss goes to a <b>parent tier</b>, not to the origin</span></div>
 <div class="stage">
 <div class="phead"><span class="idx">08</span><span class="pname">PARENT / SHIELD</span><span class="ptag">cdn</span></div>
-<div class="pcap">Tiered distribution. The layer most explainers omit entirely.</div>
+<div class="pcap">Tiered distribution. Most explainers skip this layer, which is why origin load surprises people.</div>
 <div class="pbody">
 <div class="row" tabindex="0" data-n="Parent / shield tier" data-t="the missing layer" data-d="A miss at a leaf edge asks a designated parent before it asks you. Because there are far fewer parents than edges, the parent&#x27;s hit rate is high and the origin sees a fraction of the misses it otherwise would." data-w="Without a shield, hundreds of edges can independently miss on the same object and stampede the origin at once." data-k1="origin requests" data-v1="collapsed"><span class="name">tiered distribution</span><span class="lead"></span><span class="meta">fewer nodes, longer TTL</span></div>
 </div>
@@ -476,7 +476,7 @@ body{line-height:1.5}
 <div class="flow"><span class="stem"></span><span class="chev">&#9662;</span><span class="step">bytes arrive, and the browser starts building a page</span></div>
 <div class="stage">
 <div class="phead"><span class="idx">11</span><span class="pname">RENDER</span><span class="ptag">browser</span></div>
-<div class="pcap">Parse to pixels. The stage where the tutorials stop and the measurements start.</div>
+<div class="pcap">Parse to pixels. A fast network can still produce a slow page here.</div>
 <div class="pbody">
 <div class="row" tabindex="0" data-n="Parsing" data-t="" data-d="The parser builds the DOM as bytes arrive, rather than waiting for the full document." data-w="" data-k1="" data-v1=""><span class="name">HTML parse to DOM</span><span class="lead"></span><span class="meta">incremental</span></div>
 <div class="row" tabindex="0" data-n="Preload scanner" data-t="why it feels fast" data-d="A second, lightweight parser races ahead of the main one looking only for fetchable URLs, so subresources start downloading while the main parser is still blocked." data-w="It is the single biggest reason a blocking script does not stall every download on the page." data-k1="" data-v1=""><span class="name">preload scanner</span><span class="lead"></span><span class="meta">runs ahead</span></div>
@@ -562,7 +562,7 @@ body{line-height:1.5}
           one. Akamai calls the edge-to-origin version <b>SureRoute</b>, and the IP-layer product
           <b>SureRoute for IP</b>. The rationale is BGP's: it picks the fewest networks traversed with no
           regard for congestion or latency.</p>
-          <div class="callout"><b>worth knowing.</b> SureRoute applies to content that cannot be cached. When
+          <div class="callout"><b>SureRoute only runs when caching cannot.</b> It applies to content that cannot be cached. When
           the edge recognises an object as cacheable it disables the path racing, because a cache hit beats any
           route. So the feature that sounds like it should help everything is, by design, only for the requests
           that had to go all the way back.</div>
@@ -610,9 +610,7 @@ body{line-height:1.5}
           <div class="callout hot"><b>the handshake identifies the client.</b> Taken together, the cipher list,
           the extension list, the curves and their order describe the TLS library and build with enough
           precision to fingerprint it. That is JA3, and its successor <a href="https://github.com/hed0rah/ja4-loko">JA4</a>.
-          It says nothing about who you are and everything about what you are running, which is exactly what
-          makes it useful for telling a browser from a scraper wearing a browser's User-Agent. The same value
-          reappears on the DEFENCE tab.</div>
+          It identifies the stack, not the person. That is enough to separate a real browser from a scraper wearing a browser's User-Agent. The same value turns up again on the DEFENCE tab.</div>
 
           <div class="sec">0-RTT, and the reason it is fenced off</div>
           <div class="callout"><b>replay is not a theoretical risk.</b> Data sent in a 0-RTT flight is
@@ -626,9 +624,7 @@ body{line-height:1.5}
         <div class="panel" data-panel="cache">
           <div class="pfacts"><span>layers<b>9</b></span><span>reachable by "clear your cache"<b>2 of them</b></span></div>
 
-          <p class="plede">This table is the reason the page exists. Nine caches sit between a keystroke and a
-          database read, each with a different key, a different owner and a different way of being wrong. A
-          stale page is never just "a caching problem", it is a question of <b>which layer</b>.</p>
+          <p class="plede">Nine caches can hold a copy of a response, each with its own key and its own way of going stale. So "the page is stale" is not yet a diagnosis. The useful question is <b>which layer</b> is holding the old copy, because what clears it differs at every level.</p>
 
           <div class="sec">the nine layers</div>
           <table class="atable">
@@ -645,8 +641,7 @@ body{line-height:1.5}
               <tr><td class="n">9</td><td class="f">Database</td><td class="p">query plan, buffer pool</td><td class="p">writes</td><td class="x">implicit</td></tr>
             </tbody>
           </table>
-          <div class="callout hot"><b>the point of the table.</b> Each row is a separate cache with a separate
-          key and a separate invalidation story. A browser "clear cache" reaches rows 1 and 3. It does not
+          <div class="callout hot"><b>Each row is a different cache, with its own key and its own way of being cleared.</b> A browser "clear cache" reaches rows 1 and 3. It does not
           touch the service worker, it does not touch the CDN, and it certainly does not touch your
           application's Redis. Debugging staleness means naming the layer first.</div>
 
@@ -710,8 +705,7 @@ body{line-height:1.5}
           <div class="callout hot"><b>a CDN in front of an origin is exactly the two-parser condition request
           smuggling needs.</b> Smuggling requires two HTTP implementations that disagree about where one
           request ends and the next begins. An edge that terminates the client connection and forwards over a
-          reused connection to the origin is that arrangement by construction. This is not an exotic
-          configuration, it is the normal one, which is why HTTP/2 to the origin is worth the trouble.</div>
+          reused connection to the origin is that arrangement by construction. That is the normal arrangement, not an exotic one. HTTP/2 to the origin removes the ambiguity the attack depends on.</div>
 
           <div class="callout"><b>the one that is routinely forgotten.</b> Every control on this page lives at
           the edge, and the edge is only in the path because DNS says so. If your origin answers on a public
@@ -758,9 +752,6 @@ body{line-height:1.5}
               <tr><td class="f">INP</td><td class="p">Interaction to Next Paint: the delay from an interaction to the frame that reflects it</td><td class="x">&lt; 200ms</td><td class="p">Long tasks holding the main thread so no frame can be produced.</td></tr>
             </tbody>
           </table>
-          <div class="callout"><b>this page practises it.</b> The inspector to the right is driven by a single
-          controller that coalesces its work into one animation frame and animates nothing but opacity, for
-          exactly the reason in the last row of that table.</div>
         </div>
 
       </div><!-- /panelwrap -->
