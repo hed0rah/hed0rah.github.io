@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>protocols / Anatomy of a web request</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E6EBEE; --panel:#EFF3F5; --ink:#10171C; --soft:#46545E;
+  --faint:#7A8790; --line:#C1CDD3; --hair:#D6E0E4;
+  --enum:#0E7A8C; --enum-soft:#D1E7EA;
+  --flag:#C1501A; --flag-soft:#F0DACB;
+  --sync:#34507E; --sync-soft:#DCE3EE;
+  --rsv:#838E96;  --rsv-soft:rgba(16,23,28,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#0a0f0d;--panel:#0f1613;--ink:#c6f0d0;--soft:#7fae90;--faint:#4f6a5c;--line:#22302a;--hair:#151d19;--enum:#2fe38a;--enum-soft:#0e2a1d;--flag:#e0a92e;--flag-soft:#2c2410;--sync:#4fb8d6;--sync-soft:#0f2630;--rsv:#6f8f7f;--rsv-soft:rgba(198,240,208,0.05);}
+:root[data-theme="amber"]{--paper:#120c00;--panel:#1c1400;--ink:#ffb000;--soft:#c08a2a;--faint:#8a6a20;--line:#3a2a00;--hair:#241900;--enum:#ffb000;--enum-soft:#2a1d00;--flag:#ffd27a;--flag-soft:#332400;--sync:#d98a1a;--sync-soft:#241a00;--rsv:#9a7524;--rsv-soft:rgba(255,176,0,0.05);}
+:root[data-theme="vapor"]{--paper:#f4efe0;--panel:#ece4d0;--ink:#123b37;--soft:#3f605b;--faint:#8a9a90;--line:#e5457f;--hair:#ddd3bd;--enum:#e5457f;--enum-soft:#f8d9e4;--flag:#e0982f;--flag-soft:#f5e6c6;--sync:#0e9c90;--sync-soft:#cbe9e3;--rsv:#8a9a90;--rsv-soft:rgba(18,59,55,0.05);}
+/* house modes: the site-wide Deep Dive skins (warm cream / neutral dark, house teal+orange) */
+:root[data-theme="house-light"]{--paper:#F2F1EE;--panel:#FBFAF6;--ink:#17150F;--soft:#4A4744;--faint:#8C877E;--line:#C9C5BB;--hair:#E4E0D7;--enum:#007870;--enum-soft:#D8E7E5;--flag:#E85000;--flag-soft:#F6E1D4;--sync:#33518C;--sync-soft:#DEE3EF;--rsv:#8C877E;--rsv-soft:rgba(23,21,15,0.04);}
+:root[data-theme="house-dark"]{--paper:#121213;--panel:#1c1c1e;--ink:#ececea;--soft:#a9a9a4;--faint:#6f6f6b;--line:#313135;--hair:#26262a;--enum:#08F9DF;--enum-soft:#0e2a29;--flag:#FF4D00;--flag-soft:#2c1a10;--sync:#7fb2e0;--sync-soft:#16232f;--rsv:#8b8b88;--rsv-soft:rgba(236,236,234,0.05);}
+/* house modes: RJ wears teal and flips to orange on hover; a couple of subtle orange touches in the head */
+:root[data-theme="house-light"] .head .title protofun-toggle,:root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
+:root[data-theme="house-light"] .head .title protofun-toggle:hover,:root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
+:root[data-theme="house-light"] .head .stamp b,:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
+:root[data-theme="house-light"] .head .title,:root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
+.head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem}
+.head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
+.head .title protofun-toggle:hover{color:var(--enum)}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:80ch;margin-bottom:1.4rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500} .lede a{color:var(--enum)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:1.7rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.4rem 0 1rem;max-width:78ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.1rem 0 0.4rem;max-width:82ch}
+.callout b{color:var(--ink);font-weight:500} .callout a{color:var(--enum)}
+.callout.hot{border-left-color:var(--enum)}
+code{font-family:var(--ff);color:var(--enum);font-size:0.92em;background:var(--rsv-soft);padding:0.02rem 0.28rem;border-radius:2px;white-space:nowrap}
+.atable{width:100%;border-collapse:collapse;font-size:0.74rem;margin:0.4rem 0 1.3rem}
+.atable th,.atable td{text-align:left;padding:0.38rem 0.7rem;border-bottom:1px solid var(--hair);vertical-align:top}
+.atable th{font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+.atable td.x{font-family:var(--ff);color:var(--enum);white-space:nowrap;font-size:0.72rem}
+.atable td.f{color:var(--ink);font-weight:500;white-space:nowrap}
+.kv{font-size:0.78rem;margin:0.3rem 0 1.1rem}
+.kv div{display:grid;grid-template-columns:8.5rem 1fr;gap:1rem;padding:0.3rem 0;border-bottom:1px solid var(--hair)}
+.kv div:last-child{border-bottom:none}
+.kv .k{color:var(--enum)} .kv .v{color:var(--soft)}
+/* interactive JA4 string decoder */
+.decoder{display:grid;grid-template-columns:1fr 320px;gap:1.4rem;align-items:start;margin:0.4rem 0 1.2rem}
+@media(max-width:820px){.decoder{grid-template-columns:1fr}}
+.jstr{font-size:1.15rem;letter-spacing:0.02em;line-height:2.4;word-break:break-all;user-select:none}
+.jseg{padding:0.15rem 0.1rem;border-bottom:2px solid transparent;cursor:pointer;transition:background .12s}
+.jseg.k-enum{color:var(--enum)} .jseg.k-flag{color:var(--flag)} .jseg.k-sync{color:var(--sync)}
+.jseg:hover,.jseg.on{background:var(--panel);border-bottom-color:currentColor}
+.jsep{color:var(--faint)}
+.jdetail{border:1px solid var(--line);background:var(--panel);padding:0.9rem 1rem;min-height:9rem;position:sticky;top:1rem}
+.jdetail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.45rem;margin-bottom:0.55rem}
+.jdetail h3{font-weight:500;font-size:0.95rem;color:var(--ink)} .jdetail .dv{font-size:0.72rem;color:var(--enum);margin:0.2rem 0 0.55rem}
+.jdetail p{font-size:0.76rem;color:var(--soft);line-height:1.6}
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none}
+.tab{padding:0.55rem 0.85rem;font-size:0.63rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:last-child{border-right:none}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.06em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.5rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none} .panel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+.plede{color:var(--soft);max-width:82ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
+.plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em}
+.ja4{border:1px solid var(--line);background:var(--panel);padding:0.7rem 0.9rem;margin:0.3rem 0 0.9rem;font-size:0.95rem;letter-spacing:0.02em;overflow-x:auto}
+.ja4 .s1{color:var(--sync)} .ja4 .s2{color:var(--enum)} .ja4 .s3{color:var(--flag)}
+footer{margin-top:3.2rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+/* --- secret themes: amber CRT + vaporwave --- */
+:root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.32)}
+:root[data-theme="amber"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 3px)}
+:root[data-theme="vapor"] body{background:url(assets/sakura-tile.webp) repeat, linear-gradient(160deg,#4fdfba 0%,#3fc8a4 60%,#57e3c0 100%);background-size:320px auto, cover;background-attachment:fixed}
+:root[data-theme="vapor"] .sheet{background:#f4efe0;box-shadow:0 0 0 3px #2ec6b9,0 14px 46px rgba(0,0,0,.28);border-radius:3px}
+:root[data-theme="vapor"] .head{border-color:#0e9c90}
+:root[data-theme="vapor"] .head .title protofun-toggle{color:#e5457f}
+:root[data-theme="vapor"] .tab.on{box-shadow:inset 0 -2px #e5457f}
+/* --- mobile --- */
+@media(max-width:560px){
+  body{font-size:13px}
+  .sheet{padding-left:1rem;padding-right:1rem}
+  .head .row{grid-template-columns:1fr}
+  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
+  .head .strip{grid-template-columns:1fr}
+  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
+  .head .strip div:last-child{border-bottom:none}
+  .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
+  .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
+  code{white-space:normal;overflow-wrap:anywhere}
+}
+</style>
+</head>
+<body>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ---------------------------------------------------------------------------
+   anatomy of a web request
+   protofun theme tokens (6 themes, from the template head) aliased onto the
+   linux_network_stack component vocabulary: numbered stage panels, dotted
+   leader rows, connector ticks, one sticky inspector.
+   --------------------------------------------------------------------------- */
+:root{
+  --mono:var(--ff);
+  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --ink-mid:var(--soft);
+  --ink-dim:var(--faint);
+  --accent:var(--enum);
+  --accent2:var(--sync);
+  --accent-soft:var(--enum-soft);
+  --panel-2:#E9EEF1; --line-2:#AEBEC6;
+}
+[data-theme="dark"]{--panel-2:#131d18;--line-2:#31463c}
+[data-theme="amber"]{--panel-2:#241900;--line-2:#4d3800}
+[data-theme="vapor"]{--panel-2:#ece4d0;--line-2:#d98fb0}
+[data-theme="house-light"]{--panel-2:#ECEAE3;--line-2:#B4AFA3}
+[data-theme="house-dark"]{--panel-2:#232326;--line-2:#3e3e42}
+
+/* prose in sans, the apparatus stays mono */
+.lede,.plede,.note,.callout,.desc,.pcap,.atable td.p{font-family:var(--sans);font-weight:400}
+.lede,.plede{font-size:0.88rem;line-height:1.72}
+
+/* this page carries a sidebar the siblings do not, so the sheet is wider:
+   the stack still lands at the protocols-fun content width of ~1040px */
+.sheet{max-width:1420px}
+.tabs{flex-wrap:nowrap;overflow-x:auto}
+.tab{flex:0 0 auto}
+
+/* ---- two column work area, one inspector for every tab ---- */
+.work{display:grid;grid-template-columns:minmax(0,1fr) 316px;gap:1.5rem;align-items:start}
+.stack{min-width:0}
+.inspector{position:sticky;top:1rem;align-self:start}
+@media(max-width:900px){
+  .work{grid-template-columns:1fr}
+  .inspector{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:40;max-height:52vh;overflow:auto;box-shadow:0 -16px 40px rgba(0,0,0,.45)}
+  .insp-card{border-radius:10px 10px 0 0;border-bottom:0}
+  .stack{padding-bottom:46vh}
+}
+
+/* ---- numbered stage panel ---- */
+.stage{border:1px solid var(--line);border-radius:5px;background:var(--panel);overflow:hidden}
+.phead{display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.idx{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--paper);background:var(--accent);border-radius:3px;padding:2px 6px;flex:0 0 auto}
+.pname{font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink)}
+.ptag{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim)}
+.pcap{font-size:11.5px;color:var(--ink-dim);padding:9px 16px 3px;line-height:1.6}
+.pbody{padding:5px 16px 12px}
+
+/* ---- dotted leader row: the workhorse ---- */
+.work .row{display:flex;align-items:baseline;gap:0;padding:3px 0;cursor:pointer;border-radius:3px;transition:background .1s;scroll-margin:5rem}
+.work .row:hover,.row.active{background:var(--accent-soft)}
+.work .row:focus{outline:none}
+.work .row:focus-visible{outline:1px solid var(--accent);outline-offset:1px}
+.work .row .name{font-family:var(--mono);font-size:12.5px;color:var(--ink);white-space:nowrap;padding-left:2px}
+.work .row .lead{flex:1 1 auto;min-width:14px;align-self:center;margin:0 9px;border-bottom:1px dotted var(--line-2)}
+.work .row:hover .lead,.row.active .lead{border-bottom-color:var(--accent)}
+.work .row .meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);white-space:nowrap;padding-right:2px}
+.work .row:hover .meta,.row.active .meta{color:var(--ink-mid)}
+.work .row.k-hit .meta{color:var(--accent)}
+.work .row.k-warn .meta{color:var(--flag)}
+.work .row.pinned{background:var(--accent-soft);box-shadow:inset 2px 0 0 var(--accent)}
+
+/* ---- connector tick between stages ---- */
+.flow{display:flex;align-items:center;gap:11px;padding:7px 0 7px 16px;min-height:28px}
+.flow .stem{width:1px;align-self:stretch;background:var(--line-2);margin-left:5px}
+.flow .chev{color:var(--accent);font-size:12px;line-height:1;margin-left:-6px}
+.flow .step{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-dim)}
+.flow .step b{color:var(--ink-mid);font-weight:500}
+
+/* ---- cache branch: hangs off a stage, reads as a side exit ---- */
+.branch{margin:0 0 0 16px;border-left:1px dotted var(--line-2);padding:0 0 4px 14px}
+.branch .bhead{display:flex;align-items:baseline;gap:9px;padding:6px 0 2px}
+.branch .bn{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--paper);background:var(--accent2);border-radius:2px;padding:1px 5px;flex:0 0 auto}
+.branch .bt{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mid)}
+
+/* ---- full width rule with a centred caps label ---- */
+.wire{display:flex;align-items:center;gap:14px;padding:13px 4px}
+.wire .ln{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--line-2) 12%,var(--line-2) 88%,transparent)}
+.wire .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-mid);white-space:nowrap}
+.wire.hot .tag{color:var(--flag)}
+.flowhead{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 8px;padding:0 2px}
+.flowhead .start{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink)}
+.flowhead .meta{font-family:var(--mono);font-size:11px;color:var(--ink-dim)}
+
+/* ---- sticky inspector ---- */
+.insp-card{border:1px solid var(--line);border-radius:5px;background:var(--panel);overflow:hidden}
+.insp-head{padding:13px 16px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.insp-head .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-dim)}
+.insp-name{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ink);margin-top:7px;word-break:break-word;line-height:1.3}
+.tags{margin-top:10px;display:flex;gap:7px;flex-wrap:wrap}
+.tags:empty{display:none}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mid);border:1px solid var(--line-2);border-radius:3px;padding:2px 8px}
+.insp-body{padding:14px 16px 16px}
+.desc{font-size:12.5px;line-height:1.7;color:var(--ink)}
+.desc .why{display:block;margin-top:10px;color:var(--ink-mid)}
+.leadrow{display:flex;align-items:baseline;margin:14px 0 4px}
+.leadrow.off{display:none}
+.leadrow .k{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);white-space:nowrap}
+.leadrow .l{flex:1;margin:0 9px;border-bottom:1px dotted var(--line-2);transform:translateY(-3px)}
+.leadrow .v{font-family:var(--mono);font-size:12.5px;color:var(--accent2);white-space:nowrap;font-weight:500}
+.insp-foot{padding:10px 16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);letter-spacing:.04em;line-height:1.9}
+.insp-foot kbd{font-family:var(--mono);border:1px solid var(--line-2);border-radius:2px;padding:0 4px;color:var(--ink-mid)}
+
+/* ---- contrast block: two mechanisms side by side ---- */
+.versus{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0.6rem 0 1.2rem}
+@media(max-width:700px){.versus{grid-template-columns:1fr}}
+.vs{border:1px solid var(--line);border-radius:5px;background:var(--panel);overflow:hidden}
+.vs .vh{padding:9px 14px;border-bottom:1px solid var(--line);background:var(--panel-2);font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+.vs .vh small{display:block;font-size:9.5px;letter-spacing:.14em;color:var(--ink-dim);font-weight:400;margin-top:3px}
+.vs .vb{padding:6px 14px 12px}
+
+/* ---- ClientHello decoder, same segment idiom as the JA4 page ---- */
+.chello{border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:0.8rem 1rem;margin:0.4rem 0 1rem;font-family:var(--mono);font-size:0.95rem;line-height:2.2;overflow-x:auto}
+.chain{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;align-items:baseline;font-size:0.9rem;line-height:2}
+.chain .rr{font-family:var(--mono);font-size:0.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim);text-align:right;white-space:nowrap}
+.chain .seg{justify-self:start}
+.seg{padding:0.15rem 0.3rem;border-bottom:2px solid transparent;cursor:pointer;border-radius:2px;white-space:nowrap}
+.seg:focus{outline:none}
+.seg:focus-visible{outline:1px solid var(--accent);outline-offset:1px}
+.seg.k-sync{color:var(--sync)} .seg.k-enum{color:var(--enum)}
+.seg.k-flag{color:var(--flag)} .seg.k-rsv{color:var(--rsv)}
+.seg:hover,.seg.active{background:var(--accent-soft);border-bottom-color:currentColor}
+
+/* ---- key ---- */
+.keyrow{display:flex;flex-wrap:wrap;gap:0 1.4rem;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);margin:0.2rem 0 1.1rem}
+.keyrow span{display:flex;align-items:center;gap:6px}
+.keyrow i{width:9px;height:9px;border-radius:2px;display:inline-block;font-style:normal}
+
+.atable td.p{white-space:normal;line-height:1.6}
+.atable td.n{font-family:var(--mono);color:var(--accent2);white-space:nowrap;font-weight:500}
+
+/* reduced motion: state still changes, it just stops moving */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}
+}
+</style>
+
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title">
+        <div class="tt">
+          <div class="sysmark">PROTOCOLS-FUN . REQUEST PATH</div>
+          <h1>Anatomy of a Web Request</h1>
+        </div>
+        <protofun-toggle aria-label="Toggle theme"></protofun-toggle>
+      </div>
+      <div class="stamp"><b>keystroke to pixels</b>eleven stages, nine caches<br>rev 2026.09</div>
+    </div>
+    <div class="strip">
+      <div>caches on the path <b>9</b></div>
+      <div>stages <b>00 - 11</b></div>
+      <div>edge selection <b>mapping vs anycast</b></div>
+    </div>
+  </div>
+
+  <p class="lede">Every explainer of this stops at eight steps and "the browser renders the page". The parts
+  worth knowing are the ones that get skipped. There are <b>nine separate caches</b> on the path, each with its
+  own key and its own invalidation story, and any one of them can be why you are looking at a stale page.
+  Choosing a CDN edge is <b>two genuinely different mechanisms</b> depending on the vendor, and the usual
+  one-line summary of that difference is wrong. And the TLS handshake that protects the request is also the
+  thing that fingerprints the client well enough to block it. Hover or focus any row to read it out in the
+  margin.</p>
+
+  <div class="work">
+    <div class="stack">
+
+      <div class="tabs" id="tabs" role="tablist">
+        <button class="tab on" data-p="path" role="tab" aria-selected="true">Path<small>all eleven stages</small></button>
+        <button class="tab" data-p="dns" role="tab" aria-selected="false">DNS + Routing<small>how an edge is chosen</small></button>
+        <button class="tab" data-p="handshakes" role="tab" aria-selected="false">Handshakes<small>TCP, QUIC, TLS</small></button>
+        <button class="tab" data-p="cache" role="tab" aria-selected="false">Cache<small>nine layers</small></button>
+        <button class="tab" data-p="defence" role="tab" aria-selected="false">Defence<small>what stops what</small></button>
+        <button class="tab" data-p="render" role="tab" aria-selected="false">Render<small>parse to composite</small></button>
+      </div>
+
+      <div class="panelwrap">
+
+        <!-- ================= PATH ================= -->
+        <div class="panel on" data-panel="path">
+          <div class="pfacts"><span>stages<b>00 to 11</b></span><span>caches<b>9, numbered on the branches</b></span></div>
+<div class="flowhead"><span class="start">keystroke, enter</span><span class="meta">11 stages &middot; 9 caches</span></div>
+<div class="stage">
+<div class="phead"><span class="idx">00</span><span class="pname">URL PARSE</span><span class="ptag">browser</span></div>
+<div class="pcap">scheme :// host : port / path ? query # fragment</div>
+<div class="pbody">
+<div class="row" tabindex="0" data-n="The fragment" data-t="client only" data-d="Everything after the hash is stripped before the request is built. The server never sees it, which is why fragment-based routing in a single-page app produces no network traffic, and why you cannot log which fragment a user asked for." data-w="Consequence: a fragment can never be part of a cache key, because no cache on the path observes it." data-k1="sent to server" data-v1="no"><span class="name">#fragment</span><span class="lead"></span><span class="meta">never sent</span></div>
+<div class="row" tabindex="0" data-n="Scheme" data-t="" data-d="http or https decides the default port (80 or 443) and, more importantly, whether stage 01 gets a say at all." data-w="" data-k1="default port" data-v1="80 / 443"><span class="name">scheme</span><span class="lead"></span><span class="meta">picks the default port</span></div>
+<div class="row" tabindex="0" data-n="Host" data-t="" data-d="The only part of the URL that DNS ever sees. Path and query are irrelevant to resolution." data-w="" data-k1="used at stage" data-v1="04"><span class="name">host</span><span class="lead"></span><span class="meta">what gets resolved</span></div>
+<div class="row k-warn" tabindex="0" data-n="Query string" data-t="cache key" data-d="Whether the query string joins the cache key is a CDN configuration choice, not a given. Parameters that change the response but are excluded from the key are a cache-poisoning primitive." data-w="See the DEFENCE tab: unkeyed input that still changes the response is the whole bug class." data-k1="" data-v1=""><span class="name">query</span><span class="lead"></span><span class="meta">may or may not be keyed</span></div>
+</div>
+</div>
+<div class="flow"><span class="stem"></span><span class="chev">&#9662;</span><span class="step">check the <b>HSTS preload list</b> before anything touches the network</span></div>
+<div class="stage">
+<div class="phead"><span class="idx">01</span><span class="pname">HSTS PRELOAD</span><span class="ptag">browser</span></div>
+<div class="pcap">A list compiled into the browser binary. Consulted before DNS, before any packet.</div>
+<div class="pbody">
+<div class="row k-hit" tabindex="0" data-n="HSTS preload hit" data-t="pre-network" data-d="If the host is on the list the browser rewrites the scheme internally. No plaintext request is emitted and no redirect is issued, so there is nothing on the wire to intercept or strip." data-w="This closes the first-visit gap that a Strict-Transport-Security response header cannot, because that header only helps after you have already made one request." data-k1="round trips" data-v1="0"><span class="name">preload hit</span><span class="lead"></span><span class="meta">http rewritten to https</span></div>
+<div class="row k-warn" tabindex="0" data-n="HSTS preload miss" data-t="" data-d="Without a preload entry the first request can still go out in plaintext, and only the response header protects later visits." data-w="" data-k1="" data-v1=""><span class="name">preload miss</span><span class="lead"></span><span class="meta">plaintext, then upgrade</span></div>
+</div>
+</div>
+<div class="flow"><span class="stem"></span><span class="chev">&#9662;</span><span class="step">hand the request to the <b>service worker</b>, if one claims this scope</span></div>
+<div class="stage">
+<div class="phead"><span class="idx">02</span><span class="pname">SERVICE WORKER</span><span class="ptag">browser</span></div>
+<div class="pcap">Author-written JavaScript with a fetch handler. It runs before the HTTP cache, not after it.</div>
+<div class="pbody">
+<div class="row" tabindex="0" data-n="Service worker fetch handler" data-t="author controlled" data-d="A registered worker for this scope intercepts first. It can answer from the Cache API, fabricate a response entirely, or call through to the network. It is the only cache on the path whose policy is arbitrary code rather than a header." data-w="Order matters: the worker sits in front of the HTTP cache, so a worker that answers from Cache API means stages 03 and later never run." data-k1="" data-v1=""><span class="name">fetch handler</span><span class="lead"></span><span class="meta">author's code decides</span></div>
+</div>
+</div>
+<div class="branch">
+<div class="bhead"><span class="bn">cache 1</span><span class="bt">Cache API</span></div>
+<div class="row k-hit" tabindex="0" data-n="Cache 1: Cache API" data-t="cache 1,author controlled" data-d="Storage the service worker manages explicitly. Nothing expires on its own. Entries live until the worker&#x27;s code deletes them, which is what makes offline-first apps possible and stale apps stubborn." data-w="A browser &#x27;clear cache&#x27; does not touch this. It needs an unregister or a worker update." data-k1="keyed by" data-v1="whatever the code says"><span class="name">Cache API</span><span class="lead"></span><span class="meta">HIT: zero network</span></div>
+</div>
+<div class="flow"><span class="stem"></span><span class="chev">&#9662;</span><span class="step">worker passes through, or none is registered</span></div>
+<div class="stage">
+<div class="phead"><span class="idx">03</span><span class="pname">BROWSER CACHE</span><span class="ptag">browser</span></div>
+<div class="pcap">Two distinct caches, and the pair people mean when they say clear your cache.</div>
+<div class="pbody">
+<div class="row" tabindex="0" data-n="Freshness check" data-t="" data-d="If the stored response is still fresh it is served with no network at all. Freshness comes from Cache-Control max-age, or the older Expires header." data-w="" data-k1="no network if" data-v1="fresh"><span class="name">freshness</span><span class="lead"></span><span class="meta">max-age / Expires</span></div>
+<div class="row" tabindex="0" data-n="Revalidation" data-t="304" data-d="A stale but storable entry triggers a conditional request. The server answers 304 Not Modified with no body, and the cached copy is reused." data-w="A 304 is still a cache hit in every way that matters: one round trip, zero bytes of body." data-k1="body transferred" data-v1="none"><span class="name">revalidation</span><span class="lead"></span><span class="meta">ETag / If-None-Match</span></div>
+</div>
+</div>
+<div class="branch">
+<div class="bhead"><span class="bn">cache 2</span><span class="bt">memory cache</span></div>
+<div class="row k-hit" tabindex="0" data-n="Cache 2: memory cache" data-t="cache 2,volatile" data-d="Per tab, per document, volatile. Holds decoded resources for the life of the page. Closing the tab empties it. It is why a second reference to the same image in one page costs nothing." data-w="" data-k1="lifetime" data-v1="the tab"><span class="name">memory cache</span><span class="lead"></span><span class="meta">HIT: done</span></div>
+</div>
+<div class="branch">
+<div class="bhead"><span class="bn">cache 3</span><span class="bt">HTTP disk cache</span></div>
+<div class="row k-hit" tabindex="0" data-n="Cache 3: HTTP disk cache" data-t="cache 3,persistent" data-d="The persistent one. Keyed by URL plus whatever request headers the response named in Vary. Survives restarts and is bounded by an eviction policy rather than by TTL alone." data-w="This plus the memory cache is the entire reach of a browser clear-cache. Layers 4 through 9 are untouched by it." data-k1="keyed by" data-v1="URL + Vary"><span class="name">disk cache</span><span class="lead"></span><span class="meta">HIT: done, or 304</span></div>
+</div>
+<div class="flow"><span class="stem"></span><span class="chev">&#9662;</span><span class="step">cache miss: the host name now has to become an address</span></div>
+<div class="stage">
+<div class="phead"><span class="idx">04</span><span class="pname">DNS RESOLUTION</span><span class="ptag">browser + os + network</span></div>
+<div class="pcap">A chain of caches of its own before any authoritative server is asked.</div>
+<div class="pbody">
+<div class="row" tabindex="0" data-n="Browser DNS cache" data-t="" data-d="Chromium keeps its own resolver cache, independent of the operating system&#x27;s." data-w="" data-k1="scope" data-v1="one browser"><span class="name">browser DNS cache</span><span class="lead"></span><span class="meta">first stop</span></div>
+<div class="row" tabindex="0" data-n="OS resolver cache" data-t="" data-d="The system cache, consulted after the browser&#x27;s own and before the hosts file and the stub resolver." data-w="" data-k1="" data-v1=""><span class="name">OS resolver cache</span><span class="lead"></span><span class="meta">then the stub</span></div>
+<div class="row" tabindex="0" data-n="Recursive resolver" data-t="privacy" data-d="The resolver that actually walks the hierarchy. Whether it is your ISP&#x27;s or a DoH endpoint reached over HTTPS changes who can see, and who can answer for, your lookups." data-w="It also changes what the CDN learns about your location, which is the subject of the DNS + Routing tab." data-k1="" data-v1=""><span class="name">recursive resolver</span><span class="lead"></span><span class="meta">ISP, or DoH / DoT</span></div>
+<div class="row" tabindex="0" data-n="The hierarchy walk" data-t="" data-d="Root serves the TLD&#x27;s nameservers, the TLD serves the zone&#x27;s, the authoritative server answers." data-w="" data-k1="" data-v1=""><span class="name">root, TLD, authoritative</span><span class="lead"></span><span class="meta">the walk</span></div>
+<div class="row" tabindex="0" data-n="CNAME into the CDN zone" data-t="the handoff" data-d="For a CDN-fronted site the authoritative answer is not an address, it is a CNAME pointing into the CDN&#x27;s own zone. From that point the CDN&#x27;s nameservers, not the site&#x27;s, decide which edge you get." data-w="This single record is what makes DNS-based request routing possible at all." data-k1="answered by" data-v1="the CDN"><span class="name">CNAME into the CDN</span><span class="lead"></span><span class="meta">the handoff</span></div>
+</div>
+</div>
+<div class="wire hot"><span class="ln"></span><span class="tag">the packet leaves the machine</span><span class="ln"></span></div>
+<div class="stage">
+<div class="phead"><span class="idx">05</span><span class="pname">TRANSPORT</span><span class="ptag">network</span></div>
+<div class="pcap">TCP's three-way handshake, or QUIC folding transport and crypto into one flight.</div>
+<div class="pbody">
+<div class="row" tabindex="0" data-n="TCP three-way handshake" data-t="" data-d="One full round trip before a single byte of application data, and then TLS on top of it." data-w="" data-k1="RTT before data" data-v1="1, plus TLS"><span class="name">TCP</span><span class="lead"></span><span class="meta">SYN, SYN-ACK, ACK</span></div>
+<div class="row k-hit" tabindex="0" data-n="QUIC" data-t="RFC 9000" data-d="Runs over UDP and merges the transport and cryptographic handshakes, so a fresh connection reaches application data in one round trip instead of two." data-w="It also moves loss recovery per stream, so one lost packet stops blocking every other stream on the connection." data-k1="RTT before data" data-v1="1"><span class="name">QUIC</span><span class="lead"></span><span class="meta">transport + crypto together</span></div>
+</div>
+</div>
+<div class="flow"><span class="stem"></span><span class="chev">&#9662;</span><span class="step">negotiate keys, identity and protocol</span></div>
+<div class="stage">
+<div class="phead"><span class="idx">06</span><span class="pname">TLS</span><span class="ptag">network</span></div>
+<div class="pcap">TLS 1.3. One round trip, or zero on resumption, with a caveat that matters.</div>
+<div class="pbody">
+<div class="row" tabindex="0" data-n="ClientHello" data-t="cleartext" data-d="The first message, and it is in the clear. It announces the host you want (SNI), the protocols you speak (ALPN), the curves you support, and a speculative key share." data-w="" data-k1="encrypted" data-v1="no"><span class="name">ClientHello</span><span class="lead"></span><span class="meta">SNI, ALPN, groups, key_share</span></div>
+<div class="row k-warn" tabindex="0" data-n="TLS fingerprinting" data-t="fingerprint,defence" data-d="The exact set and order of ciphers, extensions and curves in that ClientHello fingerprints the client&#x27;s TLS library and build. It identifies the stack, not the person, and it is stable enough to block on." data-w="The same value reappears on the DEFENCE tab as a bot signal." data-k1="derived from" data-v1="ClientHello"><span class="name">JA3 / JA4 fingerprint</span><span class="lead"></span><span class="meta">computed here</span></div>
+<div class="row k-warn" tabindex="0" data-n="0-RTT" data-t="caveat" data-d="Resuming with a pre-shared key lets the client send application data in its first flight. That data can be captured and replayed, so it must never carry a non-idempotent request." data-w="A replayed GET is harmless. A replayed POST is not." data-k1="" data-v1=""><span class="name">0-RTT resumption</span><span class="lead"></span><span class="meta">replay unsafe</span></div>
+<div class="row" tabindex="0" data-n="Encrypted Client Hello" data-t="" data-d="Without it the host name you asked for is readable by anyone on the path, even though everything else is encrypted. ECH closes that gap." data-w="" data-k1="" data-v1=""><span class="name">ECH</span><span class="lead"></span><span class="meta">encrypts the SNI</span></div>
+<div class="row" tabindex="0" data-n="OCSP stapling" data-t="" data-d="The server presents a signed, time-stamped revocation proof itself, so the client does not make a separate call to the CA to check the certificate." data-w="" data-k1="" data-v1=""><span class="name">OCSP stapling</span><span class="lead"></span><span class="meta">saves a fetch</span></div>
+</div>
+</div>
+<div class="branch">
+<div class="bhead"><span class="bn">cache 4</span><span class="bt">proxy cache</span></div>
+<div class="row" tabindex="0" data-n="Cache 4: forward proxy" data-t="cache 4,historical" data-d="A shared cache in the network path. It was a major layer in the plaintext era. Now that nearly everything is TLS the proxy sees an opaque tunnel and cannot cache the contents." data-w="Still alive inside enterprises that terminate TLS on their own middlebox with an installed root certificate." data-k1="sees plaintext" data-v1="only if it terminates"><span class="name">corporate / ISP proxy</span><span class="lead"></span><span class="meta">mostly dead</span></div>
+</div>
+<div class="flow"><span class="stem"></span><span class="chev">&#9662;</span><span class="step">the connection terminates at a <b>CDN edge</b>, not at the origin</span></div>
+<div class="stage">
+<div class="phead"><span class="idx">07</span><span class="pname">EDGE POP</span><span class="ptag">cdn</span></div>
+<div class="pcap">The edge does the security work first, then decides whether it already has the answer.</div>
+<div class="pbody">
+<div class="row" tabindex="0" data-n="Volumetric scrubbing" data-t="" data-d="Raw capacity and anycast dispersion soak up volumetric floods. This is absorption, not filtering." data-w="" data-k1="" data-v1=""><span class="name">scrubbing</span><span class="lead"></span><span class="meta">absorb L3/L4</span></div>
+<div class="row" tabindex="0" data-n="TLS termination" data-t="" data-d="Your TLS session terminates at the edge. A second, separate connection carries the request onward." data-w="" data-k1="" data-v1=""><span class="name">TLS termination</span><span class="lead"></span><span class="meta">connection ends here</span></div>
+<div class="row" tabindex="0" data-n="Web application firewall" data-t="" data-d="Signature matching plus anomaly scoring, usually over an OWASP-derived ruleset, against the decrypted request." data-w="" data-k1="" data-v1=""><span class="name">WAF</span><span class="lead"></span><span class="meta">signatures + anomaly score</span></div>
+<div class="row" tabindex="0" data-n="Bot management" data-t="uses stage 06" data-d="Combines the TLS fingerprint from stage 06 with HTTP/2 frame ordering, behavioural scoring and challenges, to decide whether a client is what it claims to be." data-w="" data-k1="" data-v1=""><span class="name">bot management</span><span class="lead"></span><span class="meta">JA4, HTTP/2 frames, behaviour</span></div>
+<div class="row k-warn" tabindex="0" data-n="Cache key construction" data-t="cache key" data-d="The default key is method plus URL. A CDN can be configured to fold in specific headers, cookies, query parameters or device class. Everything about correctness, and about poisoning, follows from this choice." data-w="Every input that changes the response but is left out of the key is a poisoning primitive." data-k1="default key" data-v1="method + URL"><span class="name">cache key construction</span><span class="lead"></span><span class="meta">the subtle part</span></div>
+</div>
+</div>
+<div class="branch">
+<div class="bhead"><span class="bn">cache 5</span><span class="bt">edge cache</span></div>
+<div class="row k-hit" tabindex="0" data-n="Cache 5: CDN edge" data-t="cache 5" data-d="The nearest point of presence. A hit is answered without any part of your infrastructure being involved, which is the entire economic argument for a CDN." data-w="" data-k1="keyed by" data-v1="the cache key"><span class="name">edge PoP</span><span class="lead"></span><span class="meta">HIT: served here</span></div>
+</div>
+<div class="flow"><span class="stem"></span><span class="chev">&#9662;</span><span class="step">edge miss goes to a <b>parent tier</b>, not to the origin</span></div>
+<div class="stage">
+<div class="phead"><span class="idx">08</span><span class="pname">PARENT / SHIELD</span><span class="ptag">cdn</span></div>
+<div class="pcap">Tiered distribution. The layer most explainers omit entirely.</div>
+<div class="pbody">
+<div class="row" tabindex="0" data-n="Parent / shield tier" data-t="the missing layer" data-d="A miss at a leaf edge asks a designated parent before it asks you. Because there are far fewer parents than edges, the parent&#x27;s hit rate is high and the origin sees a fraction of the misses it otherwise would." data-w="Without a shield, hundreds of edges can independently miss on the same object and stampede the origin at once." data-k1="origin requests" data-v1="collapsed"><span class="name">tiered distribution</span><span class="lead"></span><span class="meta">fewer nodes, longer TTL</span></div>
+</div>
+</div>
+<div class="branch">
+<div class="bhead"><span class="bn">cache 6</span><span class="bt">shield cache</span></div>
+<div class="row k-hit" tabindex="0" data-n="Cache 6: shield" data-t="cache 6" data-d="Same cache key, far fewer nodes, and usually a longer TTL than the edge." data-w="" data-k1="keyed by" data-v1="the cache key"><span class="name">shield tier</span><span class="lead"></span><span class="meta">HIT: origin idle</span></div>
+</div>
+<div class="wire hot"><span class="ln"></span><span class="tag">origin leg may ride an overlay path, not default BGP</span><span class="ln"></span></div>
+<div class="stage">
+<div class="phead"><span class="idx">09</span><span class="pname">ORIGIN</span><span class="ptag">your infrastructure</span></div>
+<div class="pcap">Only reached when every cache above it missed.</div>
+<div class="pbody">
+<div class="row" tabindex="0" data-n="Load balancer" data-t="" data-d="Health checking and distribution across the pool." data-w="" data-k1="" data-v1=""><span class="name">load balancer</span><span class="lead"></span><span class="meta">picks a backend</span></div>
+<div class="row" tabindex="0" data-n="Reverse proxy" data-t="" data-d="Terminates the connection from the CDN and can cache in its own right." data-w="" data-k1="" data-v1=""><span class="name">reverse proxy</span><span class="lead"></span><span class="meta">nginx / Varnish</span></div>
+<div class="row" tabindex="0" data-n="Application server" data-t="" data-d="The first point on the whole path that actually executes your business logic." data-w="" data-k1="" data-v1=""><span class="name">app server</span><span class="lead"></span><span class="meta">runs the code</span></div>
+</div>
+</div>
+<div class="branch">
+<div class="bhead"><span class="bn">cache 7</span><span class="bt">reverse proxy cache</span></div>
+<div class="row k-hit" tabindex="0" data-n="Cache 7: reverse proxy" data-t="cache 7" data-d="Configured key, purged by TTL or by an explicit ban. Often the fastest win available, because it sits in front of the application without the application knowing." data-w="" data-k1="" data-v1=""><span class="name">nginx / Varnish</span><span class="lead"></span><span class="meta">HIT</span></div>
+</div>
+<div class="branch">
+<div class="bhead"><span class="bn">cache 8</span><span class="bt">application cache</span></div>
+<div class="row k-hit" tabindex="0" data-n="Cache 8: application cache" data-t="cache 8" data-d="Whatever the application decides to memoise, under a key the application invents. The layer with the least standardised invalidation story, and therefore the most bugs." data-w="No header governs this one. Correctness is entirely the application&#x27;s problem." data-k1="" data-v1=""><span class="name">Redis / Memcached</span><span class="lead"></span><span class="meta">HIT</span></div>
+</div>
+<div class="branch">
+<div class="bhead"><span class="bn">cache 9</span><span class="bt">database</span></div>
+<div class="row" tabindex="0" data-n="Cache 9: database" data-t="cache 9,implicit" data-d="The planner&#x27;s cached plans and the buffer pool holding hot pages in memory. Invalidated implicitly by writes. You rarely manage it directly, but it is why the same query twice is not the same cost twice." data-w="" data-k1="invalidated by" data-v1="writes"><span class="name">buffer pool / query cache</span><span class="lead"></span><span class="meta">the floor</span></div>
+</div>
+<div class="flow"><span class="stem"></span><span class="chev">&#9662;</span><span class="step">the response now travels back up every layer it came down</span></div>
+<div class="stage">
+<div class="phead"><span class="idx">10</span><span class="pname">RESPONSE RETURN</span><span class="ptag">every layer</span></div>
+<div class="pcap">On the way back, each layer independently decides whether it is allowed to keep a copy.</div>
+<div class="pbody">
+<div class="row" tabindex="0" data-n="Cache-Control" data-t="" data-d="Governs every cache that honours HTTP semantics. max-age for everyone, s-maxage for shared caches only." data-w="" data-k1="see" data-v1="the CACHE tab"><span class="name">Cache-Control</span><span class="lead"></span><span class="meta">the main instrument</span></div>
+<div class="row k-warn" tabindex="0" data-n="Vary" data-t="hit rate" data-d="Names the request headers that become part of the cache key. Vary: User-Agent is close to a guaranteed way to destroy a hit rate, because it splits the cache across every browser build in existence." data-w="" data-k1="" data-v1=""><span class="name">Vary</span><span class="lead"></span><span class="meta">joins the key</span></div>
+<div class="row" tabindex="0" data-n="Surrogate-Control" data-t="invisible downstream" data-d="Directives aimed at the CDN, which it consumes and removes. The browser never sees them, so the edge and the browser can be given completely different policies for the same object." data-w="" data-k1="reaches browser" data-v1="no"><span class="name">Surrogate-Control</span><span class="lead"></span><span class="meta">CDN only, then stripped</span></div>
+</div>
+</div>
+<div class="flow"><span class="stem"></span><span class="chev">&#9662;</span><span class="step">bytes arrive, and the browser starts building a page</span></div>
+<div class="stage">
+<div class="phead"><span class="idx">11</span><span class="pname">RENDER</span><span class="ptag">browser</span></div>
+<div class="pcap">Parse to pixels. The stage where the tutorials stop and the measurements start.</div>
+<div class="pbody">
+<div class="row" tabindex="0" data-n="Parsing" data-t="" data-d="The parser builds the DOM as bytes arrive, rather than waiting for the full document." data-w="" data-k1="" data-v1=""><span class="name">HTML parse to DOM</span><span class="lead"></span><span class="meta">incremental</span></div>
+<div class="row" tabindex="0" data-n="Preload scanner" data-t="why it feels fast" data-d="A second, lightweight parser races ahead of the main one looking only for fetchable URLs, so subresources start downloading while the main parser is still blocked." data-w="It is the single biggest reason a blocking script does not stall every download on the page." data-k1="" data-v1=""><span class="name">preload scanner</span><span class="lead"></span><span class="meta">runs ahead</span></div>
+<div class="row k-warn" tabindex="0" data-n="Render-blocking CSS" data-t="" data-d="Nothing paints until the CSSOM is complete, because painting with incomplete styles would flash unstyled content." data-w="" data-k1="" data-v1=""><span class="name">CSS is render-blocking</span><span class="lead"></span><span class="meta">CSSOM gates first paint</span></div>
+<div class="row k-warn" tabindex="0" data-n="Parser-blocking script" data-t="async / defer" data-d="A classic script tag stops the parser dead until it is fetched and executed. async and defer both release the parser; defer additionally preserves execution order." data-w="" data-k1="" data-v1=""><span class="name">sync script is parser-blocking</span><span class="lead"></span><span class="meta">async / defer release it</span></div>
+<div class="row" tabindex="0" data-n="The rest of the pipeline" data-t="" data-d="Render tree, then layout for geometry, then paint into layers, then composite them." data-w="" data-k1="" data-v1=""><span class="name">layout, paint, composite</span><span class="lead"></span><span class="meta">geometry, pixels, layers</span></div>
+<div class="row" tabindex="0" data-n="Core Web Vitals" data-t="metrics" data-d="Largest Contentful Paint for loading, Cumulative Layout Shift for visual stability, Interaction to Next Paint for responsiveness." data-w="" data-k1="see" data-v1="the RENDER tab"><span class="name">LCP / CLS / INP</span><span class="lead"></span><span class="meta">what is measured</span></div>
+</div>
+</div>
+
+        </div>
+
+        <!-- ================= DNS + ROUTING ================= -->
+        <div class="panel" data-panel="dns">
+          <div class="pfacts"><span>the handoff<b>a CNAME into the CDN zone</b></span><span>the client<b>is not what the CDN sees</b></span></div>
+
+          <p class="plede">Resolution is a chain of caches that ends at an authoritative server. For a
+          CDN-fronted site that server does not hand back an address, it hands back a <b>CNAME into the CDN's
+          own zone</b>, and from there the CDN's nameservers answer. Everything interesting about edge
+          selection happens in that second lookup.</p>
+
+          <div class="sec">the chain, and where it stops early</div>
+          <div class="stage">
+            <div class="phead"><span class="idx">04</span><span class="pname">resolution order</span><span class="ptag">first hit wins</span></div>
+            <div class="pbody">
+              <div class="row" tabindex="0" data-n="Browser DNS cache" data-d="Chromium keeps a resolver cache of its own, separate from the operating system's. Flushing the OS cache does not clear it." data-k1="scope" data-v1="one browser"><span class="name">browser cache</span><span class="lead"></span><span class="meta">chrome://net-internals</span></div>
+              <div class="row" tabindex="0" data-n="OS resolver cache" data-d="The system-wide cache, consulted next." data-k1="flush" data-v1="ipconfig /flushdns"><span class="name">OS resolver cache</span><span class="lead"></span><span class="meta">system wide</span></div>
+              <div class="row" tabindex="0" data-n="hosts file" data-d="A static override that short-circuits everything below it. Still the fastest way to test an origin directly, and still the fastest way to confuse yourself for an hour." data-k1="beats" data-v1="all of DNS"><span class="name">hosts file</span><span class="lead"></span><span class="meta">static override</span></div>
+              <div class="row" tabindex="0" data-n="Stub resolver" data-d="The thin client in the OS that formats the query and sends it to the configured recursive resolver."><span class="name">stub resolver</span><span class="lead"></span><span class="meta">formats the query</span></div>
+              <div class="row" tabindex="0" data-n="Recursive resolver" data-d="The one that does the real work: it walks root, then TLD, then authoritative, caching each answer for its TTL. Your ISP's by default, or a DoH or DoT endpoint if configured." data-t="privacy" data-w="Which resolver you use changes what the CDN can infer about where you are. That is the subject of the next section." data-k1="protocols" data-v1="Do53, DoH, DoT"><span class="name">recursive resolver</span><span class="lead"></span><span class="meta">ISP, or DoH / DoT</span></div>
+              <div class="row" tabindex="0" data-n="Root servers" data-d="Thirteen labelled authorities, served from hundreds of anycast instances. They know nothing about your domain, only which nameservers serve the TLD." data-k1="answers with" data-v1="TLD nameservers"><span class="name">root</span><span class="lead"></span><span class="meta">points at the TLD</span></div>
+              <div class="row" tabindex="0" data-n="TLD servers" data-d="The registry for .com, .org and the rest. Answers with the nameservers the registrant set for the zone." data-k1="answers with" data-v1="zone nameservers"><span class="name">TLD</span><span class="lead"></span><span class="meta">points at the zone</span></div>
+              <div class="row k-hit" tabindex="0" data-n="Authoritative server" data-d="The zone's own nameserver. For a CDN-fronted site it answers not with an A record but with a CNAME into the CDN's zone." data-t="the handoff" data-k1="answers with" data-v1="a CNAME"><span class="name">authoritative</span><span class="lead"></span><span class="meta">hands off to the CDN</span></div>
+            </div>
+          </div>
+
+          <div class="sec">the CNAME chain a real lookup walks</div>
+          <div class="chello chain" aria-label="CNAME chain">
+<span class="rr">name</span>
+<span class="seg k-sync" tabindex="0" data-n="The name you asked for" data-d="The hostname in the URL. This is the only name the user ever sees.">www.example.com</span>
+<span class="rr">CNAME</span>
+<span class="seg k-enum" tabindex="0" data-n="The customer's CDN alias" data-d="A per-customer name inside the CDN's zone. Pointing at this is the entire act of putting a site behind a CDN, and it is why onboarding is a DNS change rather than a migration." data-t="the handoff" data-k1="controlled by" data-v1="the CDN">example.com.cdn-provider.net</span>
+<span class="rr">CNAME</span>
+<span class="seg k-flag" tabindex="0" data-n="The mapped edge name" data-d="A name the CDN's mapping system resolves per query. Two clients on different networks asking at the same moment can get different answers here, and that is the mechanism, not a caching artefact." data-t="per query" data-w="This is the record that makes DNS-based request routing work." data-k1="varies by" data-v1="who is asking">a1234.dscx.akamaiedge.net</span>
+<span class="rr">A</span>
+<span class="seg k-sync" tabindex="0" data-n="The edge address" data-d="The address your packets actually go to. Short TTL, because the mapping system wants the freedom to move you.">203.0.113.42</span>
+          </div>
+          <div class="note">Addresses here use the RFC 5737 documentation range. The TTL on the last hop is
+          typically seconds to a couple of minutes, which is what gives the mapping system room to move traffic.</div>
+
+          <div class="sec">two mechanisms, and the summary everyone gets wrong</div>
+          <div class="versus">
+            <div class="vs">
+              <div class="vh">DNS mapping<small>Akamai</small></div>
+              <div class="vb">
+                <div class="row" tabindex="0" data-n="How the edge is chosen" data-d="The CDN runs authoritative DNS for the CNAME target and answers each query with edge addresses its mapping system selects, using measured network conditions and the location of whoever asked." data-k1="decision made by" data-v1="DNS answer"><span class="name">selection</span><span class="lead"></span><span class="meta">in the DNS answer</span></div>
+                <div class="row k-warn" tabindex="0" data-n="What it actually sees" data-d="The query arrives from the recursive resolver, not from the client. If you use a resolver far from yourself, the mapping system maps the resolver, and you get an edge near it rather than near you." data-t="the weakness" data-w="This is why using a distant public resolver used to measurably worsen CDN performance." data-k1="sees" data-v1="the resolver"><span class="name">blind spot</span><span class="lead"></span><span class="meta">sees the resolver</span></div>
+                <div class="row" tabindex="0" data-n="EDNS Client Subnet" data-d="An EDNS0 option that lets the recursive resolver pass a truncated prefix of the client's address to the authoritative server, so the mapping can be done on the client's network rather than the resolver's." data-t="the fix,RFC 7871" data-w="It trades a measure of privacy for accuracy, which is why not every resolver sends it." data-k1="RFC" data-v1="7871"><span class="name">ECS</span><span class="lead"></span><span class="meta">passes a client prefix</span></div>
+                <div class="row" tabindex="0" data-n="End User Mapping" data-d="Akamai's name for mapping driven by the client prefix from ECS rather than by the resolver's address." data-k1="input" data-v1="client subnet"><span class="name">end user mapping</span><span class="lead"></span><span class="meta">maps the client</span></div>
+              </div>
+            </div>
+            <div class="vs">
+              <div class="vh">Anycast<small>Cloudflare, Fastly</small></div>
+              <div class="vb">
+                <div class="row" tabindex="0" data-n="How the edge is chosen" data-d="One address is announced by BGP from every point of presence. The internet's own routing decides which one your packets reach. There is no per-client decision and no special DNS behaviour." data-k1="decision made by" data-v1="BGP"><span class="name">selection</span><span class="lead"></span><span class="meta">by BGP routing</span></div>
+                <div class="row k-warn" tabindex="0" data-n="What closest means" data-d="BGP prefers the shortest AS path. That is a count of networks traversed, not a measure of latency, so the chosen PoP is sometimes not the fastest one." data-t="the weakness" data-k1="optimises" data-v1="AS path length"><span class="name">blind spot</span><span class="lead"></span><span class="meta">AS hops, not latency</span></div>
+                <div class="row k-warn" tabindex="0" data-n="Route flap" data-d="Because the destination is chosen per packet by the routing table, a route change mid-connection can deliver packets to a different PoP, which has no state for that TCP connection." data-t="the weakness" data-w="QUIC's connection IDs survive this far better than a TCP four-tuple does." data-k1="breaks" data-v1="live TCP"><span class="name">route change</span><span class="lead"></span><span class="meta">can move a live flow</span></div>
+                <div class="row k-hit" tabindex="0" data-n="Why it is simpler" data-d="No per-query computation, no dependence on resolver behaviour, no ECS privacy tradeoff, and DDoS traffic disperses across every PoP automatically." data-t="the strength" data-k1="ECS needed" data-v1="no"><span class="name">simplicity</span><span class="lead"></span><span class="meta">no DNS trickery</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="callout hot"><b>the summary that is too clean.</b> "Akamai uses DNS, Cloudflare uses
+          anycast" is the usual line, and it is only half right. Akamai does select <i>edges</i> through DNS
+          mapping, but its Edge DNS <i>nameservers</i> are themselves reached by IP anycast. Both vendors use
+          anycast; they use it at different layers. Cloudflare anycasts the edge that serves your content,
+          Akamai anycasts the nameservers that tell you which edge to use. The real distinction is
+          <b>where the per-client decision is made</b>: in a computed DNS answer, or in the routing table.</div>
+
+          <div class="sec">the leg you do not think about</div>
+          <p class="plede">An edge miss has to reach the origin, and the default path is whatever BGP decides.
+          CDNs sell an alternative: measure many paths across their own footprint and forward over the fastest
+          one. Akamai calls the edge-to-origin version <b>SureRoute</b>, and the IP-layer product
+          <b>SureRoute for IP</b>. The rationale is BGP's: it picks the fewest networks traversed with no
+          regard for congestion or latency.</p>
+          <div class="callout"><b>worth knowing.</b> SureRoute applies to content that cannot be cached. When
+          the edge recognises an object as cacheable it disables the path racing, because a cache hit beats any
+          route. So the feature that sounds like it should help everything is, by design, only for the requests
+          that had to go all the way back.</div>
+        </div>
+
+        <!-- ================= HANDSHAKES ================= -->
+        <div class="panel" data-panel="handshakes">
+          <div class="pfacts"><span>TCP + TLS 1.3<b>2 RTT to first byte</b></span><span>QUIC<b>1 RTT, or 0 on resumption</b></span></div>
+
+          <p class="plede">The cost of starting a connection is measured in round trips, and a round trip is
+          bounded by physics. This is why the handshake is where protocol design fights hardest, and why the
+          same message that sets up encryption is also the one that identifies your client.</p>
+
+          <div class="sec">round trips before the first byte of response</div>
+          <table class="atable">
+            <thead><tr><th>path</th><th>transport</th><th>crypto</th><th>total before request</th><th>note</th></tr></thead>
+            <tbody>
+              <tr><td class="f">TCP + TLS 1.2</td><td class="n">1</td><td class="n">2</td><td class="n">3</td><td class="p">The old baseline, and why connection reuse mattered so much.</td></tr>
+              <tr><td class="f">TCP + TLS 1.3</td><td class="n">1</td><td class="n">1</td><td class="n">2</td><td class="p">TLS 1.3 removed a full round trip by sending a speculative key share in the first flight.</td></tr>
+              <tr><td class="f">QUIC</td><td class="n" colspan="2">combined</td><td class="n">1</td><td class="p">Transport and crypto negotiate together over UDP.</td></tr>
+              <tr><td class="f">QUIC 0-RTT</td><td class="n" colspan="2">resumed</td><td class="n">0</td><td class="p">Application data rides in the first flight. Replayable, so idempotent requests only.</td></tr>
+            </tbody>
+          </table>
+
+          <div class="sec">the ClientHello, in the clear</div>
+          <p class="plede">The first message of a TLS handshake is unencrypted by necessity: the two sides have
+          no shared key yet. Hover any field.</p>
+          <div class="chello" aria-label="ClientHello fields">
+<span class="seg k-sync" tabindex="0" data-n="Record version" data-d="Pinned at TLS 1.2 for compatibility with middleboxes that reject anything newer. The real version is negotiated in the supported_versions extension instead." data-t="a lie for compatibility" data-k1="actual version" data-v1="in an extension">0x0303</span>
+<span class="seg k-enum" tabindex="0" data-n="Cipher suites" data-d="The ordered list of ciphers the client will accept. The exact set and order is characteristic of the TLS library and its version." data-t="fingerprint input" data-w="Order matters to a fingerprint. A client that reorders these on every connection defeats naive matching, which is why JA4 sorts before hashing." data-k1="feeds" data-v1="JA3 / JA4">cipher_suites[18]</span>
+<span class="seg k-flag" tabindex="0" data-n="SNI" data-d="Server Name Indication: the hostname being requested, sent in plaintext so a server hosting many sites knows which certificate to present." data-t="plaintext,privacy" data-w="This is the single field that makes encrypted browsing observable. ECH exists to close it." data-k1="encrypted" data-v1="not without ECH">server_name</span>
+<span class="seg k-enum" tabindex="0" data-n="ALPN" data-d="Application-Layer Protocol Negotiation: the client lists h2, http/1.1 and so on, and the server picks one, so the protocol is settled inside the handshake with no extra round trip." data-k1="typical" data-v1="h2, http/1.1">alpn</span>
+<span class="seg k-enum" tabindex="0" data-n="supported_groups" data-d="The elliptic curves and finite-field groups the client can do key exchange with. Another list whose order is a library tell." data-t="fingerprint input">supported_groups</span>
+<span class="seg k-enum" tabindex="0" data-n="key_share" data-d="A speculative public key for the group the client guesses the server will pick. Guessing right is what makes TLS 1.3 one round trip; guessing wrong costs a HelloRetryRequest and an extra one." data-t="the 1-RTT trick" data-k1="wrong guess costs" data-v1="1 RTT">key_share</span>
+<span class="seg k-sync" tabindex="0" data-n="supported_versions" data-d="Where the real TLS version lives. The highest non-GREASE value here is the version, not the legacy field at the front of the message." data-k1="read by" data-v1="JA4">supported_versions</span>
+<span class="seg k-rsv" tabindex="0" data-n="GREASE" data-d="Deliberately invalid values sprinkled into the lists so that servers and middleboxes are forced to ignore unknown values correctly, keeping the protocol extensible. Both JA3 and JA4 strip them before hashing." data-t="RFC 8701" data-w="A common myth is that GREASE is what distinguishes JA4 from JA3. Both strip it. Sorting is the real difference." data-k1="stripped" data-v1="by both JA3 and JA4">GREASE</span>
+          </div>
+          <div class="keyrow">
+            <span><i style="background:var(--sync)"></i>version and framing</span>
+            <span><i style="background:var(--enum)"></i>negotiated capability</span>
+            <span><i style="background:var(--flag)"></i>privacy sensitive</span>
+            <span><i style="background:var(--rsv)"></i>deliberately ignored</span>
+          </div>
+
+          <div class="callout hot"><b>the handshake identifies the client.</b> Taken together, the cipher list,
+          the extension list, the curves and their order describe the TLS library and build with enough
+          precision to fingerprint it. That is JA3, and its successor <a href="https://github.com/hed0rah/ja4-loko">JA4</a>.
+          It says nothing about who you are and everything about what you are running, which is exactly what
+          makes it useful for telling a browser from a scraper wearing a browser's User-Agent. The same value
+          reappears on the DEFENCE tab.</div>
+
+          <div class="sec">0-RTT, and the reason it is fenced off</div>
+          <div class="callout"><b>replay is not a theoretical risk.</b> Data sent in a 0-RTT flight is
+          encrypted under a key derived from a previous session, with nothing in it that binds it to this
+          connection. An observer can capture that flight and send it again. For a GET this is harmless. For
+          anything that changes state it is not, which is why the rule is that 0-RTT carries idempotent
+          requests only, enforced by the application and not by the protocol.</div>
+        </div>
+
+        <!-- ================= CACHE ================= -->
+        <div class="panel" data-panel="cache">
+          <div class="pfacts"><span>layers<b>9</b></span><span>reachable by "clear your cache"<b>2 of them</b></span></div>
+
+          <p class="plede">This table is the reason the page exists. Nine caches sit between a keystroke and a
+          database read, each with a different key, a different owner and a different way of being wrong. A
+          stale page is never just "a caching problem", it is a question of <b>which layer</b>.</p>
+
+          <div class="sec">the nine layers</div>
+          <table class="atable">
+            <thead><tr><th>#</th><th>layer</th><th>keyed by</th><th>invalidated by</th><th>typical TTL</th></tr></thead>
+            <tbody>
+              <tr><td class="n">1</td><td class="f">Browser memory cache</td><td class="p">URL, per tab</td><td class="p">tab close, navigation</td><td class="x">seconds to minutes</td></tr>
+              <tr><td class="n">2</td><td class="f">Service worker Cache API</td><td class="p">whatever the worker's code decides</td><td class="p">the worker's code, explicitly</td><td class="x">author controlled</td></tr>
+              <tr><td class="n">3</td><td class="f">Browser HTTP disk cache</td><td class="p">URL + headers named in <code>Vary</code></td><td class="p"><code>max-age</code>, revalidation, eviction</td><td class="x">minutes to a year</td></tr>
+              <tr><td class="n">4</td><td class="f">Corporate / ISP proxy</td><td class="p">URL + <code>Vary</code></td><td class="p"><code>s-maxage</code>, <code>no-store</code></td><td class="x">mostly moot under TLS</td></tr>
+              <tr><td class="n">5</td><td class="f">CDN edge PoP</td><td class="p">the cache key: URL plus selected headers, cookies and query parameters</td><td class="p">TTL, purge or invalidate API</td><td class="x">seconds to days</td></tr>
+              <tr><td class="n">6</td><td class="f">CDN parent / shield</td><td class="p">same key, fewer nodes</td><td class="p">same as edge</td><td class="x">usually longer than edge</td></tr>
+              <tr><td class="n">7</td><td class="f">Origin reverse proxy</td><td class="p">configured key</td><td class="p">TTL, purge, ban</td><td class="x">minutes to hours</td></tr>
+              <tr><td class="n">8</td><td class="f">Application cache</td><td class="p">whatever the application invents</td><td class="p">application logic, TTL, explicit eviction</td><td class="x">seconds to hours</td></tr>
+              <tr><td class="n">9</td><td class="f">Database</td><td class="p">query plan, buffer pool</td><td class="p">writes</td><td class="x">implicit</td></tr>
+            </tbody>
+          </table>
+          <div class="callout hot"><b>the point of the table.</b> Each row is a separate cache with a separate
+          key and a separate invalidation story. A browser "clear cache" reaches rows 1 and 3. It does not
+          touch the service worker, it does not touch the CDN, and it certainly does not touch your
+          application's Redis. Debugging staleness means naming the layer first.</div>
+
+          <div class="sec">cache-control, and the pair that gets confused</div>
+          <div class="stage">
+            <div class="phead"><span class="idx">CC</span><span class="pname">response directives</span><span class="ptag">RFC 9111</span></div>
+            <div class="pbody">
+              <div class="row" tabindex="0" data-n="max-age" data-d="How long the response stays fresh, in seconds, for any cache." data-k1="applies to" data-v1="all caches"><span class="name">max-age</span><span class="lead"></span><span class="meta">freshness, everyone</span></div>
+              <div class="row" tabindex="0" data-n="s-maxage" data-d="Freshness for shared caches only, overriding max-age for them. This is how you give the CDN a long TTL and the browser a short one from a single response." data-t="CDN lever" data-k1="applies to" data-v1="shared caches"><span class="name">s-maxage</span><span class="lead"></span><span class="meta">shared caches only</span></div>
+              <div class="row" tabindex="0" data-n="public / private" data-d="private forbids shared caches from storing the response at all, which is the correct marking for anything personalised. public allows storage even when heuristics would say otherwise." data-k1="private means" data-v1="browser only"><span class="name">public / private</span><span class="lead"></span><span class="meta">who may store it</span></div>
+              <div class="row k-warn" tabindex="0" data-n="no-cache is not no-store" data-d="no-cache means store it, but revalidate before every reuse. no-store means never write it down at all. These two are confused constantly, and the confusion runs in the expensive direction: people write no-cache believing nothing is kept, when a copy is on disk." data-t="the classic mistake" data-w="If the requirement is that no copy exists anywhere, the directive is no-store." data-k1="no-cache stores" data-v1="yes"><span class="name">no-cache vs no-store</span><span class="lead"></span><span class="meta">not the same thing</span></div>
+              <div class="row" tabindex="0" data-n="must-revalidate" data-d="Forbids serving a stale copy when the origin cannot be reached. Without it, a cache is permitted to serve stale on error." data-k1="on origin error" data-v1="fail, do not serve"><span class="name">must-revalidate</span><span class="lead"></span><span class="meta">no stale on error</span></div>
+              <div class="row k-hit" tabindex="0" data-n="immutable" data-d="Promises the body will never change for this URL, so the browser skips revalidation even on a reload. Correct only alongside content-hashed filenames." data-t="fingerprinted assets" data-k1="pairs with" data-v1="hashed filenames"><span class="name">immutable</span><span class="lead"></span><span class="meta">never revalidate</span></div>
+              <div class="row k-hit" tabindex="0" data-n="stale-while-revalidate" data-d="Serve the stale copy immediately and refresh it in the background. The user waits for nothing and the next user gets fresh content." data-t="latency win" data-k1="user waits" data-v1="never"><span class="name">stale-while-revalidate</span><span class="lead"></span><span class="meta">serve now, refresh after</span></div>
+              <div class="row k-hit" tabindex="0" data-n="stale-if-error" data-d="Permits serving a stale copy when the origin returns an error or is unreachable. A cheap and badly underused availability feature." data-k1="turns 5xx into" data-v1="a stale 200"><span class="name">stale-if-error</span><span class="lead"></span><span class="meta">stale beats a 5xx</span></div>
+            </div>
+          </div>
+
+          <div class="sec">the cache key, and what joins it</div>
+          <div class="stage">
+            <div class="phead"><span class="idx">KEY</span><span class="pname">key construction</span><span class="ptag">where poisoning lives</span></div>
+            <div class="pcap">The default is method plus URL. Everything beyond that is configuration.</div>
+            <div class="pbody">
+              <div class="row" tabindex="0" data-n="Vary" data-d="A response header naming the request headers that join the cache key. Vary: Accept-Encoding is normal and necessary. Vary: User-Agent splits the cache across every browser build that exists and is close to a guaranteed way to destroy a hit rate." data-t="hit rate" data-k1="worst offender" data-v1="Vary: User-Agent" kind="k-warn"><span class="name">Vary</span><span class="lead"></span><span class="meta">request headers join the key</span></div>
+              <div class="row" tabindex="0" data-n="Query parameters" data-d="A CDN can include all, some, or none of the query string in the key. Excluding tracking parameters improves the hit rate; excluding a parameter that changes the response creates a poisoning primitive." data-t="both ways" data-k1="tradeoff" data-v1="hit rate vs safety"><span class="name">query parameters</span><span class="lead"></span><span class="meta">include, exclude, normalise</span></div>
+              <div class="row" tabindex="0" data-n="Cookies" data-d="Almost never belong in the key. A cookie in the key usually means a per-user key, which means no sharing, which means no cache." data-k1="effect" data-v1="fragments the cache"><span class="name">cookies</span><span class="lead"></span><span class="meta">usually a mistake</span></div>
+              <div class="row k-warn" tabindex="0" data-n="Unkeyed inputs" data-d="Any request input that changes the response but is left out of the key. The stored response then gets served to everyone, including whatever the attacker put in it. This is the entire mechanism of web cache poisoning." data-t="the bug class" data-w="Defence is strict key hygiene and normalisation: if it changes the response, it belongs in the key, or it must be ignored entirely." data-k1="see" data-v1="the DEFENCE tab"><span class="name">unkeyed input</span><span class="lead"></span><span class="meta">the poisoning primitive</span></div>
+            </div>
+          </div>
+          <div class="callout"><b>Surrogate-Control and CDN-Cache-Control</b> are directives the CDN consumes
+          and strips before the response continues downstream. They let the edge and the browser be given
+          entirely different policies for the same object, and they are invisible in a browser devtools panel,
+          which makes them a recurring source of "but the header says".</div>
+        </div>
+
+        <!-- ================= DEFENCE ================= -->
+        <div class="panel" data-panel="defence">
+          <div class="pfacts"><span>the useful question<b>stopped where, by what</b></span><span>the forgotten one<b>origin bypass</b></span></div>
+
+          <p class="plede">A CDN is a security boundary as much as a performance one, but only for traffic that
+          goes through it. The matrix below is organised by <b>where</b> something is stopped, because that is
+          the part vendor diagrams flatten.</p>
+
+          <div class="sec">attack matrix</div>
+          <table class="atable">
+            <thead><tr><th>attack</th><th>stopped where</th><th>mechanism</th></tr></thead>
+            <tbody>
+              <tr><td class="f">Volumetric L3/L4 DDoS</td><td class="x">edge network</td><td class="p">Anycast dispersion plus raw scrubbing capacity. You absorb it, you do not filter it.</td></tr>
+              <tr><td class="f">L7 HTTP flood</td><td class="x">edge</td><td class="p">Rate controls per IP, per token, per path.</td></tr>
+              <tr><td class="f">Credential stuffing, scraping</td><td class="x">edge bot management</td><td class="p">TLS fingerprint (JA3/JA4), HTTP/2 frame fingerprint, behavioural scoring, JS challenge, proof of work.</td></tr>
+              <tr><td class="f">SQLi, XSS, traversal, RCE</td><td class="x">WAF</td><td class="p">Signature match plus anomaly scoring, usually an OWASP-derived ruleset.</td></tr>
+              <tr><td class="f">Cache poisoning</td><td class="x">cache key design</td><td class="p">An unkeyed input that still changes the response gets stored and served to everyone. Defence is strict key hygiene and normalisation.</td></tr>
+              <tr><td class="f">Cache deception</td><td class="x">cache rules</td><td class="p">Request <code>/account.php/x.css</code>; a CDN caching by extension stores private data as a public asset. Defence is never caching on extension alone, and checking <code>Content-Type</code>.</td></tr>
+              <tr><td class="f">Request smuggling</td><td class="x">edge to origin boundary</td><td class="p">HTTP/1.1 <code>Content-Length</code> and <code>Transfer-Encoding</code> desync between two parsers. Defence is HTTP/2 to origin and strict parsing.</td></tr>
+              <tr><td class="f">Origin bypass</td><td class="x">origin ACL</td><td class="p">If the origin address is reachable directly, every control above is optional. Defence is allowlisting edge addresses, or mTLS.</td></tr>
+              <tr><td class="f">DNS hijack</td><td class="x">registrar, DNSSEC</td><td class="p">Registrar lock, and DNSSEC where it is deployed.</td></tr>
+              <tr><td class="f">Subdomain takeover</td><td class="x">DNS hygiene</td><td class="p">A dangling CNAME pointing at a deprovisioned service someone else can now claim.</td></tr>
+            </tbody>
+          </table>
+
+          <div class="callout hot"><b>a CDN in front of an origin is exactly the two-parser condition request
+          smuggling needs.</b> Smuggling requires two HTTP implementations that disagree about where one
+          request ends and the next begins. An edge that terminates the client connection and forwards over a
+          reused connection to the origin is that arrangement by construction. This is not an exotic
+          configuration, it is the normal one, which is why HTTP/2 to the origin is worth the trouble.</div>
+
+          <div class="callout"><b>the one that is routinely forgotten.</b> Every control on this page lives at
+          the edge, and the edge is only in the path because DNS says so. If your origin answers on a public
+          address, an attacker who finds it skips the WAF, the bot management, the rate limits and the
+          scrubbing in a single step. Historical DNS records, certificate transparency logs and a careless
+          mail server header are all common ways to find it. Allowlist the edge, or require mTLS, and treat a
+          directly reachable origin as the vulnerability it is.</div>
+
+          <div class="sec">why the fingerprint from stage 06 matters here</div>
+          <p class="plede">A scraper can set any User-Agent it likes, because a User-Agent is a string the
+          client chooses. It cannot as easily change the cipher and extension ordering its TLS library emits,
+          because that is a property of the library build. When the declared identity and the observed
+          fingerprint disagree, that mismatch is the signal. Defeating it means matching the fingerprint
+          coherently at every layer at once, which is a much higher bar than editing a header.</p>
+        </div>
+
+        <!-- ================= RENDER ================= -->
+        <div class="panel" data-panel="render">
+          <div class="pfacts"><span>blocking<b>CSS blocks paint, sync JS blocks the parser</b></span><span>measured by<b>LCP, CLS, INP</b></span></div>
+
+          <p class="plede">Bytes have arrived. Everything from here is local, and it is where a fast network
+          can still produce a slow page.</p>
+
+          <div class="sec">the critical rendering path</div>
+          <div class="stage">
+            <div class="phead"><span class="idx">11</span><span class="pname">parse to composite</span><span class="ptag">browser main thread</span></div>
+            <div class="pbody">
+              <div class="row" tabindex="0" data-n="HTML to DOM" data-d="The parser consumes bytes as they arrive and builds the document tree incrementally. It does not wait for the whole file." data-k1="incremental" data-v1="yes"><span class="name">HTML parse</span><span class="lead"></span><span class="meta">builds the DOM</span></div>
+              <div class="row k-hit" tabindex="0" data-n="Preload scanner" data-d="A second, lightweight parser that races ahead of the main one looking only for fetchable URLs, so images, stylesheets and scripts start downloading even while the main parser is blocked." data-t="the reason pages feel fast" data-w="Inlining a script can defeat it: the scanner finds URLs, so a resource that only exists after JavaScript runs is invisible to it." data-k1="finds" data-v1="URLs, ahead of the parser"><span class="name">preload scanner</span><span class="lead"></span><span class="meta">fetches ahead</span></div>
+              <div class="row k-warn" tabindex="0" data-n="CSS is render-blocking" data-d="The CSSOM must be complete before anything paints, because painting with partial styles would show unstyled content and then reflow it." data-t="blocks paint" data-w="It does not block parsing. The DOM keeps building; only the pixels wait." data-k1="blocks" data-v1="first paint"><span class="name">CSS</span><span class="lead"></span><span class="meta">render-blocking</span></div>
+              <div class="row k-warn" tabindex="0" data-n="Sync script is parser-blocking" data-d="A classic script tag halts the parser until the script is fetched and executed, because document.write could change everything after it. async runs it whenever it lands; defer waits until parsing finishes and preserves order." data-t="async / defer" data-k1="defer preserves" data-v1="execution order"><span class="name">script</span><span class="lead"></span><span class="meta">parser-blocking</span></div>
+              <div class="row" tabindex="0" data-n="Render tree" data-d="DOM and CSSOM combined, with anything not displayed left out." data-k1="excludes" data-v1="display:none"><span class="name">render tree</span><span class="lead"></span><span class="meta">DOM + CSSOM</span></div>
+              <div class="row" tabindex="0" data-n="Layout" data-d="Compute the geometry of every box. Called reflow when it happens again, and it happens more often than people expect." data-k1="also called" data-v1="reflow"><span class="name">layout</span><span class="lead"></span><span class="meta">geometry</span></div>
+              <div class="row" tabindex="0" data-n="Paint and composite" data-d="Fill pixels into layers, then assemble the layers. Compositing can be done on the GPU, which is why transform and opacity are the cheap properties to animate and width and top are not." data-t="why transform is cheap" data-w="Animating a layout property forces layout on every frame. Animating transform or opacity does not." data-k1="cheap to animate" data-v1="transform, opacity"><span class="name">paint, composite</span><span class="lead"></span><span class="meta">pixels, then layers</span></div>
+            </div>
+          </div>
+
+          <div class="sec">what is actually measured</div>
+          <table class="atable">
+            <thead><tr><th>metric</th><th>measures</th><th>good</th><th>the usual cause when it is bad</th></tr></thead>
+            <tbody>
+              <tr><td class="f">LCP</td><td class="p">Largest Contentful Paint: when the biggest element in the viewport is drawn</td><td class="x">&lt; 2.5s</td><td class="p">A slow origin response, or a hero image the preload scanner never saw.</td></tr>
+              <tr><td class="f">CLS</td><td class="p">Cumulative Layout Shift: how much content moves after it is drawn</td><td class="x">&lt; 0.1</td><td class="p">Images without dimensions, and fonts or ads injected above existing content.</td></tr>
+              <tr><td class="f">INP</td><td class="p">Interaction to Next Paint: the delay from an interaction to the frame that reflects it</td><td class="x">&lt; 200ms</td><td class="p">Long tasks holding the main thread so no frame can be produced.</td></tr>
+            </tbody>
+          </table>
+          <div class="callout"><b>this page practises it.</b> The inspector to the right is driven by a single
+          controller that coalesces its work into one animation frame and animates nothing but opacity, for
+          exactly the reason in the last row of that table.</div>
+        </div>
+
+      </div><!-- /panelwrap -->
+    </div><!-- /stack -->
+
+    <aside class="inspector">
+      <div class="insp-card">
+        <div class="insp-head">
+          <div class="eyebrow" id="ins-eyebrow">inspector</div>
+          <div class="insp-name" id="ins-name">Hover a row</div>
+          <div class="tags" id="ins-tags"></div>
+        </div>
+        <div class="insp-body">
+          <div class="desc" id="ins-desc" role="status" aria-live="polite">Every row on this page reads out
+          here. Hover it, or tab to it, or tap it on a touch screen.<span class="why" id="ins-why"></span></div>
+          <div class="leadrow off" id="ins-lead"><span class="k" id="ins-k"></span><span class="l"></span><span class="v" id="ins-v"></span></div>
+        </div>
+        <div class="insp-foot"><kbd>hover</kbd> previews &middot; <kbd>click</kbd> pins &middot; <kbd>esc</kbd> releases</div>
+      </div>
+    </aside>
+
+  </div><!-- /work -->
+
+  <footer>
+    <span>protocols-fun / anatomy of a web request</span>
+    <span>sibling to <a href="https://hed0rah.github.io/protocols-fun/">protocols-fun</a> &middot;
+      <a href="https://hed0rah.github.io/linux_network_stack/">linux network stack</a></span>
+    <span><a href="https://github.com/hed0rah/ja4-loko">ja4-loko</a></span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  /* ---------------------------------------------------------------------
+     one inspector controller for the whole page.
+     open 100ms, close 250ms, asymmetric on purpose: fast enough to feel
+     instant when deliberate, slow enough that crossing a gap does not
+     dismiss. every write is coalesced into one animation frame.
+     --------------------------------------------------------------------- */
+  var OPEN_MS = 100, CLOSE_MS = 250;
+  var openTimer = null, closeTimer = null, frame = null;
+  var current = null, pinned = null, queued = null;
+
+  var fine = window.matchMedia("(hover: hover) and (pointer: fine)");
+  var el = {
+    eyebrow: document.getElementById("ins-eyebrow"),
+    name:    document.getElementById("ins-name"),
+    tags:    document.getElementById("ins-tags"),
+    desc:    document.getElementById("ins-desc"),
+    why:     document.getElementById("ins-why"),
+    lead:    document.getElementById("ins-lead"),
+    k:       document.getElementById("ins-k"),
+    v:       document.getElementById("ins-v")
+  };
+  var REST = {
+    n: "Hover a row",
+    d: "Every row on this page reads out here. Hover it, or tab to it, or tap it on a touch screen.",
+    t: "", w: "", k1: "", v1: "", eyebrow: "inspector"
+  };
+
+  function paint(d){
+    el.eyebrow.textContent = d.eyebrow || "inspector";
+    el.name.textContent = d.n;
+    el.desc.firstChild ? (el.desc.childNodes[0].nodeValue = d.d) : (el.desc.textContent = d.d);
+    el.why.textContent = d.w || "";
+    el.tags.textContent = "";
+    (d.t ? d.t.split(",") : []).forEach(function(t){
+      t = t.trim(); if(!t) return;
+      var s = document.createElement("span"); s.className = "tag"; s.textContent = t;
+      el.tags.appendChild(s);
+    });
+    if(d.k1){ el.lead.classList.remove("off"); el.k.textContent = d.k1; el.v.textContent = d.v1 || ""; }
+    else { el.lead.classList.add("off"); }
+  }
+
+  /* coalesce every inspector write into a single frame */
+  function schedule(d){
+    queued = d;
+    if(frame) return;
+    frame = requestAnimationFrame(function(){ frame = null; paint(queued); });
+  }
+
+  function data(t){
+    return { n: t.getAttribute("data-n") || "", d: t.getAttribute("data-d") || "",
+             t: t.getAttribute("data-t") || "", w: t.getAttribute("data-w") || "",
+             k1: t.getAttribute("data-k1") || "", v1: t.getAttribute("data-v1") || "",
+             eyebrow: t.getAttribute("data-e") || "inspector" };
+  }
+
+  function show(t){
+    if(current === t) return;
+    if(current) current.classList.remove("active");
+    current = t;
+    t.classList.add("active");
+    schedule(data(t));
+  }
+
+  function revert(){
+    if(current) current.classList.remove("active");
+    current = null;
+    if(pinned){ pinned.classList.add("active"); current = pinned; schedule(data(pinned)); }
+    else schedule(REST);
+  }
+
+  /* cancel before you schedule: no timer outlives the intent that made it */
+  function intendOpen(t){
+    clearTimeout(closeTimer); clearTimeout(openTimer);
+    if(current === t) return;
+    openTimer = setTimeout(function(){ show(t); }, OPEN_MS);
+  }
+  function intendClose(){
+    clearTimeout(openTimer); clearTimeout(closeTimer);
+    closeTimer = setTimeout(revert, CLOSE_MS);
+  }
+  function openNow(t){          /* focus and tap are deliberate, no delay */
+    clearTimeout(openTimer); clearTimeout(closeTimer);
+    show(t);
+  }
+  function closeNow(){
+    clearTimeout(openTimer); clearTimeout(closeTimer);
+    revert();
+  }
+
+  function pin(t){
+    if(pinned) pinned.classList.remove("pinned");
+    pinned = (pinned === t) ? null : t;
+    if(pinned){ pinned.classList.add("pinned"); openNow(t); }
+    else closeNow();
+  }
+
+  var triggers = [].slice.call(document.querySelectorAll("[data-n]"));
+  triggers.forEach(function(t){
+    if(!t.hasAttribute("tabindex")) t.setAttribute("tabindex", "0");
+
+    t.addEventListener("pointerenter", function(e){
+      if(e.pointerType !== "mouse" || !fine.matches) return;   /* no hover on touch, ever */
+      intendOpen(t);
+    });
+    t.addEventListener("pointerleave", function(e){
+      if(e.pointerType !== "mouse" || !fine.matches) return;
+      intendClose();
+    });
+
+    /* keyboard parity is not optional: every payload reachable without a pointer */
+    t.addEventListener("focus", function(){ openNow(t); });
+    t.addEventListener("blur", function(){ if(pinned !== t) intendClose(); });
+
+    t.addEventListener("click", function(){ pin(t); });
+    t.addEventListener("keydown", function(e){
+      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pin(t); }
+    });
+  });
+
+  document.addEventListener("keydown", function(e){
+    if(e.key !== "Escape") return;
+    var t = pinned || current;
+    if(!t) return;
+    if(pinned){ pinned.classList.remove("pinned"); pinned = null; }
+    closeNow();
+    if(t && t.focus) t.focus();
+  });
+
+  /* tap outside releases a pin on a coarse pointer */
+  document.addEventListener("click", function(e){
+    if(!pinned) return;
+    if(e.target.closest && e.target.closest("[data-n]")) return;
+    pinned.classList.remove("pinned"); pinned = null; closeNow();
+  });
+
+  /* ---- tabs ---- */
+  var tabs = [].slice.call(document.querySelectorAll(".tab"));
+  var panels = [].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    var found = false;
+    tabs.forEach(function(t){
+      var on = t.dataset.p === name;
+      t.classList.toggle("on", on);
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      if(on) found = true;
+    });
+    if(!found) return false;
+    panels.forEach(function(p){ p.classList.toggle("on", p.dataset.panel === name); });
+    if(pinned){ pinned.classList.remove("pinned"); pinned = null; }
+    closeNow();
+    return true;
+  }
+  tabs.forEach(function(t){
+    t.addEventListener("click", function(){
+      activate(t.dataset.p);
+      if(history.replaceState) history.replaceState(null, "", "#" + t.dataset.p);
+    });
+  });
+  var init = (location.hash || "").replace("#", "");
+  if(init) activate(init);
+})();
+</script>
+<script src="assets/protofun-toggle.js"></script>
+</body>
+</html>
