@@ -137,6 +137,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
   code{white-space:normal;overflow-wrap:anywhere}
 }
+
+/* hover contract: focus parity and reduced motion */
+.bit:focus,.bcell:focus,.field:focus,.station:focus,.tleaf:focus,.jseg:focus{outline:none}
+.bit:focus-visible,.bcell:focus-visible,.field:focus-visible,.station:focus-visible,.tleaf:focus-visible,.jseg:focus-visible{outline:2px solid var(--enum);outline-offset:1px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}}
 </style>
 </head>
 <body>
@@ -293,6 +298,51 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
 <script>
 (function(){
+  /* ---- hover contract ----------------------------------------------------
+     one controller for the page. open 100ms, close 250ms, asymmetric so a
+     pass-through opens nothing and crossing a gap does not dismiss. writes
+     coalesced into one animation frame. pointer-type gated, so touch never
+     hovers. every trigger focusable, Enter/Space pins, Escape releases.
+     ----------------------------------------------------------------------- */
+  var HOV=(function(){
+    var OPEN=100,CLOSE=250,ot=null,ct=null,fr=null,q=null,cur=null;
+    var fine=window.matchMedia("(hover: hover) and (pointer: fine)");
+    function flush(){fr=null;var f=q;q=null;if(f)f();}
+    function frame(fn){q=fn;if(fr)return;fr=requestAnimationFrame(flush);}
+    function mouse(e){return e.pointerType==="mouse"&&fine.matches;}
+    function open(el,show){
+      clearTimeout(ct);clearTimeout(ot);
+      if(cur===el)return;
+      ot=setTimeout(function(){cur=el;frame(show);},OPEN);
+    }
+    function shut(restore){
+      clearTimeout(ot);clearTimeout(ct);
+      ct=setTimeout(function(){cur=null;frame(restore);},CLOSE);
+    }
+    return {
+      bind:function(el,show,restore,pin){
+        if(el.tabIndex<0)el.tabIndex=0;
+        el.addEventListener("pointerenter",function(e){if(mouse(e))open(el,show);});
+        el.addEventListener("pointerleave",function(e){if(mouse(e))shut(restore);});
+        el.addEventListener("focus",function(){clearTimeout(ot);clearTimeout(ct);cur=el;frame(show);});
+        el.addEventListener("blur",function(){shut(restore);});
+        if(pin){
+          el.addEventListener("click",pin);
+          el.addEventListener("keydown",function(e){
+            if(e.key==="Enter"||e.key===" "){e.preventDefault();pin();}});
+        }
+      },
+      leave:function(el,restore){
+        el.addEventListener("pointerleave",function(e){if(mouse(e))shut(restore);});
+      },
+      esc:function(fn){
+        document.addEventListener("keydown",function(e){
+          if(e.key!=="Escape")return;
+          clearTimeout(ot);clearTimeout(ct);cur=null;frame(fn);});
+      }
+    };
+  })();
+
   var STATIONS = {
     dns:   {title:"DNS", layer:"Application (L7)", built:true, color:"var(--l-app)", page:"dns/dns-anatomy.html",
       body:"Resolves names to addresses. Runs over UDP for ordinary lookups (fits one packet, no connection setup needed) and falls back to TCP for zone transfers or answers too large for one UDP datagram (RFC 1035, and EDNS0/RFC 6891 for larger UDP responses)."},
@@ -359,7 +409,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   document.querySelectorAll(".station").forEach(function(el){
     var id = el.dataset.id;
     var s = STATIONS[id];
-    el.addEventListener("mouseenter", function(){ paint(id); });
+    HOV.bind(el, function(){ paint(id); }, function(){}, null);
     el.addEventListener("click", function(){
       if(s.built && s.page){ window.location.href = s.page; return; }
       document.querySelectorAll(".station.active").forEach(function(n){n.classList.remove("active");});
@@ -396,7 +446,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       var g=document.createElement("span"); g.className="g"; g.textContent=pre; a.appendChild(g);
       var n=document.createElement("span"); n.className="n"; n.textContent=s.title; a.appendChild(n);
       var b=document.createElement("span"); b.className="b"; b.textContent=(s.body.split(". ")[0]||"").replace(/\.$/,""); a.appendChild(b);
-      a.addEventListener("mouseenter", function(){ paint(id); });
+      HOV.bind(a, function(){ paint(id); }, function(){}, null);
       tree.appendChild(a);
     });
   });
