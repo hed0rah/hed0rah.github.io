@@ -1,0 +1,243 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Grid Engine. Printable grid generator: worksheet, lattice, column, isometric, hex, polar and slant engines with 26 presets. True millimetre output, SVG export, shareable links.">
+<title>Grid Engine</title>
+<script>try{var t=localStorage.getItem('grid-theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t}catch(e){document.documentElement.dataset.theme='light'}</script>
+<style>
+:root{
+  --bg:#e9e9e7; --chrome:#111; --chrome-fg:#f4f4f2; --field:#fff; --field-fg:#111;
+  --field-bd:#c7c7c4; --btn:#f4f4f2; --btn-fg:#111; --shadow:rgba(0,0,0,.2); --focus:#41618f;
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --chrome:#0b0c0e; --chrome-fg:#e6e8ea; --field:#212429; --field-fg:#e6e8ea;
+  --field-bd:#3a3f46; --btn:#2c3137; --btn-fg:#e6e8ea; --shadow:rgba(0,0,0,.6); --focus:#7aa2d6;
+}
+*{box-sizing:border-box}
+body{margin:0;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;background:var(--bg);color:var(--field-fg)}
+header{position:sticky;top:0;z-index:9;background:var(--chrome);color:var(--chrome-fg);
+  padding:8px 12px;display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+h1{font-size:11px;margin:0 6px 0 0;letter-spacing:.18em;text-transform:uppercase}
+label{display:flex;gap:4px;align-items:center;white-space:nowrap}
+input[type=number]{width:54px}input[type=text]{width:112px}
+input,select,button{font:inherit;padding:2px 4px;background:var(--field);color:var(--field-fg);
+  border:1px solid var(--field-bd);border-radius:2px}
+input[type=color]{padding:0;width:30px;height:20px;border:1px solid var(--field-bd)}
+input[type=checkbox]{width:auto;accent-color:var(--focus)}
+button{cursor:pointer;background:var(--btn);color:var(--btn-fg);border:0;padding:4px 9px}
+button:hover{filter:brightness(1.18)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+#r{margin-left:auto;opacity:.75;font-size:11px;max-width:46ch;text-align:right}
+.stage{padding:20px;display:flex;justify-content:center}
+svg{background:#fff;box-shadow:0 2px 16px var(--shadow);max-width:100%;height:auto}
+svg.inv{filter:invert(1)}
+.hide{display:none!important}
+@page{margin:0}
+@media print{
+  header{display:none}body{background:#fff}.stage{padding:0;display:block}
+  svg{box-shadow:none;max-width:none;height:auto}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media (max-width:900px){#r{margin-left:0;text-align:left;max-width:100%}}
+</style></head><body>
+<header><h1>Grid Engine</h1>
+<label>preset<select id="pre" style="max-width:250px"></select></label>
+<label>engine<select id="E">
+<option value="sheet">worksheet</option><option value="rect">lattice</option><option value="column">columns</option>
+<option value="iso">isometric</option><option value="hex">hex</option><option value="polar">polar</option><option value="slant">slant</option>
+</select></label>
+<label>w<input type="number" id="W" value="210" step=".1">mm</label>
+<label>h<input type="number" id="H" value="297" step=".1">mm</label>
+<label>margin<input type="number" id="M" value="11" step=".1">mm</label>
+<label data-e="sheet">cols<input type="number" id="C" value="9"></label>
+<label data-e="sheet column">subdiv<input type="number" id="S" value="4"></label>
+<label data-e="sheet">rows<input type="number" id="R" value="61"></label>
+<label data-e="sheet rect polar">accent<input type="number" id="A" value="0"></label>
+<label data-e="sheet">cat<input type="text" id="T" value="Catalogusnr. 438"></label>
+<label data-e="rect iso hex slant">pitch<input type="number" id="PX" value="5" step=".01">mm</label>
+<label data-e="rect">pitch y<input type="number" id="PY" value="5" step=".01">mm</label>
+<label data-e="rect">sub<input type="number" id="SB" value="1"></label>
+<label data-e="rect">margin line<input type="number" id="ML" value="0" step=".1">mm</label>
+<label data-e="rect">mode<select id="MD"><option value="lines">lines</option><option value="dots">dots</option><option value="hv">h only</option><option value="mizi">mizige</option></select></label>
+<label data-e="column">columns<input type="number" id="CC" value="8"></label>
+<label data-e="column">gutter<input type="number" id="GU" value="4" step=".1">mm</label>
+<label data-e="column">leading<input type="number" id="LE" value="4.5" step=".1">mm</label>
+<label data-e="iso">angle<input type="number" id="AN" value="30"></label>
+<label data-e="iso"><input type="checkbox" id="VT" checked>vert</label>
+<label data-e="polar">rings<input type="number" id="RG" value="12"></label>
+<label data-e="polar">spokes<input type="number" id="SP" value="36"></label>
+<label data-e="polar">space<select id="PS"><option value="lin">linear</option><option value="log">log</option><option value="sqrt">sqrt</option></select></label>
+<label data-e="slant">slant<input type="number" id="SL" value="55"></label>
+<label data-e="slant">x-ht<input type="number" id="XH" value="5" step=".1">mm</label>
+<label>ink<input type="color" id="K" value="#1a1a1a"></label>
+<label>accent<input type="color" id="X" value="#41618f"></label>
+<label title="negative: white lines on dark paper. uses a lot of ink if printed"><input type="checkbox" id="INV">invert</label><button id="th" title="toggle dark mode" aria-pressed="false">dark</button><button id="p">print</button><button id="d">save svg</button><button id="lk" title="copy a link that restores this exact grid">copy link</button><span id="r" aria-live="polite"></span></header>
+<div class="stage" id="st"></div><script>
+const $=i=>document.getElementById(i),L="abcdefghijklmnopqrstuvwxyz",pg=document.createElement('style');document.head.appendChild(pg);
+// the caption lands inside an SVG <text>, so & < > have to be escaped or the document breaks
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+const PRESETS={
+"-- design / typographic --":null,
+"Total Design worksheet (Crouwel)":{E:'sheet',W:210,H:297,M:11,C:9,S:4,R:61,A:0,T:'Catalogusnr. 438',K:'#1a1a1a',X:'#41618f'},
+"Crouwel square module (A2)":{E:'rect',W:420,H:594,M:15,PX:10,PY:10,SB:1,A:5,ML:0,MD:'lines'},
+"Muller-Brockmann 8-column":{E:'column',W:210,H:297,M:18,CC:8,GU:4,LE:4.5,S:8},
+"Swiss poster 12-column (A2)":{E:'column',W:420,H:594,M:24,CC:12,GU:5,LE:6,S:8},
+"Gerstner 58-unit mobile field":{E:'sheet',W:210,H:297,M:16,C:58,S:1,R:58,A:0,T:'Gerstner / Capital 1962 -- 58 units'},
+"Manuscript single column":{E:'column',W:150,H:225,M:20,CC:1,GU:0,LE:4.2,S:10},
+"-- ruled paper --":null,
+"Seyes / French school (grands carreaux)":{E:'rect',W:210,H:297,M:8,PX:8,PY:8,SB:4,A:0,ML:16,MD:'lines',K:'#5b7fa6',X:'#2f5f8f'},
+"Seyes petits carreaux 5mm":{E:'rect',W:210,H:297,M:8,PX:5,PY:5,SB:1,A:0,ML:16,MD:'lines',K:'#5b7fa6',X:'#2f5f8f'},
+"College ruled":{E:'rect',W:216,H:279,M:10,PX:7.1,PY:7.1,SB:1,A:0,ML:32,MD:'hv',K:'#7a8fa6',X:'#c05050'},
+"Narrow ruled":{E:'rect',W:216,H:279,M:10,PX:6.4,PY:6.4,SB:1,A:0,ML:32,MD:'hv',K:'#7a8fa6',X:'#c05050'},
+"Engineering 1/10 inch":{E:'rect',W:216,H:279,M:10,PX:2.54,PY:2.54,SB:1,A:10,ML:0,MD:'lines',K:'#8aa07a',X:'#4a6f3f'},
+"Quad 5mm graph":{E:'rect',W:210,H:297,M:10,PX:5,PY:5,SB:1,A:5,ML:0,MD:'lines',K:'#9aa6b5',X:'#41618f'},
+"Dot grid 5mm (bullet)":{E:'rect',W:148,H:210,M:10,PX:5,PY:5,SB:1,A:0,ML:0,MD:'dots',K:'#9a9a9a'},
+"-- east asian --":null,
+"Genko yoshi 20x10 (400)":{E:'rect',W:210,H:297,M:14,PX:9,PY:9,SB:1,A:0,ML:0,MD:'lines',K:'#4a6f4a',X:'#2f5f2f'},
+"Mizige (rice-character) 20mm":{E:'rect',W:210,H:297,M:15,PX:20,PY:20,SB:1,A:0,ML:0,MD:'mizi',K:'#b04040',X:'#b04040'},
+"Jiugongge 9-square 30mm":{E:'rect',W:210,H:297,M:15,PX:30,PY:30,SB:3,A:0,ML:0,MD:'lines',K:'#c07070',X:'#b04040'},
+"Cross-stitch 14 count":{E:'rect',W:210,H:297,M:10,PX:1.814,PY:1.814,SB:1,A:10,ML:0,MD:'lines',K:'#aaa',X:'#41618f'},
+"-- drawing --":null,
+"Isometric 5mm":{E:'iso',W:210,H:297,M:10,PX:5,AN:30,VT:true},
+"Triangular 60 deg":{E:'iso',W:210,H:297,M:10,PX:6,AN:60,VT:false},
+"Hexagonal 10mm":{E:'hex',W:210,H:297,M:10,PX:10},
+"Polar 36 spokes":{E:'polar',W:300,H:300,M:15,RG:12,SP:36,A:3,PS:'lin'},
+"Log-polar":{E:'polar',W:300,H:300,M:15,RG:10,SP:24,A:2,PS:'log'},
+"-- lettering --":null,
+"Copperplate 55 deg":{E:'slant',W:210,H:297,M:15,PX:12,SL:55,XH:4,K:'#9a9a9a',X:'#b04040'},
+"Italic broad-pen 5 deg":{E:'slant',W:297,H:210,M:15,PX:14,SL:5,XH:5,K:'#9a9a9a',X:'#41618f'},
+"-- conceptual --":null,
+"Rule 110 worksheet (CA by hand)":{E:'rect',W:297,H:210,M:10,PX:3,PY:3,SB:1,A:10,ML:0,MD:'lines',K:'#bbb',X:'#1a1a1a'},
+"Ken module 1:50 (tatami)":{E:'rect',W:297,H:210,M:15,PX:18.2,PY:36.4,SB:2,A:0,ML:0,MD:'lines',K:'#8a7a6a',X:'#5a4a3a'}
+};
+
+const sel=$('pre');
+let grp=null;
+for(const k in PRESETS){
+  if(PRESETS[k]===null){grp=document.createElement('optgroup');grp.label=k.replace(/^-+ | -+$/g,'');sel.appendChild(grp);continue}
+  const o=document.createElement('option');o.textContent=k;(grp||sel).appendChild(o)}
+sel.value="Total Design worksheet (Crouwel)";
+
+function applyPreset(){const p=PRESETS[sel.value];if(!p)return;
+  for(const k in p){const el=$(k);if(!el)continue;
+    if(el.type==='checkbox')el.checked=!!p[k];else el.value=p[k]}
+  if(!('K' in p))$('K').value='#1a1a1a'; if(!('X' in p))$('X').value='#41618f';
+  syncFields();draw()}
+
+function syncFields(){const e=$('E').value;
+  document.querySelectorAll('[data-e]').forEach(n=>n.classList.toggle('hide',!n.dataset.e.split(' ').includes(e)))}
+
+function draw(){
+ const W=+$('W').value,H=+$('H').value,m=+$('M').value,k=$('K').value,x=$('X').value,e=$('E').value;
+ pg.textContent=`@page{size:${W}mm ${H}mm;margin:0}`;
+ const gw=W-2*m,gh=H-2*m;let o='',info='',clip=`<clipPath id="c"><rect x="${m}" y="${m}" width="${gw}" height="${gh}"/></clipPath>`;
+ const ln=(x1,y1,x2,y2,c,w)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}"/>`;
+
+ if(e==='sheet'){const nc=+$('C').value,sd=+$('S').value,nr=+$('R').value,ar=+$('A').value,g=6;
+  const x0=m,y0=m+g,x1=W-m-g,y1=H-m,cw=(x1-x0)/nc,ch=(y1-y0)/nr,fw=cw/sd;
+  for(let i=0;i<=nc*sd;i++){const X_=x0+i*fw,MJ=i%sd===0;o+=ln(X_,y0,X_,y1,MJ?x:k,MJ?.45:.14)}
+  for(let j=0;j<=nr;j++){const Y=y0+j*ch,h=ar>0&&j%ar===0;o+=ln(x0,Y,x1,Y,h?x:k,h?.4:.12)}
+  if(nc<=26)for(let i=0;i<nc;i++)o+=`<text x="${x0+i*cw+.8}" y="${y0-1.6}" font-family="Helvetica,Arial" font-size="2.6" fill="${k}">${L[i]}</text>`;
+  if(nr<=120)for(let j=1;j<=nr;j++)o+=`<text x="${x1+1.2}" y="${y0+j*ch-.5}" font-family="Helvetica,Arial" font-size="2.4" fill="${k}">${j}</text>`;
+  if($('T').value.trim())o+=`<text x="${x0}" y="${y1+4.2}" font-family="Helvetica,Arial" font-size="2.9" font-weight="700" fill="${k}">${esc($('T').value)}</text>`;
+  info=`${nc}x${sd}=${nc*sd} fine | ${nr} rows | col ${cw.toFixed(2)} fine ${fw.toFixed(2)} row ${ch.toFixed(2)}mm`;
+ }
+ else if(e==='rect'){const px=+$('PX').value,py=+$('PY').value,sb=+$('SB').value,ar=+$('A').value,ml=+$('ML').value,md=$('MD').value;
+  const fx=px/sb,fy=py/sb,ncx=Math.floor(gw/fx),ncy=Math.floor(gh/fy);
+  if(md==='dots'){for(let i=0;i<=ncx;i++)for(let j=0;j<=ncy;j++)o+=`<circle cx="${m+i*fx}" cy="${m+j*fy}" r=".3" fill="${k}"/>`}
+  else{
+   if(md!=='hv')for(let i=0;i<=ncx;i++){const X_=m+i*fx,MJ=i%sb===0,AC=ar>0&&MJ&&(i/sb)%ar===0;o+=ln(X_,m,X_,m+ncy*fy,AC?x:k,AC?.4:(MJ?.22:.09))}
+   for(let j=0;j<=ncy;j++){const Y=m+j*fy,MJ=j%sb===0,AC=ar>0&&MJ&&(j/sb)%ar===0;o+=ln(m,Y,m+ncx*fx,Y,AC?x:k,AC?.4:(MJ?.22:.09))}
+   if(md==='mizi')for(let i=0;i<Math.floor(gw/px);i++)for(let j=0;j<Math.floor(gh/py);j++){const X_=m+i*px,Y=m+j*py;
+     o+=ln(X_,Y,X_+px,Y+py,x,.1)+ln(X_+px,Y,X_,Y+py,x,.1)+ln(X_+px/2,Y,X_+px/2,Y+py,x,.1)+ln(X_,Y+py/2,X_+px,Y+py/2,x,.1)}
+  }
+  if(ml>0)o+=ln(ml,m,ml,H-m,x,.35);
+  info=`${ncx} x ${ncy} cells | pitch ${px}x${py}mm, sub ${sb} -> ${fx.toFixed(3)}x${fy.toFixed(3)}mm`;
+ }
+ else if(e==='column'){const n=+$('CC').value,g=+$('GU').value,le=+$('LE').value,fl=+$('S').value;
+  const cw=(gw-(n-1)*g)/n,nb=Math.floor(gh/le);
+  o+=`<rect x="${m}" y="${m}" width="${gw}" height="${gh}" fill="none" stroke="${k}" stroke-width=".3"/>`;
+  for(let i=0;i<n;i++)o+=`<rect x="${m+i*(cw+g)}" y="${m}" width="${cw}" height="${gh}" fill="${x}" fill-opacity=".05" stroke="${x}" stroke-width=".2"/>`;
+  for(let j=0;j<=nb;j++)o+=ln(m,m+j*le,W-m,m+j*le,k,.08);
+  if(fl>0)for(let j=0;j<=nb;j+=fl)o+=ln(m,m+j*le,W-m,m+j*le,x,.35);
+  info=`col ${cw.toFixed(2)}mm | ${nb} baselines @ ${le}mm | slack ${(gh-nb*le).toFixed(2)}mm`;
+ }
+ else if(e==='iso'){const u=+$('PX').value,ang=+$('AN').value,R=ang*Math.PI/180,D=Math.hypot(gw,gh);
+  [R,-R].forEach(t=>{const dx=Math.cos(t),dy=Math.sin(t),nx=-dy,ny=dx;
+   for(let s=-D;s<=D;s+=u){const cx=m+gw/2+nx*s,cy=m+gh/2+ny*s;o+=ln(cx-dx*D,cy-dy*D,cx+dx*D,cy+dy*D,k,.1)}});
+  if($('VT').checked){const vp=u/Math.sin(R);for(let X_=m;X_<=m+gw+.001;X_+=vp)o+=ln(X_,m,X_,m+gh,k,.1)}
+  info=`pitch ${u}mm at ${ang} deg | vertical spacing ${(u/Math.sin(R)).toFixed(2)}mm`;
+ }
+ else if(e==='hex'){const s=+$('PX').value,hw=Math.sqrt(3)*s,vh=1.5*s;
+  for(let row=0;row*vh<gh+s;row++)for(let col=0;col*hw<gw+hw;col++){
+   const cx=m+col*hw+(row%2?hw/2:0),cy=m+s+row*vh;let pts=[];
+   for(let a=0;a<6;a++){const t=Math.PI/180*(60*a-90);pts.push(`${(cx+s*Math.cos(t)).toFixed(2)},${(cy+s*Math.sin(t)).toFixed(2)}`)}
+   o+=`<polygon points="${pts.join(' ')}" fill="none" stroke="${k}" stroke-width=".12"/>`}
+  info=`hex side ${s}mm | width ${hw.toFixed(2)}mm, row pitch ${vh.toFixed(2)}mm`;
+ }
+ else if(e==='polar'){const n=+$('RG').value,sp=+$('SP').value,ar=+$('A').value,md=$('PS').value;
+  const cx=W/2,cy=H/2,R=Math.min(gw,gh)/2;clip='';
+  const rad=i=>md==='log'?R*Math.log10(1+9*i/n):md==='sqrt'?R*Math.sqrt(i/n):R*i/n;
+  for(let i=1;i<=n;i++){const r=rad(i),AC=ar>0&&i%ar===0;o+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${AC?x:k}" stroke-width="${AC?.35:.12}"/>`}
+  for(let j=0;j<sp;j++){const t=j*2*Math.PI/sp-Math.PI/2,AC=ar>0&&j%ar===0;
+   o+=ln(cx,cy,cx+R*Math.cos(t),cy+R*Math.sin(t),AC?x:k,AC?.3:.1)}
+  o+=`<circle cx="${cx}" cy="${cy}" r=".5" fill="${k}"/>`;
+  info=`R ${R.toFixed(1)}mm | ${n} rings (${md}) | ${sp} spokes = ${(360/sp).toFixed(2)} deg`;
+ }
+ else if(e==='slant'){const band=+$('PX').value,sl=+$('SL').value,xh=+$('XH').value;
+  const nb=Math.floor(gh/band),t=(90-sl)*Math.PI/180,dx=Math.tan(t);
+  for(let j=0;j<nb;j++){const top=m+j*band,base=top+band*.72,xt=base-xh;
+   o+=ln(m,base,W-m,base,x,.3);o+=ln(m,xt,W-m,xt,k,.18);o+=ln(m,top,W-m,top,k,.08)}
+  const step=band*.55;for(let X_=m-gh*Math.abs(dx);X_<W-m+gh*Math.abs(dx);X_+=step)
+   o+=ln(X_,m+gh,X_+gh*dx,m,k,.07);
+  info=`${nb} bands @ ${band}mm | x-height ${xh}mm | slant ${sl} deg`;
+ }
+
+ $('r').textContent=info;
+ const iv=$('INV').checked?' class="inv"':'';
+ $('st').innerHTML=`<svg id="s"${iv} xmlns="http://www.w3.org/2000/svg" width="${W}mm" height="${H}mm" viewBox="0 0 ${W} ${H}">`
+  +`<rect width="${W}" height="${H}" fill="#fff"/>`
+  +(clip?`<g clip-path="url(#c)">${o}</g><defs>${clip}</defs>`:o)+`</svg>`;
+}
+/* ---- shareable state -------------------------------------------------
+   every control goes in the hash, so a grid you tuned can be bookmarked or
+   handed to someone else and come back exactly as it was. ------------------ */
+const CTL=['pre','E','W','H','M','C','S','R','A','T','PX','PY','SB','ML','MD',
+           'CC','GU','LE','AN','VT','RG','SP','PS','SL','XH','K','X','INV'];
+function writeHash(){
+  const q=CTL.map(id=>{const el=$(id);if(!el)return null;
+    const v=el.type==='checkbox'?(el.checked?1:0):el.value;
+    return id+'='+encodeURIComponent(v)}).filter(Boolean).join('&');
+  history.replaceState(null,'','#'+q);
+}
+function readHash(){
+  const h=location.hash.slice(1);if(!h)return false;
+  let any=false;
+  h.split('&').forEach(pair=>{
+    const i=pair.indexOf('=');if(i<0)return;
+    const el=$(pair.slice(0,i));if(!el)return;
+    const v=decodeURIComponent(pair.slice(i+1));
+    if(el.type==='checkbox')el.checked=v==='1'&&v!=='0';else el.value=v;
+    any=true});
+  return any;
+}
+
+sel.onchange=()=>{applyPreset();writeHash()};
+$('E').onchange=()=>{syncFields();draw();writeHash()};
+document.querySelectorAll('input,select').forEach(n=>n.addEventListener('input',()=>{draw();writeHash()}));
+$('lk').onclick=()=>{writeHash();
+  const done=()=>{const b=$('lk');b.textContent='copied';setTimeout(()=>b.textContent='copy link',1200)};
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(location.href).then(done).catch(()=>{});
+  else done()};
+$('p').onclick=()=>print();
+$('d').onclick=()=>{const b=new Blob([$('s').outerHTML],{type:'image/svg+xml'}),a=document.createElement('a');
+ a.href=URL.createObjectURL(b);a.download=sel.value.replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.svg';a.click()};
+const root=document.documentElement,thBtn=$('th');
+function paintTheme(){const d=root.dataset.theme==='dark';
+  thBtn.textContent=d?'light':'dark';thBtn.setAttribute('aria-pressed',String(d))}
+thBtn.onclick=()=>{const d=root.dataset.theme==='dark';root.dataset.theme=d?'light':'dark';
+  try{localStorage.setItem('grid-theme',root.dataset.theme)}catch(e){}paintTheme()};
+paintTheme();
+if(readHash()){syncFields();draw()}else{applyPreset()}
+</script></body></html>
