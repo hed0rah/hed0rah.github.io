@@ -42,6 +42,10 @@
     button{-webkit-appearance:none;appearance:none;background:none;border:0;padding:3px;margin:0;cursor:pointer;color:inherit;border-radius:6px;line-height:0;display:inline-flex}
     button:focus-visible{outline:2px solid currentColor;outline-offset:3px}
     .box{width:var(--protofun-w,30px);height:var(--protofun-h,45px)}
+    /* passive has no button wrapper, and an inline span ignores width and
+       height, so the svg would fall back to its own viewBox scale */
+    :host([passive]) .box{display:block}
+    :host([passive]){display:inline-block;line-height:0}
     .eyes-happy,.eyes-scowl,.mouth-frown,.mouth-neutral{display:none}
     /* the secret modes (dark/amber/vapor) => happy ^^ eyes */
     :host([data-state="dark"]) .eyes,:host([data-state="amber"]) .eyes,:host([data-state="vapor"]) .eyes{display:none}
@@ -76,9 +80,19 @@
   class ProtofunToggle extends HTMLElement {
     connectedCallback() {
       var root = this.attachShadow({ mode: 'open' });
-      root.innerHTML = '<style>' + css + '</style><button type="button" aria-label="Cycle theme: light, dark, amber CRT, vaporwave, house light, house dark" title="Theme (click to cycle)"><span class="box">' + svg + '</span></button>';
-      this._btn = root.querySelector('button');
-      this._btn.addEventListener('click', () => this.cycle());
+      // passive: RJ as a character rather than a control. Same drawing, same
+      // per-theme faces and moods, but no button and no click handling, so a
+      // large decorative RJ cannot become a second theme switch. The small one
+      // in the masthead stays the control, where readers have learned it is.
+      this._passive = this.hasAttribute('passive');
+      if (this._passive) {
+        root.innerHTML = '<style>' + css + '</style><span class="box" aria-hidden="true">' + svg + '</span>';
+        this._btn = null;
+      } else {
+        root.innerHTML = '<style>' + css + '</style><button type="button" aria-label="Cycle theme: light, dark, amber CRT, vaporwave, house light, house dark" title="Theme (click to cycle)"><span class="box">' + svg + '</span></button>';
+        this._btn = root.querySelector('button');
+        this._btn.addEventListener('click', () => this.cycle());
+      }
       this._sync = (e) => { if (e.target !== this && e.detail && e.detail.theme) this.apply(e.detail.theme, false); };
       document.addEventListener('protofun-theme', this._sync);
       this._netOff = () => this.setAttribute('data-mood', 'nolink');
@@ -103,7 +117,7 @@
       if (STATES.indexOf(state) < 0) state = 'light';
       this.setAttribute('data-state', state);
       document.documentElement.setAttribute('data-theme', state);
-      this._btn.setAttribute('aria-pressed', String(state !== 'light'));
+      if (this._btn) this._btn.setAttribute('aria-pressed', String(state !== 'light'));
       if (persist) { try { localStorage.setItem('protofun-theme', state); } catch (e) {} }
       this.dispatchEvent(new CustomEvent('protofun-theme', { bubbles: true, composed: true, detail: { theme: state } }));
     }

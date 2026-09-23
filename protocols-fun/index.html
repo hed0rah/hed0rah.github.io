@@ -140,6 +140,49 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
 /* hover contract: focus parity and reduced motion */
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}}
+
+/* ---- gateway hero: RJ at size, a bubble he yaps out of, three doors ----
+   capped so the station map below is still reachable without a long scroll */
+.hero{display:flex;align-items:center;gap:clamp(.9rem,3vw,1.8rem);
+  margin:1rem 0 1.1rem;padding:0 0 1rem;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.hero-rj{flex:0 0 auto;line-height:0}
+.hero-rj protofun-toggle{--protofun-w:96px;--protofun-h:145px;color:var(--enum);display:block}
+.bubble{position:relative;flex:1 1 20rem;min-width:min(100%,17rem);
+  border:1px solid var(--ink);background:var(--panel);color:var(--ink);
+  font-family:var(--ff);font-size:0.92rem;line-height:1.6;text-align:left;
+  padding:.85rem 1rem;min-height:4.1rem;display:flex;align-items:center;
+  cursor:pointer;border-radius:2px}
+.bubble:hover{border-color:var(--enum)}
+.bubble:focus{outline:none}
+.bubble:focus-visible{outline:2px solid var(--enum);outline-offset:2px}
+/* tail: two rotated squares, ink behind panel, so six themes paint it from tokens */
+.bubble::before,.bubble::after{content:"";position:absolute;width:13px;height:13px;
+  top:50%;margin-top:-7px;transform:rotate(45deg)}
+.bubble::before{left:-8px;background:var(--ink)}
+.bubble::after{left:-6px;background:var(--panel)}
+.bubble .said{display:block}
+.bubble .nudge{display:block;margin-top:.4rem;font-size:0.58rem;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--faint)}
+.doors{display:grid;grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));gap:2px;
+  flex:1 1 100%;margin-top:.2rem}
+.door{display:block;border:1px solid var(--line);background:var(--panel);
+  padding:.55rem .75rem;text-decoration:none;transition:border-color .12s,background .12s}
+.door:hover{border-color:var(--enum)}
+.door:focus{outline:none}
+.door:focus-visible{outline:2px solid var(--enum);outline-offset:1px}
+.door b{display:block;color:var(--ink);font-weight:500;font-size:0.78rem}
+.door span{display:block;color:var(--soft);font-size:0.65rem;line-height:1.45;margin-top:.15rem}
+.door em{font-style:normal;color:var(--enum);font-size:0.56rem;letter-spacing:.2em;
+  text-transform:uppercase;display:block;margin-bottom:.25rem}
+@media(max-width:620px){
+  .hero{gap:1rem;justify-content:center}
+  .hero-rj protofun-toggle{--protofun-w:76px;--protofun-h:115px}
+  .bubble{min-width:100%;order:-1;text-align:center;justify-content:center}
+  .bubble::before,.bubble::after{top:auto;bottom:-8px;left:50%;margin:0 0 0 -7px}
+  .bubble::after{bottom:-6px}
+  .doors{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}}
 </style>
 </head>
 <body>
@@ -149,6 +192,21 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . THE MAP</div><h1>Network Protocol Headers</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
       <div class="stamp"><a href="https://x.com/r3l0z">r3l0z</a> &middot; <a href="https://hed0rah.github.io">hed0rah.github.io</a><br>rev 2026.08</div>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-rj"><protofun-toggle passive></protofun-toggle></div>
+    <button class="bubble" id="bubble" title="RJ has more where that came from">
+      <span><span class="said" id="said" aria-live="polite"></span><span class="nudge">click for another</span></span>
+    </button>
+    <div class="doors">
+      <a class="door" href="#map"><em>you are here</em><b>The map</b>
+        <span>Every header, field by field. Twenty-eight anatomies.</span></a>
+      <a class="door" href="/anatomy-of-a-web-request/"><em>the path</em><b>Anatomy of a Web Request</b>
+        <span>Keystroke to pixels. Eleven stages, nine caching layers.</span></a>
+      <a class="door" href="https://hed0rah.github.io/linux_network_stack/"><em>the kernel</em><b>Linux Network Stack</b>
+        <span>Through the kernel, and the sysctls that change the trip.</span></a>
     </div>
   </div>
 
@@ -299,6 +357,36 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 </div>
 
 
+
+<script>
+(function(){
+  // RJ's six. No repeat until the list is exhausted, so clicking twice always
+  // gives two different lines and a reload rarely repeats the last one.
+  var SAID=[
+    "I'd tell a joke about UDP but you might not get it",
+    "It hurts when IP.",
+    "localhost is where the <3 is",
+    "Hide yo SSIDs, hide yo Wi-Fi. They DDoS'in errybody out here",
+    "Sanitize your inputs or the database gets it.",
+    "Dropping tables and names since 1998"
+  ];
+  var said=document.getElementById('said'), bubble=document.getElementById('bubble');
+  if(!said||!bubble) return;
+  var last=-1;
+  try{ last=parseInt(localStorage.getItem('rj-said'),10); }catch(e){}
+  if(!(last>=0&&last<SAID.length)) last=-1;
+  function say(){
+    var i=last;
+    if(SAID.length>1){ while(i===last) i=Math.floor(Math.random()*SAID.length); }
+    else i=0;
+    last=i;
+    said.textContent=SAID[i];
+    try{ localStorage.setItem('rj-said',String(i)); }catch(e){}
+  }
+  say();
+  bubble.addEventListener('click',say);
+})();
+</script>
 <script src="assets/hover.js"></script>
 <script>
 (function(){
