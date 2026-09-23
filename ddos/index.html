@@ -1,0 +1,2150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DDoS Field Manual</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+:root {
+  --bg:        #F2F1EE;
+  --surface:   #FFFFFF;
+  --surface2:  #C8C7C1;
+  --border:    #1A1A1A;
+  --border2:   #D0CFC8;
+  --orange:    #E85000;
+  --cyan:      #007870;
+  --yellow:    #906500;
+  --red:       #BF1020;
+  --green:     #287A38;
+  --magenta:   #7A0090;
+  --dim:       #8A8A8A;
+  --dim2:      #AAAAAA;
+  --text:      #4A4A4A;
+  --bright:    #0D0D0D;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+::selection { background: var(--orange); color: #fff; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* masthead */
+.masthead {
+  border-top: 5px solid var(--orange);
+  padding: 60px 40px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.masthead h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  letter-spacing: 6px;
+  color: var(--bright);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.masthead h1 em { color: var(--orange); font-style: normal; }
+.masthead .subtitle {
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.masthead .subtitle span { color: var(--cyan); }
+
+/* nav */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-brand {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.nav-current {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-current:hover { border-color: var(--orange); color: var(--orange); }
+.nav-current .num { color: var(--orange); }
+.nav-hint { color: var(--dim2); margin-left: 6px; }
+
+/* sidebar */
+.side {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 248px;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  z-index: 150;
+  padding: 26px 0 20px;
+  overflow-y: auto;
+}
+.side-brand {
+  padding: 0 20px 16px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--bright);
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 12px;
+}
+.side-brand span { color: var(--orange); }
+.side a {
+  display: block;
+  padding: 7px 24px 7px 21px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.side a span { color: var(--dim2); margin-right: 7px; }
+.side a:hover { color: var(--orange); }
+.side a.active { color: var(--orange); border-left-color: var(--orange); background: var(--surface); }
+.side a.active span { color: var(--orange); }
+.side-dial {
+  display: block;
+  margin: 16px 20px 0 17px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--border2);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.side-dial:hover { color: var(--orange); border-color: var(--orange); }
+@media (min-width: 1100px) {
+  .side { display: block; }
+  body { padding-left: 248px; }
+  .nav { display: none; }
+}
+
+/* radial dial */
+.radial {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(242, 241, 238, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.radial.open { opacity: 1; pointer-events: auto; }
+body.dial-open { overflow: hidden; }
+.radial-ring {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+}
+.radial-center {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  cursor: pointer;
+}
+.radial-center:hover { color: var(--orange); }
+.radial-item {
+  position: absolute;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--dim);
+  padding: 4px 6px;
+}
+.radial-item span { color: var(--dim2); margin-right: 5px; }
+.radial-item:hover, .radial-item.active { color: var(--orange); }
+.radial-item:hover span, .radial-item.active span { color: var(--orange); }
+.radial-dot {
+  position: absolute;
+  width: 5px; height: 5px;
+  background: var(--dim2);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.radial-dot.active { background: var(--orange); }
+@media (max-width: 620px) {
+  .radial.open { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .radial-ring, .radial-dot, .radial-center { display: none; }
+  .radial-item { position: static !important; transform: none !important; font-size: 12px; padding: 7px; }
+}
+
+/* layout */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 32px;
+  border-inline: 1px solid var(--border);
+}
+section { padding: 52px 0; display: none; }
+section.active { display: block; }
+section::before {
+  content: attr(data-num) ' //';
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--dim2);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+
+/* headings */
+h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 3px;
+  color: var(--bright);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+h2 em { font-style: normal; }
+h2 em.or { color: var(--orange); }
+h2 em.cy { color: var(--cyan); }
+h2 em.rd { color: var(--red); }
+h2 em.yl { color: var(--yellow); }
+.section-bar { width: 32px; height: 3px; margin-bottom: 16px; background: var(--orange); }
+.section-bar.cy { background: var(--cyan); }
+.section-bar.rd { background: var(--red); }
+.section-bar.yl { background: var(--yellow); }
+h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  margin: 28px 0 10px;
+}
+h3.cy { color: var(--cyan); }
+h3.yl { color: var(--yellow); }
+h3.rd { color: var(--red); }
+h4 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--bright);
+  margin: 20px 0 8px;
+}
+p { font-size: 12px; color: var(--text); margin: 10px 0; line-height: 1.7; max-width: 76ch; }
+
+/* code */
+code {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--bright);
+}
+pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+pre {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.85;
+  overflow-x: auto;
+  color: #CCCBC4;
+  position: relative;
+}
+pre.cy { border-left-color: var(--cyan); }
+pre.rd { border-left-color: var(--red); }
+pre.yl { border-left-color: var(--yellow); }
+pre .label {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  color: #4A4942;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+pre .kw     { color: #F09030; }
+pre .fn     { color: #C8A030; }
+pre .cm     { color: #5A5952; font-style: italic; }
+pre .st     { color: #C8A030; }
+pre .num    { color: #CCCBC4; }
+pre .key    { color: #3AB8AC; }
+pre .val    { color: #C8A030; }
+pre .flag   { color: #7A7870; }
+
+/* diagrams */
+.diagram {
+  background: #1A1918;
+  border: 1px solid #2E2D2A;
+  border-left: 3px solid var(--orange);
+  padding: 18px 20px;
+  margin: 14px 0;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  color: #8A8880;
+}
+.diagram.cy { border-left-color: var(--cyan); }
+.diagram.yl { border-left-color: var(--yellow); }
+.diagram.rd { border-left-color: var(--red); }
+.diagram .acc  { color: #F09030; }
+.diagram .acc2 { color: #3AB8AC; }
+.diagram .acc3 { color: #C8A030; }
+.diagram .dim  { color: #4A4942; }
+.diagram .hi   { color: #CCCBC4; }
+
+/* info boxes */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.info-box.cy    { border-left-color: var(--cyan); }
+.info-box.warn  { border-left-color: var(--yellow); }
+.info-box.danger { border-left-color: var(--red); }
+.info-box strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--bright);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 11px; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--dim2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+td { padding: 8px 14px; border: 1px solid var(--border2); font-size: 11px; vertical-align: top; }
+tr:hover td { background: var(--surface); }
+td.meth { color: var(--orange); font-weight: 700; white-space: nowrap; }
+td.cy   { color: var(--cyan); }
+td.rd   { color: var(--red); }
+td.yl   { color: var(--yellow); }
+td.meth a { color: inherit; text-decoration: none; border-bottom: 1px dashed currentColor; }
+td.meth a:hover { color: var(--bright); }
+h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
+
+/* two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 16px 0; align-items: stretch; }
+.two-col > div { display: flex; flex-direction: column; }
+.two-col > div > pre { flex: 1; margin-bottom: 0; }
+
+/* step list */
+.step-list { list-style: none; counter-reset: step; margin: 16px 0; }
+.step-list li {
+  counter-increment: step;
+  position: relative;
+  padding: 10px 0 10px 42px;
+  border-bottom: 1px dashed var(--border2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-list li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 10px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  width: 34px;
+}
+.step-list li strong { color: var(--bright); display: block; margin-bottom: 2px; }
+.step-list.cy li::before { color: var(--cyan); }
+.step-list.rd li::before { color: var(--red); }
+
+/* footer */
+.footer {
+  border-top: 1px solid var(--border2);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+.footer a { color: var(--orange); text-decoration: none; }
+
+/* spine */
+.spine {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--dim2);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+/* responsive */
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .masthead { padding: 40px 20px 28px; }
+}
+@media (max-width: 1280px) { .spine { display: none; } }
+
+/* dark mode -- ink + gunmetal + teal/orange accents */
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:        #121213;
+  --surface:   #0e0e0f;
+  --surface2:  #1c1c1e;
+  --border:    #313135;
+  --border2:   #26262a;
+  --orange:    #FF4D00;
+  --cyan:      #08F9DF;
+  --yellow:    #E0913E;
+  --red:       #E04858;
+  --green:     #4DC26B;
+  --magenta:   #C97FD4;
+  --dim:       #8b8b88;
+  --dim2:      #5a5a5c;
+  --text:      #cbcbc9;
+  --bright:    #ececea;
+}
+:root[data-theme="dark"] ::selection { background: #08F9DF; color: #121213; }
+:root[data-theme="dark"] pre,
+:root[data-theme="dark"] .diagram {
+  background: #0e0e0f;
+  border-top-color: #2b2b30;
+  border-right-color: #2b2b30;
+  border-bottom-color: #2b2b30;
+}
+:root[data-theme="dark"] pre .label { color: #5a5a5e; }
+:root[data-theme="dark"] pre .cm, :root[data-theme="dark"] .diagram .dim { color: #66666b; }
+:root[data-theme="dark"] pre .kw { color: #F56A31; }
+:root[data-theme="dark"] pre .key, :root[data-theme="dark"] .diagram .acc2 { color: #5CD9CE; }
+:root[data-theme="dark"] .radial { background: rgba(18,18,19,0.96); }
+.theme-toggle { white-space: nowrap; }
+
+/* view tabs */
+.viewbar { max-width:1100px; margin:0 auto; padding:14px 32px 0; display:flex; gap:3px; border-inline:1px solid var(--border); }
+.viewtab { font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:2px; padding:8px 22px; background:var(--bg); border:1px solid var(--border); border-bottom:none; color:var(--dim); cursor:pointer; text-transform:uppercase; }
+.viewtab:hover { color:var(--orange); }
+.viewtab.active { background:var(--surface); color:var(--orange); border-top:3px solid var(--orange); position:relative; top:1px; }
+</style>
+</head>
+<body>
+<script>
+(function () {
+  const saved = localStorage.getItem('theme');
+  const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+})();
+</script>
+
+<div class="masthead">
+  <h1>DDoS <em>Field Manual</em></h1>
+  <div class="subtitle"><span>history · vectors · casebook · providers · defense</span></div>
+</div>
+
+<div class="viewbar">
+  <button class="viewtab active" data-view="timeline">Timeline</button>
+  <button class="viewtab" data-view="vectors">Vectors</button>
+  <button class="viewtab" data-view="casebook">Casebook</button>
+  <button class="viewtab" data-view="providers">Providers</button>
+  <button class="viewtab" data-view="defense">Defense</button>
+</div>
+
+<nav class="side">
+  <div class="side-brand">DDoS Field Manual</div>
+  <a href="#timeline-pre" data-view="timeline"><span>01</span>Prehistory 1974-1995</a>
+  <a href="#timeline-malformed" data-view="timeline"><span>02</span>Malformed Packets 1996-98</a>
+  <a href="#timeline-smurf" data-view="timeline"><span>03</span>Directed Broadcast 1997-99</a>
+  <a href="#timeline-botnet" data-view="timeline"><span>04</span>The Handler Era 1999-2001</a>
+  <a href="#timeline-politics" data-view="timeline"><span>05</span>Politics &amp; Extortion 2002-12</a>
+  <a href="#timeline-amp" data-view="timeline"><span>06</span>Amplification Race 2013-18</a>
+  <a href="#timeline-iot" data-view="timeline"><span>07</span>IoT &amp; Hypervolumetric 2016-26</a>
+  <a href="#timeline-eras" data-view="timeline"><span>08</span>The Shape of the Curve</a><a href="#vectors-taxonomy" data-view="vectors"><span>01</span>Taxonomy &amp; OSI Map</a>
+  <a href="#vectors-volumetric" data-view="vectors"><span>02</span>Volumetric Floods</a>
+  <a href="#vectors-reflection" data-view="vectors"><span>03</span>Reflection &amp; Amplification</a>
+  <a href="#vectors-baf" data-view="vectors"><span>04</span>The BAF Table</a>
+  <a href="#vectors-state" data-view="vectors"><span>05</span>Protocol &amp; State Exhaustion</a>
+  <a href="#vectors-malform" data-view="vectors"><span>06</span>Malformed &amp; Loop Attacks</a>
+  <a href="#vectors-layer7" data-view="vectors"><span>07</span>Application Layer</a>
+  <a href="#vectors-slow" data-view="vectors"><span>08</span>Low-and-Slow</a>
+  <a href="#vectors-dns" data-view="vectors"><span>09</span>DNS-Specific</a>
+  <a href="#vectors-shape" data-view="vectors"><span>10</span>Traffic Shaping Tactics</a><a href="#casebook-records" data-view="casebook"><span>01</span>The Record Ladder</a>
+  <a href="#casebook-panix" data-view="casebook"><span>02</span>Panix, 1996</a>
+  <a href="#casebook-mafiaboy" data-view="casebook"><span>03</span>MafiaBoy, 2000</a>
+  <a href="#casebook-estonia" data-view="casebook"><span>04</span>Estonia, 2007</a>
+  <a href="#casebook-spamhaus" data-view="casebook"><span>05</span>Spamhaus &amp; GitHub</a>
+  <a href="#casebook-mirai" data-view="casebook"><span>06</span>Mirai and Dyn, 2016</a>
+  <a href="#casebook-reset" data-view="casebook"><span>07</span>Rapid Reset, 2023</a>
+  <a href="#casebook-aisuru" data-view="casebook"><span>08</span>Aisuru, 2025-26</a>
+  <a href="#casebook-akamai" data-view="casebook"><span>09</span>Akamai's Own Ledger</a><a href="#providers-akearly" data-view="providers"><span>01</span>Akamai 1998-2004</a>
+  <a href="#providers-ak2004" data-view="providers"><span>02</span>The 2004 DNS Attack</a>
+  <a href="#providers-akledger" data-view="providers"><span>03</span>The Prolexic Ledger</a>
+  <a href="#providers-sirt" data-view="providers"><span>04</span>Akamai SIRT Discoveries</a>
+  <a href="#providers-cfledger" data-view="providers"><span>05</span>Cloudflare's Ledger</a>
+  <a href="#providers-cfbreach" data-view="providers"><span>06</span>Cloudflare Attacked</a>
+  <a href="#providers-ownfoot" data-view="providers"><span>07</span>Self-Inflicted Outages</a>
+  <a href="#providers-terminate" data-view="providers"><span>08</span>Who Gets To Be Online</a>
+  <a href="#providers-lineage" data-view="providers"><span>09</span>Product Lineage</a>
+  <a href="#providers-lessons" data-view="providers"><span>10</span>What The Ledgers Say</a><a href="#defense-principles" data-view="defense"><span>01</span>Four Principles</a>
+  <a href="#defense-detect" data-view="defense"><span>02</span>Detection</a>
+  <a href="#defense-absorb" data-view="defense"><span>03</span>Absorb: Anycast &amp; Scrubbing</a>
+  <a href="#defense-network" data-view="defense"><span>04</span>Network Controls</a>
+  <a href="#defense-proto" data-view="defense"><span>05</span>Protocol Defenses</a>
+  <a href="#defense-l7" data-view="defense"><span>06</span>L7 and Bot Management</a>
+  <a href="#defense-vendor" data-view="defense"><span>07</span>Vendor Map</a>
+  <a href="#defense-runbook" data-view="defense"><span>08</span>Under Attack Runbook</a>
+  <a href="#defense-glossary" data-view="defense"><span>09</span>Glossary</a>
+  <button class="side-dial" id="sideDial" title="radial section dial">◎ dial</button>
+  <button class="side-dial theme-toggle" title="toggle dark mode">◐ dark</button>
+</nav>
+
+<div class="nav"><div class="nav-inner">
+  <span class="nav-brand">DDoS Field Manual</span>
+  <span style="display:flex;gap:6px">
+    <button class="nav-current" id="navCurrent" title="section dial (arrows switch)">
+      <span class="num" id="navNum">01 //</span> <span id="navLabel"></span> <span class="nav-hint">◎</span>
+    </button>
+    <button class="nav-current theme-toggle" title="toggle dark mode">◐</button>
+  </span>
+</div></div>
+
+<div class="radial" id="radial">
+  <div class="radial-ring" id="radialRing"></div>
+  <button class="radial-center" id="radialCenter" title="close (Esc)">01</button>
+</div>
+
+<div class="container">
+<section id="timeline-pre" data-num="01" data-view="timeline">
+  <h2>Prehistory: <em class="or">Before It Had a Name</em></h2>
+  <div class="section-bar"></div>
+  <p>Denial of service predates the internet's commercial era by two decades. The through-line is constant: a resource that is cheap to request and expensive to serve, and no mechanism that makes the requester prove cost.</p>
+
+  <table>
+    <tr><th>Year</th><th>Event</th><th>Why it matters</th></tr>
+    <tr><td class="meth">1974</td><td>David Dennis, 13, sends the <code>ext</code> command to PLATO terminals at CERL that have no external device attached</td><td>Commonly cited as the first DoS. A malformed but legal command forces a hang. Amplification factor of one, but the principle is there</td></tr>
+    <tr><td class="meth">1988</td><td>Morris worm. Reinfection probability 1-in-7 means hosts run many copies</td><td>Not designed as DoS. The denial of service was an emergent property of uncontrolled replication. Roughly 10 percent of the connected internet down. CERT founded in response</td></tr>
+    <tr><td class="meth">1995</td><td>Strano Network "Net-Strike" against French government sites. Manual reload protest</td><td>First organised political DoS. Direct ancestor of LOIC and Anonymous</td></tr>
+    <tr><td class="meth cy">Sep 1996</td><td>Panix, a New York ISP, is SYN-flooded off the internet for a week</td><td>The first attack that forced a protocol-level fix. Produces SYN cookies (Bernstein and Schenk) and RFC 4987</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>Why 1996 is the real year zero</strong>
+    Panix was the moment the industry learned that a protocol's own state machine could be turned into the weapon. Nothing was malformed. Every packet was a legal TCP SYN. The attack worked because the server was <em>obligated</em> to remember each one.
+  </div>
+</section>
+<section id="timeline-malformed" data-num="02" data-view="timeline">
+  <h2>Malformed <em class="rd">Packets</em>, 1996-1998</h2>
+  <div class="section-bar rd"></div>
+  <p>A short, spectacular window where one packet could take down a host. These were not floods. They were crashes: bugs in reassembly and state handling that a single crafted datagram could trigger. All are dead against modern stacks, and all of them taught something that still applies.</p>
+
+  <table>
+    <tr><th>Name</th><th>Year</th><th>Mechanism</th><th>Killed by</th></tr>
+    <tr><td class="meth rd">Ping of Death</td><td>1996</td><td>ICMP echo fragmented so that reassembly exceeds the 65,535-byte IP maximum. Integer overflow in the reassembly buffer</td><td>Bounds checks in reassembly</td></tr>
+    <tr><td class="meth rd">Teardrop</td><td>Nov 1997</td><td>IP fragments with <em>overlapping</em> offsets. The reassembly routine computes a negative length and copies a huge region</td><td>Linux 2.0.32, NT4 SP4. Returned in 2018 as CVE-2018-5391 (FragmentSmack)</td></tr>
+    <tr><td class="meth rd">Land</td><td>1997</td><td>TCP SYN with source address and port identical to destination. The host SYN-ACKs itself into a loop</td><td>Trivial ingress check. Reappeared in Windows XP SP2 and Server 2003 in 2005</td></tr>
+    <tr><td class="meth rd">WinNuke</td><td>1997</td><td>TCP segment with URG flag and out-of-band pointer sent to NetBIOS port 139</td><td>Patch. Killed a generation of IRC users</td></tr>
+    <tr><td class="meth rd">Bonk / Boink / Nestea</td><td>1997-98</td><td>Teardrop variants. Different offset arithmetic, same class of bug</td><td>Same patches</td></tr>
+    <tr><td class="meth rd">Jolt2</td><td>2000</td><td>Endless stream of identical fragments, never completing. 100 percent CPU in the reassembly loop</td><td>Fragment queue limits</td></tr>
+  </table>
+
+  <h3 class="rd">Teardrop, drawn</h3>
+  <pre class="diagram"><span class="dim">Normal fragmentation - offsets tile the payload with no gaps</span>
+
+  frag 1   offset=0    len=800    <span class="acc">[0 ................ 799]</span>
+  frag 2   offset=800  len=800                      <span class="acc">[800 .............. 1599]</span>
+                                   <span class="dim">reassembly: memcpy into buf[offset], len</span>
+
+<span class="dim">Teardrop - the second fragment starts INSIDE the first</span>
+
+  frag 1   offset=0    len=800    <span class="hi">[0 ................ 799]</span>
+  frag 2   offset=<span class="acc2">600</span>  len=200              <span class="hi">[600 . 799]</span>
+                                          <span class="dim">^ overlap</span>
+
+  <span class="dim">kernel computes   end   = offset + len</span>
+  <span class="dim">                  delta = prev_end - offset      =  800 - 600 = 200</span>
+  <span class="dim">                  len  -= delta                  =  200 - 200 = 0  ... or negative</span>
+
+  <span class="acc2">len passed to memcpy as a SIGNED int, then cast to size_t</span>
+  <span class="acc2">-N becomes ~4 billion. Copy walks off the end of kernel memory. Panic.</span></pre>
+
+  <div class="info-box warn">
+    <strong>The class never died, only the instances</strong>
+    FragmentSmack (CVE-2018-5391) is teardrop's logic applied to the cost of <em>reassembly bookkeeping</em> rather than to a memcpy: send fragments that never complete a datagram, force the kernel to hold and linearly scan the queue. 2018, not 1997. Any protocol that reassembles, reorders, or buffers on the defender's behalf is carrying this risk.
+  </div>
+</section>
+<section id="timeline-smurf" data-num="03" data-view="timeline">
+  <h2>Directed Broadcast: <em class="yl">Amplification Is Invented</em></h2>
+  <div class="section-bar yl"></div>
+  <p>1997 is when the attacker stopped paying for their own bandwidth. Smurf is the origin of every reflection attack that followed, and the structural lesson has not changed in nearly thirty years: <strong>if a small request produces a large answer, and the source address can be forged, you have a weapon.</strong></p>
+
+  <pre class="diagram"><span class="dim">SMURF, 1997</span>
+
+  attacker              amplifier network 10.0.0.0/24         victim
+     |                   (~250 live hosts)                       |
+     |  1 ICMP echo request                                       |
+     |  dst = 10.0.0.<span class="acc2">255</span>   <span class="dim">(directed broadcast)</span>                  |
+     |  src = <span class="hi">VICTIM</span>      <span class="dim">(spoofed)</span>                            |
+     +-------------------------&gt; [router] --&gt; all 250 hosts       |
+                                                 |               |
+                                 250 echo replies, all addressed |
+                                 to the forged source            |
+                                                 +--------------&gt;|
+                                                                 |
+  <span class="acc">cost to attacker: 1 packet        cost to victim: 250 packets</span>
+  <span class="acc">amplification: ~250x, entirely from a routing default</span></pre>
+
+  <table>
+    <tr><th>Variant</th><th>Protocol</th><th>Note</th></tr>
+    <tr><td class="meth yl">Smurf</td><td>ICMP echo</td><td>The original. Named after the source file smurf.c</td></tr>
+    <tr><td class="meth yl">Fraggle</td><td>UDP echo (7) and chargen (19)</td><td>Same trick on the ancient diagnostic services. Chargen is worse: it answers with a stream</td></tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>The fix that actually worked</strong>
+    Two documents ended Smurf. <strong>RFC 2644 / BCP 34</strong> (1999) changed the router default so directed broadcast forwarding is <em>off</em>, and <strong>RFC 2827 / BCP 38</strong> (2000) told transit providers to drop packets whose source address could not have come from that interface. BCP 34 was adopted almost universally because it was a vendor default flip. BCP 38 requires every network operator to act, benefits <em>other people's</em> networks, and twenty-five years later is still not universally deployed. That asymmetry is the single largest reason reflection attacks are still viable today.
+  </div>
+</section>
+<section id="timeline-botnet" data-num="04" data-view="timeline">
+  <h2>The <em class="or">Handler Era</em>, 1999-2001</h2>
+  <div class="section-bar"></div>
+  <p>The first true <em>distributed</em> DoS tooling, with the three-tier architecture that every botnet since has copied: attacker, handlers (masters), agents (daemons, zombies). August 1999: 227 systems at the University of Minnesota flood a single host for two days.</p>
+
+  <pre class="diagram">  <span class="acc">attacker</span>
+      |  <span class="dim">encrypted / obscure control channel</span>
+      v
+  <span class="acc2">handler</span>   <span class="acc2">handler</span>   <span class="acc2">handler</span>         <span class="dim">few, long-lived, hard to find</span>
+   /  |  \    /  |  \    /  |  \
+  a   a   a   a   a   a   a   a   a      <span class="dim">agents: many, disposable</span>
+  \___\___\__ | __/___/___/
+                v
+            <span class="hi">VICTIM</span>            <span class="dim">the tier that made takedown hard:</span>
+                              <span class="dim">killing agents does not reach the operator</span></pre>
+
+  <table>
+    <tr><th>Tool</th><th>Date</th><th>Contribution</th></tr>
+    <tr><td class="meth">trinoo</td><td>Jun 1999</td><td>First widely deployed DDoS toolkit. UDP flood only. Plaintext control on 27665/27444/31335, password-protected</td></tr>
+    <tr><td class="meth">TFN (Tribe Flood Network)</td><td>1999</td><td>Multi-vector: UDP, ICMP, SYN, Smurf. Control over ICMP echo-reply so it passed most firewalls</td></tr>
+    <tr><td class="meth">Stacheldraht</td><td>Late 1999</td><td>German for "barbed wire". TFN plus Blowfish-encrypted control and <em>agent auto-update</em>. The first self-patching botnet</td></tr>
+    <tr><td class="meth">TFN2K</td><td>Dec 1999</td><td>Decoy packets, randomised protocols, no acknowledgements from agents. Deliberately built to be hard to fingerprint</td></tr>
+    <tr><td class="meth">Shaft / Trinity</td><td>2000</td><td>Trinity was IRC-controlled, which became the dominant C2 pattern for the next decade</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>February 2000: Project Rivolta</strong>
+    Michael Calce, "MafiaBoy", 15, takes down Yahoo (then the largest site on the internet), then over the following days Amazon, eBay, CNN, Dell, E-Trade and ZDNet. Estimated damage figures of 1.2 billion USD circulated, though they were never substantiated. He was caught because he bragged in an IRC channel that was being monitored. The lasting effect was political: it put DDoS in front of the Clinton White House and created the first serious corporate budget line for it.
+  </div>
+</section>
+<section id="timeline-politics" data-num="05" data-view="timeline">
+  <h2>Politics, Extortion, <em class="cy">Infrastructure</em>: 2002-2012</h2>
+  <div class="section-bar cy"></div>
+  <p>The decade in which DDoS became a tool of statecraft, protest, and organised crime simultaneously, and the target list expanded from "a website" to "a country".</p>
+
+  <table>
+    <tr><th>Date</th><th>Event</th><th>Significance</th></tr>
+    <tr><td class="meth cy">Oct 2002</td><td>Attack on all 13 DNS root servers. 9 degraded, service unaffected</td><td>First strike at the internet's own control plane. Accelerated anycast deployment of the roots</td></tr>
+    <tr><td class="meth cy">Feb 2007</td><td>Second root server attack, 6 targeted. g-root and l-root badly hit, the anycast roots shrugged</td><td>Proof that anycast dispersion works. Directly shaped every CDN's architecture</td></tr>
+    <tr><td class="meth cy">Apr-May 2007</td><td><strong>Estonia.</strong> Three weeks of attacks on parliament, banks, ministries and newspapers after the relocation of a Soviet war memorial</td><td>The first time DDoS was treated as a possible Article 5 matter. NATO CCDCOE established in Tallinn in 2008 as a direct result</td></tr>
+    <tr><td class="meth cy">Aug 2008</td><td>Georgia, coordinated with the Russian ground invasion</td><td>First DDoS synchronised with conventional military operations</td></tr>
+    <tr><td class="meth">Dec 2010</td><td>Operation Payback. Anonymous hits PayPal, Visa, Mastercard over the WikiLeaks funding blockade using <strong>LOIC</strong></td><td>Voluntary botnet. LOIC did not spoof source addresses, so a great many participants were identified and prosecuted</td></tr>
+    <tr><td class="meth">2012-13</td><td><strong>Operation Ababil.</strong> Izz ad-Din al-Qassam Cyber Fighters hit US banks in waves for over a year using the <em>Brobot</em> (itsoknoproblembro) toolkit</td><td>Compromised <em>web servers</em>, not consumer PCs. Datacentre uplinks meant far more bandwidth per bot. Peaks of 60-70 Gbps against institutions provisioned for a fraction of that</td></tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>The Brobot insight, still valid</strong>
+    Ababil's operators worked out that 3,000 compromised WordPress and Joomla installs on hosting-provider uplinks beat 300,000 home PCs on DSL. Bot <em>quality</em> beats bot <em>count</em>. The same logic is why cloud-hosted and IoT-on-fibre botnets dominate now: the 11.5 Tbps flood of September 2025 came largely from cloud instances, not from grandma's router.
+  </div>
+</section>
+<section id="timeline-amp" data-num="06" data-view="timeline">
+  <h2>The <em class="yl">Amplification</em> Arms Race, 2013-2018</h2>
+  <div class="section-bar yl"></div>
+  <p>Five years in which the industry rediscovered Smurf once per protocol. Each cycle is identical: someone finds a UDP service that answers small queries with large responses, the internet turns out to have hundreds of thousands of them exposed, the record falls, the service gets filtered or patched, repeat.</p>
+
+  <table>
+    <tr><th>Date</th><th>Vector</th><th>Peak</th><th>Target</th></tr>
+    <tr><td class="meth yl">Mar 2013</td><td>DNS (open resolvers, ANY queries, EDNS0)</td><td><strong>120 Gbps</strong> measured</td><td>Spamhaus, via CloudFlare. The famous 300 Gbps is <em>secondhand</em>, Cloudflare relaying what a Tier 1 provider reported seeing at an exchange. "The attack that almost broke the internet" is a headline the engineers involved have been rolling their eyes at ever since</td></tr>
+    <tr><td class="meth yl">Feb 2014</td><td>NTP <code>monlist</code>, BAF ~557x</td><td>~400 Gbps</td><td>A CloudFlare customer in Europe. One command returning the last 600 clients of an NTP server</td></tr>
+    <tr><td class="meth yl">2014-15</td><td>SSDP / UPnP, BAF ~30x</td><td>100+ Gbps routine</td><td>Millions of consumer routers answering M-SEARCH from the WAN side</td></tr>
+    <tr><td class="meth yl">2015</td><td>Great Cannon vs GitHub</td><td>5 days</td><td>Not amplification: an in-path injection device at the Chinese border rewrote Baidu analytics JavaScript in transit, turning ordinary foreign web users into an unwitting L7 botnet</td></tr>
+    <tr><td class="meth yl">Feb 28 2018</td><td><strong>memcached UDP 11211, BAF up to 51,000x</strong></td><td>1.35 Tbps, 126.9 Mpps</td><td>GitHub. Mitigated in under 10 minutes via Akamai Prolexic. Then 1.7 Tbps against a US service provider days later</td></tr>
+  </table>
+
+  <pre class="diagram"><span class="dim">memcached: the worst amplifier ever found in the wild</span>
+
+  attacker sends:   <span class="acc">15 bytes</span>   <span class="dim">"get " + a key previously stuffed with 1MB of data</span>
+  server returns:   <span class="acc2">~750 KB</span>   <span class="dim">(in a burst of UDP, unsolicited, to the forged src)</span>
+
+                    <span class="hi">BAF = 51,000x observed, ~10,000x typical</span>
+
+  <span class="dim">why it existed at all: memcached shipped with UDP enabled and</span>
+  <span class="dim">bound to 0.0.0.0 by default. ~100,000 instances were on the</span>
+  <span class="dim">public internet. it is a CACHE. it has no authentication</span>
+  <span class="dim">because it was never supposed to be reachable.</span>
+
+  <span class="acc">fix: upstream flipped the UDP default to off in 1.5.6, and</span>
+  <span class="acc">operators filtered 11211. the vector died in weeks. it remains</span>
+  <span class="acc">the single highest BAF ever recorded.</span></pre>
+</section>
+<section id="timeline-iot" data-num="07" data-view="timeline">
+  <h2>IoT and the <em class="rd">Hypervolumetric</em> Era, 2016-2026</h2>
+  <div class="section-bar rd"></div>
+  <p>Mirai changed the economics. Not by being clever, it was 62 default credentials in a table, but by demonstrating that hundreds of thousands of always-on, never-patched, decently-connected devices were available for free.</p>
+
+  <table>
+    <tr><th>Date</th><th>Event</th><th>Figure</th></tr>
+    <tr><td class="meth rd">Sep 20 2016</td><td>Mirai vs krebsonsecurity.com. Akamai had hosted it pro bono for four years and gave about two hours' notice</td><td><strong>623 Gbps</strong> (Akamai's own figure; 620 is Krebs's contemporaneous number). No reflection at all, ~24,000 hosts</td></tr>
+    <tr><td class="meth rd">Sep 2016</td><td>Mirai vs OVH</td><td>~1.1 Tbps claimed, 145,000 devices</td></tr>
+    <tr><td class="meth rd">Sep 30 2016</td><td><strong>Mirai source released on Hackforums</strong> by "Anna-senpai"</td><td>The single most consequential act in DDoS history. Every major botnet since is a Mirai descendant</td></tr>
+    <tr><td class="meth rd">Oct 21 2016</td><td><strong>Dyn.</strong> Managed DNS provider. Twitter, Reddit, Spotify, Netflix, GitHub, PSN all unreachable in the US and Europe</td><td>~1.2 Tbps. The attack that proved you do not need to hit the target, you hit its DNS</td></tr>
+    <tr><td class="meth">Feb 2020</td><td>AWS, CLDAP reflection</td><td>2.3 Tbps</td></tr>
+    <tr><td class="meth">Sep 2021</td><td><strong>Meris.</strong> ~250,000 compromised MikroTik routers using HTTP pipelining</td><td>21.8 Mrps vs Yandex, 17.2 Mrps vs a Cloudflare customer. An L7 record, not a bandwidth one</td></tr>
+    <tr><td class="meth">Oct 2023</td><td><strong>HTTP/2 Rapid Reset, CVE-2023-44487</strong></td><td>Google 398 Mrps, Cloudflare 201 Mrps, AWS 155 Mrps. A protocol design flaw, exploitable from a few thousand nodes</td></tr>
+    <tr><td class="meth rd">Apr-Oct 2025</td><td>Records fall five times in seven months</td><td>6.5 Tbps (Apr) &rarr; 7.3 Tbps (May) &rarr; 11.5 Tbps (Sep 1) &rarr; <strong>22.2 Tbps / 10.6 Bpps</strong> (Sep 22) &rarr; 14.1 Bpps (Oct 7) &rarr; 29.7 Tbps (Oct 31)</td></tr>
+    <tr><td class="meth rd">Dec 19 2025</td><td><strong>Aisuru / Kimwolf, "The Night Before Christmas".</strong> Estimated 1-4 million hosts, heavily Android TV boxes. 902 hypervolumetric attacks over 18 days</td><td><strong>31.4 Tbps</strong> sustained for <em>35 seconds</em>, and 205 Mrps at L7</td></tr>
+    <tr><td class="meth rd">H1 2026</td><td>Cloudflare mitigates 935 attacks over 1 Tbps in six months, 805 of them in Q2 alone</td><td>The terabit attack stops being a news event and becomes a weather condition</td></tr>
+  </table>
+
+  <div class="info-box danger">
+    <strong>35 seconds</strong>
+    The 31.4 Tbps record lasted about as long as it takes to read this box. That duration is the defining operational fact of the current era. 90.6 percent of network-layer attacks now end inside ten minutes. Any defence involving a human decision, a phone call, a BGP announcement waiting on convergence, or a support ticket has already lost. Detection-to-mitigation has to be automatic and measured in seconds, which is precisely the SLA language every vendor now competes on.
+  </div>
+</section>
+<section id="timeline-eras" data-num="08" data-view="timeline">
+  <h2>The Shape of the <em class="cy">Curve</em></h2>
+  <div class="section-bar cy"></div>
+  <p>Read vertically, the history is not a story about bandwidth. It is a story about which scarce resource is cheapest to exhaust in a given decade.</p>
+
+  <pre class="diagram"> era          scarce resource               technique              defeated by
+ ---------------------------------------------------------------------------------
+ <span class="acc">1996-98</span>      <span class="hi">correctness</span>                  malformed packet       bounds checks
+             <span class="dim">one packet, one crash</span>         teardrop, PoD, land
+
+ <span class="acc">1997-99</span>      <span class="hi">routing defaults</span>             directed broadcast     BCP 34 (vendor flip)
+             <span class="dim">their bandwidth, not yours</span>    smurf, fraggle
+
+ <span class="acc">1999-05</span>      <span class="hi">host count</span>                   handler botnets        C2 takedown, ISP
+             <span class="dim">many small pipes</span>              trinoo, TFN, stachel   customer notification
+
+ <span class="acc">2006-12</span>      <span class="hi">political will</span>               hacktivism, RDoS       law enforcement,
+             <span class="dim">volunteers and extortion</span>      LOIC, Brobot           scrubbing contracts
+
+ <span class="acc">2013-18</span>      <span class="hi">open UDP services</span>            reflection / amp       protocol defaults,
+             <span class="dim">BAF as the whole game</span>          DNS, NTP, memcached    port filtering
+
+ <span class="acc">2016-24</span>      <span class="hi">unpatched devices</span>            IoT botnets            still unsolved
+             <span class="dim">free, always on, on fibre</span>     Mirai and descendants
+
+ <span class="acc">2023-26</span>      <span class="hi">protocol asymmetry</span>           state-cost bugs        spec revision, per-
+             <span class="dim">cheap to ask, dear to serve</span>   Rapid Reset, DNSBomb   connection accounting
+
+ <span class="acc">2025-26</span>      <span class="hi">TIME</span>                         35-second bursts       automation only
+             <span class="dim">under the human loop</span>           Aisuru-class
+</pre>
+
+  <div class="info-box">
+    <strong>Two things never changed</strong>
+    <strong>1.</strong> Source address spoofing is the enabling condition for every reflection attack ever built, and BCP 38 has been the answer since 2000. It is unevenly deployed because the cost falls on one network and the benefit lands on everyone else. It is a tragedy of the commons with an RFC number.<br>
+    <strong>2.</strong> Every attack is a statement about asymmetric cost. Find the request that is cheap to send and expensive to answer. Teardrop, Smurf, SYN flood, memcached, Slowloris, Rapid Reset and DNSBomb are all the same sentence in different grammar.
+  </div>
+</section><section id="vectors-taxonomy" data-num="01" data-view="vectors">
+  <h2>Taxonomy and the <em class="or">OSI Map</em></h2>
+  <div class="section-bar"></div>
+  <p>Three families. Everything else is a variation, a combination, or a delivery mechanism. The useful question for any vector is not "what layer" but <strong>which finite resource does this exhaust</strong>, because that determines where it can be stopped.</p>
+
+  <table>
+    <tr><th>Family</th><th>Exhausts</th><th>Measured in</th><th>Stopped where</th></tr>
+    <tr><td class="meth">Volumetric</td><td>Link capacity, transit bandwidth</td><td>bps (Gbps, Tbps)</td><td>Upstream only. You cannot filter a full pipe from behind the pipe</td></tr>
+    <tr><td class="meth cy">Protocol / state</td><td>Connection tables, session state, PPS forwarding budget, conntrack, firewall state</td><td>pps (Mpps, Bpps)</td><td>Edge devices, stateless proxies, SYN cookies</td></tr>
+    <tr><td class="meth yl">Application</td><td>CPU, database, origin worker pool, API quota, cache efficiency</td><td>rps (Mrps)</td><td>WAF, bot management, rate controls, origin design</td></tr>
+  </table>
+
+  <pre class="diagram"><span class="dim">where each vector lands</span>
+
+ L7  <span class="acc2">application</span>   HTTP flood, cache-bust, Slowloris, RUDY, Rapid Reset,
+                       Continuation flood, GraphQL depth, API scrape, login abuse,
+                       DNS water torture, heavy-query  .................. <span class="hi">rps, CPU</span>
+
+ L6  presentation   TLS handshake flood, renegotiation, expensive-cipher
+                       selection, certificate-chain abuse  ............... <span class="hi">crypto CPU</span>
+
+ L5  session        (largely folded into L4/L7 in practice)
+
+ L4  <span class="acc2">transport</span>     SYN, SYN-ACK reflection, ACK/PSH-ACK, RST, FIN,
+                       TCP middlebox reflection, UDP flood, QUIC init,
+                       amplification carrier for everything  ............ <span class="hi">pps, state</span>
+
+ L3  <span class="acc2">network</span>       ICMP flood, IP fragment flood, protocol-0 flood,
+                       IGMP, GRE flood, carpet bombing across a prefix ... <span class="hi">bps, pps</span>
+
+ L2  data link     (rare off-LAN: MAC flooding, STP abuse, ARP storm)
+ L1  physical      (out of scope, though "backhoe fade" remains undefeated)</pre>
+
+  <div class="info-box">
+    <strong>The bps / pps distinction matters more than the layer</strong>
+    A 100 Gbps flood of 1500-byte packets is roughly 8.3 Mpps. The same 100 Gbps in 64-byte packets is roughly 195 Mpps, over twenty times the packet rate. Most routers, firewalls and load balancers have a <em>packet</em> budget, not a byte budget, because every packet costs a lookup regardless of size. This is why small-packet floods take down boxes that are nowhere near their bandwidth limit, and why the pps figure in an attack report is often the more alarming number.
+  </div>
+</section>
+<section id="vectors-volumetric" data-num="02" data-view="vectors">
+  <h2>Volumetric <em class="rd">Floods</em></h2>
+  <div class="section-bar rd"></div>
+  <p>The brute-force family. No cleverness, only capacity. The defence is arithmetic: your absorbing capacity must exceed theirs, so this is the one category where the answer is genuinely "buy a bigger network".</p>
+
+  <table>
+    <tr><th>Vector</th><th>Mechanism</th><th>Notes</th></tr>
+    <tr><td class="meth rd">UDP flood</td><td>Random or fixed ports, arbitrary payload. No handshake, so no state to establish and nothing to validate</td><td>Still the highest-volume vector in existence. The 11.5 Tbps of Sep 2025 was a UDP flood. Victim host burns CPU generating ICMP port-unreachable replies unless told not to</td></tr>
+    <tr><td class="meth rd">ICMP flood</td><td>Echo request, or any ICMP type. "Ping flood"</td><td>Trivially filtered, but ICMP fragment floods still bypass naive filters</td></tr>
+    <tr><td class="meth rd">IP fragment flood</td><td>Fragments that never complete a datagram</td><td>Attacks the reassembly queue, not bandwidth. Fragments after the first carry no L4 header, so port-based ACLs cannot classify them</td></tr>
+    <tr><td class="meth rd">Protocol-0 / IP-null</td><td>IP packets with protocol field 0, 255, or an unassigned value</td><td>Often skips stateless ACLs written only for TCP/UDP/ICMP</td></tr>
+    <tr><td class="meth rd">GRE / IPIP flood</td><td>Encapsulated garbage</td><td>Common against providers who use GRE for their own scrubbing return path. Attacking the mitigation plumbing</td></tr>
+    <tr><td class="meth rd">Carpet bombing</td><td>Spread the flood across every address in a /22 or /21 instead of one host</td><td>No single destination crosses a per-IP detection threshold, but the aggregate saturates the uplink. Specifically defeats per-host baselining. Detection must be done on prefix aggregate</td></tr>
+    <tr><td class="meth rd">Pulse wave</td><td>Repeated short bursts at full amplitude, 10-60 seconds on, gap, repeat</td><td>Defeats systems that ramp mitigation gradually or that use on-demand scrubbing with a BGP diversion delay. By the time traffic is diverted the pulse is over and it re-lands on the clean path</td></tr>
+  </table>
+
+  <pre class="diagram"><span class="dim">pulse wave vs on-demand scrubbing: why "always on" exists</span>
+
+ attack   <span class="acc2">####</span>      <span class="acc2">####</span>      <span class="acc2">####</span>      <span class="acc2">####</span>      <span class="acc2">####</span>
+          ^         ^         ^         ^         ^
+ detect    <span class="dim">|</span>         <span class="dim">|</span>         <span class="dim">|</span>         <span class="dim">|</span>         <span class="dim">|</span>
+ divert     <span class="dim">\__ BGP ___\</span>                              <span class="dim">~40-90s convergence</span>
+ clean          <span class="acc">|||||||</span>                               <span class="dim">mitigation live HERE</span>
+                          <span class="hi">^ pulse already ended</span>
+                          <span class="hi">^ next pulse lands during withdraw</span>
+
+ <span class="acc">net effect: every pulse hits unprotected. always-on routing or</span>
+ <span class="acc">in-line scrubbing is the only structural answer.</span></pre>
+</section>
+<section id="vectors-reflection" data-num="03" data-view="vectors">
+  <h2>Reflection and <em class="yl">Amplification</em></h2>
+  <div class="section-bar yl"></div>
+  <p>Two separate properties that are almost always used together and almost always conflated.</p>
+
+  <div class="info-box cy">
+    <strong>Reflection</strong> is using a third party to deliver the traffic. It hides the origin and defeats source-based blocking, because the source addresses you see are legitimate servers.<br>
+    <strong>Amplification</strong> is the response being larger than the request. It multiplies the attacker's bandwidth.<br>
+    You can reflect without amplifying (SYN-ACK reflection, BAF ~1). You cannot amplify off a third party without reflecting. <strong>Both require source address spoofing</strong>, which is why BCP 38 is the root-cause fix for the entire category.
+  </div>
+
+  <pre class="diagram"><span class="dim">the generic reflection primitive</span>
+
+   <span class="acc">attacker</span>                <span class="acc2">reflector pool</span>              <span class="hi">victim</span>
+   (1 Gbps up)            (100k open UDP services)
+       |
+       |  spoofed query, src = VICTIM
+       |  small: 40-80 bytes
+       +--------------------&gt; [ ] [ ] [ ] [ ] [ ]
+                               |   |   |   |   |
+                               |   |   |   |   |   large responses, all
+                               |   |   |   |   |   legitimately sourced
+                               +---+---+---+---+---------------&gt; <span class="hi">|</span>
+                                                                 <span class="hi">|</span>
+   <span class="dim">1 Gbps x BAF 55 (DNS) = 55 Gbps at the victim</span>
+   <span class="dim">1 Gbps x BAF 557 (NTP monlist) = 557 Gbps</span>
+   <span class="dim">1 Gbps x BAF 10,000 (memcached) = mathematically absurd,</span>
+   <span class="dim">bounded only by the reflector's own uplink</span>
+
+ <span class="acc">key properties for the defender:</span>
+   - source IPs are REAL and often important (you cannot blanket-block DNS)
+   - traffic arrives from the correct source PORT for that service
+     (53, 123, 1900, 11211, 389). port-based filtering is the crude fix
+   - the victim never sees the attacker. attribution is near-impossible
+     without cooperation from the reflector operators</pre>
+
+  <h3 class="yl">Requirements for a new amplifier</h3>
+  <ul class="step-list">
+    <li><strong>Connectionless.</strong> UDP, or a protocol that answers before validating a return path. TCP amplification is hard because the handshake proves the source address.</li>
+    <li><strong>Response larger than request.</strong> Ideally by a lot, and ideally controllable by the requester.</li>
+    <li><strong>Deployed at scale on the public internet.</strong> A 10,000x amplifier on fifty hosts is a curiosity. A 4x amplifier on ten million hosts is a weapon.</li>
+    <li><strong>No rate limiting by default.</strong> RRL (Response Rate Limiting) on DNS servers was the single most effective mitigation ever shipped for this class.</li>
+  </ul>
+
+  <div class="info-box warn">
+    <strong>TCP amplification exists anyway</strong>
+    <strong>TCP Middlebox Reflection</strong> (USENIX 2021, Bock et al). Nation-scale censorship middleboxes and misconfigured firewalls respond to a single crafted TCP packet with a block page or an injected RST, without ever completing a handshake. Some respond with an <em>infinite</em> stream. Observed BAF exceeds 100x, with theoretical values in the millions from devices that ignore TCP state entirely. It broke the assumption that TCP is spoof-proof.
+  </div>
+</section>
+<section id="vectors-baf" data-num="04" data-view="vectors">
+  <h2>The <em class="yl">BAF</em> Table</h2>
+  <div class="section-bar yl"></div>
+  <p>Bandwidth Amplification Factor: response bytes divided by request bytes. PAF is the same ratio in packets. Values below are the published US-CERT TA14-013A figures where available, plus vectors discovered since. Treat them as order-of-magnitude, not as constants, since they vary with configuration and dataset.</p>
+
+  <table>
+    <tr><th>Protocol</th><th>Port</th><th>BAF</th><th>Note</th></tr>
+    <tr><td class="meth rd">memcached</td><td>11211/udp</td><td><strong>10,000 - 51,000</strong></td><td>Attacker pre-loads a large value, then GETs it. Highest ever recorded. Largely dead since the 1.5.6 default change</td></tr>
+    <tr><td class="meth rd">WS-Discovery</td><td>3702/udp</td><td>300 - 500</td><td>Found in the wild by Akamai in 2019. IP cameras, printers, DVRs. Still active</td></tr>
+    <tr><td class="meth rd">NTP <code>monlist</code></td><td>123/udp</td><td>556.9</td><td>Returns the last 600 clients. Removed in ntpd 4.2.7p26</td></tr>
+    <tr><td class="meth rd">CharGEN</td><td>19/udp</td><td>358.8</td><td>RFC 864, 1983. A service whose entire purpose is to emit an endless character stream</td></tr>
+    <tr><td class="meth">QOTD</td><td>17/udp</td><td>140.3</td><td>Quote of the day. Same 1983 vintage</td></tr>
+    <tr><td class="meth">RIPv1</td><td>520/udp</td><td>131.24</td><td>Whole routing table in response to one request</td></tr>
+    <tr><td class="meth">Jenkins UDP discovery</td><td>33848/udp</td><td>~100</td><td>CI servers exposed to the internet</td></tr>
+    <tr><td class="meth cy">TFTP</td><td>69/udp</td><td>~60</td><td>Retransmission behaviour makes it worse than the raw ratio suggests</td></tr>
+    <tr><td class="meth cy">CLDAP</td><td>389/udp</td><td>46 - 70</td><td>Connectionless LDAP. Exposed Active Directory. Carried the 2.3 Tbps AWS attack in 2020. Up 580 percent in Q2 2026 per Cloudflare</td></tr>
+    <tr><td class="meth cy">DNS</td><td>53/udp</td><td>28 - 54</td><td>ANY queries plus EDNS0 buffer sizes. DNSSEC-signed zones amplify harder because signatures are large</td></tr>
+    <tr><td class="meth cy">Apple ARMS / ARD</td><td>3283/udp</td><td>35.5</td><td>Apple Remote Desktop. Discovered 2019</td></tr>
+    <tr><td class="meth cy">Citrix / DTLS</td><td>443/udp</td><td>~35</td><td>CVE-2020-8004 era. Netscaler gateways</td></tr>
+    <tr><td class="meth">SSDP / UPnP</td><td>1900/udp</td><td>30.8</td><td>Consumer routers answering M-SEARCH from the WAN. Enormous device population is what makes it matter</td></tr>
+    <tr><td class="meth">Portmap / RPCbind</td><td>111/udp</td><td>7 - 28</td><td></td></tr>
+    <tr><td class="meth">CoAP</td><td>5683/udp</td><td>10 - 50</td><td>Constrained Application Protocol. Chinese mobile IoT population is the main reflector pool</td></tr>
+    <tr><td class="meth">Kad / BitTorrent DHT</td><td>varies</td><td>3.8 - 16.3</td><td>P2P networks make large, distributed, hard-to-filter reflector pools</td></tr>
+    <tr><td class="meth">mDNS</td><td>5353/udp</td><td>2 - 10</td><td>Should never leave the LAN, frequently does</td></tr>
+    <tr><td class="meth">NetBIOS</td><td>137/udp</td><td>3.8</td><td>Low ratio, vast population</td></tr>
+    <tr><td class="meth">SNMPv2 GetBulk</td><td>161/udp</td><td>6.3</td><td>Can be far higher against a device with a large MIB</td></tr>
+    <tr><td class="meth yl">TCP middlebox</td><td>any tcp</td><td>&gt;100, unbounded</td><td>Censorship infrastructure and stateless firewalls. Breaks the TCP-is-safe assumption</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>Reading the table correctly</strong>
+    BAF alone does not rank threat. <strong>Threat = BAF x reflector population x uplink per reflector.</strong> memcached's 51,000x mattered for about three weeks because only 100,000 instances existed and they got filtered. SSDP's mere 30x has produced years of sustained attack traffic because there are tens of millions of consumer routers and nobody patches them. CLDAP is the current problem case because Active Directory is everywhere and exposing 389/udp is a common misconfiguration in cloud-hosted domain controllers.
+  </div>
+</section>
+<section id="vectors-state" data-num="05" data-view="vectors">
+  <h2>Protocol and <em class="cy">State Exhaustion</em></h2>
+  <div class="section-bar cy"></div>
+  <p>Attacks on the defender's <em>memory</em> rather than the defender's bandwidth. The target is any table with a finite number of rows: the SYN backlog, the conntrack table, the firewall session table, the load balancer's connection pool, the TLS session cache.</p>
+
+  <pre class="diagram"><span class="dim">SYN flood: the half-open state machine, 1996 to today</span>
+
+   attacker                                        server
+      |                                               |
+      |------------ SYN (spoofed src) --------------&gt;|
+      |                                               | <span class="acc2">allocate TCB</span>
+      |                                               | <span class="acc2">enqueue in backlog</span>
+      |&lt;----------- SYN-ACK ------------------------- | <span class="dim">sent to the forged src,</span>
+      |                                               | <span class="dim">which never answers</span>
+      |               <span class="hi">(nothing)</span>                       |
+      |                                               | <span class="acc2">retransmit SYN-ACK</span>
+      |                                               | <span class="acc2">5 times over ~75s</span>
+      |                                               | <span class="acc2">entry held the whole time</span>
+
+  <span class="dim">backlog of 1024 entries, 75s timeout:</span>
+  <span class="dim">~14 SYN/sec saturates it. a modem could do this in 1996.</span>
+
+  <span class="acc">SYN COOKIES (Bernstein / Schenk, 1996) - the fix</span>
+  encode the connection state INTO the initial sequence number:
+
+    ISN = <span class="kw">hash</span>( src_ip, src_port, dst_ip, dst_port, <span class="acc">secret</span>, t ) || t || mss_idx
+           <span class="dim">\_____________ 24 bits ______________/  5b  3b</span>
+
+  server allocates NOTHING. if the ACK comes back, ISN-1 reconstructs
+  the state. <span class="acc">zero memory per half-open connection.</span>
+  cost: MSS is quantised to 8 values, and TCP options (window scaling,
+  SACK, timestamps) are lost unless timestamps carry them. this is why
+  cookies are usually enabled only under pressure, not always-on.</pre>
+
+  <table>
+    <tr><th>Vector</th><th>Target resource</th><th>Note</th></tr>
+    <tr><td class="meth cy">SYN flood</td><td>Backlog queue, TCB memory</td><td>Still the most common L4 vector by count. Trivially spoofable</td></tr>
+    <tr><td class="meth cy">SYN-ACK reflection</td><td>Victim's inbound pipe</td><td>Spoof victim's address in SYNs to thousands of real servers. Their SYN-ACKs (and retransmits, 5 per SYN) hit the victim. BAF is low but the reflectors are every listening TCP port on the internet</td></tr>
+    <tr><td class="meth cy">ACK / PSH-ACK flood</td><td>Stateful firewall lookup budget</td><td>Packets belonging to no session. Each one forces a full state-table lookup and miss. Cheap to send, expensive to reject. Deadly to stateful middleboxes, harmless to stateless proxies</td></tr>
+    <tr><td class="meth cy">RST / FIN flood</td><td>Same</td><td>Plus a chance of tearing down real sessions if sequence numbers are guessable</td></tr>
+    <tr><td class="meth cy">Fragmented ACK</td><td>Reassembly plus state lookup</td><td>Combines two costs. Passes ACLs that only classify on L4 headers the fragments do not carry</td></tr>
+    <tr><td class="meth cy">Connection exhaustion</td><td>Concurrent connection limit</td><td>Complete real handshakes, then idle. Defeats SYN cookies entirely, because the connections are legitimate</td></tr>
+    <tr><td class="meth cy">TLS handshake flood</td><td>Asymmetric crypto CPU</td><td>A ClientHello is cheap. The server's key exchange is not. RSA decrypt vs the client's cheap encrypt is the classic asymmetry, roughly 10-15x in the attacker's favour</td></tr>
+    <tr><td class="meth cy">TLS renegotiation</td><td>Same, amplified</td><td>One connection, endless renegotiations. Mostly closed by disabling client-initiated renegotiation (RFC 5746 era)</td></tr>
+    <tr><td class="meth cy">QUIC Initial flood</td><td>Crypto state, address validation</td><td>QUIC anticipated this: <strong>Retry packets</strong> and address-validation tokens are structurally SYN cookies for QUIC. The amplification limit in RFC 9000 caps a server at 3x the bytes received before validating the path</td></tr>
+  </table>
+</section>
+<section id="vectors-malform" data-num="06" data-view="vectors">
+  <h2>Malformed, Looping, <em class="rd">Recursive</em></h2>
+  <div class="section-bar rd"></div>
+  <p>The descendants of teardrop. These exploit implementation and specification errors rather than capacity, which makes them dangerous out of proportion to the traffic involved: a few thousand packets per second can take a host down.</p>
+
+  <table>
+    <tr><th>Attack</th><th>Year</th><th>Mechanism</th></tr>
+    <tr><td class="meth rd">FragmentSmack</td><td>2018</td><td>CVE-2018-5391. Teardrop's logic against the reassembly queue's linear scan. 8 Kpps of fragments pinned Linux CPU</td></tr>
+    <tr><td class="meth rd">SegmentSmack</td><td>2018</td><td>CVE-2018-5390. TCP segments crafted so every one lands out of order, forcing worst-case behaviour in the reorder queue</td></tr>
+    <tr><td class="meth rd">Loop DoS</td><td>2024</td><td>CISPA research. Pair two UDP services that each answer errors with errors. Spoof one as the other. They exchange packets <em>forever</em> with no attacker involvement. ~300,000 hosts affected across DNS, NTP, TFTP, chargen, QOTD. A single spoofed packet creates a permanent traffic loop</td></tr>
+    <tr><td class="meth rd">DNSBomb</td><td>2024</td><td>Weaponises DNS's own timeout, aggregation and response batching. Slow-drip queries accumulate at a resolver and are released as a single concentrated pulse. Measured BAF exceeds 20,000x and it is a <em>pulsing</em> attack by construction</td></tr>
+    <tr><td class="meth rd">Zip bomb / XML bomb</td><td>various</td><td>Billion laughs, nested entity expansion, decompression bombs. L7 equivalent: a small upload that costs gigabytes to process</td></tr>
+    <tr><td class="meth rd">Algorithmic complexity</td><td>2003 onward</td><td>Crosby and Wallach. Craft inputs that force worst case in a hash table or regex. Hash-collision DoS hit every major web framework in 2011. <strong>ReDoS</strong> (catastrophic backtracking) is still one of the most common single-request DoS bugs in production code</td></tr>
+  </table>
+
+  <pre class="diagram"><span class="dim">Loop DoS, 2024 - one packet, permanent traffic</span>
+
+  <span class="acc">attacker sends ONE spoofed packet, then leaves</span>
+
+    src = <span class="acc2">Server B</span>  dst = <span class="acc2">Server A</span>   payload = malformed
+                    |
+                    v
+   [ Server A ] --- error response ---&gt; [ Server B ]
+        ^                                     |
+        |                                     | B considers A's error
+        +------- error response --------------+ malformed too, replies
+                                                with its own error
+
+  <span class="hi">A and B now flood each other until one is restarted.</span>
+  <span class="dim">attacker cost: 1 packet. duration: unbounded.</span>
+  <span class="dim">affected: legacy DNS/NTP/TFTP/chargen/QOTD implementations, ~300k hosts</span></pre>
+</section>
+<section id="vectors-layer7" data-num="07" data-view="vectors">
+  <h2>Application <em class="or">Layer</em></h2>
+  <div class="section-bar"></div>
+  <p>Where the modern fight actually is. L7 attacks have grown 104 percent in two years per Akamai. The traffic volume is small, the requests are individually valid, and the cost lands on your origin, your database, and your cloud bill.</p>
+
+  <table>
+    <tr><th>Vector</th><th>Mechanism</th><th>Why it works</th></tr>
+    <tr><td class="meth">HTTP GET/POST flood</td><td>High-rate valid requests</td><td>Every request is legal. Distinguishing it from a traffic spike requires behaviour, not signature</td></tr>
+    <tr><td class="meth">Cache-busting</td><td>Append random query strings, or request unique paths, so nothing is cacheable</td><td>Turns your CDN from a shield into a <em>proxy</em>. 100 percent cache miss means 100 percent origin load. One of the highest-leverage L7 techniques</td></tr>
+    <tr><td class="meth">Heavy query / "expensive endpoint"</td><td>Target search, filter, report, export, or any uncached path with a join behind it</td><td>Attacker cost: one HTTP request. Defender cost: a table scan. Asymmetry of thousands to one</td></tr>
+    <tr><td class="meth yl">HTTP/2 Rapid Reset</td><td>Open a stream, immediately send RST_STREAM, repeat. Cancelled streams do not count against MAX_CONCURRENT_STREAMS</td><td>CVE-2023-44487. The client cancels before the server finishes, so the server does all the work and the concurrency limit never engages. 398 Mrps from a botnet of ~20,000 nodes</td></tr>
+    <tr><td class="meth yl">HTTP/2 Continuation flood</td><td>Endless CONTINUATION frames, never setting END_HEADERS</td><td>2024. Server buffers header fragments indefinitely. Many implementations did not count them, so it did not even appear in logs</td></tr>
+    <tr><td class="meth yl">HPACK / header bombs</td><td>Compressed header state abuse, oversized dynamic tables</td><td>Decompression cost asymmetry, the HTTP/2 analogue of a zip bomb</td></tr>
+    <tr><td class="meth">GraphQL depth / batching</td><td>Deeply nested or aliased query, or thousands of operations in one batched POST</td><td>One request, arbitrary server-side work. Depth limiting and query cost analysis are mandatory, not optional</td></tr>
+    <tr><td class="meth">API and credential abuse</td><td>Login attempts, token mint, password reset, OTP send, checkout</td><td>Each one triggers a database write, an email, or an SMS that <em>you pay for</em>. Financial DoS rather than availability DoS</td></tr>
+    <tr><td class="meth">Web scraping at scale</td><td>Aggressive crawling, increasingly by AI training and agent traffic</td><td>Often not intended as an attack. Indistinguishable from one at the origin. Now a major share of "DDoS" incidents by volume</td></tr>
+  </table>
+
+  <pre class="diagram"><span class="dim">HTTP/2 Rapid Reset - why the concurrency limit fails to bite</span>
+
+ normal HTTP/2, MAX_CONCURRENT_STREAMS = 100
+
+   client                                server
+     |-- HEADERS (stream 1) ------------&gt;| <span class="dim">[ 1 ]  in flight: 1</span>
+     |-- HEADERS (stream 3) ------------&gt;| <span class="dim">[ 2 ]  in flight: 2</span>
+     |            ...                     | <span class="dim">... blocked at 100</span>
+     |&lt;- DATA (stream 1) -----------------| <span class="dim">slot freed</span>
+
+ rapid reset
+
+     |-- HEADERS (stream 1) ------------&gt;| <span class="acc2">server begins work, proxies to origin</span>
+     |-- RST_STREAM (stream 1) ---------&gt;| <span class="hi">slot freed IMMEDIATELY</span>
+     |-- HEADERS (stream 3) ------------&gt;| <span class="acc2">server begins work</span>
+     |-- RST_STREAM (stream 3) ---------&gt;| <span class="hi">slot freed</span>
+     |            ...                     |
+     |   <span class="acc">thousands of streams per connection per second</span>
+     |   <span class="acc">in-flight counter never exceeds 1</span>
+
+ <span class="dim">the limit counts OPEN streams. the cost is incurred by STARTED streams.</span>
+ <span class="dim">fix: count resets, not just concurrency. budget RST per connection and</span>
+ <span class="dim">close the connection (GOAWAY) when the ratio goes wrong.</span></pre>
+</section>
+<section id="vectors-slow" data-num="08" data-view="vectors">
+  <h2>Low-and-<em class="cy">Slow</em></h2>
+  <div class="section-bar cy"></div>
+  <p>The inverse strategy: instead of overwhelming with volume, hold resources hostage with almost none. A single laptop can take down an unprotected Apache prefork instance. Detection by traffic threshold fails completely, because the traffic is below noise.</p>
+
+  <table>
+    <tr><th>Attack</th><th>Holds open by</th><th>Kills</th></tr>
+    <tr><td class="meth cy">Slowloris</td><td>Sending partial HTTP headers, one line every ~15 seconds, never sending the final CRLF</td><td>Thread-per-connection servers: Apache prefork/worker, older Tomcat. Nginx and event-driven servers largely immune</td></tr>
+    <tr><td class="meth cy">RUDY (R-U-Dead-Yet)</td><td>POST with a huge Content-Length, body delivered one byte at a time</td><td>Same targets. Attacks the request-body read instead of the header read</td></tr>
+    <tr><td class="meth cy">Slow Read</td><td>Request normally, then advertise a TCP window of a few bytes and drain the response glacially</td><td>Server's send buffers and worker slots. Harder to detect because the request itself is perfectly normal</td></tr>
+    <tr><td class="meth cy">Sockstress</td><td>Complete the handshake, then set window to zero. Server holds the connection open with data queued</td><td>Connection table. 2008, Outpost24. Works at L4, protocol-agnostic</td></tr>
+  </table>
+
+  <pre class="diagram"><span class="dim">Slowloris: ~200 sockets, ~1 packet every 15 seconds each</span>
+
+  t=0      GET /index.html HTTP/1.1<span class="acc2">\r\n</span>
+           Host: target<span class="acc2">\r\n</span>
+  t=15s    X-a: b<span class="acc2">\r\n</span>                <span class="dim">&lt;- one junk header keeps it alive</span>
+  t=30s    X-c: d<span class="acc2">\r\n</span>
+  t=45s    X-e: f<span class="acc2">\r\n</span>
+           ...                       <span class="hi">the final \r\n is NEVER sent</span>
+
+  <span class="dim">the request is never complete, so the worker cannot be released.</span>
+  <span class="dim">bandwidth used: a few hundred bytes per minute per connection.</span>
+
+  <span class="acc">defences: request read timeout (Apache mod_reqtimeout), a hard cap on</span>
+  <span class="acc">time-to-first-complete-request, per-IP connection limits, and above all</span>
+  <span class="acc">an event-driven front end that does not bind a thread per socket. any</span>
+  <span class="acc">full reverse proxy in front of the origin ends this class outright,</span>
+  <span class="acc">because the proxy only opens an upstream connection once the request</span>
+  <span class="acc">is complete.</span></pre>
+</section>
+<section id="vectors-dns" data-num="09" data-view="vectors">
+  <h2>DNS as <em class="rd">Target</em>, Not Carrier</h2>
+  <div class="section-bar rd"></div>
+  <p>DNS was 34.3 percent of all network-layer attacks in H1 2026 and DNS floods rose from 25.7 to 40.0 percent quarter on quarter. Worth separating carefully: DNS is used both as an <em>amplifier</em> (covered above) and as the <em>victim</em>, and the second case is the one that takes whole platforms offline, as Dyn demonstrated.</p>
+
+  <table>
+    <tr><th>Attack</th><th>Mechanism</th><th>Why it is nasty</th></tr>
+    <tr><td class="meth rd">DNS water torture / NXDOMAIN</td><td>Query <code>&lt;random&gt;.victim.com</code>. Each label is unique</td><td>Nothing is cacheable, so every query must reach the authoritative server. The recursive resolvers do the attacking <em>for</em> the attacker, and you cannot block them because they are your users' resolvers. Cache poisoning of the negative cache compounds it</td></tr>
+    <tr><td class="meth rd">Phantom domain</td><td>Point queries at domains whose nameservers are slow or dead</td><td>Fills the resolver's outstanding-query table with entries waiting on timeouts</td></tr>
+    <tr><td class="meth rd">Random subdomain via botnet</td><td>Same as water torture but sourced from devices inside ISP networks</td><td>Collapses the ISP's own recursive resolvers as collateral. The ISP's other customers lose DNS for everything</td></tr>
+    <tr><td class="meth rd">DNS flood (direct)</td><td>High-rate valid queries straight at the authoritative servers</td><td>Pure pps. Now the single largest network-layer category</td></tr>
+    <tr><td class="meth">DNSSEC response bloat</td><td>Query a signed zone with a large RRSIG/DNSKEY set</td><td>Security feature as amplification feature. A signed ANY response can be several kilobytes</td></tr>
+    <tr><td class="meth">Dangling CNAME / subdomain takeover</td><td>Not DoS, but flagged in Akamai's 2026 SOTI as an underlying condition behind incidents</td><td>A CNAME pointing at a deprovisioned cloud resource that an attacker can claim</td></tr>
+  </table>
+
+  <div class="info-box danger">
+    <strong>The Dyn lesson</strong>
+    You can have perfect DDoS protection on your web tier and still be completely offline, because your name does not resolve. DNS is a single point of failure that most architecture reviews treat as a utility. The mitigations are structural: <strong>two independent DNS providers</strong> on separate anycast networks, sensible TTLs (long enough to ride out an outage, short enough to fail over), and a check on whether your secondary is genuinely independent or resells the same backend.
+  </div>
+</section>
+<section id="vectors-shape" data-num="10" data-view="vectors">
+  <h2>Shaping Tactics and <em class="yl">Multi-Vector</em></h2>
+  <div class="section-bar yl"></div>
+  <p>Modern attacks are rarely one vector. The operational pattern is a campaign: probe the defence, observe what is filtered, rotate. Akamai's 2026 framing calls this the industrialisation of attack campaigns, with DDoS run alongside API abuse and credential attacks rather than in isolation.</p>
+
+  <table>
+    <tr><th>Tactic</th><th>What it defeats</th></tr>
+    <tr><td class="meth yl">Multi-vector rotation</td><td>Any single-signature mitigation. Cycle UDP flood, then SYN, then CLDAP reflection, then HTTP flood, every few minutes</td></tr>
+    <tr><td class="meth yl">Carpet bombing</td><td>Per-destination-IP thresholds. Spread across a prefix so no host trips a trigger</td></tr>
+    <tr><td class="meth yl">Pulse wave</td><td>On-demand diversion, gradual mitigation ramps, human escalation paths</td></tr>
+    <tr><td class="meth yl">Smokescreen</td><td>Analyst attention and log signal-to-noise. A volumetric flood run concurrently with data exfiltration or an intrusion</td></tr>
+    <tr><td class="meth yl">Hit-and-run / degradation</td><td>SLA measurement. Stay just under the threshold that triggers mitigation, forever. The site is slow, never down, and nothing fires</td></tr>
+    <tr><td class="meth yl">Ransom DDoS (RDoS)</td><td>Nothing technical. A short demonstration attack plus a payment demand, often impersonating a known group</td></tr>
+    <tr><td class="meth yl">Attacking the mitigation path</td><td>GRE tunnel floods against the scrubbing return path, or attacking the origin IP directly once it leaks via DNS history, mail headers, or a stray certificate transparency entry</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>Origin IP leakage is the most common real-world bypass</strong>
+    None of the CDN's protection applies if the attacker can reach your origin directly. Leaks come from historical DNS records (SecurityTrails, DNSDumpster), mail server headers, certificate transparency logs, a <code>dev.</code> or <code>staging.</code> host on the same box, an unproxied subdomain, or an outbound connection from the origin that reveals its address. The fix is a firewall that accepts inbound only from the CDN's published ranges, plus an origin address that has never appeared in public DNS.
+  </div>
+</section><section id="casebook-records" data-num="01" data-view="casebook">
+  <h2>The Record <em class="or">Ladder</em></h2>
+  <div class="section-bar"></div>
+  <p>Volumetric records, chronologically. Note that bps and rps records are separate competitions measuring different things, and that the reported figure is always "largest <em>mitigated</em> by a vendor who publishes", which is not the same as "largest".</p>
+
+  <h3>Bandwidth (bps)</h3>
+  <table>
+    <tr><th>Date</th><th>Peak</th><th>Vector</th><th>Reported by</th></tr>
+    <tr><td class="meth">Mar 2013</td><td>120 Gbps measured<br><span style="opacity:.7">300 Gbps secondhand</span></td><td>DNS amplification</td><td>CloudFlare (Spamhaus)</td></tr>
+    <tr><td class="meth">Feb 2014</td><td>~400 Gbps</td><td>NTP monlist</td><td>CloudFlare</td></tr>
+    <tr><td class="meth">Sep 2016</td><td>623 Gbps / ~1.1 Tbps</td><td>Mirai. No reflection</td><td>Akamai (Krebs) / OVH</td></tr>
+    <tr><td class="meth cy">Feb 28 2018</td><td><strong>1.35 Tbps</strong>, 126.9 Mpps</td><td>memcached</td><td>Akamai Prolexic (GitHub)</td></tr>
+    <tr><td class="meth">Mar 2018</td><td>1.7 Tbps</td><td>memcached</td><td>NETSCOUT Arbor</td></tr>
+    <tr><td class="meth">Feb 2020</td><td>2.3 Tbps</td><td>CLDAP reflection</td><td>AWS Shield</td></tr>
+    <tr><td class="meth">Nov 2021</td><td>3.47 Tbps, 340 Mpps</td><td>UDP, ~10k sources</td><td>Microsoft Azure</td></tr>
+    <tr><td class="meth">Oct 2022</td><td>2.5 Tbps</td><td>Mirai variant, ~2 minutes</td><td>Cloudflare (Wynncraft Minecraft)</td></tr>
+    <tr><td class="meth">Sep-Oct 2024</td><td>3.8 Tbps, 2.14 Bpps</td><td>UDP, 65 seconds. 100+ attack campaign</td><td>Cloudflare</td></tr>
+    <tr><td class="meth">Oct 2024</td><td>5.6 Tbps</td><td>Mirai variant, 13k devices</td><td>Cloudflare</td></tr>
+    <tr><td class="meth">Apr 2025</td><td>6.5 Tbps, 4.8 Bpps</td><td>35-45s, hosting provider, 147 countries</td><td>Cloudflare</td></tr>
+    <tr><td class="meth">12 May 2025</td><td>6.3 Tbps</td><td>Aisuru, ~45s at ~585 Mpps. <strong>Not a Cloudflare mitigation</strong></td><td>Google Project Shield (KrebsOnSecurity)</td></tr>
+    <tr><td class="meth">Mid-May 2025</td><td>7.3 Tbps</td><td>UDP flood. 37.4 TB in 45 seconds, 122,145 source IPs</td><td>Cloudflare</td></tr>
+    <tr><td class="meth">1 Sep 2025</td><td>11.5 Tbps, 5.1 Bpps</td><td>UDP. Initial "mainly Google Cloud" attribution publicly corrected within 24h</td><td>Cloudflare</td></tr>
+    <tr><td class="meth rd">22 Sep 2025</td><td><strong>22.2 Tbps, 10.6 Bpps</strong></td><td>40 seconds</td><td>Cloudflare</td></tr>
+    <tr><td class="meth rd">7 and 31 Oct 2025</td><td>14.1 Bpps, then 29.7 Tbps</td><td>Aisuru. UDP carpet bombing, ~15,000 dest ports/sec</td><td>Cloudflare</td></tr>
+    <tr><td class="meth rd">From 19 Dec 2025</td><td><strong>31.4 Tbps</strong>, 205 Mrps</td><td>Aisuru / Kimwolf, 1-4M hosts, heavily Android TV boxes. <em>35 seconds</em>. 902 hypervolumetric attacks in 18 days</td><td>Cloudflare</td></tr>
+  </table>
+
+  <h3 class="cy">Request rate (rps) and packet rate (pps)</h3>
+  <table>
+    <tr><th>Date</th><th>Peak</th><th>Note</th></tr>
+    <tr><td class="meth cy">21 Jun 2020</td><td><strong>809 Mpps</strong></td><td>Akamai, European bank. 1-byte payloads, 29 bytes total. Under 10 minutes, peaking in ~120 seconds</td></tr>
+    <tr><td class="meth cy">21 Jul / 12 Sep 2022</td><td>659.6 then 704.8 Mpps</td><td>Akamai, the same Eastern European customer, eight weeks apart</td></tr>
+    <tr><td class="meth cy">Feb 2023</td><td>900.1 Gbps, 158.2 Mpps</td><td>Akamai, APAC customer</td></tr>
+    <tr><td class="meth cy">Aug 2021</td><td>17.2 Mrps</td><td>Meris, Cloudflare customer</td></tr>
+    <tr><td class="meth cy">Sep 2021</td><td>21.8 Mrps</td><td>Meris vs Yandex, ~250k MikroTik routers</td></tr>
+    <tr><td class="meth cy">Jun 2022</td><td>26 Mrps</td><td>Cloudflare, over HTTPS, from only 5,067 devices</td></tr>
+    <tr><td class="meth cy">Feb 2023</td><td>71 Mrps</td><td>Cloudflare</td></tr>
+    <tr><td class="meth rd">Aug-Oct 2023</td><td><strong>398 Mrps</strong></td><td>Google, HTTP/2 Rapid Reset. Cloudflare 201 Mrps, AWS 155 Mrps in the same campaign</td></tr>
+    <tr><td class="meth rd">Dec 2025</td><td>205 Mrps</td><td>Aisuru-Kimwolf "Night Before Christmas" campaign</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>Context for the current numbers</strong>
+    H1 2026: Cloudflare alone mitigated 23.2 million network-layer attacks and 29.64 trillion HTTP DDoS requests, with 935 attacks exceeding 1 Tbps. Meanwhile 96.62 percent of network-layer attacks stayed under 500 Mbps and 90.60 percent finished inside ten minutes. Both facts are true at once, and the operational consequence is that your defence has to handle a long tail of small nuisance attacks automatically while surviving an occasional event three orders of magnitude larger.
+  </div>
+</section>
+<section id="casebook-panix" data-num="02" data-view="casebook">
+  <h2>Panix, September 1996: <em class="cy">The Protocol Bill Comes Due</em></h2>
+  <div class="section-bar cy"></div>
+  <p>6 September 1996. Public Access Networks Corporation, one of the oldest ISPs in New York, is knocked off the internet by a sustained SYN flood reported at <strong>150 to 210 packets per second</strong>. That rate is almost embarrassing by modern standards. It worked because the TCP backlog was small and the timeout was long.</p>
+
+  <table>
+    <tr><th>Detail</th><th>Value</th></tr>
+    <tr><td class="meth cy">Rate</td><td>150-210 SYN/sec, spoofed source addresses, randomised</td></tr>
+    <tr><td class="meth cy">Effect</td><td>Mail and news servers unreachable. Panix staff fought it around the clock for weeks before it stopped</td></tr>
+    <tr><td class="meth cy">Published in</td><td><em>Phrack</em> 48 and <em>2600</em>, weeks earlier. The attack followed the publication almost immediately</td></tr>
+    <tr><td class="meth cy">Direct outcome</td><td>SYN cookies, invented independently by Dan Bernstein and Eric Schenk in September 1996. Shipped in Linux 2.1.44 and FreeBSD. RFC 4987 documents the whole class in 2007</td></tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>Why this case is still taught</strong>
+    It is the cleanest example of a <em>design</em> vulnerability rather than a bug. Nothing was malformed, nothing was overflowing, no implementation was wrong. TCP's three-way handshake requires the server to commit memory before the client has proved it exists. The fix, encoding the state in the sequence number so the server commits nothing, is the pattern that QUIC's Retry tokens and DNS cookies both copy. When you see "stateless challenge" in any modern protocol spec, you are looking at Panix's descendants.
+  </div>
+</section>
+<section id="casebook-mafiaboy" data-num="03" data-view="casebook">
+  <h2>MafiaBoy, February 2000: <em class="or">Project Rivolta</em></h2>
+  <div class="section-bar"></div>
+  <p>Michael Calce, a 15-year-old in Montreal, uses a network of compromised university machines (mostly at UCSB and other institutions with fat, unmonitored pipes) to take down the biggest sites on the web over roughly a week.</p>
+
+  <ul class="step-list">
+    <li><strong>Feb 7:</strong> Yahoo, then the most-trafficked site on the internet, offline for about an hour under an estimated 1 Gbps. That figure was roughly the entire capacity of a large site at the time.</li>
+    <li><strong>Feb 8:</strong> Buy.com (on its IPO day), eBay, CNN, Amazon.</li>
+    <li><strong>Feb 9:</strong> E-Trade, ZDNet.</li>
+    <li><strong>Caught</strong> because he named the targets in an IRC channel under surveillance. Sentenced in Sep 2001 to eight months open custody as a minor.</li>
+  </ul>
+
+  <div class="info-box">
+    <strong>What actually changed</strong>
+    The commonly-quoted 1.2 billion USD damage figure was never substantiated and is best treated as folklore. The real consequences were institutional: a White House cybersecurity summit convened within days, the FBI's NIPC got significant attention and budget, and DDoS moved from a hacker-scene curiosity to a board-level risk. Every commercial scrubbing business traces its market to this week. The attack tooling was <em>trinoo and TFN, downloaded, not written</em>. The skill floor was already near zero in 2000.
+  </div>
+</section>
+<section id="casebook-estonia" data-num="04" data-view="casebook">
+  <h2>Estonia, April 2007: <em class="rd">DDoS as Statecraft</em></h2>
+  <div class="section-bar rd"></div>
+  <p>Following the relocation of the Bronze Soldier Soviet war memorial from central Tallinn, Estonia, then the most digitally-dependent state in Europe, absorbs three weeks of coordinated attacks.</p>
+
+  <table>
+    <tr><th>Phase</th><th>Dates</th><th>Character</th></tr>
+    <tr><td class="meth rd">Emotional response</td><td>Apr 27 - 29</td><td>Unsophisticated. Ping floods, forum-coordinated manual attacks, defacements. Instructions circulated on Russian-language forums in copy-paste form</td></tr>
+    <tr><td class="meth rd">Coordinated</td><td>Apr 30 - May 18</td><td>Rented botnets. Waves timed to symbolic dates, notably May 9, Victory Day. Arbor Networks (Jose Nazario) counted <strong>128 distinct DDoS attacks</strong> over the period: 115 ICMP floods, 4 TCP SYN floods, 9 generic traffic floods. Ten of them ran at roughly <strong>90 Mbps for ten hours</strong> each</td></tr>
+  </table>
+
+  <p>Targets: parliament, the presidency, ministries, the two largest banks (Hansabank and SEB Eesti), the two largest newspapers, and the country's DNS infrastructure. Estonia's response, disconnecting international traffic to preserve domestic service, worked but meant self-imposed isolation.</p>
+
+  <div class="info-box danger">
+    <strong>The consequence that outlived the attack</strong>
+    Estonia formally raised the possibility of invoking NATO Article 5. The alliance declined, but the question could not be un-asked. The NATO Cooperative Cyber Defence Centre of Excellence was established in Tallinn in 2008 and produced the <em>Tallinn Manual</em>, the first serious attempt to map international law onto cyber operations. By modern standards 90 Mbps is a rounding error. The significance was never the bandwidth: it was that a sovereign state's essential services could be suspended by an unattributable actor at negligible cost, with no doctrine for what that was.
+  </div>
+</section>
+<section id="casebook-spamhaus" data-num="05" data-view="casebook">
+  <h2>Spamhaus 2013, <em class="yl">GitHub 2018</em></h2>
+  <div class="section-bar yl"></div>
+
+  <h3 class="yl">Spamhaus, March 2013</h3>
+  <p>Spamhaus blacklists Cyberbunker, a Dutch hosting provider operating out of a literal former NATO bunker. Cyberbunker's response is a DNS amplification attack running 18 to 23 March, using ANY queries for <code>ripe.net</code> that return about 3 KB from a 36-byte request.</p>
+  <div class="info-box warn">
+    <strong>The famous number is secondhand</strong>
+    Cloudflare's own instrumented figures were ~10 Gbps on 18 March, ~90 Gbps on 19 March and <strong>120 Gbps</strong> on 22 March. The 300 Gbps that everyone quotes is Cloudflare <em>relaying what one Tier 1 provider said it saw at an exchange</em>, not a Cloudflare measurement. Contemporary reporting challenged both the figure and the framing. Sven Olaf Kamphuis was arrested near Barcelona on 25 April 2013 and later convicted in the Netherlands.
+  </div>
+  <ul class="step-list">
+    <li>The Open Resolver Project counted <strong>21.7 million open resolvers</strong> at the time.</li>
+    <li>When CloudFlare absorbed it at the edge, the attackers moved <em>upstream</em>, targeting CloudFlare's transit providers and then the LINX internet exchange fabric itself.</li>
+    <li>The "almost broke the internet" headline was overblown, and engineers at the exchanges said so at the time. The genuinely novel element was escalating to the <em>interconnect</em> when the target itself proved unreachable.</li>
+  </ul>
+
+  <h3 class="yl">GitHub, 28 February 2018</h3>
+  <p>17:21 UTC. GitHub goes from normal traffic to 1.35 Tbps and 126.9 Mpps in <strong>under a minute</strong>, with no botnet involved at all.</p>
+  <pre class="diagram"> 17:21:00  attack begins            <span class="dim">0 -&gt; 1.35 Tbps in seconds</span>
+ 17:26:00  GitHub moves traffic to Akamai Prolexic via BGP
+ 17:30:00  <span class="acc">mitigation effective</span>
+ ~17:34    second, smaller peak at 400 Gbps
+ 17:39:00  <span class="acc">attack over. total downtime: intermittent, under 10 minutes</span>
+
+ <span class="dim">the attack used ~1,000 autonomous systems and tens of thousands of</span>
+ <span class="dim">unique endpoints, but NOT a botnet. every packet came from a</span>
+ <span class="dim">legitimate, misconfigured memcached server answering a forged query.</span></pre>
+
+  <div class="info-box">
+    <strong>Why it is the cleanest teaching case in the catalogue</strong>
+    It isolates every variable. The attacker needed no malware, no compromised hosts, and almost no bandwidth: the amplification did all the work. The defence needed no cleverness, only capacity and a fast automated BGP failover to a network with more of it. And the vector was permanently closed within weeks by a <em>default configuration change</em> upstream plus port filtering by transit providers. Prevention, absorption and eradication are all visible in one incident.
+  </div>
+</section>
+<section id="casebook-mirai" data-num="06" data-view="casebook">
+  <h2>Mirai and <em class="rd">Dyn</em>, 2016</h2>
+  <div class="section-bar rd"></div>
+  <p>Written by Paras Jha, Josiah White and Dalton Norman. The original commercial motive was Minecraft server protection racketeering, which is worth saying out loud because it is a better illustration of the economics than any threat report.</p>
+
+  <pre class="diagram"><span class="dim">Mirai's entire infection mechanism</span>
+
+  1. stateless SYN scan of random IPv4 on <span class="acc">23/tcp</span> and <span class="acc">2323/tcp</span>
+     <span class="dim">(handwritten TCP stack, ~10x faster than the tools it replaced)</span>
+
+  2. brute force from a hardcoded table of <span class="hi">62 credential pairs</span>
+     <span class="dim">root:xc3511  root:vizxv  root:admin  admin:admin</span>
+     <span class="dim">root:888888  root:xmhdipc root:default  support:support ...</span>
+     <span class="dim">these are VENDOR DEFAULTS. many are burned into firmware and</span>
+     <span class="dim">cannot be changed by the owner.</span>
+
+  3. report the working credential to a separate <span class="acc2">report server</span>
+  4. a loader logs in, identifies the architecture, drops the right
+     binary (ARM, MIPS, x86, SPARC, PPC, SH4, m68k - 10+ targets)
+  5. <span class="acc2">delete the binary from disk, run from memory only</span>
+  6. kill rival malware, close 22/23/80 to lock others out
+  7. wait for C2. <span class="dim">a reboot cleans the device. it is reinfected in minutes.</span>
+
+  <span class="hi">no exploit. no vulnerability. no zero-day. a password list.</span></pre>
+
+  <table>
+    <tr><th>Date</th><th>Event</th></tr>
+    <tr><td class="meth rd">Sep 20 2016</td><td>krebsonsecurity.com, <strong>623 Gbps</strong> from ~24,000 Mirai hosts, with <strong>no reflection or amplification</strong>. Five attacks that month, 123 to 623 Gbps. Over four years on Akamai the site had absorbed <strong>269 attacks</strong>. On 22 Sep Akamai gave roughly <strong>two hours' notice</strong> and pointed it at 127.0.0.1. Jeff Young: "a business decision to no longer keep this customer on our platform". Josh Shaul on sustaining it: "we're definitely talking millions". Krebs was then quoted <strong>150,000 to 200,000 USD/year</strong> commercially; Google Project Shield took him on free on 25 Sep</td></tr>
+    <tr><td class="meth rd">Sep 2016</td><td>OVH, ~1.1 Tbps, from ~145,000 devices, mostly cameras and DVRs</td></tr>
+    <tr><td class="meth rd">Sep 30 2016</td><td>Source code released by "Anna-senpai" on Hackforums, explicitly to muddy attribution before law enforcement closed in</td></tr>
+    <tr><td class="meth rd">Oct 21 2016</td><td><strong>Dyn.</strong> Three waves. Twitter, Reddit, Spotify, Netflix, GitHub, Airbnb, PSN, Amazon unreachable across the US east coast and Europe. ~100,000 endpoints. Dyn reported "10s of millions" of source IPs, inflated by the retry storms of recursive resolvers rather than by real bots</td></tr>
+    <tr><td class="meth">Dec 2017</td><td>Jha, White and Norman plead guilty. Cooperation with the FBI results in community service and fines rather than custody</td></tr>
+  </table>
+
+  <div class="info-box danger">
+    <strong>Two lessons, both still unaddressed</strong>
+    <strong>The supply chain.</strong> A large share of the infected devices traced back to <em>one</em> component vendor, XiongMai Technologies, whose boards and firmware were rebadged by dozens of brands. The consumer could not identify the vendor, could not change the credentials, and could not patch. Regulation, not engineering, is the only lever, and it has moved slowly.<br>
+    <strong>The source release.</strong> Publishing the code converted a single actor's capability into a permanent public baseline. Every significant IoT botnet since, Satori, Okiru, Masuta, Reaper, Mozi, Mukashi, Aisuru, descends from that tree.
+  </div>
+</section>
+<section id="casebook-reset" data-num="07" data-view="casebook">
+  <h2>HTTP/2 <em class="yl">Rapid Reset</em>, 2023</h2>
+  <div class="section-bar yl"></div>
+  <p>CVE-2023-44487, disclosed 10 October 2023 in a coordinated release by Google, Cloudflare and AWS after roughly two months of in-the-wild exploitation. The most important DDoS event of the decade so far, because it is a flaw in a <em>specification</em> rather than in any product.</p>
+
+  <table>
+    <tr><th>Provider</th><th>Peak</th><th>Multiple of their previous record</th></tr>
+    <tr><td class="meth yl">Google</td><td>398 Mrps</td><td>7.5x</td></tr>
+    <tr><td class="meth yl">Cloudflare</td><td>201 Mrps</td><td>~3x</td></tr>
+    <tr><td class="meth yl">AWS</td><td>155 Mrps</td><td></td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>The number that should worry you</strong>
+    Cloudflare's 201 Mrps came from a botnet of roughly <strong>20,000 machines</strong>. For scale, they routinely observe botnets in the hundreds of thousands. A 20,000-node botnet producing three times the previous world record means the leverage per node increased by orders of magnitude. The same botnet running a conventional HTTP flood would have been unremarkable. When a protocol gives away asymmetry, bot count stops mattering.
+  </div>
+
+  <h3 class="yl">Mitigations, in order of how well they work</h3>
+  <ul class="step-list">
+    <li><strong>Count resets, not just concurrency.</strong> Track RST_STREAM per connection and send GOAWAY when the ratio of resets to completed streams goes wrong. This is the actual fix and every major server shipped a version of it.</li>
+    <li><strong>Cap total streams per connection</strong> over the connection's lifetime, not just concurrently.</li>
+    <li><strong>Charge for cancelled work.</strong> If a request has already been proxied upstream, a client-side cancel should not refund the slot.</li>
+    <li><strong>Do not disable HTTP/2.</strong> Falling back to HTTP/1.1 is the reflex answer and it trades a specific flaw for worse performance and a different set of exhaustion attacks.</li>
+  </ul>
+
+  <p>The same class reappeared within months as the <strong>Continuation Flood</strong> (April 2024): endless CONTINUATION frames with END_HEADERS never set, buffered indefinitely, and in several implementations not logged at all because the request never completed. The lesson generalises: <strong>any protocol feature that lets a client create server-side work and then withdraw it without cost is a DDoS primitive waiting to be found.</strong></p>
+</section>
+<section id="casebook-aisuru" data-num="08" data-view="casebook">
+  <h2>Aisuru and the <em class="rd">2025-26 Escalation</em></h2>
+  <div class="section-bar rd"></div>
+  <p>The current state of the art, and the reason every vendor's marketing changed tone in 2026.</p>
+
+  <table>
+    <tr><th>Attribute</th><th>Value</th></tr>
+    <tr><td class="meth rd">Population</td><td>Estimated 1 to 4 million hosts. Largely <strong>Android TV boxes</strong> and set-top devices, plus routers and cameras</td></tr>
+    <tr><td class="meth rd">Lineage</td><td>Mirai descendant. Also tracked as Kimwolf and in earlier reporting as AIRASHI</td></tr>
+    <tr><td class="meth rd">Peak observed</td><td><strong>31.4 Tbps</strong> (from 19 Dec 2025), preceded by 29.7 Tbps on 31 Oct and 14.1 Bpps on 7 Oct. Also 205 Mrps at L7, averaging 54 Mrps across the campaign</td></tr>
+    <tr><td class="meth rd">Duration</td><td><strong>35 seconds</strong> for the 31.4 Tbps peak</td></tr>
+    <tr><td class="meth rd">Share of global attacks</td><td>Arelion's 2026 report attributes nearly one third of all DDoS attacks to Aisuru. Cloudflare mitigated <strong>2,867 Aisuru attacks in 2025</strong>, 1,304 hypervolumetric in Q3 alone</td></tr>
+    <tr><td class="meth rd">Devices named</td><td>Totolink, Nexxt and Linksys routers, DVRs, IP cameras, Zyxel USG FLEX and ZyWALL appliances, cnPilot gear, plus the Android TV boxes</td></tr>
+    <tr><td class="meth rd">Typical targets</td><td>Telecoms and carriers, gaming, and generative AI service providers</td></tr>
+  </table>
+
+  <div class="info-box danger">
+    <strong>Why Android TV boxes are the perfect bot</strong>
+    Always powered. Always on residential fibre or cable with real upstream bandwidth, not DSL. Running an old Android fork with no update path and frequently with ADB exposed. Sold through grey-market channels with pre-installed malware in some cases. The owner watches films on it and has no reason ever to look at it again. Compared to a 2016 IP camera on ADSL, the per-device uplink is perhaps twenty times larger. That is the entire explanation for 31 Tbps.
+  </div>
+
+  <h3 class="rd">What H1 2026 actually looks like operationally</h3>
+  <ul class="step-list">
+    <li><strong>935 attacks over 1 Tbps in six months</strong>, 805 of them in Q2, a six-fold quarter-on-quarter increase. The terabit attack is now routine.</li>
+    <li><strong>DNS is 34.3 percent of network-layer attacks</strong>, with DNS floods rising from 25.7 to 40.0 percent QoQ and CLDAP up 580 percent to become the number three vector.</li>
+    <li><strong>Top sources:</strong> Brazil 14.9 percent (21.4 percent in Q2), United States 13.4 percent, Indonesia third.</li>
+    <li><strong>Top targets:</strong> media and publishing 14.2 percent of HTTP DDoS. Government jumped from 29th to 9th during a named campaign. Turkey tripled into third place around the NATO summit, which is as clear a geopolitical signal as this data ever gives.</li>
+    <li><strong>L7 attacks up 104 percent over two years</strong> per Akamai, increasingly bundled with API abuse rather than run alone.</li>
+  </ul>
+</section>
+<section id="casebook-akamai" data-num="09" data-view="casebook">
+  <h2>Akamai's Own <em class="cy">Ledger</em></h2>
+  <div class="section-bar cy"></div>
+  <p>Mitigations Prolexic has reported publicly, in date order. These are the numbers that get quoted most often.</p>
+
+  <table>
+    <tr><th>Date</th><th>Target</th><th>Peak bps</th><th>Peak pps</th></tr>
+    <tr><td class="meth cy">Feb 28 2018</td><td>GitHub</td><td>1.35 Tbps</td><td>126.9 Mpps</td></tr>
+    <tr><td class="meth cy">First week Jun 2020</td><td>Internet hosting provider</td><td>1.44 Tbps</td><td>385 Mpps</td></tr>
+    <tr><td class="meth cy">21 Jun 2020</td><td>Large European bank</td><td></td><td><strong>809 Mpps</strong></td></tr>
+    <tr><td class="meth cy">21 Jul 2022</td><td>Eastern European org</td><td>853.7 Gbps</td><td>659.6 Mpps</td></tr>
+    <tr><td class="meth cy">12 Sep 2022</td><td>The same customer</td><td>not published</td><td><strong>704.8 Mpps</strong></td></tr>
+    <tr><td class="meth cy">Feb 2023</td><td>APAC customer</td><td>900.1 Gbps</td><td>158.2 Mpps</td></tr>
+    <tr><td class="meth cy">Sep 5 2023</td><td>US financial institution</td><td>633.7 Gbps</td><td>55.1 Mpps</td></tr>
+    <tr><td class="meth cy">15 Jul 2024</td><td>Israeli financial services</td><td colspan="2"><strong>419 TB</strong> in ~24 hours, 389 TB of it in a 3-hour window, across 278+ destination IPs</td></tr>
+    <tr><td class="meth cy">27 Aug 2024</td><td>Large US customer</td><td>1.3 Tbps</td><td>~12 minutes</td></tr>
+    <tr><td class="meth cy">3 / 13 May 2026</td><td>Indian public sector bank</td><td>1.72 then <strong>1.78 Tbps</strong></td><td>23 then 171 Mpps</td></tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>Questions to put to any mitigation provider</strong>
+    <strong>1.</strong> What is the actual time-to-mitigate SLA, and does the clock start at detection or at notification? <br>
+    <strong>2.</strong> Routed (BGP, /24 minimum) versus Connect versus Proxy: which of your assets can realistically use which, and what is the diversion time for each? <br>
+    <strong>3.</strong> Are your mitigation controls pre-built and tested, or generated during an incident? Zero-second SLAs only apply to proactively configured controls. <br>
+    <strong>4.</strong> How is <strong>carpet bombing</strong> detected, given that per-host thresholds will not fire? <br>
+    <strong>5.</strong> Given the 35-second attack, what in the pipeline still involves a human, and what is the measured time for a <em>pulse wave</em> rather than a sustained flood? <br>
+    <strong>6.</strong> What is the story for direct-to-origin attacks once the origin IP leaks, and does Prolexic Connect or an origin ACL cover it? <br>
+    <strong>7.</strong> DNS: Edge DNS and Shield NS53, and what happens if the attack targets the authoritative infrastructure rather than the web tier?
+  </div>
+</section><section id="providers-akearly" data-num="01" data-view="providers">
+  <h2>Akamai, <em class="cy">1998 to 2004</em></h2>
+  <div class="section-bar cy"></div>
+  <p>Akamai exists because Tim Berners-Lee put internet congestion to his MIT colleagues as an open problem in 1995. Tom Leighton and Danny Lewin entered the MIT $50K competition with an answer in September 1997, incorporated 20 August 1998, and put their first live traffic (a single Disney pixel) on the wire in February 1999.</p>
+
+  <table>
+    <tr><th>Date</th><th>Event</th></tr>
+    <tr><td class="meth cy">1 Jun 1999</td><td><strong>FreeFlow</strong> generally available. Static object caching from $2,000 per Mbps per month, usage-based. The announcement claims over 10 billion hits delivered since April</td></tr>
+    <tr><td class="meth cy">29 Oct 1999</td><td>IPO on NASDAQ</td></tr>
+    <tr><td class="meth rd">20-24 Jul 2001</td><td><strong>Code Red.</strong> The worm flooded a <em>hardcoded IP address</em> belonging to whitehouse.gov on days 20 to 27 of its cycle. Because the target was an address and not a hostname, the White House defeated the whole DoS by <strong>moving whitehouse.gov onto Akamai</strong> and changing what the public resolved to. Keynote measured 95 percent availability through the event</td></tr>
+    <tr><td class="meth rd">11 Sep 2001</td><td><strong>Danny Lewin, co-founder and CTO, killed aboard American Airlines Flight 11</strong>, aged 31. Seated closest to the hijackers. Accounts hold he may have tried to intervene and was likely the first person killed in the attacks</td></tr>
+    <tr><td class="meth rd">11 Sep 2001</td><td>The same day, Akamai traffic ran <strong>350 percent above normal</strong>. News sites were at 3x to 10x load; one outlet reported traffic doubling every seven minutes from 08:50 to 09:30 ET. Aggregate backbone traffic was actually <em>lower</em> than the previous Tuesday, because users could not reach the overloaded sites at all</td></tr>
+    <tr><td class="meth">2002</td><td>Reporting shows Akamai inadvertently serving adult content and offshore gambling via college campus servers. Gaming contracts terminated, adult-content customers dropped</td></tr>
+    <tr><td class="meth yl">Mar-Apr 2003</td><td><strong>Al Jazeera.</strong> Launched its English site during the Iraq invasion and was immediately hit with DDoS, defacement and DNS hijacking. Akamai served it briefly, then terminated the relationship by 7 April, saying only that it had decided not to continue the customer relationship. No reason given. An Al Jazeera representative told the New York Times that providers faced "nonstop political pressure". The first clear case of a CDN de-platforming under pressure</td></tr>
+    <tr><td class="meth">2004</td><td>First profitable year</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>The 9/11 load story is the founding argument for the whole industry</strong>
+    Demand for news collapsed the sites people needed most, at the exact moment they needed them, and the total traffic on the internet went <em>down</em> as a result. That is the clearest possible statement of why distributed edge capacity is infrastructure rather than an optimisation. It is also, brutally, the day Akamai lost the man who wrote the consistent-hashing work the company was built on.
+  </div>
+</section>
+<section id="providers-ak2004" data-num="02" data-view="providers">
+  <h2>15 June 2004: <em class="rd">The Control Plane</em></h2>
+  <div class="section-bar rd"></div>
+  <p>Around 13:30 ET on Tuesday 15 June 2004, Google, Yahoo, Microsoft, MSN, Apple, Lycos and Symantec became unreachable or severely degraded. Keynote measured some at "nearly zero" availability. Akamai carried roughly 15 percent of web traffic at the time. Service was restored by about 15:30 ET, so roughly two hours.</p>
+
+  <p>The visible symptom was that <code>akadns.net</code>, Akamai's customer-facing DNS zone, stopped resolving. Chief Scientist Tom Leighton's account: an attack against the authoritative nameservers Akamai ran <em>on behalf of customers</em>, not against the content edge. His framing was that the nameservers never went down, they were performance-degraded, and "our systems performed normally, as they are designed to perform".</p>
+
+  <div class="info-box warn">
+    <strong>The blast radius has never been reconciled</strong>
+    Three mutually inconsistent numbers were published. Akamai initially said roughly <strong>50 of its ~1,100 customers</strong>. Leighton then told Computerworld it was "a name server attack against <strong>four</strong> of our customers", and separately that about <strong>4 percent</strong> of the customer base was potentially impacted. Four and four percent (about 44) cannot both be true. He added that of those affected, "half of them did not have any noticeable impact".
+  </div>
+
+  <div class="info-box danger">
+    <strong>Attribution: never established, and it was contested at the time</strong>
+    No arrest, indictment or named actor, then or since. <strong>Bruce Schneier:</strong> "My guess is that it [was] some kind of an internal failure within Akamai or maybe a targeted attack against them by someone with insider knowledge and access." <strong>Craig Labovitz</strong>, then at Arbor Networks, said there was no suspicious traffic or DNS pattern consistent with a massive distributed attack. Leighton rejected the insider theory, calling the attack "sophisticated and very large-scale, but it did not require insider knowledge". Akamai's public framing also narrowed within 24 hours, from "large scale international attack on the Internet's infrastructure" to the customer-nameserver account it stood behind. <strong>The root cause remains publicly unconfirmed.</strong>
+  </div>
+
+  <p>What is not in dispute is the lesson and the lineage. Analysts read it as the moment attackers stopped flooding bandwidth and started attacking the <em>control plane</em> of infrastructure providers. Leighton said Akamai immediately deployed "several additional defensive mechanisms" and called DNS "a critical component of the Internet" and "one of the most vulnerable". Twenty years later that thread runs straight to Edge DNS and, in 2024, to <strong>Shield NS53</strong>, a product whose stated purpose is absorbing NXDOMAIN water-torture attacks in front of a customer's own nameservers. Same problem, fourth generation of answer.</p>
+</section>
+<section id="providers-akledger" data-num="03" data-view="providers">
+  <h2>The <em class="cy">Prolexic</em> Ledger</h2>
+  <div class="section-bar cy"></div>
+  <p>Akamai announced the Prolexic acquisition on 2 December 2013 and completed it 19 February 2014 for approximately <strong>370 million USD</strong> in cash. (Wikipedia's table says 390 million; contemporaneous announcement and completion reporting both say 370. Use 370 and note the discrepancy.) Everything below is publicly documented by Akamai.</p>
+
+  <table>
+    <tr><th>Date</th><th>Target</th><th>Figures</th><th>Detail</th></tr>
+    <tr><td class="meth cy">Sep 2012 - Aug 2013</td><td>US banks: US Bancorp, JPMorgan Chase, Bank of America, PNC, SunTrust, NYSE</td><td>70+ Gbps, <strong>30+ Mpps</strong></td><td><strong>Operation Ababil</strong>, three phases. PLXsert documented <strong>11 distinct attack signatures</strong> in the Brobot / itsoknoproblembro toolkit, including a "Kamikaze GET flood" that relaunched itself. Prolexic published SNORT signatures and a free log-analysis tool, <strong>BroLog</strong>, so hosting providers could find compromised servers before the next wave. A Prolexic report put US banks offline for a cumulative <strong>249 hours</strong> across Feb to Apr 2013</td></tr>
+    <tr><td class="meth rd">20 Sep 2016</td><td>krebsonsecurity.com</td><td><strong>623 Gbps</strong></td><td>Akamai's own figure from its Q3 2016 SOTI report. The widely-cited 620 Gbps is Krebs's contemporaneous number. <strong>No reflection or amplification</strong>, entirely legitimate HTTP from ~24,000 Mirai hosts. Five attacks that month, 123 to 623 Gbps, including 555 Gbps on 22 Sep. Over four years on Akamai, the site absorbed <strong>269 attacks</strong>, about one every five days</td></tr>
+    <tr><td class="meth cy">28 Feb 2018</td><td>GitHub</td><td>1.35 Tbps, 126.9 Mpps</td><td>memcached, BAF to 51,000x, 1,000+ autonomous systems, no botnet. GitHub withdrew transit BGP at <strong>17:26</strong> forcing all traffic through Akamai, full recovery <strong>17:30</strong>. Total user-visible impact about <strong>9 minutes</strong></td></tr>
+    <tr><td class="meth cy">First week Jun 2020</td><td>Internet hosting provider</td><td>1.44 Tbps, 385 Mpps</td><td><strong>Nine vectors simultaneously</strong>: ACK, CLDAP reflection, NTP, RESET, SSDP, SYN, TCP anomaly, UDP, UDP fragment. Nearly two hours. Akamai never published the exact day</td></tr>
+    <tr><td class="meth rd">21 Jun 2020</td><td>Large European bank</td><td><strong>809 Mpps</strong></td><td>A pure packet-rate attack, not a bandwidth one. <strong>1-byte payloads, 29 bytes total</strong> with IPv4 headers, built to exhaust packet processing. Under 10 minutes, peaking in about 120 seconds. Source IPs ran ~600x baseline and <strong>96.2 percent had never been seen before</strong>, meaning a freshly mobilised botnet</td></tr>
+    <tr><td class="meth cy">21 Jul 2022</td><td>Eastern European org</td><td>853.7 Gbps, 659.6 Mpps</td><td>Sustained over a <strong>14-hour</strong> peak window. 75 attacks over 30 days against 512 IPs at a single datacentre. Largest <em>horizontal</em> attack Akamai had mitigated; no scrubbing centre absorbed more than 100 Gbps</td></tr>
+    <tr><td class="meth rd">12 Sep 2022</td><td>The same customer</td><td><strong>704.8 Mpps</strong></td><td>The customer hardened all twelve of its datacentres after July, so the attacker <strong>went wider instead of harder</strong>: 201 cumulative incidents, <strong>1,813</strong> targeted IPs across six locations. Escalation from 100 to 1,813 active IPs per minute took <strong>60 seconds</strong>. Akamai published no bps figure for this one</td></tr>
+    <tr><td class="meth cy">23 Feb 2023, 10:22 UTC</td><td>APAC customer</td><td>900.1 Gbps, 158.2 Mpps</td><td>Most traffic inside the peak minute. Spread across all <strong>26</strong> scrubbing centres, no single one taking more than 12 percent</td></tr>
+    <tr><td class="meth cy">5 Sep 2023, ~19:31 UTC</td><td>US financial institution</td><td>633.7 Gbps, 55.1 Mpps</td><td><strong>Under 2 minutes</strong>, aimed at the primary web landing page to disrupt online banking. ACK, PUSH, RESET and SYN floods combined</td></tr>
+    <tr><td class="meth yl">15 Jul 2024</td><td>Israeli financial services</td><td><strong>419 TB in ~24 hours</strong></td><td>389 TB of it inside a 3-hour window. Peaks 300 to 798 Gbps. <strong>278+ destination IPs simultaneously.</strong> UDP flood, UDP fragmentation, DNS reflection, PSH+ACK. The same customer had absorbed 27 significant attacks in the preceding 90 days</td></tr>
+    <tr><td class="meth cy">27 Aug 2024, 17:18 UTC</td><td>Large US customer</td><td>1.3 Tbps</td><td>About 12 minutes. Roughly 30 scrubbing centres engaged in real time</td></tr>
+    <tr><td class="meth cy">3 and 13 May 2026</td><td>Indian public sector bank</td><td>1.72 Tbps / 23 Mpps, then <strong>1.78 Tbps / 171 Mpps</strong></td><td>Ten days apart, both against the <strong>shared login endpoint</strong>. Akamai frames these as records for that bank, not platform records. Zero malicious traffic reached the origin and zero false positives claimed</td></tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>Akamai changed the subject around 2024, deliberately</strong>
+    Their 2024 retrospective notes that four of the ten largest attacks they have ever mitigated happened in 2024, that nearly 30 percent were multi-destination (up from under 20 percent in Q3 2022), and that <strong>over 60 percent had a DNS component</strong>. By September 2025 their framing had moved to "distributed denial of defense": AI-assisted attackers probing and disabling the <em>mitigation layer</em> at moderate volumes rather than chasing bps records. If you read post-2024 Akamai material looking for record numbers you will miss the argument they are actually making.
+  </div>
+</section>
+<section id="providers-sirt" data-num="04" data-view="providers">
+  <h2>Akamai SIRT: <em class="yl">What They Found</em></h2>
+  <div class="section-bar yl"></div>
+  <p>Akamai's research team has first-documented a meaningful share of the vectors in the Vectors tab. Worth knowing because their honeypot corpus is one of the few public sources for how botnets actually spread.</p>
+
+  <table>
+    <tr><th>Date</th><th>Finding</th><th>Mechanism</th></tr>
+    <tr><td class="meth yl">29 Sep 2015</td><td><strong>XOR DDoS</strong></td><td>Linux botnet built by SSH brute force. Evasion detail worth stealing: it spoofs by altering <strong>only the third or fourth octet</strong>, staying inside the prefix to slip past ISP filtering. Up to 20 targets per day, observed peaks 179 and 109 Gbps, ~90 percent of targets in Asia</td></tr>
+    <tr><td class="meth yl">13 Oct 2016</td><td><strong>SSHowDowN Proxy</strong></td><td>Mass abuse of <strong>CVE-2004-1653</strong>, a twelve-year-old OpenSSH default permitting TCP forwarding for accounts with no shell. Combined with factory credentials it turns IoT devices into SOCKS proxies for credential stuffing and laundering attack origin. About 2 million devices implicated. Ory Segal's point was that many shipped vulnerable with no effective way to fix them</td></tr>
+    <tr><td class="meth yl">Apr 2018</td><td><strong>UPnProxy</strong></td><td><strong>NAT injection:</strong> writing unauthorised port-forward rules into a consumer router's gateway table via a WAN-exposed UPnP SOAP endpoint. ~4.8 million devices responding, ~765,000 vulnerable, ~65,000 actively injected</td></tr>
+    <tr><td class="meth rd">Nov 2018</td><td><strong>EternalSilence</strong></td><td>Same technique, worse purpose. Injected rules exposing internal <strong>TCP 139 and 445</strong> to the open internet in order to reach machines with EternalBlue and EternalRed, specifically hosts that had survived WannaCry <em>because</em> they were NATed. Signature: port mappings described as <strong>"galleta silenciosa"</strong>. 45,113 confirmed injections exposing ~1.7 million internal IPs</td></tr>
+    <tr><td class="meth yl">18 Sep 2019</td><td><strong>WS-Discovery in the wild</strong></td><td>First documented real use of a previously theoretical vector. A gaming customer hit at <strong>35 Gbps</strong>. Lab amplification to 15,300 percent; a practical 8.73 Gbps attack at 8,900 percent from <strong>29-byte</strong> probes. 802,115 exposed devices, mostly CCTV and DVRs</td></tr>
+    <tr><td class="meth">15 Jun 2022</td><td><strong>Panchan</strong></td><td>Go <strong>peer-to-peer</strong> botnet, no central C2. Beyond SSH dictionary attacks it <strong>harvests SSH keys</strong>, reading <code>id_rsa</code> and <code>known_hosts</code> to move laterally with legitimate credentials. Miners run as <code>memfd_create</code> memory-mapped files, leaving no disk artefact. Education was the leading victim vertical, consistent with credential sharing between academic collaborators</td></tr>
+    <tr><td class="meth">16 Mar 2023</td><td><strong>HinataBot</strong></td><td>Go DDoS botnet via CVE-2014-8361 (Realtek SDK), CVE-2017-17215 (Huawei HG532) and Hadoop YARN RCE. Akamai's modelled capacity at 10,000 nodes exceeded <strong>3.3 Tbps</strong> UDP. That is an extrapolation from 10-second bench samples, not an observed attack</td></tr>
+    <tr><td class="meth">25 May 2023</td><td><strong>Dark Frost</strong></td><td>Gafgyt, QBot and Mirai code stitched together. Only <strong>414 devices</strong>, measured at 1.52 Gbps per node, extrapolating to 629 Gbps. Notable for the author profile: low sophistication, publicly boasting on social media with video, materially damaging anyway</td></tr>
+    <tr><td class="meth rd">21 Nov 2023</td><td><strong>InfectedSlurs</strong>, two zero-days</td><td>SIRT honeypots saw an uptick on a rarely used TCP port in late October and identified the device type by 9 November. Result: <strong>CVE-2023-49897</strong> (FXC AE1021 hotel and residential wireless routers) and <strong>CVE-2023-47565</strong> (QNAP VioStor NVR), both default credentials plus command injection</td></tr>
+    <tr><td class="meth">10 Jan 2024</td><td><strong>NoaBot</strong></td><td>Mirai variant compiled with <strong>uClibc rather than GCC</strong>, which caused AV engines to classify it as a generic trojan instead of Mirai. Spreads over SSH, not Telnet. Its scanner sends the string <code>"hi"</code> to fingerprint a live connection. Miner carries <strong>no wallet address</strong>, implying a private pool</td></tr>
+    <tr><td class="meth rd">28 Aug 2024</td><td><strong>CVE-2024-7029</strong>, Akamai-discovered</td><td>Command injection in the <em>brightness</em> function of AVTECH IP cameras, found by Akamai's <strong>Aline Eliovich</strong>. A proof of concept had circulated since 2019; the CVE was only assigned in 2024, and the devices were <strong>end-of-life and unpatchable</strong>. Exploited by a Mirai variant Akamai named Corona</td></tr>
+    <tr><td class="meth">28 Jan 2025</td><td><strong>Aquabot v3</strong></td><td>First in-the-wild exploitation of CVE-2024-41710 in Mitel SIP phones, writing shell commands into the boot configuration for root at boot. Novel behaviour: a <strong><code>report_kill</code></strong> function that phones home when a kill signal is caught, letting the operator <em>monitor defensive activity across the botnet</em>. Previously unseen in Mirai variants</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>The zero-click Outlook chain is worth its own mention</strong>
+    Akamai's <strong>Ben Barnea</strong> found <strong>CVE-2023-35384</strong> and <strong>CVE-2023-36710</strong>, disclosed 18 December 2023. The first is a MapUrlToZone bypass that makes a remote path look local, so Outlook auto-downloads a custom notification sound. The second is a Windows Audio Compression Manager RCE that fires when that sound autoplays. Chained: remote code execution with <strong>no user interaction whatsoever</strong>, plus NTLM credential leakage. Not DDoS, but it is the best illustration in their corpus of two individually mild bugs composing into something severe.
+  </div>
+
+  <p>Also from Akamai researchers: <strong>CVE-2022-30216</strong> (authentication coercion in the Windows Server service, Ben Barnea) and <strong>CVE-2023-3676 / 3955 / 3893</strong> (Tomer Peled, Kubernetes command injection via <code>subPath</code> on Windows nodes, CVSS 8.8, unsanitised input reaching PowerShell <code>exec.Command</code>, SYSTEM-level RCE, every Kubernetes below 1.28).</p>
+</section>
+<section id="providers-cfledger" data-num="05" data-view="providers">
+  <h2>Cloudflare's <em class="or">Ledger</em></h2>
+  <div class="section-bar"></div>
+
+  <table>
+    <tr><th>Date</th><th>Figures</th><th>Detail</th></tr>
+    <tr><td class="meth">18-23 Mar 2013</td><td>120 Gbps measured</td><td><strong>Spamhaus / Cyberbunker.</strong> DNS ANY queries for <code>ripe.net</code> returning ~3 KB from ~36-byte requests. 21.7 million open resolvers existed. <strong>The famous "300 Gbps" is secondhand</strong>, Cloudflare relaying what one Tier 1 provider said it saw at an exchange. Cloudflare's own instrumented peak was 120 Gbps on 22 March. Sven Olaf Kamphuis was arrested 25 April 2013</td></tr>
+    <tr><td class="meth">10 Feb 2014</td><td>~400 Gbps</td><td>NTP <code>monlist</code>. <strong>4,529 NTP servers across 1,298 networks</strong>, averaging 87 Mbps each</td></tr>
+    <tr><td class="meth yl">25 Sep 2015</td><td>275,000 rps</td><td><strong>Mobile ad network JavaScript DDoS.</strong> Malicious JS inside ad iframes, XHR loop firing every 50 ms. 4.5 billion requests in a day, 650,000 unique IPs, <strong>99.8 percent from China</strong>, 72 percent mobile user agents. Cloudflare explicitly distinguishes this from the Great Cannon: no TCP injection involved</td></tr>
+    <tr><td class="meth">11 Oct 2016</td><td>1.75 Mrps / 360 Gbps</td><td>Two Mirai-era attacks from CCTV and NAS devices. The first: 1.75 million rps for 15 minutes from 52,467 IPs at only ~2 Gbps. The second: 220,000 rps for an hour from 128,833 IPs with 800 KB request bodies</td></tr>
+    <tr><td class="meth">Jul 2021</td><td>17.2 Mrps</td><td><strong>Meris.</strong> HTTP pipelining from MikroTik routers compromised via CVE-2018-14847. Over 330 million requests within seconds, 20,000+ bots. Qrator later estimated ~250,000 infected devices</td></tr>
+    <tr><td class="meth">14 Jun 2022</td><td>26 Mrps</td><td>HTTPS flood from <strong>only 5,067 devices</strong> averaging 5,200 rps each, hijacked cloud VMs rather than IoT. 212 million requests in under 30 seconds. The target was on a <strong>Cloudflare Free plan</strong></td></tr>
+    <tr><td class="meth">Oct 2022</td><td>2.5 Tbps</td><td>Mirai variant against the <strong>Wynncraft Minecraft server</strong>, about 2 minutes</td></tr>
+    <tr><td class="meth">11-12 Feb 2023</td><td>71 Mrps</td><td>HTTP/2 flood from 30,000+ IPs, predominantly cloud providers. Dozens of attacks that weekend at 50 to 70 Mrps</td></tr>
+    <tr><td class="meth rd">25-29 Aug 2023</td><td><strong>201 Mrps</strong></td><td><strong>HTTP/2 Rapid Reset</strong>, CVE-2023-44487. Three times the February record from a botnet of only <strong>20,000 machines</strong>. Coordinated disclosure 10 October with Google and AWS after a roughly six-week embargo. Cloudflare's mitigation, <strong>IPSummary</strong>, tracks per-connection cancellation rate and sends GOAWAY</td></tr>
+    <tr><td class="meth">Sep-Oct 2024</td><td>3.8 Tbps, 2.14 Bpps</td><td>Month-long campaign, 100+ hypervolumetric attacks. Largest ran <strong>65 seconds</strong>. Sources included ASUS home routers behind a CVSS 9.8 flaw</td></tr>
+    <tr><td class="meth">29 Oct 2024</td><td>5.6 Tbps</td><td>80 seconds, 13,000+ IoT devices at ~1 Gbps each, against an East Asian ISP. <strong>Fully autonomous mitigation, no alerts fired</strong></td></tr>
+    <tr><td class="meth">Apr 2025</td><td>6.5 Tbps, 4.8 Bpps</td><td>35 to 45 seconds, hosting provider on Magic Transit, 147 source countries</td></tr>
+    <tr><td class="meth">Mid-May 2025</td><td>7.3 Tbps</td><td>45 seconds, <strong>37.4 TB delivered</strong>. 99.996 percent UDP flood. 122,145 source IPs across 5,433 ASNs and 161 countries. Averaged 21,925 destination ports per second, peaking at 34,517</td></tr>
+    <tr><td class="meth">1-2 Sep 2025</td><td>11.5 Tbps, 5.1 Bpps</td><td>~35 seconds. Cloudflare initially said mainly Google Cloud, then <strong>publicly corrected within 24 hours</strong>: a combination of IoT and cloud providers, Google Cloud not the majority</td></tr>
+    <tr><td class="meth rd">22 Sep 2025</td><td>22.2 Tbps, 10.6 Bpps</td><td>40 seconds. Roughly double the prior record on both axes</td></tr>
+    <tr><td class="meth rd">7 and 31 Oct 2025</td><td>14.1 Bpps, then <strong>29.7 Tbps</strong></td><td>Both Aisuru. UDP carpet bombing averaging 15,000 destination ports per second. Attacks ramp from zero to peak almost instantly and hold 30 to 70 seconds. Targets: telecom 73 percent, IT 12.7 percent, gaming 7.8 percent</td></tr>
+    <tr><td class="meth rd">From 19 Dec 2025</td><td><strong>31.4 Tbps, 205 Mrps</strong></td><td><strong>"The Night Before Christmas."</strong> Aisuru/Kimwolf, heavily Android TV boxes. <strong>902 hypervolumetric attacks over 18 days</strong>, averaging 53 per day; over half lasted 1 to 2 minutes. Also a 24 Tbps peak in the same campaign. Targets included Cloudflare's own infrastructure. 2025 total: 47.1 million DDoS attacks, about 5,376 per hour</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>Two provenance flags worth carrying</strong>
+    The <strong>11.5 and 22.2 Tbps records have no Cloudflare blog postmortem.</strong> Both were announced only on X, and the widely-circulated URL <code>blog.cloudflare.com/22-2-tbps-ddos-attack/</code> does not exist. Separately, the <strong>6.3 Tbps figure often listed in the 2025 chain is not Cloudflare's</strong>: that was KrebsOnSecurity on 12 May 2025, mitigated by Google Project Shield, about 45 seconds at ~585 Mpps, attributed to Aisuru. Cloudflare's comparable April figure is 6.5 Tbps.
+  </div>
+</section>
+<section id="providers-cfbreach" data-num="06" data-view="providers">
+  <h2>Cloudflare <em class="rd">Attacked</em></h2>
+  <div class="section-bar rd"></div>
+  <p>Rarer and more interesting than the mitigations, because a security company's own compromises are the ones with published root cause.</p>
+
+  <h3 class="rd">1 June 2012: UGNazi, four chained failures, under two hours</h3>
+  <pre class="diagram"> 1. <span class="acc2">AT&amp;T</span> socially engineered into redirecting Matthew Prince's
+    voicemail to an attacker-controlled box
+
+ 2. <span class="acc2">Google</span> personal-account recovery placed the reset PIN
+    in that voicemail  ---&gt;  personal Gmail held ~1h35m
+
+ 3. a flaw in <span class="acc2">Google Enterprise Apps</span> recovery let the attacker
+    bypass 2FA on Cloudflare's corporate Google Apps. Google later
+    confirmed: recovering an admin account with a secondary email
+    <span class="hi">disabled 2-step verification in the process</span>
+
+ 4. Cloudflare was <span class="acc2">BCC'ing transactional and password-reset email</span>
+    to administrative accounts. possession of the admin mailbox
+    therefore yielded <span class="hi">customer account resets</span>
+
+ <span class="dim">result: customer addresses, archived reset emails, API keys in mail.</span>
+ <span class="dim">4chan.org traffic redirected to the attacker's Twitter handle.</span>
+ <span class="acc">no single failure was sufficient. all four were necessary.</span></pre>
+
+  <h3 class="rd">13-18 February 2017: Cloudbleed</h3>
+  <p>Uninitialised memory disclosure from the edge HTML parser into third-party responses. Root cause: Ragel-generated C used <code>==</code> instead of <code>&gt;=</code> to test for buffer end. A malformed tag terminating a buffer let the pointer run past the end into adjacent heap, which was emitted in the response body.</p>
+  <ul class="step-list">
+    <li>Latent since <strong>22 September 2016</strong> when Automatic HTTP Rewrites shipped. Greatly amplified on 13 February 2017 when Email Obfuscation moved to the new parser.</li>
+    <li>Reported by <strong>Tavis Ormandy</strong> (Project Zero) at 00:32 on 18 February. Email Obfuscation globally disabled in <strong>47 minutes</strong>, all three triggering features off within seven hours.</li>
+    <li>Triggered <strong>1,242,071 times</strong>, roughly 1 in 3,300,000 requests. Fewer than 180 sites could trigger it before 13 Feb; <strong>6,457</strong> after. Cleanup pulled over <strong>80,000 unique cached pages</strong> from Google, Bing, Yahoo, Baidu, Yandex and DuckDuckGo over twelve days.</li>
+    <li><strong>Contested severity.</strong> Cloudflare's sampling found ~0.44 cookies and zero passwords per leak and argued genuinely sensitive exposure was nearer 12,420 instances. Outside researchers argued the sampling understated real risk, since leaked data was already cached and redistributed, and that any of ~2 million domains could have received another customer's memory. SSL private keys were not exposed.</li>
+  </ul>
+
+  <h3 class="rd">20 July 2022: 0ktapus, and the best argument for hardware keys ever recorded</h3>
+  <p>The phishing domain <code>cloudflare-okta.com</code> was registered at 22:13:04. The SMS wave fired at <strong>22:49</strong>, thirty-six minutes later, from four T-Mobile SIMs, pointing at a cloned Okta login page that relayed credentials and TOTP codes to the operator in real time over Telegram, then pushed a payload bundling AnyDesk.</p>
+
+  <div class="info-box cy">
+    <strong>Over 100 employees targeted. Three entered credentials. Zero accounts compromised.</strong>
+    Every Cloudflare employee holds a FIDO2 hardware key. <strong>WebAuthn binds the credential to the origin</strong>, so the key simply would not sign for <code>cloudflare-okta.com</code>. The stolen password and the stolen TOTP code were both useless. The same operator took Twilio concurrently. This is the cleanest public demonstration that phishing-resistant MFA defeats an adversary-in-the-middle proxy phish, and that TOTP does not.
+  </div>
+
+  <h3 class="rd">14-24 November 2023: nation-state, via credentials they forgot to rotate</h3>
+  <p>Four credentials stolen in Okta's October 2023 breach that Cloudflare did not rotate, believing them unused. One was a Moveworks service token granting remote access into Atlassian.</p>
+  <pre class="diagram"> 11-14 09:22  reconnaissance begins
+ 11-15 16:28  Jira and Confluence access
+              <span class="acc2">36 Jira tickets and 202 Confluence pages read</span>
+              searching for credentials, remote access, network config
+ 11-16 14:36  fake Atlassian user created
+ 11-22 14:18  <span class="acc2">Sliver C2 installed via ScriptRunner</span>
+              <span class="hi">120 code repositories viewed, 76 downloaded</span>
+              focus: backups, network config, identity, infra-as-code
+              failed attempt to reach a Sao Paulo console server
+ 11-23 16:00  <span class="acc">detected</span>. Smartsheet killed 16:35, actor 17:23, firewall 21:31
+ 11-24 10:44  last actor activity. Sliver removed 11:59
+
+ <span class="dim">response, "Code Red", 27 Nov to 5 Jan:</span>
+ <span class="dim">  &gt;5,000 credentials rotated</span>
+ <span class="dim">  4,893 systems triaged and forensically analysed</span>
+ <span class="dim">  all global systems reimaged</span>
+ <span class="dim">  Sao Paulo hardware physically returned to vendors</span>
+ <span class="dim">  despite no evidence it was ever compromised</span></pre>
+
+  <h3 class="rd">9-17 August 2025: Salesloft Drift</h3>
+  <p>The only confirmed exfiltration of Cloudflare-held customer data since Cloudbleed. Attackers compromised Salesloft's Drift integration and used stolen OAuth tokens to authenticate into customers' Salesforce tenants. Taken: text fields from support cases, including contact details and correspondence bodies. <strong>104 Cloudflare API tokens were found inside the exfiltrated case text</strong> and rotated. Cloudforce One tracks the actor as GRUB1; Google tracks overlapping activity as UNC6395. Hundreds of organisations were affected industry-wide.</p>
+
+  <div class="info-box">
+    <strong>The recurring shape</strong>
+    2012 was chained third-party account recovery. 2023 was an unrotated third-party credential. 2025 was a third-party OAuth integration. <strong>Every successful compromise of Cloudflare came through somebody else's system</strong>, never through the edge. That is not luck, it is where the attack surface actually is.
+  </div>
+</section>
+<section id="providers-ownfoot" data-num="07" data-view="providers">
+  <h2>Self-Inflicted: <em class="yl">The Interesting Ones</em></h2>
+  <div class="section-bar yl"></div>
+  <p>Both companies publish real postmortems, and the failure modes are better teaching material than most of the attacks. Several are denial of service by definition, just with the wrong perpetrator.</p>
+
+  <h3 class="yl">2 July 2019: Cloudflare takes itself down with a regular expression</h3>
+  <p>The canonical case, and it belongs to the algorithmic-complexity family in the Vectors tab.</p>
+  <pre class="diagram"><span class="dim">the deployed rule, in full:</span>
+
+  (?:(?:"|'|\]|\}|\|\d|(?:nan|infinity|true|false|null|undefined
+  |symbol|math)|`|\-|\+)+[)]*;?((?:\s|-|~|!|{}|\|\||\+)*.*(?:.*=.*)))
+
+<span class="dim">the fatal fragment:</span>   <span class="acc2">.*(?:.*=.*)</span>
+
+  two adjacent greedy .* groups can partition the same prefix in
+  exponentially many ways. Cloudflare's own worked example:
+
+    input: <span class="acc">x=</span> followed by 20 x characters
+    against  .*.*=.*      ->      <span class="hi">555 backtracking steps</span>
+    against  .*.*=.*;     ->    <span class="hi">5,353 backtracking steps</span>
+
+ 13:31 PR merged        13:42 deploy begins      13:45 first page
+ 14:00 WAF identified   14:02 global kill proposed
+ <span class="acc">14:07 WAF killed globally</span>       14:09 CPU and traffic normal
+ 14:52 WAF re-enabled
+
+ <span class="hi">impact: ~100% CPU on every HTTP-serving machine globally.</span>
+ <span class="hi">80% of traffic lost. 27 minutes.</span>
+
+ <span class="dim">the rule was deployed in SIMULATE mode and still burned the CPU.</span>
+ <span class="dim">process failure: WAF rules deliberately bypassed the normal</span>
+ <span class="dim">DOG (employees) -&gt; PIG (free) -&gt; Canary pipeline so that</span>
+ <span class="dim">emergency rules could ship fast. that exemption was the bug.</span></pre>
+
+  <h3 class="yl">20 June 2024: an infinite loop with no stack growth</h3>
+  <p>A new DDoS mitigation rule surfaced a latent bug in legacy rate limiting. A cookie validation function disagreed with an earlier one, and on a request carrying a mix of valid and invalid cookies the recursion became infinite. <strong>Lua's proper tail-call optimisation meant the stack never grew</strong>, so there was no stack overflow to abort it. Any process that received one such request was permanently poisoned and never served another request. 114 minutes, 2.1 percent error peak.</p>
+
+  <h3 class="yl">18 November 2025: a database permission change takes down a third of the web</h3>
+  <pre class="diagram"> 11:05  <span class="acc2">ClickHouse permissions changed</span> so implicit table access
+        becomes explicit. a security improvement.
+
+        v
+
+        the Bot Management feature-generation query, which had only
+        ever seen the `default` database, now returns metadata from
+        <span class="acc2">both `default` and `r0`</span>  ---&gt;  <span class="hi">every row duplicated</span>
+
+        v
+
+        generated feature file roughly <span class="hi">doubles in size</span> and exceeds a
+        hard limit of <span class="acc2">200 features</span> (normal usage ~60), set as a memory
+        preallocation bound in the FL2 proxy
+
+        v
+
+  FL2:  <span class="hi">thread fl2_worker_thread panicked:</span>
+        <span class="hi">called Result::unwrap() on an Err value</span>
+  FL1:  does not panic. returns <span class="hi">bot score 0 for every request</span>, so
+        customers with bot rules block their own legitimate traffic
+
+ <span class="dim">the ClickHouse change rolled across the cluster gradually, so good</span>
+ <span class="dim">and bad feature files alternated. the resulting flapping 5xx pattern</span>
+ <span class="dim">looked exactly like an external attack, which cost debugging time.</span>
+
+ <span class="acc">14:30 last-known-good file deployed, core traffic recovers.</span>
+ <span class="dim">core network failure ~2h10m; full incident window 11:20-17:06.</span>
+ <span class="dim">Turnstile failed to load, which blocked dashboard login, which</span>
+ <span class="dim">blocked the responders. a circular dependency discovered live.</span></pre>
+
+  <div class="info-box danger">
+    <strong>The hardening commitment is the line to remember</strong>
+    Cloudflare's stated fix was to <strong>treat internally generated configuration as untrusted input and validate it</strong>. A config file your own pipeline produced is still input, and it can still be malformed. Most organisations validate what comes from outside and trust everything they generate themselves.
+  </div>
+
+  <h3 class="yl">5 December 2025: a security fix causes the outage</h3>
+  <p>Seventeen days later. A configuration change disabled an internal WAF testing tool. In the FL1 proxy's Lua ruleset module, applying a killswitch to a rule whose action type is <code>execute</code> skipped creation of <code>rule_result.execute</code>, and downstream code indexed it unconditionally: <em>attempt to index field 'execute' (a nil value)</em>. About <strong>28 percent of Cloudflare HTTP traffic returned 500</strong> for 25 minutes. The underlying change being made was raising the request buffer from 128 KB to 1 MB in order to mitigate <strong>CVE-2025-55182</strong>, the React Server Components flaw. The fix caused the outage.</p>
+
+  <h3 class="yl">Routing: the ones that look like attacks and are not</h3>
+  <table>
+    <tr><th>Date</th><th>Event</th></tr>
+    <tr><td class="meth">24 Jun 2019</td><td><strong>Verizon route leak.</strong> A Noction BGP Optimizer at DQE de-aggregated Cloudflare prefixes into more-specifics; these reached Verizon, which accepted and propagated globally with <strong>no prefix filter, no max-prefix limit and no RPKI validation</strong>. Cloudflare lost ~15 percent of global traffic. Any one of the three missing controls would have caught it</td></tr>
+    <tr><td class="meth">27-28 Jun 2024</td><td><strong>A genuine 1.1.1.1 hijack.</strong> AS267613 (Eletronet) announced <code>1.1.1.1/32</code> while AS262504 leaked <code>1.1.1.0/24</code>. Under 1 percent of users affected but across <strong>300+ networks in 70 countries</strong>, either unable to reach the resolver or silently routed to Brazil</td></tr>
+    <tr><td class="meth rd">14 Jul 2025</td><td><strong>The 1.1.1.1 outage that was not a hijack.</strong> On 6 June a config change for an unreleased service accidentally referenced the resolver. It sat dormant and fired no alerts. On 14 July adding a test location triggered a global refresh that <strong>withdrew the resolver's prefixes from every datacentre</strong>. 62 minutes. <strong>DoH stayed largely up</strong> because most clients use <code>cloudflare-dns.com</code> rather than the literal address. During the withdrawal Tata AS4755 began advertising <code>1.1.1.0/24</code>, which looked exactly like a hijack in public route collectors. Cloudflare states plainly it was not the cause. Widely miscovered</td></tr>
+    <tr><td class="meth">22 Jan 2026</td><td><strong>Cloudflare as the leaking AS.</strong> A policy change removed prefix-list filters without preserving filtering. In JunOS, <code>route-type internal</code> matches any non-external route <em>including IBGP</em>, so the policy marked every internal prefix acceptable for external advertisement. AS13335 took routes learned from Meta, a peer, and advertised them toward Lumen, a transit provider. A textbook valley-free violation, by the company that writes the explainers</td></tr>
+    <tr><td class="meth">20 Feb 2026</td><td><strong>BYOIP mass withdrawal.</strong> A broken cleanup task passed <code>pending_delete</code> with <strong>no value</strong>; the query read the empty string as matching all BYOIP prefixes. <strong>~1,100 of 4,306</strong> globally advertised prefixes withdrawn. 6h07m</td></tr>
+  </table>
+
+  <h3 class="yl">Akamai: two in five weeks, 2021</h3>
+  <table>
+    <tr><th>Date</th><th>Event</th></tr>
+    <tr><td class="meth rd">17 Jun 2021</td><td><strong>Prolexic Routed 3.0.</strong> Akamai's words: <em>"A routing table value used by this particular service was inadvertently exceeded."</em> Not an attack, not a software update. ~500 customers. Down: Commonwealth Bank, ANZ, Westpac, St George, Macquarie, ASB, Virgin Australia, Southwest, American Airlines, Australia Post. <strong>About 6.5 hours.</strong> The irony is material: the DDoS protection service caused the denial of service</td></tr>
+    <tr><td class="meth rd">22 Jul 2021</td><td><strong>Secure edge CDN DNS.</strong> "A software configuration update triggered a bug." Up to an hour. Down: PlayStation Network, Steam, Xbox Live, Airbnb, UPS, FedEx, Amazon, Fidelity, LastPass, HBO Max. Resolved by rollback. <strong>Akamai corrected the record the next day</strong>: the impact was a DNS component inside the secure edge CDN, not the authoritative Edge DNS product. Almost all day-one coverage, including the "Edge DNS outage" framing, is imprecise on this</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>Count the causes</strong>
+    Regex backtracking. A tail-call optimisation removing the only signal that would have aborted a loop. A database permission change duplicating rows past a preallocation bound. A nil field because a killswitch skipped a branch. An empty string matching everything. A routing-table value exceeded. A JunOS keyword matching more than the author thought. <strong>Not one of these is a novel class.</strong> Every one is in a textbook, and every one shipped globally at two of the most competent network operators on earth, mostly because a configuration path lacked the staged rollout that the code path already had.
+  </div>
+</section>
+<section id="providers-terminate" data-num="08" data-view="providers">
+  <h2>Who Gets To Be <em class="cy">Online</em></h2>
+  <div class="section-bar cy"></div>
+  <p>Both companies have had to decide when protecting a site becomes endorsing it. The decisions are inconsistent and both companies say so, which makes the record more honest than most.</p>
+
+  <table>
+    <tr><th>Date</th><th>Case</th><th>Position taken</th></tr>
+    <tr><td class="meth cy">Apr 2003</td><td>Akamai drops <strong>Al Jazeera</strong></td><td>No reason given, ever. The site had been under DDoS, defacement and DNS hijacking since launching its English edition during the Iraq invasion. An Al Jazeera representative cited "nonstop political pressure" on providers</td></tr>
+    <tr><td class="meth">Jun 2011</td><td>Cloudflare keeps <strong>LulzSec</strong></td><td>Signed up 2 June 2011, the same day LulzSec published the Sony Pictures breach; served for about 23 days. Cloudflare's position: it is a network provider, closer to an ISP than a host, and removing a site would slow it rather than remove the content. It says it generated <strong>over 1 million new rules</strong> from the attack patterns aimed at LulzSec in that period</td></tr>
+    <tr><td class="meth rd">16 Aug 2017</td><td>Cloudflare drops <strong>The Daily Stormer</strong></td><td>Four days after Charlottesville. The stated trigger was the site publicly claiming Cloudflare was secretly sympathetic. Prince's internal email to staff, leaked the same day: <em>"Literally, I woke up in a bad mood and decided someone shouldn't be allowed on the Internet. No one should have that power."</em> He was arguing against the power he had just used</td></tr>
+    <tr><td class="meth rd">5 Aug 2019</td><td>Cloudflare drops <strong>8chan</strong></td><td>Two days after El Paso. Reasoning: "they have proven themselves to be lawless". Three incidents cited: El Paso, Christchurch, Poway. Prince explicitly noted the Daily Stormer precedent had not worked, that the site "quickly came back online using a Cloudflare competitor" and "is still available and still disgusting". 8chan returned as 8kun</td></tr>
+    <tr><td class="meth cy">31 Aug 2022</td><td>Cloudflare publishes an <strong>abuse policy framework</strong></td><td>Read at the time as a pre-emptive refusal to drop Kiwi Farms. Three tiers: hosting products (content removable), security services (most restrictive termination posture), and core internet technology like DNS (highest bar). Key line: security services "most closely resemble Internet utilities", with the analogy that "the telephone company doesn't terminate your line if you say awful, racist, bigoted things". It frames Daily Stormer and 8chan as mistakes, and notes that after them, <strong>authoritarian regimes increased pressure on Cloudflare to terminate security services for human rights organisations</strong></td></tr>
+    <tr><td class="meth rd">3 Sep 2022</td><td>Cloudflare blocks <strong>Kiwi Farms</strong> anyway</td><td>Three days later. Cited "an unprecedented emergency and immediate threat to human life unlike we have previously seen", with targeted threats escalating over the preceding 48 hours. Prince wrote that "the policy we articulated last Wednesday remains our policy", framing it as an emergency exception and cautioning against treating it as precedent</td></tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>The counterweight: Project Galileo</strong>
+    Launched 12 June 2014. Free enterprise-grade protection for at-risk public interest sites. As of the twelfth anniversary in June 2026: <strong>over 3,400 websites across 120+ countries</strong>, with 59 civil society partners doing eligibility vetting. Between May 2024 and March 2025 it blocked <strong>108.9 billion</strong> threats, averaging 325 million per day. Galileo participants see vulnerability exploitation attempts at <strong>over seven times</strong> the rate of other Cloudflare customers, and journalists in exile see malicious traffic at roughly four times the rate of journalism organisations generally. The <strong>Athenian Project</strong> (15 December 2017) does the same for election and voter registration infrastructure.
+  </div>
+
+  <p>The structural problem: a provider that can absorb a 31 Tbps attack has, by that same fact, the power to decide who cannot be online. Krebs called it <em>"the democratization of censorship"</em> after Akamai dropped him in 2016 and commercial quotes came back at 150,000 to 200,000 USD per year. When the cost of speech is the cost of defence, whoever sets the price sets the limit.</p>
+</section>
+<section id="providers-lineage" data-num="09" data-view="providers">
+  <h2>Product <em class="or">Lineage</em></h2>
+  <div class="section-bar"></div>
+  <p>Akamai renames aggressively and the old names persist in incident writeups for years, so this matters for reading the primary sources.</p>
+
+  <table>
+    <tr><th>Product</th><th>Date</th><th>Note</th></tr>
+    <tr><td class="meth">FreeFlow</td><td>1 Jun 1999</td><td>Static object caching. The original</td></tr>
+    <tr><td class="meth">EdgeSuite</td><td>2001</td><td>Whole-site delivery, dynamic traffic management, streaming. Some sources say 2002</td></tr>
+    <tr><td class="meth">Site Shield</td><td>by 2010</td><td>Origin cloaking. Restricts origin ingress to a published Akamai-managed edge IP list. Still current, still the single most effective control against direct-to-origin bypass</td></tr>
+    <tr><td class="meth cy">Kona Site Defender</td><td>21 Feb 2012</td><td>WAF plus application-layer DDoS. <strong>This is the name in every 2012 to 2021 incident writeup</strong></td></tr>
+    <tr><td class="meth cy">Prolexic</td><td>acquired 19 Feb 2014</td><td>Network-layer scrubbing, run alongside Kona</td></tr>
+    <tr><td class="meth">Bot Manager</td><td>Feb 2016</td><td>Graded response (monitor, slow, block, allow) rather than binary blocking. Now Bot Manager Premier and Content Protector</td></tr>
+    <tr><td class="meth">Fast DNS to Edge DNS</td><td>renamed 4 Mar 2020</td><td>Initially purely a rename. <strong>Pre-March-2020 writeups call it Fast DNS</strong></td></tr>
+    <tr><td class="meth cy">App &amp; API Protector</td><td>8 Nov 2021</td><td>Successor to Kona and Web Application Protector. Note Kona remained sellable and supported for years afterwards, so "replaced by" is more accurate than "renamed"</td></tr>
+    <tr><td class="meth">Prolexic 6th generation</td><td>25 Oct 2022</td><td>Target of 36 scrubbing centres and 20 Tbps dedicated capacity, a 100 percent increase over the prior generation</td></tr>
+    <tr><td class="meth yl">Shield NS53</td><td>9 Apr 2024</td><td>Hybrid DNS defence. Sits <em>in front of</em> the customer's own authoritative nameservers rather than replacing them, absorbing illegitimate queries at the edge. Specifically targets <strong>NXDOMAIN water torture</strong>. The direct architectural descendant of the 2004 problem</td></tr>
+  </table>
+
+  <h3 class="cy">Prolexic deployment variants, current definitions</h3>
+  <ul class="step-list">
+    <li><strong>Prolexic Routed:</strong> customer advertises a <strong>/24 IPv4 or /48 IPv6</strong> via BGP, clean traffic returns over GRE. Always-on or on-demand. <em>This is the variant that failed on 17 June 2021.</em></li>
+    <li><strong>Prolexic over Akamai Direct Connect</strong> (the old "Connect"): private 10G and 100G ports, SLA 99.9 to 99.99 percent.</li>
+    <li><strong>Prolexic IP Protect</strong> (the old "Proxy"): per-IP or per-service mitigation without a routable block. For fragmented IP space or cloud-hosted origins.</li>
+    <li><strong>Prolexic On-Prem / Hybrid</strong>, powered by Corero: on-premises scrubbing with cloud burst.</li>
+  </ul>
+
+  <p>Akamai's published current scale: <strong>32 anycast scrubbing centres, 20+ Tbps dedicated DDoS capacity, 225+ frontline responders across six locations</strong>, 100 percent platform availability SLA, zero-second mitigation SLA, and a claim of more than 98 percent of attacks blocked instantly. Remember what the zero-second SLA means: <em>proactively configured</em> controls.</p>
+</section>
+<section id="providers-lessons" data-num="10" data-view="providers">
+  <h2>What the Ledgers <em class="yl">Actually Say</em></h2>
+  <div class="section-bar yl"></div>
+
+  <ul class="step-list">
+    <li><strong>The control plane is the target, and has been since 2004.</strong> Akamai 2004 was DNS. Dyn 2016 was DNS. DNS is 34.3 percent of network-layer attacks in H1 2026 and over 60 percent of Akamai's 2024 mitigations had a DNS component. Twenty-two years and the answer is still "run two independent providers".</li>
+    <li><strong>Every real compromise came through a third party.</strong> Cloudflare 2012 was chained account recovery at AT&amp;T and Google. 2023 was an unrotated Okta-derived credential. 2025 was a Salesloft OAuth token. The edge itself has never been the way in.</li>
+    <li><strong>Configuration is code and mostly is not treated as such.</strong> Nearly every major outage at both companies was a config or limit change shipped globally without the staged rollout the code path already had. Cloudflare's post-November-2025 commitment, progressive rollouts for configuration on the same footing as code, is the correct conclusion and it took two outages seventeen days apart to reach it.</li>
+    <li><strong>Attackers respond to hardening by changing shape, not by giving up.</strong> The Eastern European customer hardened all twelve datacentres after July 2022, so the attacker went from 512 IPs at one site to 1,813 across six, escalating in sixty seconds. Harden the host and they attack the prefix.</li>
+    <li><strong>The published number is always "largest mitigated by a vendor who publishes".</strong> Spamhaus's famous 300 Gbps was secondhand. Cloudflare's two biggest records have no postmortem. Akamai's largest 2026 figures are scoped to one customer's history. The ladder is real and the rungs are softer than they look.</li>
+    <li><strong>Absorbing the attack and deciding who deserves absorbing are the same capability.</strong> Krebs in 2016 is the cleanest instance. Nobody has a good answer, both companies have changed their minds publicly, and that is more honest than a policy that was never tested.</li>
+  </ul>
+
+  <div class="info-box">
+    <strong>Sources worth reading directly</strong>
+    Cloudflare publishes genuinely excellent postmortems: the 2 July 2019 regex writeup, the 18 November 2025 outage, the Thanksgiving 2023 incident report and the July 2025 1.1.1.1 postmortem are all worth reading in full and are unusually candid. Akamai's SIRT research blog and the Prolexic mitigation writeups are the best public source on botnet propagation mechanics. GitHub's own 28 February 2018 incident report is the minute-by-minute record of the memcached attack from the target's side.
+  </div>
+</section><section id="defense-principles" data-num="01" data-view="defense">
+  <h2>Four <em class="or">Principles</em></h2>
+  <div class="section-bar"></div>
+
+  <ul class="step-list">
+    <li><strong>You cannot filter a saturated pipe from behind it.</strong> Volumetric mitigation is always upstream. Everything you do on your own equipment applies only to traffic that already arrived, which means the link is already full. This is the one structural fact that determines the whole architecture.</li>
+    <li><strong>Reverse the asymmetry.</strong> Every attack is a bet that the request costs the attacker less than the response costs you. Mitigation means making the attacker pay: a stateless challenge, a cookie, a proof of work, a cryptographic handshake, or simply refusing to allocate anything until the source address is proven.</li>
+    <li><strong>Automate below the human timescale.</strong> A 35-second attack is over before a pager is answered. Anything requiring a phone call, a ticket, or a BGP announcement that waits on convergence has lost. The only acceptable human role is post-incident.</li>
+    <li><strong>Defence in layers, because attacks are multi-vector.</strong> Volumetric absorption upstream, state protection at the edge, behavioural controls at L7. Any single layer alone gets rotated around.</li>
+  </ul>
+
+  <pre class="diagram"><span class="dim">where each control lives relative to the traffic</span>
+
+  internet
+     |
+     |   <span class="acc">[ transit / IXP ]</span>  BCP 38 ingress filtering, uRPF
+     |                     the only place spoofing can actually be fixed
+     v
+  <span class="acc2">[ scrubbing / anycast edge ]</span>  volumetric absorption, ACLs,
+     |                            rate limits, flow-spec, geo blocks
+     |                            <span class="hi">&lt;- 99% of attack traffic dies here</span>
+     v
+  <span class="acc2">[ reverse proxy / CDN ]</span>      SYN cookies, TLS termination,
+     |                            request completion, cache absorption
+     |                            <span class="hi">&lt;- slowloris class dies here</span>
+     v
+  <span class="acc2">[ WAF / bot management ]</span>     fingerprinting, challenges, scoring
+     |                            <span class="hi">&lt;- L7 flood and abuse dies here</span>
+     v
+  <span class="acc2">[ origin ]</span>                   rate limits, circuit breakers, query
+                                  cost limits, ACL to CDN ranges only
+                                  <span class="hi">&lt;- last resort, and the thing you are protecting</span></pre>
+</section>
+<section id="defense-detect" data-num="02" data-view="defense">
+  <h2><em class="cy">Detection</em></h2>
+  <div class="section-bar cy"></div>
+  <p>The hard part is not stopping attack traffic, it is deciding that traffic <em>is</em> an attack quickly enough and without killing a legitimate spike. A product launch, a TV mention, or a viral post look statistically identical to an L7 flood at the first derivative.</p>
+
+  <table>
+    <tr><th>Method</th><th>Signal</th><th>Fails on</th></tr>
+    <tr><td class="meth cy">Flow telemetry (NetFlow, sFlow, IPFIX)</td><td>bps, pps, per-prefix and per-protocol baselines</td><td>Sampled, typically 1:1000 or worse, so detection lags by 15-60 seconds. Too slow for a 35-second attack</td></tr>
+    <tr><td class="meth cy">Inline inspection</td><td>Full packet visibility, sub-second</td><td>Requires the traffic to already be on your network or on an always-on path</td></tr>
+    <tr><td class="meth cy">Static thresholds</td><td>Simple, fast, predictable</td><td>Carpet bombing (stays under per-host limits), degradation attacks (stays under everything), legitimate spikes (false positive)</td></tr>
+    <tr><td class="meth cy">Adaptive baselining</td><td>Learns per-asset normal, including weekly and daily seasonality</td><td>Needs a clean learning period. An attacker who ramps slowly over days can move the baseline. Training on poisoned data is a real risk</td></tr>
+    <tr><td class="meth cy">Fingerprinting</td><td>Real-time signature of the attack's own packet characteristics, then a generated rule</td><td>Multi-vector rotation forces constant regeneration</td></tr>
+    <tr><td class="meth cy">Application health</td><td>Origin latency, error rate, connection pool depth, database wait</td><td>Lagging indicator. By the time it moves you are already degraded. But it is the only one that catches low-and-slow</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>The signal that actually separates attack from spike</strong>
+    Not volume. <strong>Composition.</strong> A legitimate spike preserves the existing distribution of paths, user agents, geographies, referrers, cache hit ratio and session depth: more of the same people doing the same things. An attack changes the shape: cache hit ratio collapses, the path mix flattens or concentrates, session depth goes to one request, and the ASN distribution stops matching your user base. Measure the distributions, not the counters.
+  </div>
+</section>
+<section id="defense-absorb" data-num="03" data-view="defense">
+  <h2>Absorb: <em class="yl">Anycast and Scrubbing</em></h2>
+  <div class="section-bar yl"></div>
+  <p>For volumetric attacks there is no filtering, only capacity and dispersion. The question is how the traffic reaches the capacity.</p>
+
+  <pre class="diagram"><span class="dim">anycast: the attack divides itself</span>
+
+  a botnet's nodes are geographically spread. announce the SAME /24
+  from 300 PoPs, and BGP delivers each packet to the topologically
+  nearest one. <span class="acc">the attack fragments along the same lines the botnet did.</span>
+
+     bots in BR ---&gt; [ SAO PoP  ]   1.2 Tbps   <span class="dim">local capacity 10 Tbps</span>
+     bots in ID ---&gt; [ SIN PoP  ]   0.9 Tbps
+     bots in US ---&gt; [ IAD PoP  ]   2.1 Tbps
+     bots in DE ---&gt; [ FRA PoP  ]   1.4 Tbps
+                          ...
+     <span class="hi">no single PoP ever sees the 22 Tbps aggregate.</span>
+
+  <span class="dim">caveats worth knowing:</span>
+  <span class="dim">- BGP "nearest" is AS-path length, not latency or capacity</span>
+  <span class="dim">- a route change can move a live TCP flow to a different PoP,</span>
+  <span class="dim">  which is why anycast suits stateless/short-lived traffic best</span>
+  <span class="dim">- a concentrated single-region botnet can still overwhelm one PoP</span></pre>
+
+  <table>
+    <tr><th>Model</th><th>How traffic arrives</th><th>Trade-off</th></tr>
+    <tr><td class="meth yl">Always-on proxy (CDN)</td><td>DNS points at the CDN. Only HTTP/S, plus whatever the provider proxies</td><td>Zero diversion time, best L7 coverage. Does not protect non-web protocols, and fails entirely if the origin IP leaks</td></tr>
+    <tr><td class="meth yl">Always-on routed</td><td>Your prefix is permanently announced from the scrubbing network, returned over GRE or a dedicated link</td><td>Zero diversion time, protocol-agnostic, covers the whole prefix. Requires a /24 minimum and adds a permanent path</td></tr>
+    <tr><td class="meth yl">On-demand routed</td><td>Normal routing until detection, then BGP diversion to the scrubbing centre</td><td>Cheaper, no steady-state latency cost. <strong>40 to 90 seconds of convergence</strong>, which loses to pulse waves and to anything shorter than a minute</td></tr>
+    <tr><td class="meth yl">Cloud-connect / tunnel</td><td>Dedicated interconnect from the scrubbing centre to your datacentre or cloud VPC</td><td>Avoids GRE overhead and MTU pain. Fixed capacity per link</td></tr>
+    <tr><td class="meth yl">On-premise appliance</td><td>Inline hardware at your own edge</td><td>Sub-second, full visibility, good for L7 and state attacks. Useless against anything that fills your transit, so it is a complement rather than an alternative</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>The GRE and MTU trap</strong>
+    Routed scrubbing usually returns clean traffic to you over a GRE tunnel, which adds 24 bytes of header. If path MTU discovery is broken anywhere (and it frequently is, because people block ICMP type 3 code 4), large packets vanish and you get the classic symptom: small requests work, downloads and TLS handshakes with big certificates hang. Clamp MSS on the tunnel. This bites people during their first real incident, when they are least able to debug it.
+  </div>
+</section>
+<section id="defense-network" data-num="04" data-view="defense">
+  <h2>Network-Layer <em class="cy">Controls</em></h2>
+  <div class="section-bar cy"></div>
+
+  <table>
+    <tr><th>Control</th><th>What it does</th><th>Note</th></tr>
+    <tr><td class="meth cy">BCP 38 / RFC 2827</td><td>Ingress filtering at the network edge: drop packets whose source could not have come from that interface</td><td>The root-cause fix for all reflection. Deployment is voluntary and the benefit accrues to others, so it remains partial after twenty-five years. Ask your transit providers what they do</td></tr>
+    <tr><td class="meth cy">uRPF (strict / loose / feasible-path)</td><td>The mechanical implementation of BCP 38</td><td>Strict mode breaks asymmetric routing and multihoming, which is why loose mode (source merely present in the FIB) is what most operators actually run, and loose mode catches far less</td></tr>
+    <tr><td class="meth cy">BCP 84 / RFC 3704</td><td>Ingress filtering for multihomed networks</td><td>The practical guidance that makes BCP 38 deployable where strict uRPF cannot be</td></tr>
+    <tr><td class="meth rd">RTBH (Remotely Triggered Black Hole)</td><td>Announce the victim IP with a community that upstreams translate to a discard route</td><td><strong>This completes the attack.</strong> The host is unreachable, which is what the attacker wanted. It exists to save the rest of the network. Destination-based RTBH is surrender for one IP; source-based RTBH (RFC 5635, using uRPF) is better but needs a bounded source list</td></tr>
+    <tr><td class="meth cy">BGP FlowSpec (RFC 8955)</td><td>Distribute granular filter rules (5-tuple, packet length, fragment flags) via BGP to upstream routers</td><td>Surgical instead of RTBH's axe. Adoption is limited because providers are nervous about accepting customer-defined filters, and rule counts are capped</td></tr>
+    <tr><td class="meth cy">ACLs and CoPP</td><td>Drop obvious junk at the edge. Control Plane Policing protects the router's own CPU</td><td>Cheap and effective for protocol-0, fragments, unused ports, and known reflection source ports</td></tr>
+    <tr><td class="meth cy">Rate limiting by protocol</td><td>Cap ICMP, cap UDP to ports you do not serve, cap fragments</td><td>Fast, stateless, and covers a surprising share of real attacks</td></tr>
+    <tr><td class="meth cy">Anycast the DNS</td><td>Multiple independent providers on separate anycast networks</td><td>The Dyn lesson. Verify the second provider is genuinely independent rather than a reseller of the first</td></tr>
+  </table>
+
+  <div class="info-box danger">
+    <strong>RTBH is a decision, not a tool</strong>
+    When your provider says "we blackholed you", they have stopped the attack from hurting <em>them</em>. Your service is down. Know in advance which prefixes you would sacrifice, which you never would, and what the escalation path to real scrubbing is. Having that conversation during an incident is how organisations discover their contract does not cover what they assumed.
+  </div>
+</section>
+<section id="defense-proto" data-num="05" data-view="defense">
+  <h2>Protocol <em class="or">Defenses</em></h2>
+  <div class="section-bar"></div>
+
+  <table>
+    <tr><th>Defence</th><th>Against</th><th>Cost</th></tr>
+    <tr><td class="meth">SYN cookies</td><td>SYN flood</td><td>Loses window scaling, SACK and precise MSS unless timestamps carry them. Usually enabled as a pressure response, not permanently</td></tr>
+    <tr><td class="meth">SYN proxy / first-packet validation</td><td>SYN flood, spoofed sources generally</td><td>The scrubber or proxy completes the handshake itself and only then opens an upstream connection. Proves the source address exists. Adds one RTT</td></tr>
+    <tr><td class="meth">Reduced backlog timeout</td><td>SYN flood</td><td>Crude. Hurts genuinely slow clients</td></tr>
+    <tr><td class="meth cy">DNS cookies (RFC 7873)</td><td>DNS amplification and spoofing</td><td>A lightweight shared secret in an EDNS option. Same idea as SYN cookies, applied to UDP DNS</td></tr>
+    <tr><td class="meth cy">DNS RRL (Response Rate Limiting)</td><td>Being used as an amplifier</td><td>The single most effective mitigation ever shipped for this class. Limits identical responses to the same prefix. Be a good citizen: run it</td></tr>
+    <tr><td class="meth cy">Disable recursion for the world</td><td>Being an open resolver</td><td>Trivial, and the reason the open resolver population dropped from tens of millions</td></tr>
+    <tr><td class="meth cy">TCP-only fallback / truncation</td><td>DNS amplification</td><td>Answer UDP queries with TC=1 under pressure, forcing the client to retry over TCP, which proves the source address</td></tr>
+    <tr><td class="meth yl">QUIC Retry + address validation tokens</td><td>QUIC initial flood</td><td>Built into RFC 9000. The 3x amplification limit caps server response before path validation. Designed in, rather than bolted on</td></tr>
+    <tr><td class="meth yl">HTTP/2 reset accounting</td><td>Rapid Reset</td><td>Track RST_STREAM ratio per connection and GOAWAY on abuse. The real fix</td></tr>
+    <tr><td class="meth">Request read timeout</td><td>Slowloris, RUDY</td><td><code>mod_reqtimeout</code> or equivalent. A full reverse proxy in front of the origin also ends the class</td></tr>
+    <tr><td class="meth">TLS session resumption, session tickets</td><td>TLS handshake flood</td><td>Reduces the asymmetric crypto cost for repeat clients. ECDSA over RSA also narrows the gap considerably</td></tr>
+    <tr><td class="meth">Disable client-initiated renegotiation</td><td>TLS renegotiation flood</td><td>Default off nearly everywhere now</td></tr>
+  </table>
+
+  <div class="info-box cy">
+    <strong>The pattern to recognise</strong>
+    SYN cookies, DNS cookies, QUIC Retry tokens and TCP truncation-to-TCP are the <em>same idea</em> reinvented four times: <strong>do not allocate state until the peer proves it can receive at the address it claims.</strong> When you evaluate any new protocol, the first DDoS question is "what does the server commit before the client has proved the return path", and the second is "can a client create work and then withdraw it for free".
+  </div>
+</section>
+<section id="defense-l7" data-num="06" data-view="defense">
+  <h2>L7 and <em class="yl">Bot Management</em></h2>
+  <div class="section-bar yl"></div>
+  <p>At layer 7 every request is individually valid, so the question is never "is this packet malformed" but "is this client who it claims to be, and is this pattern plausible".</p>
+
+  <table>
+    <tr><th>Technique</th><th>Mechanism</th><th>Evasion</th></tr>
+    <tr><td class="meth yl">TLS fingerprinting (JA3, JA4+)</td><td>Hash of the ClientHello: cipher list, extensions, curves, order. A curl is not a Chrome</td><td>TLS-mimicry libraries now replicate browser hellos exactly. JA4+ adds HTTP/2 and TCP dimensions to keep ahead</td></tr>
+    <tr><td class="meth yl">HTTP/2 fingerprinting</td><td>SETTINGS values, window sizes, header order, priority frames. Very hard to fake consistently</td><td>Headless browser automation reproduces it natively, because it is a real browser</td></tr>
+    <tr><td class="meth yl">Challenge (JS, cookie)</td><td>Require the client to execute something before serving</td><td>Headless Chrome. Also breaks legitimate API clients and hurts accessibility</td></tr>
+    <tr><td class="meth yl">Proof of work</td><td>Client burns CPU for a token. Directly reverses the cost asymmetry</td><td>Attackers with real botnets have plenty of CPU. Best against cheap cloud-sourced floods, weak against IoT swarms</td></tr>
+    <tr><td class="meth yl">Behavioural scoring</td><td>Session depth, navigation order, timing distribution, mouse and scroll entropy</td><td>Slow, cheap, human-like attacks. Needs a warm-up period per session</td></tr>
+    <tr><td class="meth yl">Rate limiting</td><td>Per IP, per token, per path, per fingerprint</td><td>IPv4 NAT means per-IP limits punish whole carriers. Per-path is the more useful axis: the expensive endpoints, not the site</td></tr>
+    <tr><td class="meth yl">Cache everything possible</td><td>The cheapest L7 defence in existence. A cached response never reaches the origin</td><td>Cache-busting query strings. Normalise or ignore unknown query parameters at the edge</td></tr>
+    <tr><td class="meth yl">Query cost limits</td><td>GraphQL depth and complexity budgets, pagination caps, mandatory filters on expensive endpoints</td><td>None, really. This is just correct engineering and it removes the asymmetry at the source</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>Cache hit ratio is a security metric</strong>
+    If your edge cache hit ratio is 95 percent, an L7 flood has to be twenty times larger to produce the same origin load. Treat the ratio as a defensive control with a threshold and an alert, not just a performance number. A sudden collapse in hit ratio with flat or rising request volume is one of the cleanest early indicators of a cache-busting attack, and it usually shows up before origin latency does.
+  </div>
+</section>
+<section id="defense-vendor" data-num="07" data-view="defense">
+  <h2>Vendor <em class="cy">Map</em></h2>
+  <div class="section-bar cy"></div>
+  <p>Every vendor names the same three or four things differently. This maps the names onto each other.</p>
+
+  <table>
+    <tr><th>Function</th><th>Akamai</th><th>Cloudflare</th><th>Others</th></tr>
+    <tr><td class="meth cy">Routed volumetric scrubbing</td><td><strong>Prolexic</strong> (Routed, on-demand or always-on)</td><td>Magic Transit</td><td>AWS Shield Advanced, Azure DDoS Protection, NETSCOUT Arbor, Radware DefensePro, Imperva</td></tr>
+    <tr><td class="meth cy">Dedicated interconnect</td><td>Prolexic <strong>Connect</strong></td><td>Cloudflare Network Interconnect</td><td></td></tr>
+    <tr><td class="meth cy">Proxy / edge L3-L7</td><td><strong>App &amp; API Protector</strong> (was Kona Site Defender)</td><td>WAF + DDoS managed rulesets</td><td>Fastly Next-Gen WAF, F5, Imperva</td></tr>
+    <tr><td class="meth cy">Authoritative DNS</td><td><strong>Edge DNS</strong></td><td>Cloudflare DNS</td><td>NS1, Route 53, Dyn (now Oracle)</td></tr>
+    <tr><td class="meth cy">Recursive DNS shield</td><td><strong>Shield NS53</strong></td><td></td><td></td></tr>
+    <tr><td class="meth cy">Bot management</td><td>Bot Manager, Account Protector</td><td>Bot Management, Turnstile</td><td>HUMAN, DataDome, PerimeterX</td></tr>
+    <tr><td class="meth cy">Origin cloaking</td><td>Site Shield</td><td>Authenticated Origin Pulls, Tunnel</td><td></td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <strong>Read the SLA carefully</strong>
+    "Zero-second mitigation" universally means <em>proactively configured</em> controls that are already live. It does not mean a novel attack is stopped instantly. The questions that matter: does the clock start at detection or at your notification; what is the time-to-mitigate for a vector you have not pre-configured; what is the diversion time for on-demand routing; and is there a burst-capacity or overage clause that turns a large attack into an invoice.
+  </div>
+</section>
+<section id="defense-runbook" data-num="08" data-view="defense">
+  <h2>Under Attack: <em class="rd">Runbook</em></h2>
+  <div class="section-bar rd"></div>
+
+  <h3 class="rd">Before (this is where the work actually is)</h3>
+  <ul class="step-list">
+    <li>Inventory every internet-facing asset, including the ones nobody remembers. The forgotten staging box shares an uplink with production.</li>
+    <li>Know your <strong>baseline</strong> numbers: normal bps, pps, rps, cache hit ratio, origin latency, connection counts, per hour and per weekday.</li>
+    <li>Verify the origin is <strong>unreachable except from the CDN</strong>. Then check DNS history, certificate transparency logs, and mail headers for leaks of the real address.</li>
+    <li>Two independent DNS providers. Confirm the second is not reselling the first.</li>
+    <li>Pre-build and <strong>test</strong> mitigation controls. Run a real drill with the provider. An untested runbook is a document, not a capability.</li>
+    <li>Contacts: your provider's emergency number, your transit providers' NOCs, and who is authorised to approve a diversion at 03:00. Keep this <em>off</em> the infrastructure that will be down.</li>
+  </ul>
+
+  <h3 class="rd">During</h3>
+  <ul class="step-list">
+    <li><strong>Confirm it is an attack.</strong> Check composition, not volume. Rule out your own deploy, a failing dependency, a cache purge, and a legitimate spike.</li>
+    <li><strong>Classify.</strong> Volumetric, state, or application? bps, pps, or rps? That decides who can help.</li>
+    <li><strong>Escalate to the layer that can act.</strong> If the pipe is full, only upstream matters. Do not spend the first ten minutes tuning local iptables on a saturated link.</li>
+    <li><strong>Capture evidence while it is happening.</strong> Flow records, packet samples, source ASN distribution, target paths, fingerprints. You will not be able to reconstruct this afterwards and you may need it for law enforcement or for an insurance claim.</li>
+    <li><strong>Watch for the smokescreen.</strong> Check authentication logs, egress volume, and admin activity. The flood may be the distraction.</li>
+    <li><strong>Do not pay the ransom.</strong> Payment marks you as a paying target and the demand does not end.</li>
+    <li><strong>Communicate.</strong> A status page on infrastructure that is independent of the affected systems, plus a social channel. Silence during an outage costs more trust than the outage.</li>
+  </ul>
+
+  <h3 class="rd">After</h3>
+  <ul class="step-list">
+    <li>Timeline the incident to the second: first packet, detection, decision, mitigation live, recovery. The gaps are your real SLA.</li>
+    <li>Ask what would have happened if the attack had been ten times larger, or had lasted forty seconds instead of forty minutes.</li>
+    <li>Fix the asymmetry that was exploited, not just the signature. A vector-specific rule gets rotated around within days.</li>
+    <li>If you were used as a <em>reflector</em>, fix that too. Half the internet's amplification capacity is other people's unfinished homework.</li>
+  </ul>
+</section>
+<section id="defense-glossary" data-num="09" data-view="defense">
+  <h2><em class="or">Glossary</em></h2>
+  <div class="section-bar"></div>
+
+  <table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td class="meth">BAF / PAF</td><td>Bandwidth (or Packet) Amplification Factor. Response size divided by request size</td></tr>
+    <tr><td class="meth">BCP 38 / RFC 2827</td><td>Network ingress filtering. Drop packets with implausible source addresses. The root fix for spoofing</td></tr>
+    <tr><td class="meth">BCP 34 / RFC 2644</td><td>Directed broadcast forwarding off by default. Killed Smurf</td></tr>
+    <tr><td class="meth">Bpps</td><td>Billion packets per second. In use since 2025</td></tr>
+    <tr><td class="meth">Carpet bombing</td><td>Spreading an attack across a whole prefix to stay under per-host thresholds</td></tr>
+    <tr><td class="meth">CLDAP</td><td>Connectionless LDAP, UDP 389. Current high-growth amplification vector</td></tr>
+    <tr><td class="meth">Conntrack</td><td>Linux connection tracking table. A finite resource and therefore a target</td></tr>
+    <tr><td class="meth">FlowSpec</td><td>RFC 8955. Distributing granular filter rules over BGP</td></tr>
+    <tr><td class="meth">GRE</td><td>Generic Routing Encapsulation. Common return path from a scrubbing centre. Watch the MTU</td></tr>
+    <tr><td class="meth">JA3 / JA4+</td><td>TLS and multi-protocol client fingerprints. JA4+ adds HTTP/2 and TCP dimensions</td></tr>
+    <tr><td class="meth">Mrps</td><td>Million requests per second. The L7 unit</td></tr>
+    <tr><td class="meth">Pulse wave</td><td>Repeated short full-amplitude bursts. Defeats on-demand diversion</td></tr>
+    <tr><td class="meth">RDoS</td><td>Ransom DDoS. Demonstration attack plus payment demand</td></tr>
+    <tr><td class="meth">Reflection</td><td>Using a third party to deliver traffic, hiding the origin</td></tr>
+    <tr><td class="meth">RRL</td><td>DNS Response Rate Limiting. Stops your resolver being an amplifier</td></tr>
+    <tr><td class="meth">RTBH</td><td>Remotely Triggered Black Hole. Discarding traffic to the victim address. Completes the attack to save the network</td></tr>
+    <tr><td class="meth">Scrubbing centre</td><td>A facility with enough capacity to absorb an attack, filter it, and return clean traffic</td></tr>
+    <tr><td class="meth">SYN cookie</td><td>Encoding connection state in the initial sequence number so no memory is allocated for half-open connections</td></tr>
+    <tr><td class="meth">TTM / TTR</td><td>Time to mitigate, time to resolve. Read the definitions in the contract, not the marketing</td></tr>
+    <tr><td class="meth">uRPF</td><td>Unicast Reverse Path Forwarding. The mechanism that implements BCP 38. Strict, loose, and feasible-path modes</td></tr>
+    <tr><td class="meth">Water torture</td><td>DNS attack using random subdomains so nothing can be cached</td></tr>
+  </table>
+
+  <h3>References</h3>
+  <ul class="step-list">
+    <li>RFC 2827 / BCP 38 (ingress filtering), RFC 3704 / BCP 84 (multihomed), RFC 2644 / BCP 34 (directed broadcast)</li>
+    <li>RFC 4987 (TCP SYN flooding attacks and mitigations), RFC 5635 (source-based RTBH), RFC 8955 (FlowSpec)</li>
+    <li>RFC 7873 (DNS cookies), RFC 9000 section 8 (QUIC address validation and the 3x amplification limit)</li>
+    <li>US-CERT TA14-013A, UDP-based amplification attacks. The canonical BAF table</li>
+    <li>CVE-2023-44487 (HTTP/2 Rapid Reset), CVE-2018-5390 (SegmentSmack), CVE-2018-5391 (FragmentSmack)</li>
+    <li>Bock et al, <em>Weaponizing Middleboxes for TCP Reflected Amplification</em>, USENIX Security 2021</li>
+    <li>Crosby and Wallach, <em>Denial of Service via Algorithmic Complexity Attacks</em>, USENIX 2003</li>
+    <li>Cloudflare DDoS threat reports (quarterly), Akamai State of the Internet: Apps, APIs and DDoS</li>
+  </ul>
+</section>
+</div>
+
+<script>
+const LABELS = {
+  'timeline-pre': 'Prehistory 1974-1995',
+  'timeline-malformed': 'Malformed Packets 1996-98',
+  'timeline-smurf': 'Directed Broadcast 1997-99',
+  'timeline-botnet': 'The Handler Era 1999-2001',
+  'timeline-politics': 'Politics &amp; Extortion 2002-12',
+  'timeline-amp': 'Amplification Race 2013-18',
+  'timeline-iot': 'IoT &amp; Hypervolumetric 2016-26',
+  'timeline-eras': 'The Shape of the Curve',
+  'vectors-taxonomy': 'Taxonomy &amp; OSI Map',
+  'vectors-volumetric': 'Volumetric Floods',
+  'vectors-reflection': 'Reflection &amp; Amplification',
+  'vectors-baf': 'The BAF Table',
+  'vectors-state': 'Protocol &amp; State Exhaustion',
+  'vectors-malform': 'Malformed &amp; Loop Attacks',
+  'vectors-layer7': 'Application Layer',
+  'vectors-slow': 'Low-and-Slow',
+  'vectors-dns': 'DNS-Specific',
+  'vectors-shape': 'Traffic Shaping Tactics',
+  'casebook-records': 'The Record Ladder',
+  'casebook-panix': 'Panix, 1996',
+  'casebook-mafiaboy': 'MafiaBoy, 2000',
+  'casebook-estonia': 'Estonia, 2007',
+  'casebook-spamhaus': 'Spamhaus &amp; GitHub',
+  'casebook-mirai': 'Mirai and Dyn, 2016',
+  'casebook-reset': 'Rapid Reset, 2023',
+  'casebook-aisuru': 'Aisuru, 2025-26',
+  'casebook-akamai': "Akamai's Own Ledger",
+  'providers-akearly': 'Akamai 1998-2004',
+  'providers-ak2004': 'The 2004 DNS Attack',
+  'providers-akledger': 'The Prolexic Ledger',
+  'providers-sirt': 'Akamai SIRT Discoveries',
+  'providers-cfledger': "Cloudflare's Ledger",
+  'providers-cfbreach': 'Cloudflare Attacked',
+  'providers-ownfoot': 'Self-Inflicted Outages',
+  'providers-terminate': 'Who Gets To Be Online',
+  'providers-lineage': 'Product Lineage',
+  'providers-lessons': 'What The Ledgers Say',
+  'defense-principles': 'Four Principles',
+  'defense-detect': 'Detection',
+  'defense-absorb': 'Absorb: Anycast &amp; Scrubbing',
+  'defense-network': 'Network Controls',
+  'defense-proto': 'Protocol Defenses',
+  'defense-l7': 'L7 and Bot Management',
+  'defense-vendor': 'Vendor Map',
+  'defense-runbook': 'Under Attack Runbook',
+  'defense-glossary': 'Glossary'
+};
+const allSecs = [...document.querySelectorAll('.container > section[id]')];
+const sideLinks = [...document.querySelectorAll('.side a[data-view]')];
+const viewTabs = [...document.querySelectorAll('.viewtab')];
+const radial = document.getElementById('radial'), ring = document.getElementById('radialRing');
+const center = document.getElementById('radialCenter');
+const navNum = document.getElementById('navNum'), navLabel = document.getElementById('navLabel');
+let view = viewTabs[0].dataset.view, sections = [], items = [];
+function buildRadial() {
+  [...radial.querySelectorAll('.radial-item,.radial-dot')].forEach(e => e.remove());
+  items = sections.map(s => {
+    const a = document.createElement('a'); a.href = '#' + s.id; a.className = 'radial-item';
+    a.innerHTML = '<span>' + s.dataset.num + '</span>' + (LABELS[s.id] || s.id); radial.appendChild(a);
+    const dot = document.createElement('span'); dot.className = 'radial-dot'; radial.appendChild(dot);
+    return { sec: s, a, dot };
+  });
+}
+function layout() {
+  const rx = Math.max(140, Math.min(innerWidth*0.5-150,330)), ry = Math.max(150, Math.min(innerHeight*0.5-100,330));
+  ring.style.width=(rx-26)*2+'px'; ring.style.height=(ry-26)*2+'px';
+  items.forEach((it,i)=>{ const ang=-Math.PI/2+i*2*Math.PI/items.length, x=Math.cos(ang), y=Math.sin(ang);
+    it.a.style.left='calc(50% + '+(rx*x).toFixed(1)+'px)'; it.a.style.top='calc(50% + '+(ry*y).toFixed(1)+'px)';
+    it.a.style.transform='translate('+(x>0.35?'0%':x<-0.35?'-100%':'-50%')+','+(y>0.35?'0%':y<-0.35?'-100%':'-50%')+')';
+    it.dot.style.left='calc(50% + '+((rx-26)*x).toFixed(1)+'px)'; it.dot.style.top='calc(50% + '+((ry-26)*y).toFixed(1)+'px)'; });
+}
+function openDial(){ layout(); radial.classList.add('open'); document.body.classList.add('dial-open'); }
+function closeDial(){ radial.classList.remove('open'); document.body.classList.remove('dial-open'); }
+function activate(id) {
+  const el = document.getElementById(id); const sec = (el && sections.includes(el)) ? el : sections[0];
+  allSecs.forEach(s => s.classList.toggle('active', s === sec));
+  items.forEach(it => { it.a.classList.toggle('active', it.sec === sec); it.dot.classList.toggle('active', it.sec === sec); });
+  sideLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + sec.id));
+  navNum.textContent = sec.dataset.num + ' //'; navLabel.textContent = LABELS[sec.id] || sec.id;
+  center.textContent = sec.dataset.num; closeDial(); window.scrollTo(0, 0);
+}
+function setView(v, id) {
+  view = v; viewTabs.forEach(t => t.classList.toggle('active', t.dataset.view === v));
+  sideLinks.forEach(a => { a.style.display = a.dataset.view === v ? '' : 'none'; });
+  sections = allSecs.filter(s => s.dataset.view === v); buildRadial(); activate(id || sections[0].id);
+}
+function go(id){ history.replaceState(null,'','#'+id); activate(id); }
+viewTabs.forEach(t => t.addEventListener('click', () => setView(t.dataset.view)));
+document.getElementById('navCurrent').addEventListener('click', openDial);
+document.getElementById('sideDial').addEventListener('click', openDial);
+center.addEventListener('click', closeDial);
+radial.addEventListener('click', e => { if (e.target === radial) closeDial(); });
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]'); if (!a) return;
+  const id = a.getAttribute('href').slice(1); const t = document.getElementById(id); if (!t) return;
+  e.preventDefault(); const tv = t.dataset.view; if (tv && tv !== view) setView(tv, id); else go(id);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') return closeDial();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const cur = sections.findIndex(s => s.classList.contains('active'));
+    go(sections[(cur + (e.key === 'ArrowRight' ? 1 : sections.length - 1)) % sections.length].id);
+  }
+});
+window.addEventListener('resize', () => { if (radial.classList.contains('open')) layout(); });
+setView(view, location.hash.slice(1));
+
+const themeButtons = [...document.querySelectorAll('.theme-toggle')];
+function paintTheme(){const dark=document.documentElement.getAttribute('data-theme')==='dark';themeButtons.forEach(b=>b.textContent=(b.classList.contains('side-dial')?(dark?'◑ light':'◐ dark'):(dark?'◑':'◐')));}
+themeButtons.forEach(b=>b.addEventListener('click',()=>{const dark=document.documentElement.getAttribute('data-theme')!=='dark';if(dark)document.documentElement.setAttribute('data-theme','dark');else document.documentElement.removeAttribute('data-theme');localStorage.setItem('theme',dark?'dark':'light');paintTheme();}));
+paintTheme();
+</script>
+</body>
+</html>
