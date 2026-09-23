@@ -298,12 +298,12 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   <div class="sec">additional resources</div>
   <a class="xlink" href="attacks/attack-anatomy.html">
-    <span class="xtag">new</span>
+    <span class="xtag">defence</span>
     <span class="xbody"><b>Attack &amp; Mitigation</b><span class="xd">how the stack gets attacked and defended - floods &amp; amplification, HTTP/2 Rapid Reset, bot abuse, JA4 fingerprinting, defense in depth</span></span>
     <span class="xgo">&rarr;</span>
   </a>
   <a class="xlink" href="filtering/capture-filter.html">
-    <span class="xtag">new</span>
+    <span class="xtag">capture</span>
     <span class="xbody"><b>Capture &amp; Filter</b><span class="xd">see hostile traffic on the wire - BPF vs display filters, tcpdump/tshark/Wireshark, offset matching, and the u32/nftables bridge to dropping it</span></span>
     <span class="xgo">&rarr;</span>
   </a>
@@ -333,22 +333,22 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     <span class="xgo">&rarr;</span>
   </a>
   <a class="xlink" href="tls/tls13-handshake.html">
-    <span class="xtag">new</span>
+    <span class="xtag">tls</span>
     <span class="xbody"><b>TLS 1.3 Handshake</b><span class="xd">the handshake byte-by-byte - ClientHello fields, the 1-RTT flow, the key schedule, 0-RTT, and the exact bytes JA4 hashes</span></span>
     <span class="xgo">&rarr;</span>
   </a>
   <a class="xlink" href="quic/quic-http3-breakdown.html">
-    <span class="xtag">new</span>
+    <span class="xtag">quic</span>
     <span class="xbody"><b>QUIC &amp; HTTP/3</b><span class="xd">packets, Initial keys, varints &amp; frames, connection IDs, HTTP/3 &amp; QPACK - and the Initial ClientHello that JA4q reads</span></span>
     <span class="xgo">&rarr;</span>
   </a>
   <a class="xlink" href="firewall/packet-fate.html">
-    <span class="xtag">new</span>
+    <span class="xtag">netfilter</span>
     <span class="xbody"><b>Packet Fate</b><span class="xd">the firewall path - netfilter hooks, conntrack, DROP vs REJECT, and who really sent that "connection reset by peer" (the TTL gives it away)</span></span>
     <span class="xgo">&rarr;</span>
   </a>
   <a class="xlink" href="ech/ech-breakdown.html">
-    <span class="xtag">new</span>
+    <span class="xtag">privacy</span>
     <span class="xbody"><b>ECH - Encrypted ClientHello</b><span class="xd">the countermove to SNI fingerprinting - the HPKE-sealed inner hello, the HTTPS-record key, GREASE, and why ECH hides where you are going, not who you are</span></span>
     <span class="xgo">&rarr;</span>
   </a>
@@ -486,7 +486,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   var rootrow=document.createElement("div"); rootrow.className="troot"; rootrow.textContent="protocols/"; tree.appendChild(rootrow);
   LAYERS.forEach(function(L,li){
     var ids=byLayer[L[0]]||[]; if(!ids.length) return;
-    var lastGrp = li===LAYERS.length-1;
+    var lastGrp = false;   // the cross-cutting group is always last
     var gh=document.createElement("div"); gh.className="tgrp";
     var gg=document.createElement("span"); gg.className="g"; gg.textContent=(lastGrp?"└─ ":"├─ "); gh.appendChild(gg);
     var gd=document.createElement("span"); gd.className="gdot"; gd.style.background=L[1]; gh.appendChild(gd);
@@ -504,6 +504,39 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       tree.appendChild(a);
     });
   });
+
+  // pages that cut across the layers instead of sitting on one, so they were
+  // never stations on the map and never reached the tree. the tree is the
+  // index for the whole set, so it lists them too.
+  var CROSS=[
+    ["web request","/anatomy-of-a-web-request/","keystroke to pixels, eleven stages and nine caches"],
+    ["attacks","attacks/attack-anatomy.html","what breaks each layer, and what stops it"],
+    ["packet fate","firewall/packet-fate.html","netfilter hooks and the path a packet takes"],
+    ["capture","filtering/capture-filter.html","BPF, capture filters and display filters"],
+    ["ebpf","ebpf/ebpf-networking.html","the hooks that run before netfilter gets a say"],
+    ["tls 1.3","tls/tls13-handshake.html","the handshake, flight by flight"],
+    ["ech","ech/ech-breakdown.html","encrypting the one field still in the clear"],
+    ["quic","quic/quic-http3-breakdown.html","transport and crypto in one flight, over UDP"],
+    ["ja4+","ja4/ja4plus-breakdown.html","fingerprinting a client from how it speaks"],
+    ["linux stack","https://hed0rah.github.io/linux_network_stack/","the kernel path, and the sysctls that change it"]
+  ];
+  var xh=document.createElement("div"); xh.className="tgrp";
+  var xg=document.createElement("span"); xg.className="g"; xg.textContent="└─ "; xh.appendChild(xg);
+  var xd=document.createElement("span"); xd.className="gdot";
+  xd.style.background="var(--flag)"; xh.appendChild(xd);
+  var xl=document.createElement("span"); xl.className="glab";
+  xl.style.color="var(--flag)"; xl.textContent="cross-cutting"; xh.appendChild(xl);
+  tree.appendChild(xh);
+  CROSS.forEach(function(row,ci){
+    var a=document.createElement("a"); a.className="tleaf"; a.href=row[1];
+    if(row[1].indexOf("http")===0){ a.target="_blank"; a.rel="noopener"; }
+    var g=document.createElement("span"); g.className="g";
+    g.textContent="   "+(ci===CROSS.length-1?"└─ ":"├─ "); a.appendChild(g);
+    var n=document.createElement("span"); n.className="n"; n.textContent=row[0]; a.appendChild(n);
+    var b=document.createElement("span"); b.className="b"; b.textContent=row[2]; a.appendChild(b);
+    tree.appendChild(a);
+  });
+
   plist.appendChild(tree);
 
   paint("tcp");
