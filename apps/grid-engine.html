@@ -37,41 +37,93 @@ svg.inv{filter:invert(1)}
   svg{box-shadow:none;max-width:none;height:auto}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+footer{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;
+  padding:14px 16px;border-top:1px solid var(--field-bd);color:var(--field-fg);
+  opacity:.7;font-size:11px;letter-spacing:.04em}
+footer a{color:inherit}
+footer a:hover{color:var(--focus)}
 @media (max-width:900px){#r{margin-left:0;text-align:left;max-width:100%}}
+@media (max-width:720px){
+  header{padding:7px 9px;gap:7px}
+  h1{width:100%;margin:0 0 2px}
+  label{font-size:11px}
+  input[type=number]{width:52px}
+  input[type=text]{width:100%;min-width:90px}
+  label:has(#pre),label:has(#E){flex:1 1 100%}
+  select#pre,select#E{width:100%;max-width:none}
+  .stage{padding:10px}
+  #r{order:99;width:100%}
+  footer{flex-direction:column;gap:4px}
+}
+@media (max-width:420px){
+  button{padding:5px 8px}
+  input[type=number]{width:46px}
+}
 </style></head><body>
 <header><h1>Grid Engine</h1>
 <label>preset<select id="pre" style="max-width:250px"></select></label>
 <label>engine<select id="E">
 <option value="sheet">worksheet</option><option value="rect">lattice</option><option value="column">columns</option>
 <option value="iso">isometric</option><option value="hex">hex</option><option value="polar">polar</option><option value="slant">slant</option>
+<optgroup label="experimental">
+<option value="spiral">phyllotaxis</option>
+<option value="persp">perspective</option>
+<option value="truchet">truchet</option>
+<option value="moire">moire</option>
+<option value="canon">canon</option>
+</optgroup>
 </select></label>
-<label>w<input type="number" id="W" value="210" step=".1">mm</label>
-<label>h<input type="number" id="H" value="297" step=".1">mm</label>
-<label>margin<input type="number" id="M" value="11" step=".1">mm</label>
+<label>paper<select id="PP">
+<option value="">custom</option>
+<optgroup label="ISO"><option value="148x210">A5 148x210</option><option value="210x297" selected>A4 210x297</option><option value="297x420">A3 297x420</option><option value="420x594">A2 420x594</option><option value="594x841">A1 594x841</option></optgroup>
+<optgroup label="US"><option value="216x279">Letter 8.5x11</option><option value="216x356">Legal 8.5x14</option><option value="279x432">Tabloid 11x17</option></optgroup>
+<optgroup label="square"><option value="200x200">200 square</option><option value="300x300">300 square</option></optgroup>
+<optgroup label="screen"><option value="254x143">16:9 slide</option><option value="279x216">4:3 slide</option></optgroup>
+</select></label>
+<button id="rot" title="swap width and height">&#8646;</button>
+<label>w<input type="number" id="W" value="210" step=".1"></label>
+<label>h<input type="number" id="H" value="297" step=".1"></label>
+<label>margin<input type="number" id="M" value="11" step=".1"><span class="u">mm</span></label>
+<label data-e="spiral">points<input type="number" id="NP" value="600"></label>
+<label data-e="spiral">angle<input type="number" id="GA" value="137.508" step=".001">deg</label>
+<label data-e="spiral truchet">seed<input type="number" id="SD" value="1"></label>
+<label data-e="persp">points<select id="VP"><option value="1">one</option><option value="2">two</option></select></label>
+<label data-e="persp">horizon<input type="number" id="HZ" value="45" step="1">%</label>
+<label data-e="persp">rays<input type="number" id="RY" value="24"></label>
+<label data-e="moire">offset<input type="number" id="MO" value="4" step=".5">deg</label>
+<label data-e="canon">divisions<input type="number" id="CD" value="9"></label>
+<label>units<select id="U"><option value="mm">mm</option><option value="in">in</option></select></label>
 <label data-e="sheet">cols<input type="number" id="C" value="9"></label>
 <label data-e="sheet column">subdiv<input type="number" id="S" value="4"></label>
 <label data-e="sheet">rows<input type="number" id="R" value="61"></label>
 <label data-e="sheet rect polar">accent<input type="number" id="A" value="0"></label>
 <label data-e="sheet">cat<input type="text" id="T" value="Catalogusnr. 438"></label>
-<label data-e="rect iso hex slant">pitch<input type="number" id="PX" value="5" step=".01">mm</label>
-<label data-e="rect">pitch y<input type="number" id="PY" value="5" step=".01">mm</label>
+<label data-e="rect iso hex slant truchet moire">pitch<input type="number" id="PX" value="5" step=".01"><span class="u">mm</span></label>
+<label data-e="rect">pitch y<input type="number" id="PY" value="5" step=".01"><span class="u">mm</span></label>
 <label data-e="rect">sub<input type="number" id="SB" value="1"></label>
-<label data-e="rect">margin line<input type="number" id="ML" value="0" step=".1">mm</label>
+<label data-e="rect">margin line<input type="number" id="ML" value="0" step=".1"><span class="u">mm</span></label>
 <label data-e="rect">mode<select id="MD"><option value="lines">lines</option><option value="dots">dots</option><option value="hv">h only</option><option value="mizi">mizige</option></select></label>
 <label data-e="column">columns<input type="number" id="CC" value="8"></label>
-<label data-e="column">gutter<input type="number" id="GU" value="4" step=".1">mm</label>
-<label data-e="column">leading<input type="number" id="LE" value="4.5" step=".1">mm</label>
+<label data-e="column">gutter<input type="number" id="GU" value="4" step=".1"><span class="u">mm</span></label>
+<label data-e="column">leading<input type="number" id="LE" value="4.5" step=".1"><span class="u">mm</span></label>
 <label data-e="iso">angle<input type="number" id="AN" value="30"></label>
 <label data-e="iso"><input type="checkbox" id="VT" checked>vert</label>
 <label data-e="polar">rings<input type="number" id="RG" value="12"></label>
 <label data-e="polar">spokes<input type="number" id="SP" value="36"></label>
 <label data-e="polar">space<select id="PS"><option value="lin">linear</option><option value="log">log</option><option value="sqrt">sqrt</option></select></label>
 <label data-e="slant">slant<input type="number" id="SL" value="55"></label>
-<label data-e="slant">x-ht<input type="number" id="XH" value="5" step=".1">mm</label>
+<label data-e="slant">x-ht<input type="number" id="XH" value="5" step=".1"><span class="u">mm</span></label>
+<label title="scales every line on the sheet. thin for pencil work, heavy for a laser printer that loses hairlines">weight<input type="number" id="LW" value="1" step=".1" min=".2" max="4" style="width:44px"></label>
 <label>ink<input type="color" id="K" value="#1a1a1a"></label>
 <label>accent<input type="color" id="X" value="#41618f"></label>
-<label title="negative: white lines on dark paper. uses a lot of ink if printed"><input type="checkbox" id="INV">invert</label><button id="th" title="toggle dark mode" aria-pressed="false">dark</button><button id="p">print</button><button id="d">save svg</button><button id="lk" title="copy a link that restores this exact grid">copy link</button><span id="r" aria-live="polite"></span></header>
-<div class="stage" id="st"></div><script>
+<label title="negative: white lines on dark paper. uses a lot of ink if printed"><input type="checkbox" id="INV">invert</label><button id="th" title="toggle dark mode" aria-pressed="false">dark</button><label title="raster export resolution">dpi<select id="DPI"><option>150</option><option selected>300</option><option>600</option></select></label>
+<button id="p">print</button><button id="d">save svg</button><button id="g">save png</button><button id="lk" title="copy a link that restores this exact grid">copy link</button><span id="r" aria-live="polite"></span></header>
+<div class="stage" id="st"></div>
+<footer>
+  <span><a href="/">hed0rah.github.io</a></span>
+  <span>Grid Engine &middot; millimetre-true output, print or SVG</span>
+  <span><a href="https://x.com/r3l0z" rel="noopener">@r3l0z</a></span>
+</footer><script>
 const $=i=>document.getElementById(i),L="abcdefghijklmnopqrstuvwxyz",pg=document.createElement('style');document.head.appendChild(pg);
 // the caption lands inside an SVG <text>, so & < > have to be escaped or the document breaks
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
@@ -108,7 +160,19 @@ const PRESETS={
 "Italic broad-pen 5 deg":{E:'slant',W:297,H:210,M:15,PX:14,SL:5,XH:5,K:'#9a9a9a',X:'#41618f'},
 "-- conceptual --":null,
 "Rule 110 worksheet (CA by hand)":{E:'rect',W:297,H:210,M:10,PX:3,PY:3,SB:1,A:10,ML:0,MD:'lines',K:'#bbb',X:'#1a1a1a'},
-"Ken module 1:50 (tatami)":{E:'rect',W:297,H:210,M:15,PX:18.2,PY:36.4,SB:2,A:0,ML:0,MD:'lines',K:'#8a7a6a',X:'#5a4a3a'}
+"Ken module 1:50 (tatami)":{E:'rect',W:297,H:210,M:15,PX:18.2,PY:36.4,SB:2,A:0,ML:0,MD:'lines',K:'#8a7a6a',X:'#5a4a3a'},
+"-- experimental --":null,
+"Phyllotaxis 600 (sunflower)":{E:'spiral',W:210,H:210,M:12,NP:600,GA:137.508,A:0,K:'#1a1a1a',X:'#41618f'},
+"Phyllotaxis marked 8ths":{E:'spiral',W:210,H:210,M:12,NP:900,GA:137.508,A:8,K:'#9aa6b5',X:'#b04040'},
+"Fermat 99.5 deg (near-miss)":{E:'spiral',W:210,H:210,M:12,NP:700,GA:99.5,A:0,K:'#4a6f4a',X:'#2f5f2f'},
+"One-point perspective":{E:'persp',W:297,H:210,M:12,VP:'1',HZ:45,RY:24,K:'#9aa6b5',X:'#c05050'},
+"Two-point perspective":{E:'persp',W:297,H:210,M:12,VP:'2',HZ:40,RY:20,K:'#9aa6b5',X:'#41618f'},
+"Truchet 12mm":{E:'truchet',W:210,H:297,M:12,PX:12,SD:1,K:'#1a1a1a'},
+"Truchet fine 6mm":{E:'truchet',W:210,H:297,M:10,PX:6,SD:7,K:'#5b7fa6'},
+"Moire 4 deg":{E:'moire',W:210,H:210,M:10,PX:3,MO:4,K:'#1a1a1a',X:'#b04040'},
+"Moire near-parallel 1 deg":{E:'moire',W:210,H:210,M:10,PX:2,MO:1,K:'#41618f',X:'#c05050'},
+"Van de Graaf canon (1/9)":{E:'canon',W:148,H:210,M:0,CD:9,K:'#9a9a9a',X:'#b04040'},
+"Canon 1/12 (tight)":{E:'canon',W:148,H:210,M:0,CD:12,K:'#9a9a9a',X:'#41618f'}
 };
 
 const sel=$('pre');
@@ -128,10 +192,12 @@ function syncFields(){const e=$('E').value;
   document.querySelectorAll('[data-e]').forEach(n=>n.classList.toggle('hide',!n.dataset.e.split(' ').includes(e)))}
 
 function draw(){
- const W=+$('W').value,H=+$('H').value,m=+$('M').value,k=$('K').value,x=$('X').value,e=$('E').value;
+ const mmv=id=>toMM(+$(id).value);
+ const W=mmv('W'),H=mmv('H'),m=mmv('M'),k=$('K').value,x=$('X').value,e=$('E').value;
+ const LW=Math.max(.2,+$('LW').value||1);
  pg.textContent=`@page{size:${W}mm ${H}mm;margin:0}`;
  const gw=W-2*m,gh=H-2*m;let o='',info='',clip=`<clipPath id="c"><rect x="${m}" y="${m}" width="${gw}" height="${gh}"/></clipPath>`;
- const ln=(x1,y1,x2,y2,c,w)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}"/>`;
+ const ln=(x1,y1,x2,y2,c,w)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${(w*LW).toFixed(3)}"/>`;
 
  if(e==='sheet'){const nc=+$('C').value,sd=+$('S').value,nr=+$('R').value,ar=+$('A').value,g=6;
   const x0=m,y0=m+g,x1=W-m-g,y1=H-m,cw=(x1-x0)/nc,ch=(y1-y0)/nr,fw=cw/sd;
@@ -142,9 +208,9 @@ function draw(){
   if($('T').value.trim())o+=`<text x="${x0}" y="${y1+4.2}" font-family="Helvetica,Arial" font-size="2.9" font-weight="700" fill="${k}">${esc($('T').value)}</text>`;
   info=`${nc}x${sd}=${nc*sd} fine | ${nr} rows | col ${cw.toFixed(2)} fine ${fw.toFixed(2)} row ${ch.toFixed(2)}mm`;
  }
- else if(e==='rect'){const px=+$('PX').value,py=+$('PY').value,sb=+$('SB').value,ar=+$('A').value,ml=+$('ML').value,md=$('MD').value;
+ else if(e==='rect'){const px=mmv('PX'),py=mmv('PY'),sb=+$('SB').value,ar=+$('A').value,ml=mmv('ML'),md=$('MD').value;
   const fx=px/sb,fy=py/sb,ncx=Math.floor(gw/fx),ncy=Math.floor(gh/fy);
-  if(md==='dots'){for(let i=0;i<=ncx;i++)for(let j=0;j<=ncy;j++)o+=`<circle cx="${m+i*fx}" cy="${m+j*fy}" r=".3" fill="${k}"/>`}
+  if(md==='dots'){for(let i=0;i<=ncx;i++)for(let j=0;j<=ncy;j++)o+=`<circle cx="${m+i*fx}" cy="${m+j*fy}" r="${(.3*LW).toFixed(2)}" fill="${k}"/>`}
   else{
    if(md!=='hv')for(let i=0;i<=ncx;i++){const X_=m+i*fx,MJ=i%sb===0,AC=ar>0&&MJ&&(i/sb)%ar===0;o+=ln(X_,m,X_,m+ncy*fy,AC?x:k,AC?.4:(MJ?.22:.09))}
    for(let j=0;j<=ncy;j++){const Y=m+j*fy,MJ=j%sb===0,AC=ar>0&&MJ&&(j/sb)%ar===0;o+=ln(m,Y,m+ncx*fx,Y,AC?x:k,AC?.4:(MJ?.22:.09))}
@@ -154,43 +220,95 @@ function draw(){
   if(ml>0)o+=ln(ml,m,ml,H-m,x,.35);
   info=`${ncx} x ${ncy} cells | pitch ${px}x${py}mm, sub ${sb} -> ${fx.toFixed(3)}x${fy.toFixed(3)}mm`;
  }
- else if(e==='column'){const n=+$('CC').value,g=+$('GU').value,le=+$('LE').value,fl=+$('S').value;
+ else if(e==='column'){const n=+$('CC').value,g=mmv('GU'),le=mmv('LE'),fl=+$('S').value;
   const cw=(gw-(n-1)*g)/n,nb=Math.floor(gh/le);
-  o+=`<rect x="${m}" y="${m}" width="${gw}" height="${gh}" fill="none" stroke="${k}" stroke-width=".3"/>`;
-  for(let i=0;i<n;i++)o+=`<rect x="${m+i*(cw+g)}" y="${m}" width="${cw}" height="${gh}" fill="${x}" fill-opacity=".05" stroke="${x}" stroke-width=".2"/>`;
+  o+=`<rect x="${m}" y="${m}" width="${gw}" height="${gh}" fill="none" stroke="${k}" stroke-width="${(.3*LW).toFixed(3)}"/>`;
+  for(let i=0;i<n;i++)o+=`<rect x="${m+i*(cw+g)}" y="${m}" width="${cw}" height="${gh}" fill="${x}" fill-opacity=".05" stroke="${x}" stroke-width="${(.2*LW).toFixed(3)}"/>`;
   for(let j=0;j<=nb;j++)o+=ln(m,m+j*le,W-m,m+j*le,k,.08);
   if(fl>0)for(let j=0;j<=nb;j+=fl)o+=ln(m,m+j*le,W-m,m+j*le,x,.35);
   info=`col ${cw.toFixed(2)}mm | ${nb} baselines @ ${le}mm | slack ${(gh-nb*le).toFixed(2)}mm`;
  }
- else if(e==='iso'){const u=+$('PX').value,ang=+$('AN').value,R=ang*Math.PI/180,D=Math.hypot(gw,gh);
+ else if(e==='iso'){const u=mmv('PX'),ang=+$('AN').value,R=ang*Math.PI/180,D=Math.hypot(gw,gh);
   [R,-R].forEach(t=>{const dx=Math.cos(t),dy=Math.sin(t),nx=-dy,ny=dx;
    for(let s=-D;s<=D;s+=u){const cx=m+gw/2+nx*s,cy=m+gh/2+ny*s;o+=ln(cx-dx*D,cy-dy*D,cx+dx*D,cy+dy*D,k,.1)}});
   if($('VT').checked){const vp=u/Math.sin(R);for(let X_=m;X_<=m+gw+.001;X_+=vp)o+=ln(X_,m,X_,m+gh,k,.1)}
   info=`pitch ${u}mm at ${ang} deg | vertical spacing ${(u/Math.sin(R)).toFixed(2)}mm`;
  }
- else if(e==='hex'){const s=+$('PX').value,hw=Math.sqrt(3)*s,vh=1.5*s;
+ else if(e==='hex'){const s=mmv('PX'),hw=Math.sqrt(3)*s,vh=1.5*s;
   for(let row=0;row*vh<gh+s;row++)for(let col=0;col*hw<gw+hw;col++){
    const cx=m+col*hw+(row%2?hw/2:0),cy=m+s+row*vh;let pts=[];
    for(let a=0;a<6;a++){const t=Math.PI/180*(60*a-90);pts.push(`${(cx+s*Math.cos(t)).toFixed(2)},${(cy+s*Math.sin(t)).toFixed(2)}`)}
-   o+=`<polygon points="${pts.join(' ')}" fill="none" stroke="${k}" stroke-width=".12"/>`}
+   o+=`<polygon points="${pts.join(' ')}" fill="none" stroke="${k}" stroke-width="${(.12*LW).toFixed(3)}"/>`}
   info=`hex side ${s}mm | width ${hw.toFixed(2)}mm, row pitch ${vh.toFixed(2)}mm`;
  }
  else if(e==='polar'){const n=+$('RG').value,sp=+$('SP').value,ar=+$('A').value,md=$('PS').value;
   const cx=W/2,cy=H/2,R=Math.min(gw,gh)/2;clip='';
   const rad=i=>md==='log'?R*Math.log10(1+9*i/n):md==='sqrt'?R*Math.sqrt(i/n):R*i/n;
-  for(let i=1;i<=n;i++){const r=rad(i),AC=ar>0&&i%ar===0;o+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${AC?x:k}" stroke-width="${AC?.35:.12}"/>`}
+  for(let i=1;i<=n;i++){const r=rad(i),AC=ar>0&&i%ar===0;o+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${AC?x:k}" stroke-width="${((AC?.35:.12)*LW).toFixed(3)}"/>`}
   for(let j=0;j<sp;j++){const t=j*2*Math.PI/sp-Math.PI/2,AC=ar>0&&j%ar===0;
    o+=ln(cx,cy,cx+R*Math.cos(t),cy+R*Math.sin(t),AC?x:k,AC?.3:.1)}
-  o+=`<circle cx="${cx}" cy="${cy}" r=".5" fill="${k}"/>`;
+  o+=`<circle cx="${cx}" cy="${cy}" r="${(.5*LW).toFixed(2)}" fill="${k}"/>`;
   info=`R ${R.toFixed(1)}mm | ${n} rings (${md}) | ${sp} spokes = ${(360/sp).toFixed(2)} deg`;
  }
- else if(e==='slant'){const band=+$('PX').value,sl=+$('SL').value,xh=+$('XH').value;
+ else if(e==='slant'){const band=mmv('PX'),sl=+$('SL').value,xh=mmv('XH');
   const nb=Math.floor(gh/band),t=(90-sl)*Math.PI/180,dx=Math.tan(t);
   for(let j=0;j<nb;j++){const top=m+j*band,base=top+band*.72,xt=base-xh;
    o+=ln(m,base,W-m,base,x,.3);o+=ln(m,xt,W-m,xt,k,.18);o+=ln(m,top,W-m,top,k,.08)}
   const step=band*.55;for(let X_=m-gh*Math.abs(dx);X_<W-m+gh*Math.abs(dx);X_+=step)
    o+=ln(X_,m+gh,X_+gh*dx,m,k,.07);
   info=`${nb} bands @ ${band}mm | x-height ${xh}mm | slant ${sl} deg`;
+ }
+
+ else if(e==='spiral'){const n=+$('NP').value,ga=+$('GA').value*Math.PI/180,ar=+$('A').value;
+  const cx=W/2,cy=H/2,R=Math.min(gw,gh)/2,c=R/Math.sqrt(n);
+  for(let i=1;i<=n;i++){const r=c*Math.sqrt(i),t=i*ga;
+   const AC=ar>0&&i%ar===0;
+   o+=`<circle cx="${(cx+r*Math.cos(t)).toFixed(2)}" cy="${(cy+r*Math.sin(t)).toFixed(2)}" r="${(AC?.7:.45)*LW}" fill="${AC?x:k}"/>`}
+  info=`${n} points | ${(+$('GA').value).toFixed(3)} deg divergence | radius ${R.toFixed(1)}mm`;
+ }
+ else if(e==='persp'){const np=+$('VP').value,hz=+$('HZ').value/100,ry=+$('RY').value;
+  const hy=m+gh*hz;
+  o+=ln(m,hy,W-m,hy,x,.5);                                  // horizon
+  const vps=np===1?[m+gw/2]:[m+gw*.12,m+gw*.88];
+  vps.forEach(function(vx){
+   o+=`<circle cx="${vx}" cy="${hy}" r="${.8*LW}" fill="${x}"/>`;
+   for(let i=0;i<=ry;i++){const t=Math.PI*i/ry;
+    const dx=Math.cos(t),dy=Math.sin(t);
+    o+=ln(vx,hy,vx+dx*gw*2,hy+dy*gh*2,k,.09)+ln(vx,hy,vx-dx*gw*2,hy-dy*gh*2,k,.09)}});
+  // ground lines receding to the horizon, spaced so they compress with depth
+  for(let i=1;i<=14;i++){const f=i/15,gy=hy+(m+gh-hy)*(1-Math.pow(1-f,2.2));
+   o+=ln(m,gy,W-m,gy,k,.13)}
+  info=`${np===1?'one':'two'}-point | horizon ${(hz*100).toFixed(0)}% | ${ry} rays per vanishing point`;
+ }
+ else if(e==='truchet'){const u=mmv('PX');let sd=+$('SD').value>>>0||1;
+  const rnd=()=>((sd=(sd*1664525+1013904223)>>>0)/4294967296);
+  const ncx=Math.floor(gw/u),ncy=Math.floor(gh/u),r=u/2;
+  for(let i=0;i<ncx;i++)for(let j=0;j<ncy;j++){
+   const X_=m+i*u,Y=m+j*u,f=rnd()<.5;
+   const a=f?[[X_,Y+r,X_+r,Y],[X_+r,Y+u,X_+u,Y+r]]:[[X_,Y+r,X_+r,Y+u],[X_+r,Y,X_+u,Y+r]];
+   a.forEach(function(q){o+=`<path d="M${q[0].toFixed(2)},${q[1].toFixed(2)} A${r},${r} 0 0,${f?1:0} ${q[2].toFixed(2)},${q[3].toFixed(2)}" fill="none" stroke="${k}" stroke-width="${(.25*LW).toFixed(3)}"/>`})}
+  info=`${ncx} x ${ncy} tiles @ ${u}mm | seed ${$('SD').value} | same seed redraws the same tiling`;
+ }
+ else if(e==='moire'){const u=mmv('PX'),off=+$('MO').value*Math.PI/180,D=Math.hypot(gw,gh);
+  [0,off].forEach(function(t,idx){const col=idx?x:k;
+   const dx=Math.cos(t),dy=Math.sin(t),nx=-dy,ny=dx;
+   for(let sp=-D;sp<=D;sp+=u){const cx2=m+gw/2+nx*sp,cy2=m+gh/2+ny*sp;
+    o+=ln(cx2-dx*D,cy2-dy*D,cx2+dx*D,cy2+dy*D,col,.1)}});
+  const beat=+$('MO').value?u/(2*Math.sin(Math.abs(off)/2)):Infinity;
+  info=`two rasters @ ${u}mm, ${$('MO').value} deg apart | beat period ${isFinite(beat)?beat.toFixed(1)+'mm':'parallel'}`;
+ }
+ else if(e==='canon'){const dv=+$('CD').value;
+  // Van de Graaf: the diagonals of page and spread locate a text block whose
+  // proportion follows the page, with inner margin half the outer
+  const sp=W*2;clip='';
+  o+=`<rect x="0" y="0" width="${W}" height="${H}" fill="none" stroke="${k}" stroke-width="${(.3*LW).toFixed(3)}"/>`;
+  o+=ln(0,0,W,H,k,.12)+ln(W,0,0,H,k,.12);
+  o+=ln(0,0,W/2,H,x,.12)+ln(W/2,0,0,H,x,.12);
+  const tw=W*(dv-2)/dv,th=H*(dv-2)/dv,tx=W*2/dv,ty=H/dv;
+  o+=`<rect x="${tx.toFixed(2)}" y="${ty.toFixed(2)}" width="${tw.toFixed(2)}" height="${th.toFixed(2)}" fill="none" stroke="${x}" stroke-width="${(.45*LW).toFixed(3)}"/>`;
+  for(let i=1;i<dv;i++){const gx=W*i/dv,gy=H*i/dv;
+   o+=ln(gx,0,gx,H,k,.06)+ln(0,gy,W,gy,k,.06)}
+  info=`canon 1/${dv} | text block ${tw.toFixed(1)} x ${th.toFixed(1)}mm | inner margin ${tx.toFixed(1)}mm, outer ${(W-tx-tw).toFixed(1)}mm`;
  }
 
  $('r').textContent=info;
@@ -202,8 +320,9 @@ function draw(){
 /* ---- shareable state -------------------------------------------------
    every control goes in the hash, so a grid you tuned can be bookmarked or
    handed to someone else and come back exactly as it was. ------------------ */
-const CTL=['pre','E','W','H','M','C','S','R','A','T','PX','PY','SB','ML','MD',
-           'CC','GU','LE','AN','VT','RG','SP','PS','SL','XH','K','X','INV'];
+const CTL=['pre','E','PP','U','W','H','M','C','S','R','A','T','PX','PY','SB','ML','MD',
+           'CC','GU','LE','AN','VT','RG','SP','PS','SL','XH','NP','GA','SD','VP','HZ',
+           'RY','MO','CD','LW','DPI','K','X','INV'];
 function writeHash(){
   const q=CTL.map(id=>{const el=$(id);if(!el)return null;
     const v=el.type==='checkbox'?(el.checked?1:0):el.value;
@@ -233,6 +352,62 @@ $('lk').onclick=()=>{writeHash();
 $('p').onclick=()=>print();
 $('d').onclick=()=>{const b=new Blob([$('s').outerHTML],{type:'image/svg+xml'}),a=document.createElement('a');
  a.href=URL.createObjectURL(b);a.download=sel.value.replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.svg';a.click()};
+
+/* ---- paper, orientation, units ------------------------------------------
+   geometry is always millimetres internally. the unit select only changes
+   what the boxes show, so a preset in mm and a page typed in inches agree. */
+const MMIN=25.4, DIMS=['W','H','M','PX','PY','ML','GU','LE','XH'];
+let unit='mm';
+function setUnit(u){
+  if(u===unit)return;
+  DIMS.forEach(id=>{const el=$(id);if(!el)return;
+    if(u==='in'){
+      el.dataset.mm=el.value;                       // keep the exact millimetre
+      el.value=(+el.value/MMIN).toFixed(3).replace(/\.?0+$/,'');
+      el.step='.01';
+    }else{
+      // restore the stored value rather than converting back, so toggling
+      // units repeatedly cannot walk the page size away from where it started
+      el.value=el.dataset.mm!==undefined?el.dataset.mm:(+el.value*MMIN).toFixed(2).replace(/\.?0+$/,'');
+      el.step='.1';
+    }});
+  unit=u;
+  document.querySelectorAll('.u').forEach(n=>n.textContent=u);
+}
+// typing a value in inches makes the stored millimetre stale
+DIMS.forEach(id=>{const el=$(id);if(el)el.addEventListener('input',()=>{delete el.dataset.mm})});
+const toMM=v=>unit==='in'?v*MMIN:v;
+
+$('PP').onchange=()=>{const v=$('PP').value;if(!v)return;
+  const [w,h]=v.split('x').map(Number);
+  $('W').value=unit==='in'?(w/MMIN).toFixed(2):w;
+  $('H').value=unit==='in'?(h/MMIN).toFixed(2):h;
+  draw();writeHash()};
+$('rot').onclick=()=>{const w=$('W').value;$('W').value=$('H').value;$('H').value=w;
+  $('PP').value='';draw();writeHash()};
+$('U').onchange=()=>{setUnit($('U').value);draw();writeHash()};
+['W','H'].forEach(id=>$(id).addEventListener('input',()=>{$('PP').value=''}));
+
+/* ---- png export ---------------------------------------------------------
+   the svg is already sized in real millimetres, so the raster is just the
+   page at the requested dots per inch. */
+$('g').onclick=()=>{
+  const dpi=+$('DPI').value, svg=$('s');
+  const wmm=toMM(+$('W').value), hmm=toMM(+$('H').value);
+  const px=Math.round(wmm/MMIN*dpi), py=Math.round(hmm/MMIN*dpi);
+  const blob=new Blob([svg.outerHTML],{type:'image/svg+xml;charset=utf-8'});
+  const url=URL.createObjectURL(blob), img=new Image();
+  img.onload=()=>{
+    const c=document.createElement('canvas');c.width=px;c.height=py;
+    const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,px,py);
+    g.drawImage(img,0,0,px,py);URL.revokeObjectURL(url);
+    c.toBlob(b=>{const a=document.createElement('a');
+      a.href=URL.createObjectURL(b);
+      a.download=sel.value.replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'-'+dpi+'dpi.png';
+      a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)},'image/png')};
+  img.onerror=()=>{URL.revokeObjectURL(url);$('r').textContent='png export failed; use save svg'};
+  img.src=url};
+
 const root=document.documentElement,thBtn=$('th');
 function paintTheme(){const d=root.dataset.theme==='dark';
   thBtn.textContent=d?'light':'dark';thBtn.setAttribute('aria-pressed',String(d))}
