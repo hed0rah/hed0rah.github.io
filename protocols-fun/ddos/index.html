@@ -158,6 +158,27 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 .detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
 .detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
 .detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
+.tree{font-size:0.82rem;line-height:1.85;margin-top:0.3rem}
+.troot{color:var(--faint);font-size:0.72rem;letter-spacing:0.04em;margin-bottom:0.2rem}
+.tgrp{display:flex;align-items:center;gap:0.45rem;margin-top:0.4rem}
+.tgrp .g,.tleaf .g{color:var(--faint);white-space:pre;font-family:var(--ff)}
+.gdot{width:0.55rem;height:0.55rem;border-radius:50%;display:inline-block;flex:0 0 auto}
+.glab{font-weight:600;letter-spacing:0.05em}
+.tleaf{display:flex;align-items:baseline;gap:0.5rem;text-decoration:none;padding:0.07rem 0.35rem;border-radius:2px}
+.tleaf .n{color:var(--enum);flex:0 0 6.5rem}
+.tleaf .b{color:var(--soft);font-size:0.72rem;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tleaf:hover{background:var(--panel)}
+.tleaf:hover .n{text-decoration:underline}
+
+/* the history tab: the protocol index idiom, with a readout beside it */
+.timewrap{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:1.4rem;align-items:start;margin:0.6rem 0 1.2rem}
+@media(max-width:860px){.timewrap{grid-template-columns:1fr}}
+.tdetail{position:sticky;top:1rem}
+.tleaf{cursor:pointer;scroll-margin:5rem}
+.tleaf .n{flex:0 0 7.5rem}
+.tleaf.cued{background:var(--panel)}
+.tleaf.cued .n{color:var(--ink)}
+
 </style>
 
 <div class="sheet">
@@ -190,6 +211,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     <button class="tab" data-p="spoof" role="tab" aria-selected="false">Spoofing<small>the source field</small></button>
     <button class="tab" data-p="amp" role="tab" aria-selected="false">Amplification<small>DNS and NTP</small></button>
     <button class="tab" data-p="l7" role="tab" aria-selected="false">Layer 7<small>Rapid Reset</small></button>
+    <button class="tab" data-p="history" role="tab" aria-selected="false">History<small>1974 to now</small></button>
   </div>
 
   <div class="panelwrap">
@@ -197,9 +219,9 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     <!-- ============================ SYN ============================ -->
     <div class="panel on" data-panel="syn">
       <div class="pfacts"><span>on the wire<b>40 bytes</b></span><span>at the server<b>a TCB plus a retransmit timer</b></span></div>
-      <p class="plede">A SYN flood is not a flood of data. It is a flood of obligations. Each packet
-      asks the server to remember something, and the server has a finite number of things it can
-      remember. The cost sits entirely on one side.</p>
+      <p class="plede">A SYN costs the sender forty bytes and costs the server an allocation it has
+      to hold. Each packet asks the server to remember something, and the server can only remember so
+      many things at once. Nothing here is a flood of data; the traffic is trivial.</p>
 
       <div class="sec">the segment, 20 bytes</div>
       <div id="block-syn" data-build></div>
@@ -301,6 +323,78 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       almost no bandwidth. Rapid Reset exhausts by cycling as fast as possible. Both target the same
       resource from opposite directions, which is why a read timeout helps against one and rate
       accounting against the other.</div>
+    </div>
+
+
+    <!-- ============================ HISTORY ============================ -->
+    <div class="panel" data-panel="history">
+      <div class="pfacts"><span>first recorded<b>1974</b></span><span>first protocol-level fix<b>1996</b></span></div>
+      <p class="plede">Every technique on the other tabs arrived in a particular year, usually because
+      somebody exposed a service that answered strangers. The pattern repeats closely enough to be
+      worth reading as one list: a protocol ships, a population of it reaches the internet, somebody
+      notices the asymmetry, and the fix is nearly always to shrink the population rather than to
+      filter its output.</p>
+      <div class="timewrap">
+<div class="tree">
+<div class="troot">denial-of-service/</div>
+<div class="tgrp"><span class="g">&#9500;&#9472; </span><span class="gdot" style="background:var(--rsv)"></span><span class="glab" style="color:var(--rsv)">prehistory</span></div>
+<div class="tleaf" tabindex="0" data-n="David Dennis, 13, sends the ext command to PLATO terminals at CERL that have no external d" data-t="1974" data-d="Commonly cited as the first DoS. A malformed but legal command forces a hang. Amplification factor of one, but the principle is there"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">1974</span><span class="b">Commonly cited as the first DoS.</span></div>
+<div class="tleaf" tabindex="0" data-n="Morris worm. Reinfection probability 1-in-7 means hosts run many copies" data-t="1988" data-d="Not designed as DoS. The denial of service was an emergent property of uncontrolled replication. Roughly 10 percent of the connected internet down. CERT founded in response"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">1988</span><span class="b">Not designed as DoS.</span></div>
+<div class="tleaf" tabindex="0" data-n="Strano Network &quot;Net-Strike&quot; against French government sites. Manual reload protest" data-t="1995" data-d="First organised political DoS. Direct ancestor of LOIC and Anonymous"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">1995</span><span class="b">First organised political DoS.</span></div>
+<div class="tleaf" tabindex="0" data-n="Panix, a New York ISP, is SYN-flooded off the internet for a week" data-t="Sep 1996" data-d="The first attack that forced a protocol-level fix. Produces SYN cookies (Bernstein and Schenk) and RFC 4987"><span class="g">&#9474;&nbsp;&nbsp;&#9492;&#9472; </span><span class="n">Sep 1996</span><span class="b">The first attack that forced a protocol-level fix.</span></div>
+<div class="tgrp"><span class="g">&#9500;&#9472; </span><span class="gdot" style="background:var(--sync)"></span><span class="glab" style="color:var(--sync)">malformed packets</span></div>
+<div class="tleaf" tabindex="0" data-n="Ping of Death" data-t="1996" data-d="ICMP echo fragmented so that reassembly exceeds the 65,535-byte IP maximum. Integer overflow in the reassembly buffer Killed by: Bounds checks in reassembly"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">1996</span><span class="b">ICMP echo fragmented so that reassembly exceeds the 65,535-byte IP maximum.</span></div>
+<div class="tleaf" tabindex="0" data-n="Teardrop" data-t="Nov 1997" data-d="IP fragments with overlapping offsets. The reassembly routine computes a negative length and copies a huge region Killed by: Linux 2.0.32, NT4 SP4. Returned in 2018 as CVE-2018-5391 (FragmentSmack)"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Nov 1997</span><span class="b">IP fragments with overlapping offsets.</span></div>
+<div class="tleaf" tabindex="0" data-n="Land" data-t="1997" data-d="TCP SYN with source address and port identical to destination. The host SYN-ACKs itself into a loop Killed by: Trivial ingress check. Reappeared in Windows XP SP2 and Server 2003 in 2005"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">1997</span><span class="b">TCP SYN with source address and port identical to destination.</span></div>
+<div class="tleaf" tabindex="0" data-n="WinNuke" data-t="1997" data-d="TCP segment with URG flag and out-of-band pointer sent to NetBIOS port 139 Killed by: Patch. Killed a generation of IRC users"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">1997</span><span class="b">TCP segment with URG flag and out-of-band pointer sent to NetBIOS port 139 Killed by:</span></div>
+<div class="tleaf" tabindex="0" data-n="Bonk / Boink / Nestea" data-t="1997-98" data-d="Teardrop variants. Different offset arithmetic, same class of bug Killed by: Same patches"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">1997-98</span><span class="b">Teardrop variants.</span></div>
+<div class="tleaf" tabindex="0" data-n="Jolt2" data-t="2000" data-d="Endless stream of identical fragments, never completing. 100 percent CPU in the reassembly loop Killed by: Fragment queue limits"><span class="g">&#9474;&nbsp;&nbsp;&#9492;&#9472; </span><span class="n">2000</span><span class="b">Endless stream of identical fragments, never completing.</span></div>
+<div class="tgrp"><span class="g">&#9500;&#9472; </span><span class="gdot" style="background:var(--flag)"></span><span class="glab" style="color:var(--flag)">the toolkits</span></div>
+<div class="tleaf" tabindex="0" data-n="trinoo" data-t="Jun 1999" data-d="First widely deployed DDoS toolkit. UDP flood only. Plaintext control on 27665/27444/31335, password-protected"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Jun 1999</span><span class="b">First widely deployed DDoS toolkit.</span></div>
+<div class="tleaf" tabindex="0" data-n="TFN (Tribe Flood Network)" data-t="1999" data-d="Multi-vector: UDP, ICMP, SYN, Smurf. Control over ICMP echo-reply so it passed most firewalls"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">1999</span><span class="b">Multi-vector:</span></div>
+<div class="tleaf" tabindex="0" data-n="Stacheldraht" data-t="Late 1999" data-d="German for &quot;barbed wire&quot;. TFN plus Blowfish-encrypted control and agent auto-update. The first self-patching botnet"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Late 1999</span><span class="b">German for &quot;barbed wire&quot;.</span></div>
+<div class="tleaf" tabindex="0" data-n="TFN2K" data-t="Dec 1999" data-d="Decoy packets, randomised protocols, no acknowledgements from agents. Deliberately built to be hard to fingerprint"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Dec 1999</span><span class="b">Decoy packets, randomised protocols, no acknowledgements from agents.</span></div>
+<div class="tleaf" tabindex="0" data-n="Shaft / Trinity" data-t="2000" data-d="Trinity was IRC-controlled, which became the dominant C2 pattern for the next decade"><span class="g">&#9474;&nbsp;&nbsp;&#9492;&#9472; </span><span class="n">2000</span><span class="b">Trinity was IRC-controlled, which became the dominant C2 pattern for the next decade</span></div>
+<div class="tgrp"><span class="g">&#9500;&#9472; </span><span class="gdot" style="background:var(--enum)"></span><span class="glab" style="color:var(--enum)">politics and infrastructure</span></div>
+<div class="tleaf" tabindex="0" data-n="Attack on all 13 DNS root servers. 9 degraded, service unaffected" data-t="Oct 2002" data-d="First strike at the internet&#x27;s own control plane. Accelerated anycast deployment of the roots"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Oct 2002</span><span class="b">First strike at the internet&#x27;s own control plane.</span></div>
+<div class="tleaf" tabindex="0" data-n="Second root server attack, 6 targeted. g-root and l-root badly hit, the anycast roots shru" data-t="Feb 2007" data-d="Proof that anycast dispersion works. Directly shaped every CDN&#x27;s architecture"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Feb 2007</span><span class="b">Proof that anycast dispersion works.</span></div>
+<div class="tleaf" tabindex="0" data-n="Estonia. Three weeks of attacks on parliament, banks, ministries and newspapers after the " data-t="Apr-May 2007" data-d="The first time DDoS was treated as a possible Article 5 matter. NATO CCDCOE established in Tallinn in 2008 as a direct result"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Apr-May 2007</span><span class="b">The first time DDoS was treated as a possible Article 5 matter.</span></div>
+<div class="tleaf" tabindex="0" data-n="Georgia, coordinated with the Russian ground invasion" data-t="Aug 2008" data-d="First DDoS synchronised with conventional military operations"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Aug 2008</span><span class="b">First DDoS synchronised with conventional military operations</span></div>
+<div class="tleaf" tabindex="0" data-n="Operation Payback. Anonymous hits PayPal, Visa, Mastercard over the WikiLeaks funding bloc" data-t="Dec 2010" data-d="Voluntary botnet. LOIC did not spoof source addresses, so a great many participants were identified and prosecuted"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Dec 2010</span><span class="b">Voluntary botnet.</span></div>
+<div class="tleaf" tabindex="0" data-n="Operation Ababil. Izz ad-Din al-Qassam Cyber Fighters hit US banks in waves for over a yea" data-t="2012-13" data-d="Compromised web servers, not consumer PCs. Datacentre uplinks meant far more bandwidth per bot. Peaks of 60-70 Gbps against institutions provisioned for a fraction of that"><span class="g">&#9474;&nbsp;&nbsp;&#9492;&#9472; </span><span class="n">2012-13</span><span class="b">Compromised web servers, not consumer PCs.</span></div>
+<div class="tgrp"><span class="g">&#9500;&#9472; </span><span class="gdot" style="background:var(--flag)"></span><span class="glab" style="color:var(--flag)">the amplification race</span></div>
+<div class="tleaf" tabindex="0" data-n="DNS (open resolvers, ANY queries, EDNS0)" data-t="Mar 2013" data-d="120 Gbps measured. Spamhaus, via CloudFlare. The famous 300 Gbps is secondhand, Cloudflare relaying what a Tier 1 provider reported seeing at an exchange. &quot;The attack that almost broke the internet&quot; is a headline the engineers involved have been rolling their eyes at ever since"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Mar 2013</span><span class="b">120 Gbps measured.</span></div>
+<div class="tleaf" tabindex="0" data-n="NTP monlist, BAF ~557x" data-t="Feb 2014" data-d="~400 Gbps. A CloudFlare customer in Europe. One command returning the last 600 clients of an NTP server"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Feb 2014</span><span class="b">~400 Gbps.</span></div>
+<div class="tleaf" tabindex="0" data-n="SSDP / UPnP, BAF ~30x" data-t="2014-15" data-d="100+ Gbps routine. Millions of consumer routers answering M-SEARCH from the WAN side"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">2014-15</span><span class="b">100+ Gbps routine.</span></div>
+<div class="tleaf" tabindex="0" data-n="Great Cannon vs GitHub" data-t="2015" data-d="5 days. Not amplification: an in-path injection device at the Chinese border rewrote Baidu analytics JavaScript in transit, turning ordinary foreign web users into an unwitting L7 botnet"><span class="g">&#9474;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">2015</span><span class="b">5 days.</span></div>
+<div class="tleaf" tabindex="0" data-n="memcached UDP 11211, BAF up to 51,000x" data-t="Feb 28 2018" data-d="1.35 Tbps, 126.9 Mpps. GitHub. Mitigated in under 10 minutes via Akamai Prolexic. Then 1.7 Tbps against a US service provider days later"><span class="g">&#9474;&nbsp;&nbsp;&#9492;&#9472; </span><span class="n">Feb 28 2018</span><span class="b">1.35 Tbps, 126.9 Mpps.</span></div>
+<div class="tgrp"><span class="g">&#9492;&#9472; </span><span class="gdot" style="background:var(--enum)"></span><span class="glab" style="color:var(--enum)">iot and the terabit era</span></div>
+<div class="tleaf" tabindex="0" data-n="Mirai vs krebsonsecurity.com. Akamai had hosted it pro bono for four years and gave about " data-t="Sep 20 2016" data-d="623 Gbps (Akamai&#x27;s own figure; 620 is Krebs&#x27;s contemporaneous number). No reflection at all, ~24,000 hosts"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Sep 20 2016</span><span class="b">623 Gbps (Akamai&#x27;s own figure; 620 is Krebs&#x27;s contemporaneous number).</span></div>
+<div class="tleaf" tabindex="0" data-n="Mirai vs OVH" data-t="Sep 2016" data-d="~1.1 Tbps claimed, 145,000 devices"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Sep 2016</span><span class="b">~1.1 Tbps claimed, 145,000 devices</span></div>
+<div class="tleaf" tabindex="0" data-n="Mirai source released on Hackforums by &quot;Anna-senpai&quot;" data-t="Sep 30 2016" data-d="The single most consequential act in DDoS history. Every major botnet since is a Mirai descendant"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Sep 30 2016</span><span class="b">The single most consequential act in DDoS history.</span></div>
+<div class="tleaf" tabindex="0" data-n="Dyn. Managed DNS provider. Twitter, Reddit, Spotify, Netflix, GitHub, PSN all unreachable " data-t="Oct 21 2016" data-d="~1.2 Tbps. The attack that proved you do not need to hit the target, you hit its DNS"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Oct 21 2016</span><span class="b">~1.2 Tbps.</span></div>
+<div class="tleaf" tabindex="0" data-n="AWS, CLDAP reflection" data-t="Feb 2020" data-d="2.3 Tbps"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Feb 2020</span><span class="b">2.3 Tbps</span></div>
+<div class="tleaf" tabindex="0" data-n="Meris. ~250,000 compromised MikroTik routers using HTTP pipelining" data-t="Sep 2021" data-d="21.8 Mrps vs Yandex, 17.2 Mrps vs a Cloudflare customer. An L7 record, not a bandwidth one"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Sep 2021</span><span class="b">21.8 Mrps vs Yandex, 17.2 Mrps vs a Cloudflare customer.</span></div>
+<div class="tleaf" tabindex="0" data-n="HTTP/2 Rapid Reset, CVE-2023-44487" data-t="Oct 2023" data-d="Google 398 Mrps, Cloudflare 201 Mrps, AWS 155 Mrps. A protocol design flaw, exploitable from a few thousand nodes"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Oct 2023</span><span class="b">Google 398 Mrps, Cloudflare 201 Mrps, AWS 155 Mrps.</span></div>
+<div class="tleaf" tabindex="0" data-n="Records fall five times in seven months" data-t="Apr-Oct 2025" data-d="6.5 Tbps (Apr) → 7.3 Tbps (May) → 11.5 Tbps (Sep 1) → 22.2 Tbps / 10.6 Bpps (Sep 22) → 14.1 Bpps (Oct 7) → 29.7 Tbps (Oct 31)"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Apr-Oct 2025</span><span class="b">6.5 Tbps (Apr) → 7.3 Tbps (May) → 11.5 Tbps (Sep 1) → 22.2 Tbps / 10.6 Bpps (Sep 22) → 14.1 Bpps (Oct 7) → 29.7 Tbps (Oc</span></div>
+<div class="tleaf" tabindex="0" data-n="Aisuru / Kimwolf, &quot;The Night Before Christmas&quot;. Estimated 1-4 million hosts, heavily Andro" data-t="Dec 19 2025" data-d="31.4 Tbps sustained for 35 seconds, and 205 Mrps at L7"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Dec 19 2025</span><span class="b">31.4 Tbps sustained for 35 seconds, and 205 Mrps at L7</span></div>
+<div class="tleaf" tabindex="0" data-n="Cloudflare mitigates 935 attacks over 1 Tbps in six months, 805 of them in Q2 alone" data-t="H1 2026" data-d="The terabit attack stops being a news event and becomes a weather condition"><span class="g">&nbsp;&nbsp;&nbsp;&#9492;&#9472; </span><span class="n">H1 2026</span><span class="b">The terabit attack stops being a news event and becomes a weather condition</span></div>
+</div>
+        <aside class="detail tdetail" role="status" aria-live="polite">
+          <div class="dl"><span>entry</span><span class="kind"></span></div>
+          <h3>Hover an entry</h3>
+          <div class="dc">1974 to now</div>
+          <p>Six eras, thirty-six entries. Hover or focus any line to read what happened and why it
+          mattered.</p>
+        </aside>
+      </div>
+      <div class="callout hot"><b>The fixes that held shrank the attack surface.</b> monlist was
+      deleted from ntpd, open recursion was turned off by default, providers filtered 11211/udp, and
+      the malformed-packet era ended when the reassembly bugs were patched out of every stack. The
+      fixes that did not hold were the ones that tried to out-spend the attacker.</div>
+      <div class="callout"><b>Mirai is the hinge.</b> Releasing the source in September 2016 turned a
+      single botnet into a base that everything since has been built on. The device population it
+      targets has only grown, and the 2025 records come from its descendants.</div>
     </div>
 
   </div><!-- /panelwrap -->
@@ -572,6 +666,23 @@ var built={};
   if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
   else buildPanel("syn");
 
+
+  /* the history tree reads out into its own card, same feel as a byte map */
+  (function(){
+    var card=document.querySelector('.tdetail'); if(!card) return;
+    var h3=card.querySelector('h3'), dc=card.querySelector('.dc'), p=card.querySelector('p');
+    var leaves=[].slice.call(document.querySelectorAll('.tleaf'));
+    var rest={n:'Hover an entry',c:'1974 to now',
+      d:'Six eras, thirty-six entries. Hover or focus any line to read what happened and why it mattered.'};
+    function paint(o){h3.textContent=o.n;dc.textContent=o.c;p.textContent=o.d;}
+    function light(el){leaves.forEach(function(l){l.classList.toggle('cued',l===el);});}
+    leaves.forEach(function(el){
+      HOV.bind(el,
+        function(){light(el);paint({n:el.dataset.n,c:el.dataset.t,d:el.dataset.d});},
+        function(){light(null);paint(rest);},
+        null);
+    });
+  })();
 
   HOV.esc(function(){document.querySelectorAll(".active,.cued,.pinned").forEach(function(n){n.classList.remove("active","cued","pinned");});});
 })();
