@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>protocols-fun / Attack anatomy, the bytes</title>
+<script>(function(){try{var m=localStorage.getItem("protofun-theme");if(!m)m=matchMedia("(prefers-color-scheme:dark)").matches?"house-dark":"house-light";document.documentElement.setAttribute("data-theme",m);}catch(e){}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E6EBEE; --panel:#EFF3F5; --ink:#10171C; --soft:#46545E;
+  --faint:#7A8790; --line:#C1CDD3; --hair:#D6E0E4;
+  --enum:#0E7A8C; --enum-soft:#D1E7EA;
+  --flag:#C1501A; --flag-soft:#F0DACB;
+  --sync:#34507E; --sync-soft:#DCE3EE;
+  --rsv:#838E96;  --rsv-soft:rgba(16,23,28,0.04);
+  --ff:"IBM Plex Mono","SFMono-Regular",ui-monospace,monospace;
+}
+:root[data-theme="dark"]{--paper:#0a0f0d;--panel:#0f1613;--ink:#c6f0d0;--soft:#7fae90;--faint:#4f6a5c;--line:#22302a;--hair:#151d19;--enum:#2fe38a;--enum-soft:#0e2a1d;--flag:#e0a92e;--flag-soft:#2c2410;--sync:#4fb8d6;--sync-soft:#0f2630;--rsv:#6f8f7f;--rsv-soft:rgba(198,240,208,0.05);}
+:root[data-theme="amber"]{--paper:#120c00;--panel:#1c1400;--ink:#ffb000;--soft:#c08a2a;--faint:#8a6a20;--line:#3a2a00;--hair:#241900;--enum:#ffb000;--enum-soft:#2a1d00;--flag:#ffd27a;--flag-soft:#332400;--sync:#d98a1a;--sync-soft:#241a00;--rsv:#9a7524;--rsv-soft:rgba(255,176,0,0.05);}
+:root[data-theme="vapor"]{--paper:#f4efe0;--panel:#ece4d0;--ink:#123b37;--soft:#3f605b;--faint:#8a9a90;--line:#e5457f;--hair:#ddd3bd;--enum:#e5457f;--enum-soft:#f8d9e4;--flag:#e0982f;--flag-soft:#f5e6c6;--sync:#0e9c90;--sync-soft:#cbe9e3;--rsv:#8a9a90;--rsv-soft:rgba(18,59,55,0.05);}
+/* house modes: the site-wide Deep Dive skins (warm cream / neutral dark, house teal+orange) */
+:root[data-theme="house-light"]{--paper:#F2F1EE;--panel:#FBFAF6;--ink:#17150F;--soft:#4A4744;--faint:#8C877E;--line:#C9C5BB;--hair:#E4E0D7;--enum:#007870;--enum-soft:#D8E7E5;--flag:#E85000;--flag-soft:#F6E1D4;--sync:#33518C;--sync-soft:#DEE3EF;--rsv:#8C877E;--rsv-soft:rgba(23,21,15,0.04);}
+:root[data-theme="house-dark"]{--paper:#121213;--panel:#1c1c1e;--ink:#ececea;--soft:#a9a9a4;--faint:#6f6f6b;--line:#313135;--hair:#26262a;--enum:#08F9DF;--enum-soft:#0e2a29;--flag:#FF4D00;--flag-soft:#2c1a10;--sync:#7fb2e0;--sync-soft:#16232f;--rsv:#8b8b88;--rsv-soft:rgba(236,236,234,0.05);}
+/* house modes: RJ wears teal and flips to orange on hover; a couple of subtle orange touches in the head */
+:root[data-theme="house-light"] .head .title protofun-toggle,:root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
+:root[data-theme="house-light"] .head .title protofun-toggle:hover,:root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
+:root[data-theme="house-light"] .head .stamp b,:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
+:root[data-theme="house-light"] .head .title,:root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--enum);color:var(--paper)}
+.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.head{border:1px solid var(--ink);margin-bottom:1.8rem}
+.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
+.head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
+.head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
+.head .title protofun-toggle:hover{color:var(--enum)}
+.head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
+.head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
+.head .stamp b{color:var(--enum);font-weight:500}
+.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
+.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
+.head .strip div:last-child{border-right:none}
+.head .strip b{color:var(--ink);font-weight:500}
+.lede{color:var(--soft);max-width:80ch;margin-bottom:1.4rem;font-size:0.85rem;line-height:1.75}
+.lede b{color:var(--ink);font-weight:500} .lede a{color:var(--enum)}
+.sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:1.7rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.note{font-size:0.78rem;color:var(--soft);margin:0.4rem 0 1rem;max-width:78ch}
+.callout{font-size:0.76rem;color:var(--soft);line-height:1.7;border:1px solid var(--line);border-left:2px solid var(--flag);background:var(--panel);padding:0.8rem 1rem;margin:1.1rem 0 0.4rem;max-width:82ch}
+.callout b{color:var(--ink);font-weight:500} .callout a{color:var(--enum)}
+.callout.hot{border-left-color:var(--enum)}
+code{font-family:var(--ff);color:var(--enum);font-size:0.92em;background:var(--rsv-soft);padding:0.02rem 0.28rem;border-radius:2px;white-space:nowrap}
+.atable{width:100%;border-collapse:collapse;font-size:0.74rem;margin:0.4rem 0 1.3rem}
+.atable th,.atable td{text-align:left;padding:0.38rem 0.7rem;border-bottom:1px solid var(--hair);vertical-align:top}
+.atable th{font-size:0.56rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+.atable td.x{font-family:var(--ff);color:var(--enum);white-space:nowrap;font-size:0.72rem}
+.atable td.f{color:var(--ink);font-weight:500;white-space:nowrap}
+.kv{font-size:0.78rem;margin:0.3rem 0 1.1rem}
+.kv div{display:grid;grid-template-columns:8.5rem 1fr;gap:1rem;padding:0.3rem 0;border-bottom:1px solid var(--hair)}
+.kv div:last-child{border-bottom:none}
+.kv .k{color:var(--enum)} .kv .v{color:var(--soft)}
+/* interactive JA4 string decoder */
+.decoder{display:grid;grid-template-columns:1fr 320px;gap:1.4rem;align-items:start;margin:0.4rem 0 1.2rem}
+@media(max-width:820px){.decoder{grid-template-columns:1fr}}
+.jstr{font-size:1.15rem;letter-spacing:0.02em;line-height:2.4;word-break:break-all;user-select:none}
+.jseg{padding:0.15rem 0.1rem;border-bottom:2px solid transparent;cursor:pointer;transition:background .12s}
+.jseg.k-enum{color:var(--enum)} .jseg.k-flag{color:var(--flag)} .jseg.k-sync{color:var(--sync)}
+.jseg:hover,.jseg.on{background:var(--panel);border-bottom-color:currentColor}
+.jsep{color:var(--faint)}
+.jdetail{border:1px solid var(--line);background:var(--panel);padding:0.9rem 1rem;min-height:9rem;position:sticky;top:1rem}
+.jdetail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.45rem;margin-bottom:0.55rem}
+.jdetail h3{font-weight:500;font-size:0.95rem;color:var(--ink)} .jdetail .dv{font-size:0.72rem;color:var(--enum);margin:0.2rem 0 0.55rem}
+.jdetail p{font-size:0.76rem;color:var(--soft);line-height:1.6}
+.tabs{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-bottom:none}
+.tab{padding:0.55rem 0.85rem;font-size:0.63rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--soft);cursor:pointer;border-right:1px solid var(--hair);background:none;font-family:var(--ff);border-top:none;border-left:none;border-bottom:2px solid transparent;text-align:left}
+.tab:last-child{border-right:none}
+.tab:hover{color:var(--enum)}
+.tab.on{color:var(--ink);border-bottom-color:var(--enum);background:var(--panel)}
+.tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.06em;margin-top:1px;text-transform:none}
+.panelwrap{border:1px solid var(--line);border-top:none;padding:1.5rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
+.panel{display:none} .panel.on{display:block}
+.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
+.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
+.plede{color:var(--soft);max-width:82ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
+.plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em}
+.ja4{border:1px solid var(--line);background:var(--panel);padding:0.7rem 0.9rem;margin:0.3rem 0 0.9rem;font-size:0.95rem;letter-spacing:0.02em;overflow-x:auto}
+.ja4 .s1{color:var(--sync)} .ja4 .s2{color:var(--enum)} .ja4 .s3{color:var(--flag)}
+footer{margin-top:3.2rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
+footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color:var(--enum);border-color:var(--enum)}
+/* --- secret themes: amber CRT + vaporwave --- */
+:root[data-theme="amber"] body{text-shadow:0 0 3px rgba(255,176,0,.32)}
+:root[data-theme="amber"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px,rgba(0,0,0,.16) 2px 3px)}
+:root[data-theme="vapor"] body{background:url(../assets/sakura-tile.webp) repeat, linear-gradient(160deg,#4fdfba 0%,#3fc8a4 60%,#57e3c0 100%);background-size:320px auto, cover;background-attachment:fixed}
+:root[data-theme="vapor"] .sheet{background:#f4efe0;box-shadow:0 0 0 3px #2ec6b9,0 14px 46px rgba(0,0,0,.28);border-radius:3px}
+:root[data-theme="vapor"] .head{border-color:#0e9c90}
+:root[data-theme="vapor"] .head .title protofun-toggle{color:#e5457f}
+:root[data-theme="vapor"] .tab.on{box-shadow:inset 0 -2px #e5457f}
+/* --- mobile --- */
+@media(max-width:560px){
+  body{font-size:13px}
+  .sheet{padding-left:1rem;padding-right:1rem}
+  .head .row{grid-template-columns:1fr}
+  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
+  .head .strip{grid-template-columns:1fr}
+  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
+  .head .strip div:last-child{border-bottom:none}
+  .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
+  .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
+  code{white-space:normal;overflow-wrap:anywhere}
+}
+</style>
+</head>
+<body>
+<style>
+.diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
+.bytegrp{border:1px solid var(--line);background:var(--panel)}
+.bytegrp .ticks{display:flex;border-bottom:1px solid var(--hair)}
+.bytegrp .ticks span{width:1.55rem;text-align:center;font-size:0.5rem;color:var(--faint);padding:2px 0}
+.bytegrp .brow{display:flex}
+.bit{width:1.55rem;height:1.85rem;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--soft);border-right:1px solid var(--hair);transition:background .12s,color .12s;cursor:pointer}
+.bit:last-child{border-right:none}
+.bytegrp .hex{text-align:center;font-size:0.6rem;letter-spacing:0.12em;color:var(--ink);padding:3px 0;border-top:1px solid var(--hair);font-weight:500}
+.dbytes{display:flex;flex-wrap:wrap;gap:4px;margin:0.6rem 0 1.4rem}
+.bcol{display:flex;flex-direction:column;align-items:center}
+.bcol .off{font-size:0.5rem;color:var(--faint);margin-bottom:2px;letter-spacing:0.02em}
+.bcell{width:2.5rem;height:1.9rem;display:flex;align-items:center;justify-content:center;font-size:0.78rem;border:1px solid var(--hair);color:var(--soft);transition:background .12s,color .12s;cursor:pointer}
+.bcell.k-sync{background:var(--sync-soft)} .bcell.k-enum{background:var(--enum-soft)}
+.bcell.k-flag{background:var(--flag-soft)} .bcell.k-rsv{background:var(--rsv-soft)}
+.bcell.fstart{border-left:2px solid var(--line)}
+.bcell.hi.k-sync{background:var(--sync);color:var(--paper)}
+.bcell.hi.k-enum{background:var(--enum);color:var(--paper)}
+.bcell.hi.k-flag{background:var(--flag);color:var(--paper)}
+.bcell.hi.k-rsv{background:var(--faint);color:var(--paper)}
+.block{display:grid;grid-template-columns:1fr 330px;gap:1.6rem;align-items:stretch;margin-bottom:1.6rem}
+.left{min-width:0}
+.detailcol{position:relative}
+.fields{border-top:1px solid var(--line)}
+.field{display:grid;grid-template-columns:5rem 1fr auto;gap:0.8rem;align-items:baseline;padding:0.46rem 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.field:hover,.field.active,.field.cued{background:var(--panel)}
+.field .fb{font-size:0.6rem;color:var(--faint)} .field .fn{font-size:0.82rem;color:var(--ink)}
+.field[data-branch] .fn::after{content:"+";margin-left:0.4rem;color:var(--enum);font-weight:500}
+.field.active[data-branch] .fn::after{content:"\2212"}
+.fv{font-size:0.76rem;text-align:right}
+.fv.k-sync{color:var(--sync)} .fv.k-enum{color:var(--enum)} .fv.k-flag{color:var(--flag)} .fv.k-rsv{color:var(--faint)}
+.branch{grid-column:1 / -1;display:none;padding:0.5rem 0 0.2rem 5.8rem}
+.field.active .branch{display:block}
+.branch table{border-collapse:collapse;font-size:0.7rem;width:100%;max-width:26rem}
+.branch td{padding:1px 10px 1px 0;color:var(--soft)} .branch td.k{color:var(--faint);width:3.4rem;text-align:right}
+.branch tr.sel td{color:var(--ink)} .branch tr.sel td.k{color:var(--enum);font-weight:500}
+.detail{position:absolute;inset:0;border:1px solid var(--line);background:var(--panel);padding:1rem 1.05rem;overflow-y:auto}
+.detail .dl{font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--hair);padding-bottom:0.5rem;margin-bottom:0.6rem;display:flex;justify-content:space-between}
+.detail .dl .kind{color:var(--soft)}
+.detail h3{font-weight:500;font-size:0.98rem} .detail .dc{font-size:0.66rem;color:var(--enum);margin:0.25rem 0 0.7rem}
+.detail p{font-size:0.77rem;color:var(--soft);line-height:1.65;white-space:pre-wrap}
+.detail .dn{font-size:0.67rem;color:var(--ink);margin-top:0.7rem;line-height:1.55;border-top:1px solid var(--hair);padding-top:0.6rem;white-space:pre-wrap}
+</style>
+
+<div class="sheet">
+
+  <div class="head">
+    <div class="row">
+      <div class="title">
+        <div class="tt">
+          <div class="sysmark">PROTOCOLS-FUN . DENIAL OF SERVICE</div>
+          <h1>Attack Anatomy: the bytes</h1>
+        </div>
+        <protofun-toggle aria-label="Toggle theme"></protofun-toggle>
+      </div>
+      <div class="stamp"><b>field by field</b>what each attack actually sets<br>rev 2026.09</div>
+    </div>
+    <div class="strip">
+      <div>the SYN flood is <b>one bit</b></div>
+      <div>reflection is <b>one field</b></div>
+      <div>the ceiling is <b>EDNS0 buffer size</b></div>
+    </div>
+  </div>
+
+  <p class="lede">Every attack here is a legal packet. Nothing below is malformed, nothing is a
+  parser bug, and a signature engine looking for something wrong will not find it. What makes each
+  one work is a field doing exactly what the RFC says, at a volume or an asymmetry nobody costed.
+  Hover any byte or field row to read what it contributes to the attack.</p>
+
+  <div class="tabs" id="tabs" role="tablist">
+    <button class="tab on" data-p="syn" role="tab" aria-selected="true">SYN flood<small>state exhaustion</small></button>
+    <button class="tab" data-p="spoof" role="tab" aria-selected="false">Spoofing<small>the source field</small></button>
+    <button class="tab" data-p="amp" role="tab" aria-selected="false">Amplification<small>DNS and NTP</small></button>
+    <button class="tab" data-p="l7" role="tab" aria-selected="false">Layer 7<small>Rapid Reset</small></button>
+  </div>
+
+  <div class="panelwrap">
+
+    <!-- ============================ SYN ============================ -->
+    <div class="panel on" data-panel="syn">
+      <div class="pfacts"><span>on the wire<b>40 bytes</b></span><span>at the server<b>a TCB plus a retransmit timer</b></span></div>
+      <p class="plede">A SYN flood is not a flood of data. It is a flood of obligations. Each packet
+      asks the server to remember something, and the server has a finite number of things it can
+      remember. The cost sits entirely on one side.</p>
+
+      <div class="sec">the segment, 20 bytes</div>
+      <div id="block-syn" data-build></div>
+
+      <div class="sec">the flags byte, bit by bit</div>
+      <p class="plede">Eight bits, one of them set. Everything above follows from it.</p>
+      <div id="block-synbits" data-build></div>
+
+      <div class="callout hot"><b>SYN cookies move the state onto the wire.</b> Instead of allocating
+      on the SYN, the server encodes the connection parameters into the sequence number it sends back
+      and keeps nothing. If an ACK returns, the cookie is decoded and the connection is rebuilt from
+      it. The backlog stops being a resource an attacker can exhaust.</div>
+      <div class="callout"><b>What the cookie costs you.</b> The sequence number has room for very
+      little, so options negotiated in the original SYN are lost unless the timestamp option can
+      carry them. Window scaling and SACK are the casualties. A connection accepted by cookie can be
+      measurably slower than one accepted normally, which is why cookies are usually armed on backlog
+      pressure rather than left on.</div>
+      <div class="callout"><b>Why the source is forged anyway.</b> A real source would receive the
+      SYN-ACK and its kernel would answer with a RST, tearing down the half-open entry the attacker
+      just paid for. Spoofing at unallocated address space avoids that. The attack needs the reply to
+      go nowhere.</div>
+    </div>
+
+    <!-- ============================ SPOOF ============================ -->
+    <div class="panel" data-panel="spoof">
+      <div class="pfacts"><span>the whole technique<b>4 bytes at offset 12</b></span><span>the fix<b>BCP 38, 1998</b></span></div>
+      <p class="plede">Reflection, amplification and most volumetric floods rest on one assumption:
+      that the source address in an IP header is true. Nothing in IP verifies it. The check has to
+      happen at the network the packet leaves, and that network gains nothing by performing it.</p>
+
+      <div class="sec">an IPv4 header with a forged source</div>
+      <div id="block-ipsrc" data-build></div>
+
+      <div class="callout hot"><b>The economics are why it persists.</b> Ingress filtering protects
+      everyone except the network that deploys it. An operator who filters spends effort so that
+      somebody else does not get attacked, and sees no benefit on their own traffic. BCP 38 was
+      published in 1998 and remains partially deployed for that reason, not a technical one.</div>
+      <div class="callout"><b>TTL is the cheap tell.</b> Common initial values are 64, 128 and 255.
+      A packet claiming to be from a host two hops away, arriving with a TTL consistent with fifteen,
+      is lying about something. It is weak evidence per packet and useful in aggregate.</div>
+      <div class="callout"><b>Why UDP.</b> Reflection needs a protocol that answers an unverified
+      first packet. TCP will not: its handshake is an address-validation mechanism, whatever else it
+      is for. Every entry in the amplifier tables is UDP, apart from the middlebox case where
+      censorship equipment answers a TCP packet it should have ignored.</div>
+    </div>
+
+    <!-- ============================ AMP ============================ -->
+    <div class="panel" data-panel="amp">
+      <div class="pfacts"><span>DNS</span><span>query 12 bytes plus a name<b>answer up to 4096</b></span><span>NTP monlist<b>8 bytes in, kilobytes out</b></span></div>
+      <p class="plede">Amplification is a ratio between what the attacker sends and what the victim
+      receives. Two fields set that ratio, and both are the client telling the server how much to
+      send. The attacker is the client.</p>
+
+      <div class="sec">the query header, 12 bytes</div>
+      <div id="block-dnsq" data-build></div>
+
+      <div class="sec">the OPT record, where the ceiling is set</div>
+      <p class="plede">EDNS0 exists because 512 bytes was too small for a modern answer. It is also
+      the single field that makes DNS worth reflecting off.</p>
+      <div id="block-opt" data-build></div>
+
+      <div class="callout hot"><b>DNSSEC made the answers bigger.</b> A signed zone returns RRSIG
+      records alongside the data, and the DO bit above asks for them. The security extension that
+      authenticates DNS is the same one that made it a better amplifier. Both facts are true and
+      neither argues against deploying it.</div>
+
+      <div class="sec">NTP monlist, the 8-byte request</div>
+      <p class="plede">A vendor-private command that returns the last 600 clients to speak to the
+      server. It carried the 400 Gbps record in 2014.</p>
+      <div id="block-ntp" data-build></div>
+
+      <div class="callout"><b>This one was fixed by deletion.</b> monlist was removed in ntpd
+      4.2.7p26 rather than filtered or rate limited. The reflector population aged out as operators
+      upgraded. Compare memcached, where providers blocked 11211/udp wholesale, and DNS, where
+      Response Rate Limiting shrank the amplifier pool without removing the feature. Three shapes of
+      the same answer: make the reflector stop being one.</div>
+    </div>
+
+    <!-- ============================ L7 ============================ -->
+    <div class="panel" data-panel="l7">
+      <div class="pfacts"><span>frame size<b>13 bytes</b></span><span>what it defeats<b>the concurrency limit</b></span></div>
+      <p class="plede">Layer 7 attacks stop being about volume. The request is well formed and the
+      cost is at the origin, so the interesting field is not the one carrying data but the one
+      carrying control.</p>
+
+      <div class="sec">RST_STREAM, the frame behind Rapid Reset</div>
+      <div id="block-h2rst" data-build></div>
+
+      <div class="callout hot"><b>The bound stopped bounding.</b> HTTP/2 limits how many streams may
+      be open at once, and that limit is what is supposed to cap concurrent work. Open a stream and
+      reset it immediately and the server starts the work while the stream is already closed, so it
+      never counts. One connection can queue far more work than the limit nominally allows.</div>
+      <div class="callout"><b>Nothing here is malformed.</b> Every frame is valid, the error code is
+      a polite CANCEL, and each individual exchange is something a real client does when a user
+      navigates away. The fix was not a signature: it was accounting, tracking the reset ratio per
+      connection and sending GOAWAY when it goes wrong.</div>
+      <div class="callout"><b>Slow attacks invert the same idea.</b> Slowloris and RUDY hold
+      connections open by sending just enough to avoid a timeout, exhausting a worker pool with
+      almost no bandwidth. Rapid Reset exhausts by cycling as fast as possible. Both target the same
+      resource from opposite directions, which is why a read timeout helps against one and rate
+      accounting against the other.</div>
+    </div>
+
+  </div><!-- /panelwrap -->
+
+  <footer>
+    <span>protocols-fun / attack anatomy, the bytes</span>
+    <span><a href="../index.html">the map</a> &middot;
+      <a href="../attacks/attack-anatomy.html">attack &amp; mitigation</a> &middot;
+      <a href="../tcp/tcp-anatomy.html">TCP header</a> &middot;
+      <a href="../dns/dns-anatomy.html">DNS header</a> &middot;
+      <a href="/ddos/">the long version</a></span>
+    <span><a href="/">hed0rah.github.io</a></span>
+  </footer>
+</div>
+
+<script src="../assets/hover.js"></script>
+<script>
+(function(){
+
+  /* ---- hover contract ----------------------------------------------------
+     one controller for the page. open 100ms, close 250ms, asymmetric so a
+     pass-through opens nothing and crossing a gap does not dismiss. writes
+     coalesced into one animation frame. pointer-type gated, so touch never
+     hovers. every trigger focusable, Enter/Space pins, Escape releases.
+     ----------------------------------------------------------------------- */
+
+  var KINDS={sync:"structural",enum:"value",flag:"flag",rsv:"reserved"};
+  function hx(b){return b.toString(16).toUpperCase().padStart(2,"0");}
+
+  function build(mountId, unit, bytes, fields){
+    var mount=document.getElementById(mountId);
+    var N = unit==="bit" ? bytes.length*8 : bytes.length;
+    var owner=new Array(N);
+    fields.forEach(function(f,fi){ for(var i=f.r[0];i<=f.r[1];i++) owner[i]=fi; });
+    var diagram=document.createElement("div");
+    if(unit==="bit"){
+      diagram.className="diagram";
+      for(var bi=0; bi<bytes.length; bi++){
+        var grp=document.createElement("div"); grp.className="bytegrp";
+        var ticks=document.createElement("div"); ticks.className="ticks";
+        var row=document.createElement("div"); row.className="brow";
+        for(var k=0;k<8;k++){
+          var idx=bi*8+k, f=fields[owner[idx]];
+          var t=document.createElement("span"); t.textContent=idx; ticks.appendChild(t);
+          var cell=document.createElement("span"); cell.className="bit k-"+f.k; cell.dataset.idx=idx;
+          if(idx===f.r[0]) cell.classList.add("fstart");
+          cell.textContent=(bytes[bi]>>(7-k))&1; row.appendChild(cell);
+        }
+        var hex=document.createElement("div"); hex.className="hex"; hex.textContent="0x"+hx(bytes[bi]);
+        grp.appendChild(ticks); grp.appendChild(row); grp.appendChild(hex); diagram.appendChild(grp);
+      }
+    } else {
+      diagram.className="dbytes";
+      bytes.forEach(function(b,i){
+        var f=fields[owner[i]];
+        var col=document.createElement("div"); col.className="bcol";
+        var off=document.createElement("div"); off.className="off"; off.textContent="0x"+hx(i); col.appendChild(off);
+        var cell=document.createElement("div"); cell.className="bcell k-"+f.k; cell.dataset.idx=i;
+        if(i===f.r[0]) cell.classList.add("fstart");
+        cell.textContent=hx(b); col.appendChild(cell); diagram.appendChild(col);
+      });
+    }
+    var list=document.createElement("div"); list.className="fields";
+    var aside=document.createElement("aside"); aside.className="detail"; aside.setAttribute("role","status"); aside.setAttribute("aria-live","polite");
+    aside.innerHTML="<div class='dl'><span>field detail</span><span class='kind'></span></div>"+
+      "<h3>Hover a field or byte</h3><div class='dc'>"+(unit==="bit"?N+" bits":bytes.length+" bytes")+"</div>"+
+      "<p>Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.</p><div class='dn'></div>";
+    var det={t:aside.querySelector("h3"),c:aside.querySelector(".dc"),b:aside.querySelector("p"),n:aside.querySelector(".dn"),kind:aside.querySelector(".kind")};
+    var cells=[].slice.call(diagram.querySelectorAll("[data-idx]"));
+    var rows=[];
+    function light(a,b){cells.forEach(function(c){var i=+c.dataset.idx;c.classList.toggle("hi",i>=a&&i<=b);});}
+    function clearHi(){cells.forEach(function(c){c.classList.remove("hi");});}
+    function rl(f){ return unit==="bit"
+      ? "bits "+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")
+      : "bytes 0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-0x"+hx(f.r[1]):""); }
+    function show(f){det.t.textContent=f.label;det.c.textContent=rl(f)+"  =  "+f.val;
+      det.b.textContent=f.body;det.n.textContent=f.note||"";det.kind.textContent=KINDS[f.k];}
+    function activeRow(){return list.querySelector(".field.active");}
+    function cue(fi){rows.forEach(function(r){r.classList.remove("cued");});rows[fi].classList.add("cued");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    function restore(){rows.forEach(function(r){r.classList.remove("cued");});var a=activeRow();if(a){var fi=+a.dataset.fi;light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}else clearHi();}
+    function pin(fi){var was=rows[fi].classList.contains("active");rows.forEach(function(r){r.classList.remove("active");});if(was){clearHi();return;}rows[fi].classList.add("active");light(fields[fi].r[0],fields[fi].r[1]);show(fields[fi]);}
+    fields.forEach(function(f,fi){
+      var row=document.createElement("div"); row.className="field"; row.dataset.fi=fi; if(f.branch) row.dataset.branch="1";
+      var lab = unit==="bit" ? ("b"+f.r[0]+(f.r[1]>f.r[0]?"-"+f.r[1]:"")) : ("0x"+hx(f.r[0])+(f.r[1]>f.r[0]?"-"+hx(f.r[1]):""));
+      row.innerHTML="<span class='fb'>"+lab+"</span><span class='fn'>"+f.label+"</span><span class='fv k-"+f.k+"'>"+f.val+"</span>";
+      if(f.branch){
+        var bw=document.createElement("div"); bw.className="branch";
+        bw.innerHTML="<table>"+f.branch.map(function(p,i){return "<tr class='"+(i===f.sel?"sel":"")+"'><td class='k'>"+p[0]+"</td><td>"+p[1]+"</td></tr>";}).join("")+"</table>";
+        row.appendChild(bw);
+      }
+      HOV.bind(row,function(){cue(fi);},restore,function(){pin(fi);});
+      rows.push(row); list.appendChild(row);
+    });
+    cells.forEach(function(c){
+      var fi=owner[+c.dataset.idx];
+      HOV.bind(c,function(){cue(fi);},restore,function(){pin(fi);});
+    });
+    var left=document.createElement("div"); left.className="left";
+    left.appendChild(diagram); left.appendChild(list);
+    var dcol=document.createElement("div"); dcol.className="detailcol"; dcol.appendChild(aside);
+    var block=document.createElement("div"); block.className="block";
+    block.appendChild(left); block.appendChild(dcol);
+    HOV.leave(block,restore);
+    HOV.esc(function(){rows.forEach(function(r){r.classList.remove("active");});restore();});
+    mount.appendChild(block);
+    var maxH=aside.scrollHeight;
+    fields.forEach(function(f){ show(f); if(aside.scrollHeight>maxH) maxH=aside.scrollHeight; });
+    det.t.textContent="Hover a field or byte";
+    det.c.textContent=(unit==="bit"?N+" bits":bytes.length+" bytes");
+    det.b.textContent="Hover any field row or byte to light it and read the decode. Click to pin it; a field marked + opens its table.";
+    det.n.textContent="";
+    dcol.style.minHeight=(maxH+6)+"px";
+  }
+
+    var SPECS={
+
+    /* ---- the SYN that costs the server more than it costs the sender ---- */
+    "block-syn":["byte",
+      [0xC8,0x22,0x01,0xBB,0x12,0x34,0x56,0x78,0x00,0x00,0x00,0x00,0x50,0x02,0xFF,0xFF,0x7F,0x48,0x00,0x00],
+      [
+        {label:"source port",k:"enum",r:[0,1],val:"51234",
+         body:"Spoofed along with the source address. The server's SYN-ACK goes to whatever this says, so the attacker never has to receive anything."},
+        {label:"destination port",k:"enum",r:[2,3],val:"443",
+         body:"Any listening port works. A port with a slow accept path is worth more per packet."},
+        {label:"sequence number",k:"sync",r:[4,7],val:"0x12345678",
+         body:"Arbitrary. The attacker never completes the handshake, so the value is never checked against anything."},
+        {label:"acknowledgment number",k:"rsv",r:[8,11],val:"0, ACK not set",
+         body:"Unused in a SYN. Stays zero."},
+        {label:"data offset",k:"enum",r:[12,12],val:"5 (20 bytes, no options)",
+         body:"No options means no timestamps, which matters: SYN cookies need the timestamp option to carry window scale and SACK back. Without it, a cookie-accepted connection loses both."},
+        {label:"flags: SYN only",k:"flag",r:[13,13],val:"0x02",
+         note:"the whole attack is this byte",
+         body:"One bit set. The server must now allocate a transmission control block and hold it in the SYN backlog while it waits for an ACK that is never coming."},
+        {label:"window",k:"enum",r:[14,15],val:"65535",
+         body:"Advertised receive window. Irrelevant to the attacker, who will not receive data."},
+        {label:"checksum",k:"sync",r:[16,17],val:"0x7F48",
+         body:"Must be correct or the packet is dropped before it reaches the TCP state machine. Cheap to compute, so it is no obstacle."},
+        {label:"urgent pointer",k:"rsv",r:[18,19],val:"0",
+         body:"Unused."}
+      ]],
+
+    /* ---- the flags byte, bit by bit ---- */
+    "block-synbits":["bit",
+      [0x02],
+      [
+        {label:"CWR",k:"rsv",r:[0,0],val:"0"},
+        {label:"ECE",k:"rsv",r:[1,1],val:"0"},
+        {label:"URG",k:"rsv",r:[2,2],val:"0"},
+        {label:"ACK",k:"flag",r:[3,3],val:"0",
+         body:"Zero is the point. An ACK would complete the handshake and move the connection out of the backlog. The attack depends on never sending one."},
+        {label:"PSH",k:"rsv",r:[4,4],val:"0"},
+        {label:"RST",k:"flag",r:[5,5],val:"0",
+         body:"A RST would tear the half-open connection down immediately, which is exactly what the attacker does not want. Note that a spoofed host receiving an unexpected SYN-ACK will often send one on the attacker's behalf, which is why spoofing at a live address is less effective than spoofing at a dark one."},
+        {label:"SYN",k:"flag",r:[6,6],val:"1",
+         note:"one bit, one allocation",
+         body:"Sets the server into SYN_RECV for this four-tuple. The cost asymmetry is the attack: 40 bytes on the wire buys a kernel structure plus a retransmit timer, held for the SYN-ACK retry schedule."},
+        {label:"FIN",k:"rsv",r:[7,7],val:"0"}
+      ]],
+
+    /* ---- the query side of DNS amplification ---- */
+    "block-dnsq":["byte",
+      [0x1A,0x2B,0x01,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x01],
+      [
+        {label:"transaction ID",k:"sync",r:[0,1],val:"0x1A2B",
+         body:"Echoed in the response. The attacker does not care: the response is going to the victim, not back to them."},
+        {label:"flags",k:"flag",r:[2,3],val:"0x0100, RD=1",
+         body:"Recursion desired. Against an open resolver this makes it do the work of fetching a large answer on the attacker's behalf."},
+        {label:"QDCOUNT",k:"enum",r:[4,5],val:"1",
+         body:"One question. The whole request is 12 bytes of header plus a short name."},
+        {label:"ANCOUNT",k:"rsv",r:[6,7],val:"0"},
+        {label:"NSCOUNT",k:"rsv",r:[8,9],val:"0"},
+        {label:"ARCOUNT",k:"enum",r:[10,11],val:"1",
+         note:"this is the EDNS0 OPT record",
+         body:"One additional record, and it is the OPT pseudo-record carrying the advertised UDP buffer size. Without EDNS0 the answer is capped near 512 bytes and the amplification barely works."}
+      ]],
+
+    /* ---- the OPT record that sets the ceiling ---- */
+    "block-opt":["byte",
+      [0x00,0x00,0x29,0x10,0x00,0x00,0x00,0x80,0x00,0x00,0x00],
+      [
+        {label:"name (root)",k:"sync",r:[0,0],val:"0x00",
+         body:"A single zero byte. The OPT record always hangs off the root name."},
+        {label:"type = OPT",k:"enum",r:[1,2],val:"41",
+         body:"Marks this as the EDNS0 pseudo-record rather than a real resource record."},
+        {label:"UDP payload size",k:"flag",r:[3,4],val:"4096",
+         note:"the amplification ceiling, chosen by the attacker",
+         body:"The client telling the server how large a UDP response it is willing to receive. Set it to 4096 and a signed zone will happily fill it. This single field is the difference between a 1.5x reflection and a 50x one."},
+        {label:"extended RCODE + version",k:"rsv",r:[5,6],val:"0"},
+        {label:"DO bit + Z",k:"flag",r:[7,8],val:"DO=1",
+         body:"DNSSEC OK. Asking for the signatures, which is what makes a signed zone answer so much larger than an unsigned one. RRSIG records are the payload."},
+        {label:"RDLENGTH",k:"rsv",r:[9,10],val:"0",
+         body:"No options carried."}
+      ]],
+
+    /* ---- NTP monlist: the request is smaller than this table ---- */
+    "block-ntp":["byte",
+      [0x17,0x00,0x03,0x2A,0x00,0x00,0x00,0x00],
+      [
+        {label:"LI + VN + mode",k:"flag",r:[0,0],val:"0x17, mode 7",
+         note:"mode 7 is the private mode",
+         body:"Mode 7 is the vendor-private control channel, not part of the NTP protocol proper. It is where monlist lives."},
+        {label:"auth + sequence",k:"rsv",r:[1,1],val:"0x00"},
+        {label:"implementation",k:"enum",r:[2,2],val:"3 (XNTPD)",
+         body:"Selects the ntpd implementation-specific command set."},
+        {label:"request code",k:"flag",r:[3,3],val:"42 (MON_GETLIST_1)",
+         note:"8 bytes in, up to 600 records out",
+         body:"The monlist command. Returns the last 600 clients that spoke to this server, six per packet, in up to a hundred packets. An eight-byte request, a response measured in kilobytes. Removed in ntpd 4.2.7p26, which is why this one aged out rather than being filtered away."},
+        {label:"padding",k:"rsv",r:[4,7],val:"0"}
+      ]],
+
+    /* ---- HTTP/2 RST_STREAM: the frame that made Rapid Reset ---- */
+    "block-h2rst":["byte",
+      [0x00,0x00,0x04,0x03,0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x08],
+      [
+        {label:"length",k:"enum",r:[0,2],val:"4",
+         body:"Four bytes of payload. The entire frame is 13 bytes on the wire."},
+        {label:"type = RST_STREAM",k:"flag",r:[3,3],val:"0x03",
+         note:"cancel, but the work already started",
+         body:"Cancels a stream. In Rapid Reset the client opens a request and immediately resets it, so the server has begun the work while the stream no longer counts against the concurrency limit. The limit that was supposed to bound load stops bounding it."},
+        {label:"flags",k:"rsv",r:[4,4],val:"0"},
+        {label:"stream ID",k:"sync",r:[5,8],val:"1",
+         body:"Which stream to reset. The attacker increments this and never reuses one."},
+        {label:"error code",k:"enum",r:[9,12],val:"8 (CANCEL)",
+         body:"A polite cancellation. Nothing about the frame is malformed, which is why signature matching does not catch it and the fix had to be rate accounting instead."}
+      ]],
+
+    /* ---- the spoofed source that makes reflection possible at all ---- */
+    "block-ipsrc":["byte",
+      [0x45,0x00,0x00,0x3C,0x1C,0x46,0x40,0x00,0x40,0x11,0x00,0x00,0xC0,0x00,0x02,0x01,0xCB,0x00,0x71,0x2A],
+      [
+        {label:"version + IHL",k:"sync",r:[0,0],val:"IPv4, 20 bytes"},
+        {label:"DSCP + ECN",k:"rsv",r:[1,1],val:"0"},
+        {label:"total length",k:"enum",r:[2,3],val:"60"},
+        {label:"identification",k:"rsv",r:[4,5],val:"0x1C46"},
+        {label:"flags + fragment offset",k:"flag",r:[6,7],val:"DF"},
+        {label:"TTL",k:"enum",r:[8,8],val:"64",
+         body:"A giveaway when it disagrees with the hop count the packet actually took. One of the few cheap signals that a source address is forged."},
+        {label:"protocol",k:"enum",r:[9,9],val:"17 (UDP)",
+         body:"UDP, because it has no handshake. Reflection needs a protocol that will answer a single unverified packet."},
+        {label:"header checksum",k:"sync",r:[10,11],val:"recomputed"},
+        {label:"source address",k:"flag",r:[12,15],val:"192.0.2.1",
+         note:"forged: this is the victim",
+         body:"The entire reflection technique is this field. The attacker writes the victim's address here, the reflector believes it, and the answer is delivered to somebody who never asked. BCP 38 ingress filtering at the origin network is the fix, and its incomplete deployment after three decades is why reflection still works.",
+         branch:[["real source","dropped by BCP 38"],["forged source","reflection works"]],sel:1},
+        {label:"destination address",k:"enum",r:[16,19],val:"203.0.113.42",
+         body:"The reflector. Chosen from a scanned population of hosts that answer the chosen protocol."}
+      ]]
+  };
+var built={};
+  function buildPanel(name){
+    var panel=document.querySelector('[data-panel="'+name+'"]'); if(!panel) return;
+    panel.querySelectorAll("[data-build]").forEach(function(m){
+      if(built[m.id]) return; built[m.id]=1;
+      var spec=SPECS[m.id]; if(spec) build(m.id, spec[0], spec[1], spec[2]);
+    });
+  }
+  var tabs=[].slice.call(document.querySelectorAll(".tab"));
+  var panels=[].slice.call(document.querySelectorAll(".panel"));
+  function activate(name){
+    tabs.forEach(function(t){t.classList.toggle("on",t.dataset.p===name);});
+    panels.forEach(function(p){p.classList.toggle("on",p.dataset.panel===name);});
+    buildPanel(name);
+  }
+  tabs.forEach(function(t){t.addEventListener("click",function(){
+    activate(t.dataset.p);
+    if(history.replaceState) history.replaceState(null,"","#"+t.dataset.p);
+  });});
+  var initial=(location.hash||"").replace("#","");
+  if(initial && document.querySelector('[data-panel="'+initial+'"]')) activate(initial);
+  else buildPanel("syn");
+
+
+  HOV.esc(function(){document.querySelectorAll(".active,.cued,.pinned").forEach(function(n){n.classList.remove("active","cued","pinned");});});
+})();
+</script>
+<script src="../assets/protofun-toggle.js"></script>
+<script src="../assets/nav.js" data-nav-root=".."></script>
+</body>
+</html>
