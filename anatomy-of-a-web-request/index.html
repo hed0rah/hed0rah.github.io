@@ -140,26 +140,45 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 [data-theme="house-light"]{--panel-2:#ECEAE3;--line-2:#B4AFA3}
 [data-theme="house-dark"]{--panel-2:#232326;--line-2:#3e3e42}
 
+/* ---------------------------------------------------------------------------
+   SUPERSEDES THE TEMPLATE HEAD.
+   build.py keeps the breakdown <head> byte-verbatim, so the rules it sets for
+   a 1040px single-column page cannot be deleted from here. Everything in this
+   block deliberately overrides one of them; edit these, not the head's.
+       .sheet     1040 -> 1180      this page carries a sticky inspector
+       body       1.7  -> 1.5       the sibling's leading; 1.7 cost 13% height
+       .lede      80ch/0.85rem mono -> 66ch/14px sans
+   One vertical scale down the spine, in px, so the rhythm is inspectable:
+       24 masthead . 24 lede . 24 rule . 16 controls . 24 work
+   --------------------------------------------------------------------------- */
+.sheet{max-width:1180px;padding-left:28px;padding-right:28px}
+body{line-height:1.5}
+.head{margin-bottom:24px}
+.lede{font-size:14px;line-height:1.5;max-width:66ch;margin-bottom:24px}
+.rule{margin:24px 0 0}
+.bar-controls{margin:16px 0 0}
+.work{margin-top:24px}
+/* the running prose inside the 730 column is a different container, and keeps
+   its own narrower measure */
+.plede,.note,.callout{font-size:13px;line-height:1.5;max-width:60ch}
+
 /* prose in sans, the apparatus stays mono */
 .lede,.plede,.note,.callout,.desc,.pcap,.atable td.p{font-family:var(--sans);font-weight:400}
 /* one prose measure, not four. 13px Plex Sans sits optically level with the
    12.5px mono apparatus because the two share an x-height. */
-.lede,.plede,.note,.callout{font-size:13px;line-height:1.5;max-width:60ch}
 
 /* geometry lifted from linux_network_stack so the two pages are the same
    object: 1180 outer, 730 content, 360 inspector, 34 gap, sticky at 24 */
-.sheet{max-width:1180px;padding-left:28px;padding-right:28px}
-body{line-height:1.5}
 
 /* ---- control strip: the tabs live here, spanning the content+inspector
    pair they both govern. lifted from linux_network_stack's .seg. ---- */
-.rule{margin:22px 0 0}
 .rule .bar{height:3px;background:var(--accent)}
 .rule .bar::after{content:"";display:block;height:1px;background:var(--line);margin-top:5px}
-.bar-controls{margin:18px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:22px}
+
+.bar-controls{display:flex;flex-wrap:wrap;align-items:center;gap:22px}
 .grp{display:flex;align-items:center;gap:10px}
 .grp > .lab{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim)}
-.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:3px;overflow:hidden;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:3px;overflow:hidden}
 .seg button{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--ink-mid);
   background:transparent;border:0;border-right:1px solid var(--line-2);padding:5px 13px;cursor:pointer;transition:.13s}
 .seg button:last-child{border-right:0}
@@ -169,7 +188,7 @@ body{line-height:1.5}
 .seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 
 /* ---- two column work area, one inspector for every tab ---- */
-.work{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:34px;align-items:start;margin-top:26px}
+.work{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:34px;align-items:start}
 .stack{min-width:0}
 .inspector{position:sticky;top:24px;align-self:start}
 @media(max-width:900px){
@@ -271,6 +290,21 @@ body{line-height:1.5}
 .atable td.p{white-space:normal;line-height:1.6}
 .atable td.n{font-family:var(--mono);color:var(--accent2);white-space:nowrap;font-weight:500}
 
+@media(max-width:620px){
+  /* a dotted leader needs a line wide enough to lead somewhere. below this it
+     stops being a row and becomes a stacked pair. */
+  .work .row{display:block;padding:5px 0}
+  .work .row .lead{display:none}
+  .work .row .name,.work .row .meta{white-space:normal;display:block;padding:0}
+  .work .row .meta{margin-top:1px}
+  .wire .tag{white-space:normal;text-align:center}
+  .branch{margin-left:8px;padding-left:10px}
+  /* six buttons in one bordered strip wrap ragged: give each its own edge */
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);border:0;border-radius:0;gap:2px;width:100%}
+  .seg button{border:1px solid var(--line-2);border-radius:3px;text-align:center}
+  .grp{flex-wrap:wrap;width:100%}
+}
+
 @supports not selector(:focus-visible){
   .work .row:focus,.seg button:focus,.fseg:focus{outline:2px solid var(--accent);outline-offset:1px}
 }
@@ -301,7 +335,7 @@ body{line-height:1.5}
     </div>
   </div>
 
-  <p class="lede">Every explainer of this stops at eight steps and "the browser renders the page".
+  <p class="lede">Every explainer of this stops at eight steps and &ldquo;the browser renders the page&rdquo;.
   The parts worth knowing get skipped: <b>nine separate caches</b> sit on the path, each with its own key
   and its own way of going stale; choosing a CDN edge is <b>two different mechanisms</b> and the usual
   one-line summary of the difference is wrong; and the handshake that protects the request is the same one
@@ -361,7 +395,7 @@ body{line-height:1.5}
 </div>
 <div class="branch">
 <div class="bhead"><span class="bn">cache 1</span><span class="bt">Cache API</span></div>
-<div class="row k-hit" tabindex="0" data-n="Cache 1: Cache API" data-t="cache 1,author controlled" data-d="Storage the service worker manages explicitly. Nothing expires on its own. Entries live until the worker&#x27;s code deletes them, which is what makes offline-first apps possible and stale apps stubborn." data-w="A browser &#x27;clear cache&#x27; does not touch this. It needs an unregister or a worker update." data-k1="keyed by" data-v1="whatever the code says"><span class="name">Cache API</span><span class="lead"></span><span class="meta">HIT: zero network</span></div>
+<div class="row k-hit" tabindex="0" data-n="Cache 1: Cache API" data-t="cache 1,author controlled" data-d="Storage the service worker manages explicitly. Nothing expires on its own. Entries live until the worker&#x27;s code deletes them, which is what makes offline-first apps possible and stale apps stubborn." data-w="A browser &amp;ldquo;clear cache&amp;rdquo; does not touch this. It needs an unregister or a worker update." data-k1="keyed by" data-v1="whatever the code says"><span class="name">Cache API</span><span class="lead"></span><span class="meta">HIT: zero network</span></div>
 </div>
 <div class="flow"><span class="stem"></span><span class="chev">&#9662;</span><span class="step">worker passes through, or none is registered</span></div>
 <div class="stage">
@@ -553,8 +587,8 @@ body{line-height:1.5}
             </div>
           </div>
 
-          <div class="callout hot"><b>the summary that is too clean.</b> "Akamai uses DNS, Cloudflare uses
-          anycast" is the usual line, and it is only half right. Akamai does select <i>edges</i> through DNS mapping, but the nameservers you ask are themselves fronted by IP anycast, with the mapping decision made behind that by servers picked to sit near your resolver. Both vendors use
+          <div class="callout hot"><b>the summary that is too clean.</b> &ldquo;Akamai uses DNS, Cloudflare uses
+          anycast&rdquo; is the usual line, and it is only half right. Akamai does select <i>edges</i> through DNS mapping, but the nameservers you ask are themselves fronted by IP anycast, with the mapping decision made behind that by servers picked to sit near your resolver. Both vendors use
           anycast; they use it at different layers. Cloudflare anycasts the edge that serves your content,
           Akamai anycasts the nameservers that tell you which edge to use. The real distinction is
           <b>where the per-client decision is made</b>: in a computed DNS answer, or in the routing table.</div>
@@ -625,9 +659,9 @@ body{line-height:1.5}
 
         <!-- ================= CACHE ================= -->
         <div class="panel" data-panel="cache">
-          <div class="pfacts"><span>layers<b>9</b></span><span>reachable by "clear your cache"<b>2 of them</b></span></div>
+          <div class="pfacts"><span>layers<b>9</b></span><span>reachable by &ldquo;clear your cache&rdquo;<b>2 of them</b></span></div>
 
-          <p class="plede">Nine caches can hold a copy of a response, each with its own key and its own way of going stale. So "the page is stale" is not yet a diagnosis. The useful question is <b>which layer</b> is holding the old copy, because what clears it differs at every level.</p>
+          <p class="plede">Nine caches can hold a copy of a response, each with its own key and its own way of going stale. So &ldquo;the page is stale&rdquo; is not yet a diagnosis. The useful question is <b>which layer</b> is holding the old copy, because what clears it differs at every level.</p>
 
           <div class="sec">the nine layers</div>
           <table class="atable">
@@ -644,7 +678,7 @@ body{line-height:1.5}
               <tr><td class="n">9</td><td class="f">Database</td><td class="p">query plan, buffer pool</td><td class="p">writes</td><td class="x">implicit</td></tr>
             </tbody>
           </table>
-          <div class="callout hot"><b>Each row is a different cache, with its own key and its own way of being cleared.</b> A browser "clear cache" reaches rows 1 and 3. It does not
+          <div class="callout hot"><b>Each row is a different cache, with its own key and its own way of being cleared.</b> A browser &ldquo;clear cache&rdquo; reaches rows 1 and 3. It does not
           touch the service worker, it does not touch the CDN, and it certainly does not touch your
           application's Redis. Debugging staleness means naming the layer first.</div>
 
@@ -676,7 +710,7 @@ body{line-height:1.5}
           </div>
           <div class="callout"><b>Surrogate-Control and CDN-Cache-Control</b> are aimed at the CDN rather than the browser. Surrogate-Control is consumed and stripped by any CDN that honours it. CDN-Cache-Control is newer and is specified to survive: a CDN that does not use it passes it through, and one that does may still forward it so a second CDN downstream can read it. They let the edge and the browser be given
           entirely different policies for the same object, and they are invisible in a browser devtools panel,
-          which makes them a recurring source of "but the header says".</div>
+          which makes them a recurring source of &ldquo;but the header says&rdquo;.</div>
         </div>
 
         <!-- ================= DEFENCE ================= -->
@@ -707,7 +741,7 @@ body{line-height:1.5}
           <div class="callout hot"><b>a CDN in front of an origin is exactly the two-parser condition request
           smuggling needs.</b> Smuggling requires two HTTP implementations that disagree about where one
           request ends and the next begins. An edge that terminates the client connection and forwards over a
-          reused connection to the origin is that arrangement by construction. That is the normal arrangement, not an exotic one. HTTP/2 removes the CL/TE ambiguity only where it runs the whole way to the app server. Most edges still speak HTTP/2 to the client and downgrade to HTTP/1.1 behind it, and that downgrade is its own live attack surface, so treat "we use HTTP/2" as a question about the origin leg rather than an answer.</div>
+          reused connection to the origin is that arrangement by construction. That is the normal arrangement, not an exotic one. HTTP/2 removes the CL/TE ambiguity only where it runs the whole way to the app server. Most edges still speak HTTP/2 to the client and downgrade to HTTP/1.1 behind it, and that downgrade is its own live attack surface, so treat &ldquo;we use HTTP/2&rdquo; as a question about the origin leg rather than an answer.</div>
 
           <div class="callout"><b>the one that is routinely forgotten.</b> Every control on this page lives at
           the edge, and the edge is only in the path because DNS says so. If your origin answers on a public
