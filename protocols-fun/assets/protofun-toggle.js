@@ -1,4 +1,6 @@
 // protofun-toggle -- RJ, the protocols-fun / ipv6-fun mascot + 6-theme cycle.
+// Pages boot to the house pair (house-light / house-dark) chosen by the OS
+// setting; the other four are reachable by cycling. A stored choice wins.
 // Click cycles: light -> dark -> amber-CRT -> vaporwave -> house-light -> house-dark.
 // The two "secret" modes (amber/vapor) light RJ up -- happy eyes + pins racing.
 // The two "house" modes are the site-wide Deep Dive skins: RJ goes calm/buttoned-up
@@ -87,7 +89,7 @@
       var saved = null;
       try { saved = localStorage.getItem('protofun-theme'); } catch (e) {}
       var initial = STATES.indexOf(saved) >= 0 ? saved
-        : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'house-dark' : 'house-light');
       this.apply(initial, false);
     }
     disconnectedCallback() {
