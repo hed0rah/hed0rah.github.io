@@ -28,9 +28,7 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -38,18 +36,11 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .lede a{color:var(--enum)}
@@ -84,8 +75,6 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none}
 .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 
 .diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
 .bytegrp{border:1px solid var(--line);background:var(--panel)}
@@ -149,11 +138,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -170,16 +154,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>UDP Anatomy</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
-      <div class="stamp"><b>RFC 768 (1980)</b><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>header <b>8 bytes, always</b></div><div>checksum <b>optional in v4, mandatory in v6</b></div>
-      <div>variant <b>UDP-Lite, RFC 3828</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede"><a href="https://www.rfc-editor.org/rfc/rfc768">RFC 768</a> (August 1980, Jon Postel) is one of the shortest RFCs that anything on the internet still runs on - three pages, and it has never been revised or obsoleted the way TCP's spec was. The entire protocol is four 16-bit fields: source port, destination port, length, checksum. No connection state, no retransmission, no ordering - whatever reliability a UDP-based application wants, it builds itself on top. The one genuine wrinkle: <b>the checksum is optional over IPv4 and mandatory over IPv6</b> - same field, different rule, and it's easy to miss if you only ever tested on one address family. Every example on this page is a DNS query, 192.0.2.10:51234 (IPv4) / 2001:db8::1a2b:3c4d:5e6f (IPv6) &#8594; port 53 on 203.0.113.5 / 2001:db8::1, matching the addressing conventions already used on the TCP page and in <a href="https://github.com/hed0rah/ipv6-fun">ipv6-fun</a>. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede">The UDP header (<a href="https://www.rfc-editor.org/rfc/rfc768">RFC 768</a>): four 16-bit fields.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -200,7 +179,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="panelwrap">
 
     <div class="panel on" data-panel="overview">
-      <div class="pfacts"><span>header<b>8 bytes, no exceptions</b></span><span>spec<b>RFC 768</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Same port-pair idea as TCP, same 16-bit fields - but that's where the resemblance ends. There's no flags byte, no window, no options, because there's no connection to manage.</p>
       <div class="sec">source &amp; destination ports (4 bytes)</div>
       <p class="note">A DNS query: client ephemeral port 51234 to server port 53.</p>
@@ -208,7 +186,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="ipv4">
-      <div class="pfacts"><span>size<b>8 bytes</b></span><span>checksum<b>optional (RFC 768)</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Over IPv4, a sender may set the checksum to all-zeros to mean "I didn't compute one" - the receiver then skips verification entirely. This was a real performance shortcut in 1980; almost nothing does it deliberately today, but it's still legal.</p>
       <div class="sec">UDP header over IPv4 (8 bytes)</div>
       <p class="note">Same DNS query, 4-byte placeholder payload. Checksum computed over a 12-byte IPv4 pseudo-header (source, destination, zero, protocol=17, UDP length) plus the full segment.</p>
@@ -216,7 +193,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="ipv6">
-      <div class="pfacts"><span>size<b>8 bytes, identical shape</b></span><span>checksum<b>mandatory (RFC 8200 §8.1)</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">RFC 8200 removes the option: over IPv6, a UDP sender must compute a real checksum. If the computed value happens to come out as exactly zero, it has to be transmitted as all-ones (0xFFFF) instead - zero is reserved to mean "not computed," a meaning IPv6 doesn't allow UDP to claim.</p>
       <div class="sec">UDP header over IPv6 (8 bytes)</div>
       <p class="note">Identical ports and payload to the IPv4 tab - the checksum comes out different purely because the pseudo-header is IPv6's (32-byte addresses, no protocol/zero bytes the same way) instead of IPv4's.</p>
@@ -224,7 +200,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="lite">
-      <div class="pfacts"><span>protocol number<b>136 (not 17)</b></span><span>spec<b>RFC 3828 (2004)</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A distinct sibling protocol, not a UDP option - it gets its own IP protocol number (136) specifically so routers and middleboxes never confuse it with ordinary UDP. Built for real-time media (VoIP, video) where a corrupted payload is still more useful than no payload at all: it lets a receiver accept a segment even if part of it fails the checksum, as long as the part it cares about didn't.</p>
       <div class="sec">UDP-Lite header (8 bytes, same shape as UDP)</div>
       <p class="note">Same ports and payload again - only the meaning of bytes 4-5 changes.</p>

@@ -30,9 +30,7 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -40,18 +38,11 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .lede a{color:var(--enum)}
@@ -175,8 +166,6 @@ code{font-family:var(--ff);color:var(--enum);font-size:0.92em;background:var(--r
 .tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.06em;margin-top:1px;text-transform:none}
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none} .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 .plede{color:var(--soft);max-width:82ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
 .plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em} .plede a{color:var(--enum)}
 footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
@@ -194,11 +183,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -232,17 +216,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . ECH</div><h1>Encrypted ClientHello</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
-      <div class="stamp"><b>RFC 9849</b><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>hides <b>the destination</b></div>
-      <div>not <b>the client</b></div>
-      <div>needs <b>DNS and a crowd</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede">This is the wire fighting back. The <a href="../ja4/ja4plus-breakdown.html">JA4+</a>, <a href="../tls/tls13-handshake.html">TLS 1.3</a> and <a href="../quic/quic-http3-breakdown.html">QUIC</a> pages all rest on the same fact: the ClientHello is plaintext, so the SNI names where you are going and the extension shape names what you are. ECH is the countermove. It HPKE-seals the sensitive half of the ClientHello under a key fetched from DNS, and an on-path observer loses the hostname. <b>It is a partial countermove and the page says so out loud.</b> The outer ClientHello still has a JA4, the <code>encrypted_client_hello</code> extension is itself a fingerprintable feature, and the transport below is untouched. ECH hides the destination, not the client. Every struct below is built from <a href="https://www.rfc-editor.org/rfc/rfc9849">RFC 9849</a> with every length computed. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede">Encrypted ClientHello (<a href="https://www.rfc-editor.org/rfc/rfc9849">RFC 9849</a>), which encrypts the SNI and the rest of the sensitive ClientHello under a key published in DNS.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -268,8 +246,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <!-- ================= SPLIT ================= -->
     <div class="panel on" data-panel="split">
-      <div class="pfacts"><span>spec<b>RFC 9849, March 2026</b></span><span>was<b>draft-ietf-tls-esni, 25 revisions</b></span></div>
-      <p class="plede">A client using ECH builds <b>two</b> ClientHellos. The outer one goes on the wire in the clear and is deliberately boring: it names a generic <code>public_name</code> that the whole provider shares. The inner one carries the truth, gets sealed with HPKE, and travels as the payload of one extension inside the outer. The server decrypts it and answers the inner hello as though the outer never existed.</p>
+      <p class="plede">A client using ECH builds <b>two</b> ClientHellos. The outer one is sent in the clear and names a generic <code>public_name</code> shared by the whole provider. The inner one carries the real SNI and extensions, is sealed with HPKE, and travels as the payload of one extension in the outer hello. The server decrypts it and answers the inner hello.</p>
 
       <div class="sec">the same connection, two hellos</div>
       <div class="split">
@@ -300,8 +277,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <!-- ================= EXTENSION ================= -->
     <div class="panel" data-panel="extension">
-      <div class="pfacts"><span>codepoint<b>0xfe0d</b></span><span>outer<b>190 bytes here</b></span><span>inner<b>5 bytes, always</b></span></div>
-      <p class="plede">One extension type, two shapes, chosen by the first byte of its body. This is the whole of ECH on the wire.</p>
+      <p class="plede">One extension type with two shapes, selected by the first byte of its body.</p>
 
       <div class="sec">the outer form, inside ClientHelloOuter</div>
       <p class="note">A deliberately minimal example so every byte stays on screen. A real browser's payload runs roughly 200 to 300 bytes, because a real inner hello is bigger before padding.</p>
@@ -317,7 +293,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <!-- ================= HPKE ================= -->
     <div class="panel" data-panel="hpke">
-      <div class="pfacts"><span>primitive<b>HPKE, RFC 9180</b></span><span>mode<b>mode_base</b></span><span>seal<b>single shot</b></span></div>
       <p class="plede">Hybrid Public Key Encryption: an ephemeral KEM encapsulation to the server's public key, then an AEAD seal under the derived secret. The client sends the encapsulation as <code>enc</code> and the sealed hello as <code>payload</code>. No round trip, no forward secrecy for the config key itself.</p>
 
       <div class="sec">the pipeline</div>
@@ -362,7 +337,6 @@ fd 00              <span class="p">ech_outer_extensions</span>
 
     <!-- ================= DNS ================= -->
     <div class="panel" data-panel="dns">
-      <div class="pfacts"><span>record<b>HTTPS RR, RFC 9460</b></span><span>SvcParamKey<b>5 = ech</b></span></div>
       <p class="plede">The client needs the server's public key before it sends its first byte, which makes ECH a DNS problem as much as a TLS one. The key rides in the same <a href="../dns/dns-anatomy.html">HTTPS resource record</a> that already carries ALPN and address hints, so a client that is doing SVCB lookups gets it for free.</p>
 
       <div class="sec">what dig shows you</div>
@@ -381,7 +355,6 @@ DD5eh1uSwOS/Fpx6NQCYwAIAAEAAQABAANAEnB1YmxpYy5leGFtcGxlLm5ldAAA" ipv6hint=2001:d
 
     <!-- ================= GREASE ================= -->
     <div class="panel" data-panel="grease">
-      <div class="pfacts"><span>spec<b>RFC 9849 &sect;6.2</b></span><span>purpose<b>merge two populations</b></span></div>
       <p class="plede">A client with no ECHConfig sends a fake one anyway: random <code>config_id</code>, a random string of the right length for <code>enc</code>, and a random payload of plausible size. The server cannot decrypt it, which is exactly what would happen with a stale real config, so it behaves identically.</p>
 
       <div class="sec">why bother</div>
@@ -398,7 +371,6 @@ DD5eh1uSwOS/Fpx6NQCYwAIAAEAAQABAANAEnB1YmxpYy5leGFtcGxlLm5ldAAA" ipv6hint=2001:d
 
     <!-- ================= RETRY ================= -->
     <div class="panel" data-panel="retry">
-      <div class="pfacts"><span>alert<b>ech_required(121)</b></span><span>carrier<b>EncryptedExtensions</b></span></div>
       <p class="plede">Keys rotate, caches go stale, and a client will regularly present a <code>config_id</code> the server no longer holds. This is expected traffic, not an error, so ECH has a defined path through it that leaks as little as possible.</p>
 
       <div class="sec">the rejection path</div>
@@ -441,8 +413,7 @@ accept_confirmation = HKDF-Expand-Label(
 
     <!-- ================= JA4 ================= -->
     <div class="panel" data-panel="ja4">
-      <div class="pfacts"><span>hides<b>the destination</b></span><span>does not hide<b>the client</b></span><span>see<b><a href="../ja4/ja4plus-breakdown.html" style="color:var(--enum)">JA4+ breakdown</a></b></span></div>
-      <p class="plede">ECH removes one field from one layer. That field happens to be the most valuable one for censorship, which is why it matters - and it is not the field most fingerprinting actually depends on.</p>
+      <p class="plede">ECH hides one field, the SNI. That is the field censors rely on most, but not the one most fingerprinting uses.</p>
 
       <div class="sec">what survives ECH, layer by layer</div>
       <table class="atable"><thead><tr><th>signal</th><th>hidden?</th><th>why</th></tr></thead><tbody>
@@ -463,7 +434,6 @@ accept_confirmation = HKDF-Expand-Label(
 
     <!-- ================= DEPLOY ================= -->
     <div class="panel" data-panel="deploy">
-      <div class="pfacts"><span>status<b>RFC as of March 2026</b></span><span>needs<b>encrypted DNS + a pool</b></span></div>
       <p class="plede">ECH shipped behind a long tail of preconditions, and most of what goes wrong is one of them being absent rather than the cryptography failing.</p>
 
       <div class="sec">two server topologies</div>

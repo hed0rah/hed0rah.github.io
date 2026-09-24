@@ -30,9 +30,7 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -40,18 +38,11 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .lede a{color:var(--enum)}
@@ -175,8 +166,6 @@ code{font-family:var(--ff);color:var(--enum);font-size:0.92em;background:var(--r
 .tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.06em;margin-top:1px;text-transform:none}
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none} .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 .plede{color:var(--soft);max-width:82ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
 .plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em} .plede a{color:var(--enum)}
 footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
@@ -194,11 +183,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -233,17 +217,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . FIREWALL PATH</div><h1>Packet Fate</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
-      <div class="stamp"><b>netfilter &middot; conntrack</b><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>verdicts <b>accept &middot; drop &middot; reject</b></div>
-      <div>hooks <b>five, in a fixed order</b></div>
-      <div>the question <b>who sent the RST</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede">Every other page here is an <b>anatomy</b>: a header, a field list, the bytes. This one is a <b>path</b>. That is why it never fit the shape - a firewall is not a protocol, it is the thing that happens to every protocol, in between the pages. A packet arrives and something decides its fate, and the decision is invisible in the packet itself. So the recurring question is not "what do these bytes mean" but <b>"which box did this, and why did it not tell me"</b>. Start with the one everybody has lost an afternoon to: <code>connection reset by peer</code>, where the peer swears it sent nothing. Every packet below is real, with every checksum computed. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede">The netfilter and conntrack path a packet takes through a Linux firewall.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -269,8 +247,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <!-- ================= RST ================= -->
     <div class="panel on" data-panel="rst">
-      <div class="pfacts"><span>symptom<b>ECONNRESET</b></span><span>message<b>connection reset by peer</b></span><span>truth<b>often not the peer</b></span></div>
-      <p class="plede">The error names the peer. The peer is frequently innocent. A RST is four bytes of flag in a header anyone on the path can write, the source address is trivially forged, and nothing in the packet records who really produced it. Six things send resets, and they are distinguishable on the wire.</p>
+      <p class="plede">A connection-reset error names the peer, but the peer often did not send the RST. A RST is one flag bit in a header anyone on the path can write, the source address is easy to forge, and nothing in the packet records who produced it. Six things send resets, and they can be told apart on the wire.</p>
 
       <div class="sec">the six suspects</div>
       <table class="atable"><thead><tr><th>source</th><th>when</th><th>what it looks like</th></tr></thead><tbody>
@@ -294,8 +271,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <!-- ================= DROP vs REJECT ================= -->
     <div class="panel" data-panel="dropreject">
-      <div class="pfacts"><span>DROP<b>silence, then a timeout</b></span><span>REJECT<b>an error, immediately</b></span></div>
-      <p class="plede">This is the difference between "my app hung for two minutes" and "my app failed instantly with a clear error", and it is one word in one firewall rule. DROP discards the packet and sends nothing, so the client learns only when its own retransmit timer gives up. REJECT sends an explicit refusal, so the client fails on the next round trip.</p>
+      <p class="plede">DROP discards the packet and sends nothing, so the client only finds out when its own retransmit timer gives up, often minutes later. REJECT sends an explicit refusal, so the client fails on the next round trip.</p>
 
       <div class="sec">DROP: the client talks to nobody</div>
       <p class="note">There is no packet to inspect, which is the entire problem. The capture shows only your own SYNs leaving, on a doubling timer.</p>
@@ -340,7 +316,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <!-- ================= HOOKS ================= -->
     <div class="panel" data-panel="hooks">
-      <div class="pfacts"><span>hooks<b>5</b></span><span>ordering<b>signed integer priority</b></span><span>tables<b>a naming convention</b></span></div>
       <p class="plede">Netfilter is five points in the IP stack where registered functions get to look at a packet and return a verdict. Everything else - tables, chains, conntrack, NAT - is code registered at one of those five points with a priority number that decides who runs first. Read the path downward; a packet enters at the top and takes one branch at the routing decision.</p>
 
       <div class="sec">the path an inbound packet takes</div>
@@ -384,7 +359,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <!-- ================= CONNTRACK ================= -->
     <div class="panel" data-panel="conntrack">
-      <div class="pfacts"><span>module<b>nf_conntrack</b></span><span>keyed on<b>a tuple pair</b></span><span>states<b>4, plus untracked</b></span></div>
       <p class="plede">Conntrack is what turns a packet filter into a stateful firewall: it remembers flows so a rule can say "replies to things we started" without enumerating them. It also introduces a table that can fill, entries that can expire, and a vocabulary that looks like TCP's but is not.</p>
 
       <div class="sec">the four states</div>
@@ -421,8 +395,7 @@ tcp  6  431997 ESTABLISHED
 
     <!-- ================= NAT ================= -->
     <div class="panel" data-panel="nat">
-      <div class="pfacts"><span>DNAT<b>PREROUTING, before routing</b></span><span>SNAT<b>POSTROUTING, after routing</b></span><span>runs<b>once per flow</b></span></div>
-      <p class="plede">The two positions are not arbitrary and are worth memorising, because every confusing NAT bug follows from them. Destination translation has to happen before the routing decision, or the packet would be routed to the address you are trying to change. Source translation has to happen after it, or the rule could not know which interface, and therefore which source address, was selected.</p>
+      <p class="plede">Destination translation has to happen before the routing decision, or the packet would be routed to the address being changed. Source translation has to happen after it, or the rule could not know which interface, and so which source address, was chosen.</p>
 
       <div class="path">
         <div class="node hook"><div class="nm">PREROUTING</div><div class="nd">priority -100: <b>DNAT</b>, <code>REDIRECT</code>. Rewrites the destination. Port forwarding and load balancing live here.</div></div>
@@ -445,8 +418,7 @@ tcp  6  431997 ESTABLISHED
 
     <!-- ================= RULES ================= -->
     <div class="panel" data-panel="rules">
-      <div class="pfacts"><span>iptables<b>table implies hook</b></span><span>nftables<b>hook is declared</b></span><span>backend<b>the same since iptables-nft</b></span></div>
-      <p class="plede">One rule, both spellings, token by token. It rejects new inbound connections to 443 with a reset - which is to say, it is the third suspect from the first tab, written out.</p>
+      <p class="plede">One rule in both syntaxes, token by token. It rejects new inbound connections to 443 with a reset, the firewall case from the first tab.</p>
 
       <div class="sec">iptables</div>
       <div class="cmd">iptables -A INPUT -p tcp --dport 443 -m conntrack --ctstate NEW -j REJECT --reject-with tcp-reset</div>
@@ -480,8 +452,7 @@ nft add rule  inet filter input tcp dport 443 ct state new reject with tcp reset
 
     <!-- ================= TRACE ================= -->
     <div class="panel" data-panel="trace">
-      <div class="pfacts"><span>question<b>which rule ate it</b></span><span>cheapest answer<b>counters</b></span></div>
-      <p class="plede">Guessing at rulesets is a waste of an afternoon. Every one of these answers a specific question, roughly in order of how much they cost to run.</p>
+      <p class="plede">Each of these commands answers a specific question. They are listed roughly by how much they cost to run.</p>
 
       <div class="sec">counters: which rule is firing</div>
       <div class="cmd"><span class="c">// per-rule packet and byte counts. zero them, reproduce, look again.</span>
@@ -518,7 +489,6 @@ nstat -az | grep -iE 'listendrops|listenoverflows|retrans'</div>
 
     <!-- ================= GUIDE ================= -->
     <div class="panel" data-panel="guide">
-      <div class="pfacts"><span>use<b>symptom first</b></span><span>then<b>the tab that explains it</b></span></div>
       <p class="plede">What the failure looks like from the application, and where to go next.</p>
 
       <table class="atable"><thead><tr><th>symptom</th><th>most likely</th><th>check</th></tr></thead><tbody>

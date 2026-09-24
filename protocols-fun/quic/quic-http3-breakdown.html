@@ -30,9 +30,7 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -40,18 +38,11 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .lede a{color:var(--enum)}
@@ -175,8 +166,6 @@ code{font-family:var(--ff);color:var(--enum);font-size:0.92em;background:var(--r
 .tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.06em;margin-top:1px;text-transform:none}
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none} .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 .plede{color:var(--soft);max-width:82ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
 .plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em} .plede a{color:var(--enum)}
 footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
@@ -194,11 +183,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -217,17 +201,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . QUIC / HTTP-3</div><h1>QUIC and HTTP/3</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
-      <div class="stamp"><b>RFC 9000 &middot; 9001 &middot; 9114</b><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>transport <b>on UDP, in user space</b></div>
-      <div>crypto <b>TLS 1.3, no record layer</b></div>
-      <div>encrypted <b>headers included, almost</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede">QUIC is a transport that swallowed its own security layer. <a href="https://www.rfc-editor.org/rfc/rfc9000">RFC 9000</a> defines streams, loss recovery, and connection migration; <a href="https://www.rfc-editor.org/rfc/rfc9001">RFC 9001</a> hands key management to <a href="../tls/tls13-handshake.html">TLS 1.3</a> but throws away the TLS record layer, carrying handshake bytes in CRYPTO frames instead. The result encrypts nearly the whole packet, including most of the header - and then leaves the first flight readable by anyone who can see it, because the keys that protect an Initial packet are derived from a connection ID that travels in the clear. Every byte below is from the published test vectors in RFC 9001 Appendix A, re-derived rather than copied. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede">QUIC (<a href="https://www.rfc-editor.org/rfc/rfc9000">RFC 9000</a>, <a href="https://www.rfc-editor.org/rfc/rfc9001">RFC 9001</a>) and HTTP/3 (<a href="https://www.rfc-editor.org/rfc/rfc9114">RFC 9114</a>): packet headers, frames and the TLS 1.3 handshake carried inside them.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -253,7 +231,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <!-- ================= PACKETS ================= -->
     <div class="panel on" data-panel="packets">
-      <div class="pfacts"><span>carrier<b>one UDP datagram, one or more packets</b></span><span>spec<b>RFC 9000 &sect;17</b></span></div>
       <p class="plede">Two header shapes. The <b>long header</b> carries a version and both connection IDs, and is used only until the handshake completes. The <b>short header</b> drops everything the peer already knows and is what carries virtually all real traffic. A single UDP datagram may hold several QUIC packets back to back, which is how a client sends Initial and Handshake packets together.</p>
 
       <div class="sec">long header: a client Initial packet</div>
@@ -284,8 +261,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <!-- ================= INITIAL ================= -->
     <div class="panel" data-panel="initial">
-      <div class="pfacts"><span>salt<b>a constant in the RFC</b></span><span>input<b>the destination connection ID</b></span><span>spec<b>RFC 9001 &sect;5.2</b></span></div>
-      <p class="plede">Initial packets are encrypted. They are also readable by every observer on the path, because both facts are true at once: the key is derived from a value that travels in the clear, using a salt printed in the RFC. This is not a flaw - it is integrity protection against blind injection, not confidentiality - but it is routinely misread as "QUIC encrypts the handshake".</p>
+      <p class="plede">Initial packets are encrypted, but anyone on the path can decrypt them: the key is derived from a value sent in the clear and a salt published in the RFC. The encryption protects against blind injection, not eavesdropping, and is often misread as "QUIC encrypts the handshake".</p>
 
       <div class="sec">deriving the client Initial keys</div>
       <div class="cmd"><span class="c">// RFC 9001 5.2 - initial_salt is a constant, DCID is the client's first destination CID</span>
@@ -330,7 +306,6 @@ on the wire  c000000001088394c8f03e5157080000449e<span class="p">7b9aec34</span>
 
     <!-- ================= FRAMES ================= -->
     <div class="panel" data-panel="frames">
-      <div class="pfacts"><span>packet payload<b>a sequence of frames</b></span><span>integers<b>variable length, 1-8 bytes</b></span></div>
       <p class="plede">A QUIC packet has no payload structure of its own - it decrypts to a stream of frames, each self-describing, read until the packet runs out. Almost every length and identifier in QUIC is a variable-length integer, so the encoding is worth reading first.</p>
 
       <div class="sec">variable-length integers</div>
@@ -383,7 +358,6 @@ on the wire  c000000001088394c8f03e5157080000449e<span class="p">7b9aec34</span>
 
     <!-- ================= HANDSHAKE ================= -->
     <div class="panel" data-panel="handshake">
-      <div class="pfacts"><span>TLS<b>1.3 only, no negotiation</b></span><span>spaces<b>3 packet number spaces</b></span><span>spec<b>RFC 9001</b></span></div>
       <p class="plede">QUIC uses TLS 1.3 for key agreement and nothing else. There is no TLS record layer, no ChangeCipherSpec, no session ID, no EndOfEarlyData, and no version negotiation inside TLS - a QUIC connection that is not TLS 1.3 is not a QUIC connection.</p>
 
       <div class="sec">the 1-RTT handshake</div>
@@ -437,8 +411,7 @@ on the wire  c000000001088394c8f03e5157080000449e<span class="p">7b9aec34</span>
 
     <!-- ================= CONNECTION IDS ================= -->
     <div class="panel" data-panel="cids">
-      <div class="pfacts"><span>identity<b>a connection ID, not a 4-tuple</b></span><span>spec<b>RFC 9000 &sect;5, &sect;9</b></span></div>
-      <p class="plede">A TCP connection <i>is</i> its four-tuple: change the client's IP and the connection is dead. QUIC identifies a connection by an opaque connection ID chosen by the receiver, so the addresses underneath can change without the connection noticing. That single decision is what makes handoff between wifi and cellular survivable, and it creates a linkability problem QUIC then has to spend the rest of &sect;9 solving.</p>
+      <p class="plede">A TCP connection is identified by its four-tuple, so changing the client's IP ends it. QUIC identifies a connection by an opaque connection ID chosen by the receiver, so the addresses underneath can change. This allows handoff between wifi and cellular, and creates a linkability problem that the rest of &sect;9 addresses.</p>
 
       <div class="sec">each side names itself</div>
       <div class="kv">
@@ -480,7 +453,6 @@ on the wire  c000000001088394c8f03e5157080000449e<span class="p">7b9aec34</span>
 
     <!-- ================= HTTP/3 ================= -->
     <div class="panel" data-panel="http3">
-      <div class="pfacts"><span>one request<b>one bidirectional stream</b></span><span>spec<b>RFC 9114</b></span></div>
       <p class="plede">HTTP/3 is HTTP/2's semantics with the multiplexing deleted, because QUIC already does it. HTTP/2 built streams on top of one TCP connection and inherited head-of-line blocking at the transport; HTTP/3 maps each request onto its own QUIC stream, so a lost packet stalls only the streams whose bytes were in it.</p>
 
       <div class="sec">streams and their jobs</div>
@@ -521,7 +493,6 @@ on the wire  c000000001088394c8f03e5157080000449e<span class="p">7b9aec34</span>
 
     <!-- ================= QPACK ================= -->
     <div class="panel" data-panel="qpack">
-      <div class="pfacts"><span>problem<b>HPACK assumes ordered delivery</b></span><span>spec<b>RFC 9204</b></span></div>
       <p class="plede">HPACK compresses HTTP/2 headers against a dynamic table that both sides mutate in lockstep - which works only because TCP delivers in order. QUIC streams have no order between them, so a table update on one stream may arrive after a reference to it on another. QPACK is HPACK rebuilt around that fact.</p>
 
       <div class="sec">the five field line representations</div>
@@ -559,8 +530,7 @@ on the wire  c000000001088394c8f03e5157080000449e<span class="p">7b9aec34</span>
 
     <!-- ================= JA4Q ================= -->
     <div class="panel" data-panel="ja4q">
-      <div class="pfacts"><span>input<b>the ClientHello inside the Initial</b></span><span>sibling<b><a href="../ja4/ja4plus-breakdown.html" style="color:var(--enum)">JA4+ breakdown</a></b></span></div>
-      <p class="plede">JA4q is JA4 with the protocol character <code>q</code>. Everything else about the derivation is identical, because the input is the same TLS ClientHello - it just arrives inside CRYPTO frames in an encrypted Initial packet instead of a TCP stream. As the Initial &amp; Keys tab shows, that encryption stops nobody.</p>
+      <p class="plede">JA4q is JA4 with the protocol character <code>q</code>. The derivation is otherwise identical, because the input is the same TLS ClientHello carried in CRYPTO frames inside an Initial packet. As the Initial &amp; Keys tab shows, anyone on the path can decrypt it.</p>
 
       <div class="decoder">
         <div class="jstr" id="jstr"></div>

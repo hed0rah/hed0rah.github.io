@@ -28,9 +28,7 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -38,18 +36,11 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .lede a{color:var(--enum)}
@@ -84,8 +75,6 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none}
 .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 
 .diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
 .bytegrp{border:1px solid var(--line);background:var(--panel)}
@@ -149,11 +138,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -170,16 +154,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>DHCP Anatomy</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
-      <div class="stamp"><b>RFC 2131 (1997)</b><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>fixed header <b>236 bytes</b></div><div>diagrammed here <b>44 bytes (op..chaddr)</b></div>
-      <div>predecessor <b>BOOTP, RFC 951 (1985)</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede">DHCP (<a href="https://www.rfc-editor.org/rfc/rfc2131">RFC 2131</a>, 1997) didn't invent its own wire format - it's built directly on <a href="https://www.rfc-editor.org/rfc/rfc951">BOOTP</a>'s 1985 header, kept wire-compatible enough that a DHCP server can still answer plain BOOTP clients. The 236-byte fixed header is diagrammed here up through the 16-byte client hardware address; two legacy BOOTP fields after it - a 64-byte server name and a 128-byte boot filename, both usually all-zero today - are skipped rather than drawn 192 times over. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede">The DHCP message format (<a href="https://www.rfc-editor.org/rfc/rfc2131">RFC 2131</a>), which is the <a href="https://www.rfc-editor.org/rfc/rfc951">BOOTP</a> header with options added.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -200,21 +179,18 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="panelwrap">
 
     <div class="panel on" data-panel="overview">
-      <div class="pfacts"><span>header<b>op+htype+hlen+hops+xid, 8 bytes</b></span><span>spec<b>RFC 2131</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A DHCPDISCOVER - the very first message, broadcast by a client that has no address and no idea which server (if any) will answer.</p>
       <div class="sec">op, htype, hlen, hops, xid (8 bytes)</div>
       <div id="block-overview" data-build></div>
     </div>
 
     <div class="panel" data-panel="fixed">
-      <div class="pfacts"><span>size<b>44 bytes shown of 236 total</b></span><span>spec<b>RFC 2131 §2</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Every address field is still 0.0.0.0 at this stage - the client doesn't have one, doesn't know the server's, and there's no relay agent on this segment. The broadcast flag is set because a client with no IP configured yet can't reliably receive a unicast reply.</p>
       <div class="sec">fixed header, op through chaddr (44 bytes)</div>
       <div id="block-fixed" data-build></div>
     </div>
 
     <div class="panel" data-panel="lineage">
-      <div class="pfacts"><span>1985<b>RFC 951, BOOTP</b></span><span>1997<b>RFC 2131, DHCP</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Same 8-10 byte position, two different fields entirely. BOOTP's original spec leaves it simply unused; DHCP claims it for the broadcast flag. Everything before and after this point in the fixed header is identical between the two.</p>
       <div class="sec">bytes 8-9: BOOTP (1985)</div>
       <div id="block-bootp" data-build></div>
@@ -224,7 +200,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="options">
-      <div class="pfacts"><span>starts with<b>magic cookie, 99.130.83.99</b></span><span>size<b>17 bytes here</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Everything that makes DHCP more than BOOTP lives here: the message type option (53) is what turns one generic BOOTP-shaped packet into a DISCOVER, OFFER, REQUEST, or ACK.</p>
       <div class="sec">options for a DHCPDISCOVER (17 bytes)</div>
       <div id="block-options" data-build></div>

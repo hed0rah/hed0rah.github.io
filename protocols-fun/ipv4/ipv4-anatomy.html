@@ -28,9 +28,7 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -38,18 +36,11 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .lede a{color:var(--enum)}
@@ -84,8 +75,6 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none}
 .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 
 .diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
 .bytegrp{border:1px solid var(--line);background:var(--panel)}
@@ -149,11 +138,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -170,16 +154,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>IPv4 Anatomy</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
-      <div class="stamp"><b>RFC 791 (1981)</b><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>header <b>20 bytes (up to 60 with options)</b></div><div>checksum <b>header only, per-hop</b></div>
-      <div>addresses <b>32-bit</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede"><a href="https://www.rfc-editor.org/rfc/rfc791">RFC 791</a> (1981) - the datagram format nearly everything rides on: a 20-byte header (up to 60 with options) in front of every packet the internet routes. Three fields are sub-byte - Version and IHL share the first byte, and the fragmentation Flags/Offset split a 16-bit word - so IPv4 reads best <b>bit by bit</b>. Its header checksum covers the header <b>only</b> and is recomputed at every hop (the TTL changes each time); <a href="../ipv6/ipv6-anatomy.html">IPv6</a> dropped the header checksum entirely and moved options into an extension-header chain. <b>Hover</b> a field to light its bits, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede">The IPv4 header (<a href="https://www.rfc-editor.org/rfc/rfc791">RFC 791</a>), 20 bytes plus up to 40 bytes of options.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -200,7 +179,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="panelwrap">
 
     <div class="panel on" data-panel="header">
-      <div class="pfacts"><span>header<b>20 bytes, IHL=5</b></span><span>spec<b>RFC 791</b></span><span>example<b>TCP, DF set</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A real minimal (no-options) IPv4 header for a TCP segment from 192.0.2.1 to 198.51.100.10 (RFC 5737 documentation addresses). Shown bit-by-bit because Version/IHL and the fragmentation word don't fall on byte boundaries.</p>
       <div class="sec">IPv4 header - 20 bytes / 160 bits</div>
       <p class="note">The header checksum below is real: re-summing all ten 16-bit words with this value included folds to zero (verified).</p>
@@ -208,14 +186,12 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="dscp">
-      <div class="pfacts"><span>field<b>byte 1 (was ToS)</b></span><span>DSCP<b>6 bits, RFC 2474</b></span><span>ECN<b>2 bits, RFC 3168</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The second byte was originally "Type of Service"; RFC 2474/3168 redefined it as 6 bits of Differentiated Services Code Point (which QoS class) plus 2 bits of Explicit Congestion Notification. Shown here set to EF (Expedited Forwarding) - the class voice traffic uses.</p>
       <div class="sec">Differentiated Services byte (8 bits)</div>
       <div id="block-dscp" data-build></div>
     </div>
 
     <div class="panel" data-panel="frag">
-      <div class="pfacts"><span>fields<b>bytes 4-7</b></span><span>offset unit<b>8 bytes</b></span><span>example<b>MF set, mid-datagram</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Identification, Flags, and Fragment Offset are how a datagram too big for a link's MTU gets split and reassembled. This is the middle fragment of a datagram: same Identification as its siblings, MF (more fragments) set, and an offset placing its payload at byte 1480 of the original.</p>
       <div class="sec">Identification + Flags + Fragment Offset (32 bits)</div>
       <div id="block-frag" data-build></div>
@@ -223,7 +199,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="options">
-      <div class="pfacts"><span>trigger<b>IHL &gt; 5</b></span><span>example<b>Router Alert, RFC 2113</b></span><span>size<b>24-byte header</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">When IHL is greater than 5, one or more 32-bit option words follow the base header. This one carries a single Router Alert option (RFC 2113): "every router on the path must inspect this packet, not just forward it" - used by protocols like RSVP and IGMP. Shown byte-by-byte since options are byte-structured.</p>
       <div class="sec">IPv4 header with Router Alert option - 24 bytes</div>
       <p class="note">IHL is now 6 (byte 0 = 0x46) and the checksum is recomputed over the larger header - verified to fold to zero.</p>

@@ -28,9 +28,7 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -38,18 +36,11 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .lede a{color:var(--enum)}
@@ -84,8 +75,6 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none}
 .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 
 .diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
 .bytegrp{border:1px solid var(--line);background:var(--panel)}
@@ -153,11 +142,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -174,16 +158,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>Ethernet Anatomy</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
-      <div class="stamp"><b>DIX Ethernet II, 1980</b><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>header <b>14 bytes fixed</b></div><div>payload <b>46-1500 bytes</b></div>
-      <div>trailer <b>4-byte FCS (CRC-32)</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede">Ethernet II is the frame format almost everything above it - IPv4, ARP, IPv6 - actually rides on. Two 6-byte MAC addresses, a 2-byte field that tells the receiver what's inside, then payload. It's the field at byte 12 that has the messiest history: DIX Ethernet (1980) used it as an EtherType; the original IEEE 802.3 standard (1983) used the identical bit position as a Length field instead, and the two only stopped colliding because IEEE reserved every value large enough to be a valid EtherType. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede">The Ethernet II frame, including the two meanings of bytes 12 and 13: EtherType in DIX Ethernet and Length in IEEE 802.3.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -205,14 +184,12 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="panelwrap">
 
     <div class="panel on" data-panel="overview">
-      <div class="pfacts"><span>frame<b>Ethernet II, EtherType IPv4</b></span><span>spec<b>IEEE 802.3-2022 &sect;3.2</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The fixed part of every Ethernet II frame: destination address, source address, then the field that decides what the payload is. Payload (46-1500 bytes) and the trailing FCS aren't diagrammed here - see the Preamble/FCS tab for the checksum.</p>
       <div class="sec">destination, source, EtherType (14 bytes)</div>
       <div id="block-overview" data-build></div>
     </div>
 
     <div class="panel" data-panel="lineage">
-      <div class="pfacts"><span>1980<b>DIX Ethernet II, EtherType</b></span><span>1983<b>IEEE 802.3 original, Length</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Exact same 2-byte position, byte 12-13, two incompatible meanings. IEEE 802.3's original framing had no EtherType-equivalent at all - the payload itself had to start with an 802.2 LLC header to say what protocol it carried, an extra layer of indirection Ethernet II never needed.</p>
       <div class="sec">bytes 12-13: DIX Ethernet II (EtherType)</div>
       <div id="block-ethertype" data-build></div>
@@ -222,7 +199,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="vlan">
-      <div class="pfacts"><span>tag<b>IEEE 802.1Q, 1998</b></span><span>inserted<b>between source MAC and EtherType</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A VLAN-tagged frame gets 4 extra bytes spliced in right after the source MAC: a fixed TPID announcing "a tag follows," then a Tag Control Information field packing a priority, a drop-eligibility bit, and a 12-bit VLAN ID into 16 bits.</p>
       <div class="sec">TPID (2 bytes)</div>
       <div id="block-vlan-tpid" data-build></div>
@@ -232,7 +208,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="phy">
-      <div class="pfacts"><span>preamble<b>7 bytes, clock sync</b></span><span>fcs<b>CRC-32 over addresses+type+payload</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Neither of these is part of the "frame" an operating system ever sees - the NIC generates the preamble/SFD on transmit and strips them on receive, and generates/verifies the FCS the same way. They're shown here because they're genuinely part of what goes on the wire.</p>
       <div class="sec">preamble + start frame delimiter (8 bytes)</div>
       <div id="block-preamble" data-build></div>
@@ -244,7 +219,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="timeline">
-      <div class="pfacts"><span>1980<b>DIX Ethernet II, 10 Mbps</b></span><span>1998<b>802.1Q VLAN tagging</b></span><span>2017+<b>400G and climbing</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The 14-byte header diagrammed in the Overview tab has been untouched since 1980 - every revision below changed speed, medium, or added optional fields, never the core frame shape.</p>
       <table class="compare">
         <thead><tr><th>year</th><th>standard</th><th>what changed</th></tr></thead>

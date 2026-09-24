@@ -28,9 +28,7 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -38,18 +36,11 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .lede a{color:var(--enum)}
@@ -84,8 +75,6 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none}
 .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 
 .diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
 .bytegrp{border:1px solid var(--line);background:var(--panel)}
@@ -149,11 +138,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -170,16 +154,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>ICMPv4 Anatomy</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
-      <div class="stamp"><b>RFC 792 (1981)</b><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>header <b>4 bytes + type-specific</b></div><div>checksum <b>message only, no pseudo-header</b></div>
-      <div>type 4 <b>deprecated 2012</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede"><a href="https://www.rfc-editor.org/rfc/rfc792">RFC 792</a> (1981) - errors and diagnostics for IPv4: unreachable destinations, exceeded hop limits, and the Echo Request/Reply pair everyone calls ping. The checksum here is a genuine contrast with <a href="https://github.com/hed0rah/ipv6-fun">ipv6-fun</a>'s ICMPv6: <b>ICMPv4 has no pseudo-header at all</b> - the checksum covers only the ICMP message itself, never the source/destination IP addresses. ICMPv6 added the pseudo-header specifically to close a spoofing/misdelivery gap ICMPv4 never addressed. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede">ICMP for IPv4 (<a href="https://www.rfc-editor.org/rfc/rfc792">RFC 792</a>): error, diagnostic and echo messages.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -201,7 +180,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="panelwrap">
 
     <div class="panel on" data-panel="overview">
-      <div class="pfacts"><span>header<b>type+code+checksum, 4 bytes</b></span><span>spec<b>RFC 792</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Every ICMPv4 message opens with the same 4 bytes; the type field alone tells a receiver which of roughly a dozen message shapes follows.</p>
       <div class="sec">generic header (4 bytes)</div>
       <p class="note">Checksum shown as a placeholder here since a real one needs a full message body - see the other tabs for worked examples.</p>
@@ -209,7 +187,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="echo">
-      <div class="pfacts"><span>type<b>8 (request) / 0 (reply)</b></span><span>size<b>8 bytes + payload</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">What every <code>ping</code> command actually sends. Identifier and sequence let a sender match replies to requests when several pings are in flight at once; the payload is arbitrary and usually just a byte-counting pattern.</p>
       <div class="sec">Echo Request (16 bytes: 8-byte header + 8-byte payload)</div>
       <p class="note">A reply is byte-identical except type=0 and the checksum recomputed for that type change.</p>
@@ -217,7 +194,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="unreach">
-      <div class="pfacts"><span>type<b>3</b></span><span>codes<b>0-15</b></span><span>size<b>8 bytes fixed</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">One type, sixteen meanings via the code field. Code 4 is the one with real teeth: "fragmentation needed but the Don't Fragment bit was set" - the message that drives IPv4 Path MTU Discovery, carrying the next hop's MTU in what would otherwise be unused bytes (RFC 1191).</p>
       <div class="sec">Destination Unreachable, code 4 (8 bytes)</div>
       <p class="note">A router telling the sender: your packet needed fragmenting, DF was set, so I dropped it - retry at 1480 bytes instead.</p>
@@ -225,14 +201,12 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="timeexceeded">
-      <div class="pfacts"><span>type<b>11</b></span><span>code<b>0 (TTL) or 1 (reassembly)</b></span><span>size<b>8 bytes fixed</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Sent when TTL hits zero in transit (code 0) or a fragment reassembly timer expires before all fragments arrive (code 1). Code 0 from every router along a path, one hop-count at a time, is literally what <code>traceroute</code> is built out of.</p>
       <div class="sec">Time Exceeded, code 0 (8 bytes)</div>
       <div id="block-timeexceeded" data-build></div>
     </div>
 
     <div class="panel" data-panel="quench">
-      <div class="pfacts"><span>type<b>4</b></span><span>status<b>deprecated, RFC 6633 (2012)</b></span><span>size<b>8 bytes fixed</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">In 1981, this was IP's only congestion-control signal: a router sends Source Quench to tell a sender "slow down." Same byte shape as Time Exceeded - the interesting part is entirely what happened to it, not what's in it.</p>
       <div class="sec">Source Quench, historical (8 bytes)</div>
       <div id="block-quench" data-build></div>

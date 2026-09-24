@@ -28,9 +28,7 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -38,18 +36,11 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .lede a{color:var(--enum)}
@@ -84,8 +75,6 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none}
 .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 
 .diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
 .bytegrp{border:1px solid var(--line);background:var(--panel)}
@@ -149,11 +138,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -170,16 +154,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>ARP Anatomy</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
-      <div class="stamp"><b>RFC 826 (1982)</b><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>header <b>28 bytes (Ethernet/IPv4)</b></div><div>auth <b>none</b></div>
-      <div>historical sibling <b>RARP, RFC 903</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede"><a href="https://www.rfc-editor.org/rfc/rfc826">RFC 826</a> (1982) - resolves an IPv4 address to a link-layer (MAC) address by broadcasting the question to the entire segment. The format is deliberately hardware/protocol-agnostic (that's what the length fields are for), but Ethernet+IPv4 is the pairing that ever mattered in practice, so that's the 28-byte layout every tab here uses. There's no authentication anywhere in this protocol - anyone on the segment can answer any question, which is the entire basis of ARP spoofing. IPv6 replaced this mechanism outright with multicast-based Neighbor Discovery rather than patching it; see <a href="https://github.com/hed0rah/ipv6-fun">ipv6-fun</a>'s coverage of NS/NA. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede">ARP (<a href="https://www.rfc-editor.org/rfc/rfc826">RFC 826</a>) resolves an IPv4 address to a MAC address, shown here in its 28-byte Ethernet and IPv4 form.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -200,21 +179,18 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="panelwrap">
 
     <div class="panel on" data-panel="request">
-      <div class="pfacts"><span>size<b>28 bytes</b></span><span>sent to<b>broadcast, ff:ff:ff:ff:ff:ff</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">"Who has 192.0.2.1? Tell 192.0.2.10." The target hardware address is unfilled - that's exactly what's being asked for.</p>
       <div class="sec">ARP Request (28 bytes)</div>
       <div id="block-request" data-build></div>
     </div>
 
     <div class="panel" data-panel="reply">
-      <div class="pfacts"><span>size<b>28 bytes</b></span><span>sent<b>unicast, straight back to the requester</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">"192.0.2.1 is at 00:aa:bb:cc:dd:ee." Sender and target fields swap roles compared to the request - the answerer's address is now the "sender," the original asker is now the "target."</p>
       <div class="sec">ARP Reply (28 bytes)</div>
       <div id="block-reply" data-build></div>
     </div>
 
     <div class="panel" data-panel="gratuitous">
-      <div class="pfacts"><span>size<b>28 bytes</b></span><span>tell<b>sender protocol addr = target protocol addr</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A host announces its own mapping unprompted - nobody asked. Used to pre-populate everyone else's cache after booting or changing MAC (fewer stale-cache misses), or defensively to detect a duplicate address (if something else replies "that's mine," you have a conflict). The functional ancestor of gratuitous NDP Neighbor Advertisements - same idea, same lack of any authentication to stop someone else from doing it maliciously.</p>
       <div class="sec">Gratuitous ARP (28 bytes)</div>
       <p class="note">Structurally just an ARP Request where the sender already knows the answer.</p>
@@ -222,7 +198,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="rarp">
-      <div class="pfacts"><span>oper<b>3 (request) / 4 (reply)</b></span><span>status<b>obsolete - replaced by BOOTP/DHCP</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Reverse ARP (RFC 903, 1984): a diskless workstation that knows its own MAC but not its IP broadcasts to ask the reverse question ARP normally answers. Same 28-byte shape, same field meanings - the asker just repeats its own MAC in both the sender and target hardware fields, since it's asking about itself.</p>
       <div class="sec">RARP Request, historical (28 bytes)</div>
       <div id="block-rarp" data-build></div>

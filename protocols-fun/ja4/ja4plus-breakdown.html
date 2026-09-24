@@ -29,27 +29,18 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:80ch;margin-bottom:1.4rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500} .lede a{color:var(--enum)}
 .sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:1.7rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
@@ -88,8 +79,6 @@ code{font-family:var(--ff);color:var(--enum);font-size:0.92em;background:var(--r
 .tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.06em;margin-top:1px;text-transform:none}
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.5rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none} .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 .plede{color:var(--soft);max-width:82ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
 .plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em}
 .ja4{border:1px solid var(--line);background:var(--panel);padding:0.7rem 0.9rem;margin:0.3rem 0 0.9rem;font-size:0.95rem;letter-spacing:0.02em;overflow-x:auto}
@@ -108,11 +97,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
   code{white-space:normal;overflow-wrap:anywhere}
@@ -128,16 +112,10 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . JA4+</div><h1>JA4+ Fingerprinting</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
-      <div class="stamp"><b>identity from the wire</b>FoxIO JA4+ suite<br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>members <b>JA4 &middot; H &middot; S &middot; T &middot; L &middot; X &middot; SSH &middot; q</b></div>
-      <div>beats JA3 <b>sort-before-hash</b></div>
-      <div>truth <b>coherence &gt; any one hash</b></div>
     </div>
   </div>
 
-  <p class="lede"><b>JA4+</b> is a family of fingerprints for how a client (or server) speaks at each layer: TLS, HTTP, TCP, latency, certificate, SSH, QUIC. It replaced JA3 because it <b>sorts lists before hashing</b> - so it survives the per-connection TLS extension shuffling Chrome shipped in 2023 that made JA3 blocklists useless. Universal rules below apply to every member: <b>every hash is <code>sha256[:12]</code></b> (12 hex chars), <b>GREASE (RFC 8701) is stripped everywhere</b> before counting/hashing, an <b>empty list hashes to <code>000000000000</code></b>, counts are 2-digit capped at 99, and lists are sorted <i>only</i> where the sender could reorder them. Hover the JA4 string below.</p>
+  <p class="lede">The JA4+ fingerprint family for TLS, HTTP, TCP, latency, certificates, SSH and QUIC, and how each hash is built.</p>
 
   <div class="tabs" id="tabs">
     <button class="tab on" data-p="ja4">JA4<small>TLS client</small></button>
@@ -152,8 +130,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="panelwrap">
 
     <div class="panel on" data-panel="ja4">
-      <div class="pfacts"><span>source<b>TLS ClientHello</b></span><span>fingerprints<b>the client's TLS library/build</b></span></div>
-      <p class="plede">The flagship. Format <code>a_b_c</code> = readable prefix, then two hashes. Real Chrome below - <b>hover a segment</b> for how it's derived.</p>
+      <p class="plede">Format <code>a_b_c</code>: a readable prefix, then two hashes. The example is a real Chrome ClientHello; <b>hover a segment</b> for how it is derived.</p>
       <div class="decoder">
         <div class="jstr" id="jstr"></div>
         <aside class="jdetail" id="jdetail"><div class="dl">segment</div><h3>Hover the string</h3><div class="dv"></div><p>Each segment lights on hover; the box shows exactly how it's computed.</p></aside>
@@ -163,7 +140,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="server">
-      <div class="pfacts"><span>JA4S<b>ServerHello</b></span><span>JA4X<b>the X.509 cert</b></span></div>
       <p class="plede"><b>JA4S</b> <code>&lt;proto&gt;&lt;ver&gt;&lt;ext#&gt;&lt;alpn&gt;_&lt;chosen-cipher&gt;_&lt;exthash&gt;</code> - fingerprints the server's TLS stack + its per-connection choices. Clusters C2 servers sharing a config.</p>
       <div class="ja4"><span class="s1">t130200</span>_<span class="s2">1301</span>_<span class="s3">a56c5b993250</span></div>
       <div class="kv">
@@ -177,7 +153,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="ja4h">
-      <div class="pfacts"><span>source<b>the HTTP request head</b></span><span>h1 line-framing + h2 HPACK</span></div>
       <p class="plede">Format <code>a_b_c_d</code>. Fingerprints the HTTP client by method, header set + <b>order</b>, cookies, and language.</p>
       <div class="ja4"><span class="s1">ge11cn060000</span>_<span class="s2">4e59edc1297a</span>_<span class="s3">4da5efaf0cbd</span>_<span class="s3">000000000000</span></div>
       <table class="atable"><thead><tr><th>seg</th><th>value</th><th>derivation</th></tr></thead><tbody>
@@ -192,7 +167,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="transport">
-      <div class="pfacts"><span>JA4T<b>the TCP SYN</b></span><span>invisible to a socket &mdash; needs eBPF</span></div>
       <p class="plede"><b>JA4T</b> <code>&lt;window&gt;_&lt;option-kinds&gt;_&lt;mss&gt;_&lt;wscale&gt;</code> fingerprints the OS TCP stack. The SYN is consumed by the kernel before <code>accept()</code> returns, so a normal server can't see it - <a href="../ebpf/ebpf-networking.html">eBPF</a> recovers it off the wire.</p>
       <div class="ja4"><span class="s1">64240</span>_<span class="s2">2-1-3-1-1-4</span>_<span class="s1">1460</span>_<span class="s3">8</span></div>
       <div class="kv">
@@ -207,7 +181,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="ssh">
-      <div class="pfacts"><span>JA4SSH<b>encrypted SSH cadence</b></span><span>JA4 q<b>QUIC Initial</b></span></div>
       <p class="plede"><b>JA4SSH</b> reads an <i>encrypted</i> SSH session's behaviour over a 200-packet window - it fingerprints activity, not just identity. <code>c&lt;len&gt;s&lt;len&gt;_c&lt;pkts&gt;s&lt;pkts&gt;_c&lt;acks&gt;s&lt;acks&gt;</code>.</p>
       <div class="ja4"><span class="s1">c76s76</span>_<span class="s2">c71s59</span>_<span class="s3">c0s70</span></div>
       <div class="callout"><b>the ACK counts are the tell.</b> Interactive forward session = client types (<code>c69s0</code>); a <b>reverse shell flips the ACKs to the server</b> (<code>c0s70</code>) because the server is the one typing. Same identity, opposite direction - visible without decrypting a byte of payload.</div>
@@ -217,7 +190,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="ja3">
-      <div class="pfacts"><span>the headline change<b>sort before hash</b></span></div>
       <p class="plede">JA3 hashed the cipher + extension lists <b>in wire order</b>. In early 2023 Chrome began <b>randomizing TLS extension order per connection</b> (default ~Chrome 110). With ~15! orderings, every Chrome connection produced a different JA3 - blocklists on the internet's most common client became meaningless, and <code>salesforce/ja3</code> was archived.</p>
       <div class="kv">
         <div><span class="k">sort-before-hash</span><span class="v">JA4 sorts the cipher + extension lists, collapsing randomized order back to one stable fingerprint</span></div>
@@ -228,7 +200,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="spoof">
-      <div class="pfacts"><span>gradient<b>app &rarr; library &rarr; kernel</b></span><span>truth<b>cross-layer coherence</b></span></div>
       <p class="plede">Forging gets harder the lower you go, because control moves from app to library to kernel:</p>
       <table class="atable"><thead><tr><th>member</th><th>forge</th><th>how</th></tr></thead><tbody>
         <tr><td class="f">JA4H (HTTP)</td><td class="x">trivial</td><td>client owns method/headers/order - just write bytes</td></tr>
@@ -241,7 +212,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="wild">
-      <div class="pfacts"><span>consumed by<b>Cloudflare, AWS, Fastly, Akamai, Zeek, Suricata...</b></span></div>
       <div class="sec">what it's for</div>
       <ul style="font-size:0.8rem;color:var(--soft);line-height:1.6;padding-left:1.1rem;margin:0 0 1rem">
         <li><b>Bot / scraper ID</b> - JA4 near-perfectly separates HTTP-library bots; the stack can't lie as cheaply as a UA string.</li>

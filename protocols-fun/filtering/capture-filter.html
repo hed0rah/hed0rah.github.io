@@ -28,27 +28,18 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .lede a{color:var(--enum)}
@@ -95,8 +86,6 @@ code{font-family:var(--ff);color:var(--enum);font-size:0.92em;background:var(--r
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none}
 .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 .plede{color:var(--soft);max-width:80ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
 .plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em}
 .diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
@@ -151,11 +140,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -172,17 +156,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . CAPTURE &amp; FILTER</div><h1>Capture &amp; Filter</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
-      <div class="stamp"><b>the wire, filtered</b>BPF &middot; tcpdump &middot; Wireshark<br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>tools <b>tcpdump &middot; tshark &middot; Wireshark</b></div>
-      <div>rule <b>capture drops, display hides</b></div>
-      <div>goal <b>see only what matters</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede">Two filter languages. <b>Capture filter</b> = BPF: runs in-kernel <b>as packets arrive</b>; rejected packets are gone. <b>Display filter</b> = Wireshark's own language: runs <b>after</b> capture over the buffer, hides rows without deleting. Same intent, different syntax -- <code>udp port 37008</code> (BPF) vs <code>udp.port == 37008</code> (display). <b>Hover</b> a field below for the byte, its BPF idiom, and its Wireshark field.</p>
+  <p class="lede">BPF capture filters and Wireshark display filters for the same fields, side by side.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -206,8 +184,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="panelwrap">
 
     <div class="panel on" data-panel="twofilters">
-      <div class="pfacts"><span>capture<b>BPF, kernel, at capture time</b></span><span>display<b>Wireshark, post-hoc, on the buffer</b></span></div>
-      <p class="plede">Pick the wrong one and you either throw away evidence you needed or wait for a filter that never narrows the capture. The rule: <b>capture to keep the haystack small, display to find the needle.</b></p>
+      <p class="plede">A capture filter discards packets before they are saved; a display filter only hides them. Use <b>capture</b> filters to limit what is recorded and <b>display</b> filters to search it.</p>
       <table class="atable">
         <thead><tr><th></th><th>capture filter (BPF)</th><th>display filter</th></tr></thead>
         <tbody>
@@ -224,8 +201,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="tools">
-      <div class="pfacts"><span>the point<b>every sniffer speaks one or both of the same two languages</b></span></div>
-      <p class="plede">There is no "tcpdump syntax" versus "Wireshark syntax" - there is <b>BPF</b> (capture) and the <b>display</b> language, and each tool is a frontend to one or both. Learn the two languages once; the tools are just ergonomics. A capture filter written for tcpdump pastes straight into Wireshark's capture box or <code>tshark -f</code>; a display filter from Wireshark pastes straight into <code>tshark -Y</code>.</p>
+      <p class="plede">There are two filter languages, <b>BPF</b> for capture and the Wireshark <b>display</b> language, and each tool is a frontend to one or both. A capture filter written for tcpdump works in Wireshark's capture box or <code>tshark -f</code>; a display filter from Wireshark works in <code>tshark -Y</code>.</p>
       <table class="atable">
         <thead><tr><th>tool</th><th>capture (BPF)</th><th>display</th><th>best at</th></tr></thead>
         <tbody>
@@ -242,7 +218,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="prims">
-      <div class="pfacts"><span>grammar<b>qualifier + combinator</b></span><span>man<b>pcap-filter(7)</b></span></div>
       <p class="plede">A BPF expression is <b>qualifiers</b> (what to match) joined by <b>and / or / not</b>. Qualifiers come in three kinds: <b>type</b> (<code>host</code>, <code>net</code>, <code>port</code>, <code>portrange</code>), <b>dir</b> (<code>src</code>, <code>dst</code>), and <b>proto</b> (<code>ether</code>, <code>ip</code>, <code>ip6</code>, <code>arp</code>, <code>tcp</code>, <code>udp</code>, <code>icmp</code>).</p>
       <table class="atable">
         <thead><tr><th>expression</th><th>matches</th></tr></thead>
@@ -278,7 +253,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="offsets">
-      <div class="pfacts"><span>syntax<b>proto[offset:size] &amp; mask</b></span><span>the Rosetta<b>byte / BPF / display</b></span></div>
       <p class="plede">When the named qualifiers aren't enough, BPF lets you index raw bytes: <code>proto[offset:size]</code> reads <code>size</code> bytes (1, 2, or 4) at <code>offset</code> <b>relative to that protocol's header</b>, and you mask/compare them. This is a real 54-byte Ethernet+IPv4+TCP SYN frame - <b>hover any field</b> for its bytes, the BPF idiom that matches it, and the equivalent Wireshark field.</p>
       <div id="block-frame" data-build></div>
       <div class="sec">the classic offset idioms</div>
@@ -299,7 +273,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       <div class="callout"><b>offsets are protocol-relative, and BPF does the arithmetic.</b> <code>tcp[13]</code> is byte 13 of the TCP header - in this frame that lands at absolute byte 47, because BPF adds the 14-byte Ethernet and 20-byte IP headers for you. Change the link layer (VLAN, tunnels) and those base offsets shift, which is exactly why the <code>vlan</code> keyword exists.</div>
 
       <div class="sec">the same trick at the firewall: match &amp; drop</div>
-      <p class="plede">The offset-and-mask idea isn't only for <i>observing</i> traffic - the firewall uses it to <b>drop</b> it. iptables' <code>u32</code> match reaches into header bytes exactly like BPF; nftables (its modern successor) does it with readable keywords or raw payload expressions. Same mental model, three contexts: <b>capture &rarr; legacy drop &rarr; modern drop</b>.</p>
+      <p class="plede">Firewalls use the same offset-and-mask matching to <b>drop</b> traffic. The iptables <code>u32</code> match reads header bytes the way BPF does; nftables, its successor, uses named keywords or raw payload expressions.</p>
       <table class="atable">
         <thead><tr><th>context</th><th>match a bare SYN (proto = TCP, flags byte = 0x02)</th></tr></thead>
         <tbody>
@@ -314,7 +288,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="display">
-      <div class="pfacts"><span>form<b>proto.field OP value</b></span><span>power<b>dissector-aware, regex, per-field</b></span></div>
       <p class="plede">Display filters address <b>dissected fields</b> by name and compare them. Operators: <code>==</code> <code>!=</code> <code>&gt;</code> <code>&lt;</code> <code>&gt;=</code> <code>&lt;=</code>, plus <code>contains</code> (substring), <code>matches</code> (regex), and set membership <code>in {..}</code>. Combine with <code>&amp;&amp;</code> <code>||</code> <code>!</code>.</p>
       <table class="atable">
         <thead><tr><th>display filter</th><th>shows</th></tr></thead>
@@ -337,8 +310,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="recipes">
-      <div class="pfacts"><span>use case<b>investigating hostile traffic</b></span><span>pairs with<b>the attack &amp; mitigation page</b></span></div>
-      <p class="plede">Turning "something is wrong" into a specific offender. Vendor-neutral, documentation addresses. See <a href="../attacks/attack-anatomy.html">attack &amp; mitigation</a> for what each pattern <i>is</i>.</p>
+      <p class="plede">Filters for finding the source of common attack patterns, using documentation addresses. See <a href="../attacks/attack-anatomy.html">attack &amp; mitigation</a> for what each pattern <i>is</i>.</p>
       <div class="sec">isolate a suspect address</div>
       <div class="cmd"><span class="p">$</span> tcpdump -nni eth0 'host 203.0.113.5'          <span class="c"># capture</span>
 <span class="c"># Wireshark display:</span> ip.addr == 203.0.113.5</div>
@@ -361,7 +333,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="gotchas">
-      <div class="pfacts"><span>the theme<b>quiet ways captures lie</b></span></div>
       <div class="kv">
         <div><span class="k">capture vs display</span><span class="v">the #1 trap - a display expression in a capture box matches nothing. Know which language the box speaks.</span></div>
         <div><span class="k">snaplen truncation</span><span class="v">modern tcpdump captures full packets by default, but an explicit short <code>-s</code> (or an old tool) grabs only the first N bytes and payload/TLS analysis silently breaks. Check <code>capinfos</code> if a capture looks cut off.</span></div>

@@ -28,9 +28,7 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -38,18 +36,11 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
@@ -83,8 +74,6 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none}
 .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 
 .diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
 .bytegrp{border:1px solid var(--line);background:var(--panel)}
@@ -158,11 +147,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -179,16 +163,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . LEGACY</div><h1>ARPANET IMP Anatomy</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
-      <div class="stamp"><b>BBN, 1969</b><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>host address <b>8 bits (short leader)</b></div><div>leader size <b>32 bits, 1970-75</b></div>
-      <div>subnet protocol <b>never publicly specified</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede">The Interface Message Processor, widely credited as the world's first packet-switching router, was the specialized minicomputer - a ruggedized Honeywell DDP-516 - that BBN built to sit between each ARPANET host and the leased phone lines connecting the network together, starting in 1969. IMPs talked to their local hosts using a documented, published interface (BBN Report 1822); how IMPs talked to <i>each other</i> across the network's internal links was BBN's own implementation detail, and was never published as a specification the way 1822 was. <b>Hover</b> a field to light its bits, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede">The ARPANET Interface Message Processor (BBN, 1969) and its host interface, BBN Report 1822.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">amber</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -208,14 +187,12 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="panelwrap">
 
     <div class="panel on" data-panel="overview">
-      <div class="pfacts"><span>role<b>store-and-forward packet switch</b></span><span>hardware<b>Honeywell DDP-516</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Every host on the ARPANET connected to its local IMP, and every IMP connected to one or more other IMPs over leased common-carrier circuits, store-and-forwarding packets hop by hop until they reached the destination host's IMP. That basic shape - hosts talk to a local switch, switches talk to each other - is the direct ancestor of every router-based network since.</p>
       <div class="callout"><b>an honest limit, stated up front.</b> This station is named for the IMP-to-IMP link protocol specifically, and the most accurate thing this page can tell you about it is that it was never published as an open specification the way the Host-IMP interface (BBN Report 1822) was - hosts needed 1822 to connect at all, so BBN had to document it; the IMP subnet's internal link protocol was BBN's own implementation detail, and reconstructing its exact bit layout from public sources wasn't possible at the confidence bar this site holds itself to. Rather than fabricate a byte diagram for that specifically, the Leader Fields tab documents the adjacent structure that genuinely is well-sourced: the fields of the 1822 Host-IMP leader that determined how a packet got addressed and routed in the first place.</div>
       <div class="callout"><b>what did carry between IMPs, reliably documented:</b> a Ready-For-Next-Message (RFNM) control message, sent back to the originating host once a message had been fully delivered to its destination - the ARPANET's flow-control primitive, and conceptually a distant ancestor of a TCP ACK, though nowhere near as fine-grained.</div>
     </div>
 
     <div class="panel" data-panel="leader">
-      <div class="pfacts"><span>era<b>1970-1975, "short leader"</b></span><span>total size<b>32 bits</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The original Host-IMP leader was 32 bits; a host's full network address was split across two small fields inside it. Only the fields independently confirmed across multiple sources are diagrammed here - the leader's remaining bits (message type, handling flags, padding) aren't reconstructed since this page can't confirm their exact positions.</p>
       <div class="sec">destination host address (8 of the leader's 32 bits)</div>
       <div id="block-hostaddr" data-build></div>
@@ -225,7 +202,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="timeline">
-      <div class="pfacts"><span>1969<b>first IMP installed at UCLA</b></span><span>1975<b>long leader replaces short leader</b></span><span>1989<b>ARPANET decommissioned</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The IMP concept - dedicated switches doing the packet-forwarding work so host computers don't have to - proved durable even as the ARPANET itself aged out.</p>
       <table class="compare">
         <thead><tr><th>year</th><th>event</th><th>why it mattered</th></tr></thead>

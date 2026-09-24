@@ -28,27 +28,18 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .lede a{color:var(--enum)}
@@ -92,8 +83,6 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none}
 .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 .plede{color:var(--soft);max-width:78ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
 .plede b{color:var(--ink);font-weight:500} .plede code{color:var(--enum);font-size:0.9em}
 .diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
@@ -157,11 +146,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -178,17 +162,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . ATTACK &amp; MITIGATION</div><h1>Attack &amp; Mitigation</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
-      <div class="stamp"><b>the modern landscape</b>L3 &rarr; L7 &middot; bots<br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>scope <b>volumetric &middot; protocol &middot; application &middot; bots</b></div>
-      <div>lens <b>detect &rarr; identify &rarr; mitigate</b></div>
-      <div>identity <b>fingerprints &gt; UA + IP</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede"><b>Hover</b> a field to light its bytes; <b>click</b> a field marked <span class="k-en">+</span> for its lookup table. Classes: <b>volumetric</b> (L3/4, bandwidth), <b>protocol/state</b> (L3/4, kernel tables), <b>application</b> (L7, CPU/backend), <b>bots/abuse</b> (L7, well-formed). Blocking keys on <b>fingerprints</b> (JA4+), not IP or UA.</p>
+  <p class="lede">Denial-of-service and bot attack classes from layer 3 to layer 7, and how each is mitigated.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">crimson</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -212,7 +190,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="panelwrap">
 
     <div class="panel on" data-panel="landscape">
-      <div class="pfacts"><span>classes<b>volumetric / protocol / application / abuse</b></span><span>layers<b>3, 4, 7</b></span></div>
       <p class="plede">Sort by <b>what exhausts first</b> (bandwidth / kernel table / CPU-backend), <b>layer</b>, and <b>whether it looks like real traffic</b>. Volumetric drowns the link; protocol/state exhausts finite tables (half-open conns, conntrack); application is cheap requests triggering expensive work; abuse is well-formed traffic you identify, not rate-drop.</p>
       <div class="sec">the map</div>
       <table class="atable">
@@ -228,7 +205,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="l34">
-      <div class="pfacts"><span>SYN flood<b>RFC 4987</b></span><span>amplification<b>reflection off open UDP services</b></span></div>
       <p class="plede"><b>SYN flood:</b> send the opening SYN, never complete the handshake; each pins a half-open-table slot until timeout. <b>Amplification/reflection:</b> small spoofed-source query to an open UDP service (DNS/NTP/memcached); the large reply lands on the spoofed victim.</p>
       <div class="sec">a SYN segment - the half-open primitive</div>
       <p class="note">A real TCP SYN to port 443 (source/dest are RFC 5737 doc addresses). The whole attack is this one packet, sent by the million with spoofed sources so the SYN-ACKs go nowhere and the handshakes never finish.</p>
@@ -252,7 +228,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="l7">
-      <div class="pfacts"><span>slow attacks<b>hold connections open</b></span><span>Rapid Reset<b>CVE-2023-44487</b></span></div>
       <p class="plede">Packets are valid HTTP; cost is server-side work. <b>Floods</b> hit uncached/expensive endpoints (search, login). <b>Slow attacks</b> (Slowloris, slow-read, slow-POST) pin worker threads/connections with a trickle of bytes, starving the pool at near-zero bandwidth. HTTP/2 multiplexing added a vector:</p>
       <div class="sec">HTTP/2 Rapid Reset - a frame that cancels itself</div>
       <p class="note">The client opens a stream (HEADERS) then immediately cancels it with an <code class="k-en">RST_STREAM</code>. The request is fully processed server-side but never counts against the max-concurrent-streams limit, so one connection can churn tens of thousands of requests/second. This is the RST_STREAM frame: a 9-byte HTTP/2 frame header + a 4-byte error code.</p>
@@ -262,7 +237,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="bots">
-      <div class="pfacts"><span>the hard part<b>it looks like real traffic</b></span><span>you can't drop by volume</span></div>
       <p class="plede">Well-formed, low-rate, distributed across <b>residential proxy</b> pools (real home IPs rented via malware/SDK networks), so IP reputation and rate limits barely dent it. Defense = distinguishing automated from human.</p>
       <div class="sec">the abuse catalog</div>
       <div class="kv">
@@ -276,7 +250,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="fp">
-      <div class="pfacts"><span>problem<b>IP is shared, UA is a free-text lie</b></span><span>answer<b>JA4+ fingerprints</b></span></div>
       <p class="plede">IP is unreliable (CGNAT, proxies, shared cloud) and the User-Agent is client-set free text. Fingerprint <b>how the client speaks</b> instead: TLS handshake shape, HTTP/2 settings, TCP options -- revealed by the library regardless of what it claims.</p>
       <div class="sec">a JA4 fingerprint, decomposed</div>
       <p class="note">JA4 (the TLS ClientHello half of JA4+) hashes the negotiated capabilities into a stable, human-skimmable string. This is real Chrome:</p>
@@ -292,7 +265,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="defense">
-      <div class="pfacts"><span>principle<b>defense in depth</b></span><span>each layer removes work before the next</span></div>
       <p class="plede">Stack cheap filters ahead of expensive ones so each layer sheds load first. Outside-in:</p>
       <div class="sec">the layers</div>
       <div class="kv">
@@ -306,8 +278,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="arms">
-      <div class="pfacts"><span>attack cost<b>rentable by the hour</b></span><span>the loop<b>spoof &harr; detect, forever</b></span></div>
-      <p class="plede">Asymmetric economics. DDoS-as-a-service: booter/stresser rentals by the hour; residential-proxy pools of millions of real IPs. Defense = anycast capacity + scrubbing contracts + engineering time. Attacker pays cents; defender pays a retainer.</p>
+      <p class="plede">Attackers rent booter services by the hour and residential proxy pools of millions of real IPs. Defence needs anycast capacity, scrubbing contracts and engineering time, so it costs far more than the attack.</p>
       <div class="callout"><b>obscurity is not a control.</b> Hiding an address/subdomain/fingerprint buys time and cuts noise, but anything discoverable is found and anything static is predicted. The controls are the ones you can reason about: rate, identity, challenge, capacity.</div>
       <div class="callout hot"><b>the loop doesn't converge.</b> Better fingerprinting (JA4) -> better spoofing (uTLS) -> behavioral/multi-signal detection -> ... Durable posture: raise attacker cost + your observability faster than they adapt. Detect -> identify -> mitigate -> observe -> repeat.</div>
     </div>

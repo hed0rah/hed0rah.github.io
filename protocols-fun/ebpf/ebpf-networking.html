@@ -28,27 +28,18 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:78ch;margin-bottom:2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500} .lede a{color:var(--enum)}
 .sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:1.8rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
@@ -82,8 +73,6 @@ pre.ascii b{color:var(--enum);font-weight:500}
 .tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.08em;margin-top:1px;text-transform:none}
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none} .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 .plede{color:var(--soft);max-width:80ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
 .plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em}
 footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
@@ -100,11 +89,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
   code{white-space:normal;overflow-wrap:anywhere}
@@ -117,16 +101,10 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . eBPF</div><h1>eBPF in the Network Stack</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
-      <div class="stamp"><b>read &amp; write the wire</b>in-kernel, verified<br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>hooks <b>XDP &middot; tc &middot; socket</b></div>
-      <div>safety <b>verifier + maps</b></div>
-      <div>use case <b>JA4T/JA4L fingerprinting</b></div>
     </div>
   </div>
 
-  <p class="lede">eBPF runs tiny <b>verifier-checked</b> programs on the kernel's packet path -- to <b>read</b> details the socket API never exposes and to <b>rewrite</b> packets on egress. Anchored here to one use case: recovering (and forging) the TCP-layer JA4+ fingerprints a normal server can't see. See also <a href="../filtering/capture-filter.html">Capture &amp; Filter</a> (classic BPF, the ancestor) and <a href="../attacks/attack-anatomy.html">Attack &amp; Mitigation</a>.</p>
+  <p class="lede">Using eBPF programs on the kernel packet path to read and rewrite the TCP-layer JA4+ fingerprints.</p>
 
   <div class="tabs" id="tabs">
     <button class="tab on" data-p="blind">The Blind Spot<small>why you can't see it</small></button>
@@ -139,8 +117,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="panelwrap">
 
     <div class="panel on" data-panel="blind">
-      <div class="pfacts"><span>problem<b>the SYN is gone by accept()</b></span></div>
-      <p class="plede">JA4 and JA4H come from data your process can see - the TLS ClientHello, the HTTP request. The <b>transport</b> fingerprints (JA4T, JA4L) cannot be seen that way. By the time <code>accept()</code> hands you a socket, the kernel has already completed the 3-way handshake and <b>thrown away the client's SYN</b> - and that SYN's window size, MSS, and above all its TCP <b>option ordering</b> are the JA4T fingerprint. No syscall gets them back. The only place that information still exists is the kernel's packet path, as the packet flies by. That is exactly where eBPF runs.</p>
+      <p class="plede">JA4 and JA4H come from data your process can see: the TLS ClientHello and the HTTP request. The <b>transport</b> fingerprints (JA4T, JA4L) cannot be read that way. By the time <code>accept()</code> returns a socket, the kernel has completed the handshake and discarded the client's SYN, and the SYN's window size, MSS and TCP <b>option order</b> are the JA4T fingerprint. No syscall returns them. They only exist on the kernel's packet path, which is where eBPF runs.</p>
       <pre class="ascii"> wire ─▶ [NIC] ─▶ <b>XDP</b> ─▶ <b>tc clsact</b> ─▶ netfilter ─▶ TCP handshake ─▶ [socket recv-q] ─▶ <b>accept()</b>
           driver   ingress   in + egress      nft          (kernel)          buffered           your app
           └────────────── the SYN is visible HERE ──────────────┘                               │
@@ -150,7 +127,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="hooks">
-      <div class="pfacts"><span>model<b>verified programs on hook points, talking to userland via maps</b></span></div>
       <p class="plede">An eBPF program is a small function attached to a kernel <b>hook</b>. Before it loads, the <b>verifier</b> proves it terminates and only touches memory it's allowed to - so it can't panic the kernel. It shares state with userland through <b>maps</b> (hash, array, LRU, ring buffer). Different hooks see the packet at different stages:</p>
       <table class="atable">
         <thead><tr><th>hook</th><th>where</th><th>can it</th></tr></thead>
@@ -172,7 +148,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="read">
-      <div class="pfacts"><span>pattern<b>parse the SYN -> a map keyed by flow</b></span></div>
       <p class="plede">The sensor attaches at tc/XDP and inspects every SYN and SYN-ACK <b>before the kernel digests them</b>: it parses the TCP options in wire order into <b>JA4T</b>, timestamps the packet with <code>bpf_ktime_get_ns</code> and reads the TTL for <b>JA4L</b>, then writes the result into a map keyed by the client <code>(ip, port)</code>. Userland looks that map up by <code>conn.RemoteAddr()</code> when the request arrives - and there's no race, because the SYN always precedes the handshake.</p>
       <div class="sec">a JA4T fingerprint</div>
       <div class="ja4"><span class="seg k-sync">64240</span>_<span class="seg k-enum">2-4-8-1-3</span>_<span class="seg k-sync">1460</span>_<span class="seg k-flag">8</span></div>
@@ -186,8 +161,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="write">
-      <div class="pfacts"><span>pattern<b>let the kernel build the SYN, rewrite it on egress</b></span></div>
-      <p class="plede">JA4T is the fingerprint everyone assumes is unforgeable, because the kernel emits SYN options from system-wide sysctls - there's no per-connection knob for "send options in this order." eBPF forges it anyway, by rewriting the packet on the tc <b>egress</b> path while leaving the TCP stack intact.</p>
+      <p class="plede">JA4T is often assumed to be unforgeable, because the kernel builds SYN options from system-wide sysctls and there is no per-connection setting for option order. eBPF can forge it by rewriting the packet on the tc <b>egress</b> path without changing the TCP stack.</p>
       <div class="kv">
         <div><span class="k">Phase A (values)</span><span class="v">rewrite window / MSS / window-scale in place, recompute the TCP checksum. A SYN has no payload, so the sum covers only the &le;60-byte header - small and verifier-friendly</span></div>
         <div><span class="k">Phase B (order)</span><span class="v">reordering options changes the length + data-offset. Since the SYN's options are its tail, <code>bpf_skb_change_tail</code> resizes it; then re-validate every pointer, rewrite doff + IP length, drop in the target OS template, recompute both checksums</span></div>
@@ -196,8 +170,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="ja4">
-      <div class="pfacts"><span>use case<b>fingerprint the transport layer, live</b></span><span>tool<b>ja4-loko</b></span></div>
-      <p class="plede">A JA4+ toolkit that fingerprints <b>who</b> connects from raw wire data, using eBPF for the transport members an endpoint can't otherwise reach. Organizing idea: the <b>spoofability gradient</b> -- harder to forge the lower you go, as control moves <b>app &rarr; library &rarr; kernel</b>.</p>
+      <p class="plede">A JA4+ toolkit that fingerprints <b>who</b> connects from raw wire data, using eBPF for the transport members an endpoint cannot otherwise read. Fingerprints get harder to forge lower in the stack, as control moves <b>app &rarr; library &rarr; kernel</b>.</p>
       <table class="atable">
         <thead><tr><th>member</th><th>layer</th><th>forge difficulty</th></tr></thead>
         <tbody>
@@ -212,8 +185,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="beyond">
-      <div class="pfacts"><span>the bigger picture<b>eBPF is the kernel's programmable layer</b></span></div>
-      <p class="plede">Fingerprinting is one use; eBPF long outgrew networking. Same model - verified programs on hook points, maps to userland - applied across the kernel:</p>
+      <p class="plede">eBPF is used well beyond networking. The same model, verified programs on hook points sharing maps with userland, applies across the kernel:</p>
       <div class="kv">
         <div><span class="k">observability</span><span class="v"><code>bpftrace</code> one-liners over kprobes/tracepoints; the "print any kernel event" superpower</span></div>
         <div><span class="k">networking</span><span class="v">Cilium (k8s CNI), XDP load-balancing and line-rate DDoS drop before the stack ever sees the flood</span></div>

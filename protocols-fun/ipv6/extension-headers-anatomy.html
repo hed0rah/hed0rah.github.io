@@ -28,9 +28,7 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -38,20 +36,14 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
+.lede a{color:var(--enum)}
 .intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
 .intro .lede{margin-bottom:0}
 .sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
@@ -86,8 +78,6 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none}
 .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 
 .diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
 .bytegrp{border:1px solid var(--line);background:var(--panel)}
@@ -157,11 +147,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -178,16 +163,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . PACKET ANATOMY</div><h1>Extension Headers Anatomy</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
-      <div class="stamp"><b>RFC 8200 &sect;4</b><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>generic shape <b>NH + HdrExtLen</b></div><div>fragment <b>fixed 8 bytes</b></div>
-      <div>order <b>mandated, RFC 8200</b></div><div>see also <b>ipv6-anatomy.html</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede">IPv6 moved everything optional out of the fixed header into a chain of extension headers, each pointed to by the previous header's <b>Next Header</b> field. Every one of them shares a generic <code>Next Header + Hdr Ext Len + data</code> shape - except Fragment, the one fixed-size exception. Manipulating this chain (reordering, splitting across fragments, repeating a type) is the main class of IPv6-specific firewall/IDS evasion. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede">IPv6 extension headers (<a href="https://www.rfc-editor.org/rfc/rfc8200">RFC 8200</a> section 4) and the Next Header chain that links them.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -209,7 +189,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="panelwrap">
 
     <div class="panel on" data-panel="overview">
-      <div class="pfacts"><span>shape<b>Next Header(8) + Hdr Ext Len(8) + data</b></span><span>spec<b>RFC 8200 &sect;4</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">When more than one extension header is present, RFC 8200 mandates this order - a stateless filter that assumes the upper-layer protocol is always right after the fixed IPv6 header can be walked straight past it.</p>
       <div class="sec">mandated chain order</div>
       <div class="chain">IPv6 header
@@ -228,7 +207,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="hopbyhop">
-      <div class="pfacts"><span>next header<b>0</b></span><span>processed by<b>every router on the path</b></span><span>size<b>8 bytes</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The one extension header every router must inspect - every other extension header is only processed by the final destination. Must come first in the chain if present.</p>
       <div class="sec">Hop-by-Hop Options, carrying Router Alert (8 bytes)</div>
       <p class="note">Router Alert (RFC 2711) tells routers "inspect this packet's contents even though you're just forwarding it" - exactly how MLD reports get routers to notice group-membership changes without every router running full multicast routing.</p>
@@ -236,7 +214,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="routing">
-      <div class="pfacts"><span>next header<b>43</b></span><span>type 0<b>deprecated, RFC 5095</b></span><span>size<b>24 bytes (1 hop)</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Source routing - lists intermediate hops a packet should visit. Type 0 (shown here) let a packet be routed through an arbitrary sequence of addresses; in 2007 Philippe Biondi and Arnaud Ebalard showed it could bounce a packet repeatedly between colluding routers for a large amplification factor. Deprecated within the year.</p>
       <div class="sec">Routing header, Type 0, one intermediate hop (24 bytes)</div>
       <p class="note">Historical structure, shown for what it was: Segments Left counts down as each listed address is visited.</p>
@@ -245,7 +222,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="fragment">
-      <div class="pfacts"><span>next header<b>44</b></span><span>size<b>fixed 8 bytes, no Hdr Ext Len</b></span><span>offset unit<b>8 bytes</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The odd one out - always exactly 8 bytes, no Hdr Ext Len field at all. Drawn bit by bit here since Fragment Offset, Reserved, and M pack into one 16-bit field. Two fragments lying about their offsets is the classic firewall-evasion trick this header enables.</p>
       <div class="sec">Fragment header - the last fragment of a 2-fragment message (8 bytes / 64 bits)</div>
       <p class="note">Byte offset 8, M=0 (no more fragments follow), Identification 0x1337 ties it to its sibling fragment.</p>
@@ -253,7 +229,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="destopts">
-      <div class="pfacts"><span>next header<b>60</b></span><span>processed by<b>final destination only</b></span><span>size<b>8 bytes</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Same TLV option encoding as Hop-by-Hop, but only the final destination ever looks inside it - intermediate routers skip straight past using Hdr Ext Len. Can appear twice in one chain: once for options meant for intermediate routing-header hops, once for the true final destination.</p>
       <div class="sec">Destination Options, padding to the 8-byte boundary (8 bytes)</div>
       <p class="note">A writer with nothing to say still has to pad to a multiple of 8 bytes - PadN is how.</p>

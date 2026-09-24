@@ -29,9 +29,7 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -39,18 +37,11 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .lede a{color:var(--enum)}
@@ -174,8 +165,6 @@ code{font-family:var(--ff);color:var(--enum);font-size:0.92em;background:var(--r
 .tab small{display:block;font-size:0.5rem;color:var(--faint);letter-spacing:0.06em;margin-top:1px;text-transform:none}
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none} .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 .plede{color:var(--soft);max-width:82ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem}
 .plede b{color:var(--ink);font-weight:500} .plede code{font-size:0.9em} .plede a{color:var(--enum)}
 footer{margin-top:3.5rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
@@ -193,11 +182,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -216,17 +200,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . TLS 1.3</div><h1>TLS 1.3 Handshake</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
-      <div class="stamp"><b>RFC 8446</b><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>handshake <b>1-RTT &middot; 0-RTT on resume</b></div>
-      <div>key exchange <b>(EC)DHE only, always forward secret</b></div>
-      <div>encrypted from <b>the message after ServerHello</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede"><a href="https://www.rfc-editor.org/rfc/rfc8446">RFC 8446</a> is not TLS 1.2 with better ciphers. It deleted static RSA key transport, renegotiation, compression, custom DH groups, and every non-AEAD cipher, then moved the entire server flight behind encryption one message after <code>ServerHello</code>. What is left on the wire in cleartext is a <b>ClientHello</b> and a <b>ServerHello</b> - which is exactly why those two messages became the fingerprinting surface that <a href="../ja4/ja4plus-breakdown.html">JA4+</a> reads. Everything below decodes one real 517-byte Chrome-shaped ClientHello to <code>example.com</code>, byte for byte, and the JA4 tab shows precisely which of those bytes get hashed. <b>Hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede">The TLS 1.3 handshake messages (<a href="https://www.rfc-editor.org/rfc/rfc8446">RFC 8446</a>).</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -252,7 +230,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <!-- ================= RECORD ================= -->
     <div class="panel on" data-panel="frame">
-      <div class="pfacts"><span>record header<b>5 bytes, never encrypted</b></span><span>spec<b>RFC 8446 &sect;5</b></span></div>
       <p class="plede">Every TLS byte on the wire sits inside a record: one byte of type, two bytes of legacy version, two bytes of length. That header is the AEAD's <b>additional data</b>, so it is authenticated but never confidential - the length of every encrypted record is public, forever.</p>
 
       <div class="sec">the two record types</div>
@@ -280,7 +257,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <!-- ================= CLIENTHELLO ================= -->
     <div class="panel" data-panel="clienthello">
-      <div class="pfacts"><span>record<b>517 bytes total</b></span><span>handshake msg<b>512 bytes</b></span><span>spec<b>RFC 8446 &sect;4.1.2</b></span></div>
       <p class="plede">The first 114 bytes: record header, handshake header, and every fixed field of the ClientHello up to the extensions. Three of the five fields here are dead, kept only so the message still parses as TLS 1.2 to anything watching.</p>
 
       <div class="sec">ClientHello, record byte 0 through 113</div>
@@ -294,7 +270,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <!-- ================= EXTENSIONS ================= -->
     <div class="panel" data-panel="extensions">
-      <div class="pfacts"><span>in this hello<b>18 extensions, 403 bytes</b></span><span>counted by JA4<b>16 (GREASE stripped)</b></span></div>
       <p class="plede">TLS 1.3 put its actual protocol in extensions. Version negotiation, key exchange, and authentication are all extension payloads hanging off a message whose fixed fields are frozen for compatibility. The four that matter are below; the roster at the end is the full 403 bytes in wire order.</p>
 
       <div class="sec">supported_versions (43) - the real version field</div>
@@ -347,7 +322,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
     <!-- ================= SERVERHELLO ================= -->
     <div class="panel" data-panel="serverhello">
-      <div class="pfacts"><span>ServerHello<b>127 bytes, cleartext</b></span><span>then<b>everything is encrypted</b></span></div>
       <p class="plede">The last plaintext message of the handshake. It carries exactly two live extensions - the chosen version and the server's key share - because after this message both sides can derive handshake keys, and everything else moves inside <code>EncryptedExtensions</code>.</p>
 
       <div class="sec">ServerHello, the whole record</div>
@@ -375,7 +349,6 @@ C2 A2 11 16 7A BB 8C 5E 07 9E 09 E2 C8 A8 33 9C</div>
 
     <!-- ================= FLOW ================= -->
     <div class="panel" data-panel="flow">
-      <div class="pfacts"><span>full handshake<b>1-RTT</b></span><span>resumption<b>0-RTT</b></span><span>mismatched group<b>2-RTT</b></span></div>
       <p class="plede">Braces mean encrypted under handshake keys, brackets mean application keys. The client can send application data after one round trip; the server can start after half of one.</p>
 
       <div class="sec">the 1-RTT handshake</div>
@@ -423,7 +396,6 @@ C2 A2 11 16 7A BB 8C 5E 07 9E 09 E2 C8 A8 33 9C</div>
 
     <!-- ================= KEY SCHEDULE ================= -->
     <div class="panel" data-panel="schedule">
-      <div class="pfacts"><span>primitive<b>HKDF (RFC 5869)</b></span><span>stages<b>3 extracts</b></span><span>spec<b>RFC 8446 &sect;7.1</b></span></div>
       <p class="plede">Three HKDF-Extract steps chained through a Derive-Secret between each. Every secret is bound to a transcript hash, so a secret derived over a modified handshake is a different secret and the Finished MAC fails.</p>
 
       <div class="sec">the schedule</div>
@@ -475,8 +447,7 @@ C2 A2 11 16 7A BB 8C 5E 07 9E 09 E2 C8 A8 33 9C</div>
 
     <!-- ================= 0-RTT ================= -->
     <div class="panel" data-panel="zerortt">
-      <div class="pfacts"><span>0-RTT<b>data with the ClientHello</b></span><span>cost<b>replayable, not forward secret</b></span><span>spec<b>RFC 8446 &sect;2.3, &sect;8</b></span></div>
-      <p class="plede">After a handshake, the server hands out tickets. On the next connection the client can send application data in its very first flight, encrypted under a key derived from the ticket alone. It is the fastest thing in TLS and the only part of 1.3 with a security caveat printed in the spec.</p>
+      <p class="plede">After a handshake the server issues tickets. On the next connection the client can send application data in its first flight, encrypted under a key derived from the ticket alone. This 0-RTT data saves a round trip and can be replayed, which the spec warns about.</p>
 
       <div class="sec">NewSessionTicket - the server issues a PSK</div>
       <div id="block-nst" data-build></div>
@@ -530,8 +501,7 @@ C2 A2 11 16 7A BB 8C 5E 07 9E 09 E2 C8 A8 33 9C</div>
 
     <!-- ================= JA4 ================= -->
     <div class="panel" data-panel="ja4">
-      <div class="pfacts"><span>input<b>the 517 bytes on the ClientHello tab</b></span><span>output<b>sha256[:12] x2</b></span><span>sibling<b><a href="../ja4/ja4plus-breakdown.html" style="color:var(--enum)">JA4+ breakdown</a></b></span></div>
-      <p class="plede">TLS 1.3 encrypted the handshake, and the ClientHello is what was left behind. JA4 is the fingerprint computed from exactly the fields decoded above - <b>hover a segment</b> to see which bytes it came from.</p>
+      <p class="plede">The ClientHello is still sent in the clear in TLS 1.3. JA4 is computed from the fields decoded above; <b>hover a segment</b> to see which bytes it came from.</p>
 
       <div class="decoder">
         <div class="jstr" id="jstr"></div>

@@ -28,9 +28,7 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -38,18 +36,11 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
@@ -86,8 +77,6 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none}
 .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 
 .diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
 .bytegrp{border:1px solid var(--line);background:var(--panel)}
@@ -161,11 +150,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -182,16 +166,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . LEGACY</div><h1>POCSAG Anatomy</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
-      <div class="stamp"><b>British GPO, 1970s &rarr; CCIR, 1982</b><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>codeword <b>32 bits, fixed</b></div><div>ecc <b>BCH(31,21)</b></div>
-      <div>batch <b>sync + 8 frames &times; 2</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede">POCSAG (Post Office Code Standardisation Advisory Group) is the paging protocol behind decades of pagers, and it's still what hospital and public-safety paging networks run today - not out of nostalgia, but because a one-way broadcast with strong forward error correction reaches through concrete stairwells a phone signal can't. Every codeword is exactly 32 bits, with a BCH code strong enough to correct errors without ever asking the transmitter to resend anything - there's no back-channel to resend on. <b>Hover</b> a field to light its bits, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede">The POCSAG paging protocol: 32-bit codewords with BCH error correction.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">amber</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -212,7 +191,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="panelwrap">
 
     <div class="panel on" data-panel="overview">
-      <div class="pfacts"><span>preamble<b>576+ bits, alternating</b></span><span>batch<b>sync + 16 codewords</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A pager spends most of its life asleep. The preamble exists purely to let its receiver's clock lock on before anything meaningful arrives - functionally the same job Ethernet's preamble does, just far longer because a pager's local oscillator is far cheaper and less stable.</p>
       <div class="sec">preamble sample (4 of 72 bytes - real preamble is 576 bits)</div>
       <div id="block-preamble" data-build></div>
@@ -231,7 +209,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="address">
-      <div class="pfacts"><span>example<b>RIC 1000, frame 0</b></span><span>function<b>00 - numeric</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A pager's real address (its "RIC," 21 bits) splits in two: the low 3 bits pick which of the 8 frames to listen in (not carried in the codeword at all - it's implicit in the frame position), and the remaining 18 bits ride here.</p>
       <div class="sec">address codeword (32 bits)</div>
       <div id="block-address" data-build></div>
@@ -239,7 +216,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="message">
-      <div class="pfacts"><span>data<b>20 bits, illustrative</b></span><span>ecc<b>same BCH(31,21)</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">Follows an address codeword with the same frame's message content - a numeric page packs 4 bits per digit (not quite textbook BCD - real encoders reserve a few 4-bit codes for space and punctuation), an alphanumeric page packs 7-bit ASCII across as many codewords as needed.</p>
       <div class="sec">message codeword (32 bits)</div>
       <div id="block-message" data-build></div>
@@ -247,7 +223,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="timeline">
-      <div class="pfacts"><span>1970s<b>British GPO develops the code</b></span><span>1982<b>CCIR standardizes it globally</b></span><span>today<b>still used in critical paging</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">POCSAG outlived the consumer pager entirely - it's now a protocol almost exclusively found in the infrastructure built to be more reliable than a cell network, not less.</p>
       <table class="compare">
         <thead><tr><th>era</th><th>event</th><th>why it mattered</th></tr></thead>

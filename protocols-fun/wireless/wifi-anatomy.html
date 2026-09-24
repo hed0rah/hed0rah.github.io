@@ -28,9 +28,7 @@
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
-:root[data-theme="house-light"] .head .stamp b{color:var(--enum)}
-:root[data-theme="house-dark"] .head .stamp b{color:var(--flag)}
-:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
+:root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -38,18 +36,11 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
@@ -83,8 +74,6 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .panelwrap{border:1px solid var(--line);border-top:none;padding:1.6rem clamp(1rem,3vw,1.8rem) 2rem;margin-bottom:2rem}
 .panel{display:none}
 .panel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 
 .diagram{display:flex;flex-wrap:wrap;gap:12px;margin:0.6rem 0 1.4rem}
 .bytegrp{border:1px solid var(--line);background:var(--panel)}
@@ -158,11 +147,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -179,16 +163,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . DATA LINK / WIRELESS</div><h1>Wi-Fi Anatomy</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
-      <div class="stamp"><b>IEEE 802.11, 1997 &rarr; present</b><br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>MAC header <b>24-30 bytes</b></div><div>frame control <b>2 bytes, 3 types</b></div>
-      <div>addressing <b>up to 4 MACs</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede">Every 802.11 frame - management, control, or data - opens with the same shaped MAC header, unchanged in its basics since the original 1997 standard. What makes it more interesting than Ethernet's header is the Frame Control field's ToDS/FromDS bit pair, which silently changes what the following address fields even mean - and the total absence of any authentication on most management frames, which is exactly what makes deauthentication attacks possible. <b>Hover</b> a field to light its bits, <b>click</b> a field marked <span class="k-en">+</span> for its lookup&nbsp;table.</p>
+  <p class="lede">The IEEE 802.11 MAC header, and how the ToDS/FromDS bits change the meaning of its address fields.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">amber</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -209,7 +188,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="panelwrap">
 
     <div class="panel on" data-panel="overview">
-      <div class="pfacts"><span>frame control<b>2 bytes, bit-packed</b></span><span>address fields<b>meaning depends on ToDS/FromDS</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The Frame Control field is the first thing decoded in every 802.11 frame - Type picks one of 3 frame classes (management, control, data), Subtype picks the specific frame within that class, and the remaining bits are mostly housekeeping flags. Shown here with a beacon's actual Frame Control bytes.</p>
       <div class="sec">Frame Control (2 bytes)</div>
       <div id="block-fc" data-build></div>
@@ -227,7 +205,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="beacon">
-      <div class="pfacts"><span>sent by<b>the AP, every ~100ms</b></span><span>size<b>24-byte header + variable body</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The frame that announces a network exists. Broadcast to everyone (Addr1 = ff:ff:ff:ff:ff:ff), unencrypted even on a WPA2/WPA3 network (a device has to be able to read it before it's associated with anything), and sent roughly ten times a second whether or not anyone's listening.</p>
       <div class="sec">MAC header (24 bytes)</div>
       <div id="block-beacon-header" data-build></div>
@@ -237,7 +214,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="deauth">
-      <div class="pfacts"><span>sent by<b>either the AP or the station</b></span><span>size<b>26 bytes total</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">A management frame telling a station "you are no longer authenticated, start over." In the original standard, management frames carry no cryptographic protection at all - anyone in radio range can forge one with the right source and destination addresses.</p>
       <div class="sec">deauthentication frame (26 bytes)</div>
       <div id="block-deauth" data-build></div>
@@ -245,7 +221,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
     </div>
 
     <div class="panel" data-panel="timeline">
-      <div class="pfacts"><span>1997<b>WEP, broken by 2001</b></span><span>2004<b>WPA2, the long-lived default</b></span><span>2018<b>WPA3, mandatory PMF</b></span></div>
       <p class="plede" style="color:var(--soft);max-width:76ch;font-size:0.82rem;line-height:1.75;margin-bottom:0.3rem">The MAC header this page diagrams has barely moved across 25+ years; nearly every meaningful revision to Wi-Fi has happened one layer up, in how the frame body gets encrypted and authenticated.</p>
       <table class="compare">
         <thead><tr><th>year</th><th>standard</th><th>what changed</th></tr></thead>

@@ -26,21 +26,15 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 ::selection{background:var(--enum);color:var(--paper)}
 .sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
-.head .row{display:grid;grid-template-columns:1fr auto;align-items:stretch}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem}
 .head .title .tt{min-width:0}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.5rem,4vw,2rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
-.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint);display:flex;flex-direction:column;justify-content:center;gap:0.2rem}
-.head .stamp b{color:var(--enum);font-weight:500}
-.head .strip{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase}
-.head .strip div{padding:0.5rem 1.1rem;border-right:1px solid var(--hair);color:var(--soft)}
-.head .strip div:last-child{border-right:none}
-.head .strip b{color:var(--ink);font-weight:500}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
+.lede a{color:var(--enum)}
 .intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
 .intro .lede{margin-bottom:0}
 .sig{flex:0 0 auto;align-self:stretch;display:flex;flex-direction:row;align-items:center;gap:0.9rem;padding-left:1.5rem;border-left:1px solid var(--hair)}
@@ -70,8 +64,6 @@ body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:
 .verswitch button.on{color:var(--paper);background:var(--enum)}
 .verpanel{display:none}
 .verpanel.on{display:block}
-.pfacts{display:flex;flex-wrap:wrap;gap:0 1.8rem;font-size:0.64rem;letter-spacing:0.06em;color:var(--soft);text-transform:uppercase;margin-bottom:1.1rem;border-bottom:1px solid var(--hair);padding-bottom:0.7rem}
-.pfacts b{color:var(--enum);font-weight:500;margin-left:0.4rem;text-transform:none;letter-spacing:0.02em}
 
 /* diff table, always visible regardless of toggle */
 .difftable{width:100%;border-collapse:collapse;font-size:0.76rem;margin:0.6rem 0 1.8rem}
@@ -153,11 +145,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 @media(max-width:560px){
   body{font-size:13px}
   .sheet{padding-left:1rem;padding-right:1rem}
-  .head .row{grid-template-columns:1fr}
-  .head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left;justify-content:flex-start}
-  .head .strip{grid-template-columns:1fr}
-  .head .strip div{border-right:none;border-bottom:1px solid var(--hair)}
-  .head .strip div:last-child{border-bottom:none}
   .kv div{grid-template-columns:1fr;gap:0.15rem;padding:0.4rem 0}
   .branch{padding-left:0.4rem}
   .atable th,.atable td{padding:0.35rem 0.45rem;white-space:normal;overflow-wrap:anywhere}
@@ -171,16 +158,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">IPV6-FUN . PACKET ANATOMY</div><h1>IP Header Anatomy</h1></div><protofun-toggle aria-label="Toggle theme"></protofun-toggle></div>
-      <div class="stamp"><b>IPv4 (RFC 791) + IPv6 (RFC 8200)</b>byte by byte, field by field<br>rev 2026.08</div>
-    </div>
-    <div class="strip">
-      <div>layer <b>L3 . network</b></div><div>v6 header <b>40B fixed</b></div>
-      <div>v4 header <b>20-60B</b></div><div>byte order <b>network (big)</b></div>
     </div>
   </div>
 
   <div class="intro">
-  <p class="lede">Every packet on the internet opens with one of these two headers. <b>IPv4</b>'s 20-byte header has carried the internet since 1981; <b>IPv6</b>'s fixed 40-byte header, finalized in 2017, trades IPv4's variable-length options for a chain of separate extension headers and swaps a 32-bit address space for a 128-bit one. Toggle between them below - <b>hover</b> a field to light its bytes, <b>click</b> a field marked <span class="k-en">+</span> for its lookup table. Color marks kind (see the key). Full protocol writeup and citations: <a href="deep-dive.md">deep-dive.md</a>.</p>
+  <p class="lede">The IPv4 (<a href="https://www.rfc-editor.org/rfc/rfc791">RFC 791</a>) and IPv6 (<a href="https://www.rfc-editor.org/rfc/rfc8200">RFC 8200</a>) headers, with a toggle between them and the full writeup in <a href="deep-dive.md">deep-dive.md</a>.</p>
   <aside class="sig" aria-label="color key">
     <div class="legrows">
     <div class="row"><span class="sw dark k-enum">teal</span><span class="swsep">&#8594;</span><span class="sw light k-enum">value</span></div>
@@ -229,7 +211,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   <!-- ===================== IPv6 ===================== -->
   <div class="verpanel on" data-ver="ipv6">
-    <div class="pfacts"><span>size<b>40 bytes, fixed</b></span><span>addr<b>128-bit</b></span><span>spec<b>RFC 8200</b></span></div>
     <p class="note">First word (version, traffic class, flow label) is bit-packed, so it's drawn bit by bit. Everything after it is byte-aligned - payload length, next header, hop limit, then the two 128-bit addresses drawn byte by byte.</p>
     <div id="ipv6-word0" data-build></div>
     <div id="ipv6-rest" data-build></div>
@@ -237,7 +218,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   <!-- ===================== IPv4 ===================== -->
   <div class="verpanel" data-ver="ipv4">
-    <div class="pfacts"><span>size<b>20-60 bytes</b></span><span>addr<b>32-bit</b></span><span>spec<b>RFC 791</b></span></div>
     <p class="note">Version+IHL+DSCP+ECN pack into the first 2 bytes, so they're drawn bit by bit; Total Length and Identification are byte-aligned; Flags+Fragment Offset pack into 2 more bits; TTL, Protocol, Checksum, and both addresses are byte-aligned.</p>
     <div id="ipv4-word0" data-build></div>
     <div id="ipv4-lengths" data-build></div>
