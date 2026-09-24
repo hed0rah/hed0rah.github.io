@@ -27,6 +27,8 @@
 :root[data-theme="house-light"] .head .title protofun-toggle{color:var(--flag)}
 :root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover{color:var(--enum)}
+.head .title protofun-mode{margin-left:auto;color:var(--soft);transition:color .15s}
+.head .title protofun-mode:hover{color:var(--enum)}
 :root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
 :root[data-theme="house-light"]:root[data-theme="house-dark"]:root[data-theme="house-light"] .head .title{border-left:3px solid var(--enum)}
 :root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
@@ -34,13 +36,18 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--enum);color:var(--paper)}
-.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.sheet{max-width:1180px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,28px) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;display:flex;flex-direction:column;justify-content:center;gap:0.35rem}
+.head .stamp a{color:var(--faint);text-decoration:none;transition:color .15s}
+.head .stamp a:hover{color:var(--enum)}
+@media(max-width:560px){.head .row{grid-template-columns:1fr}.head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left}}
 .lede{color:var(--soft);max-width:74ch;margin-bottom:2.2rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500}
 .intro{display:flex;gap:1.2rem;align-items:stretch;margin-bottom:1.4rem}
@@ -165,7 +172,8 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 
   <div class="head">
     <div class="row">
-      <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . LEGACY</div><h1>POCSAG Anatomy</h1></div><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
+      <div class="title"><div class="tt"><div class="sysmark">PROTOCOLS-FUN . LEGACY</div><h1>POCSAG Anatomy</h1></div><protofun-mode></protofun-mode><protofun-toggle aria-label="Toggle light and dark theme"></protofun-toggle></div>
+    <div class="stamp"><a href="https://hed0rah.github.io">hed0rah.github.io</a><a href="https://x.com/r3l0z">x.com/r3l0z</a></div>
     </div>
   </div>
 

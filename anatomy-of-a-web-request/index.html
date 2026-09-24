@@ -27,17 +27,24 @@
 /* house modes: RJ wears teal and flips to orange on hover; a couple of subtle orange touches in the head */
 :root[data-theme="house-light"] .head .title protofun-toggle,:root[data-theme="house-dark"] .head .title protofun-toggle{color:var(--enum)}
 :root[data-theme="house-light"] .head .title protofun-toggle:hover,:root[data-theme="house-dark"] .head .title protofun-toggle:hover{color:var(--flag)}
+.head .title protofun-mode{margin-left:auto;color:var(--soft);transition:color .15s}
+.head .title protofun-mode:hover{color:var(--enum)}
 :root[data-theme="house-light"]:root[data-theme="house-light"] .head .title,:root[data-theme="house-dark"] .head .title{border-left:3px solid var(--flag)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--ff);font-weight:300;line-height:1.7;font-size:14px;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--enum);color:var(--paper)}
-.sheet{max-width:1040px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,3rem) 5rem}
+.sheet{max-width:1180px;margin:0 auto;padding:clamp(1.5rem,4vw,3.25rem) clamp(1.25rem,4vw,28px) 5rem}
 .head{border:1px solid var(--ink);margin-bottom:1.8rem}
 .head .title{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.9rem 1.1rem;border-left:3px solid var(--enum)}
 .head .title protofun-toggle{--protofun-w:61px;--protofun-h:92px;color:var(--soft);flex:0 0 auto;cursor:pointer;transition:color .15s}
 .head .title protofun-toggle:hover{color:var(--enum)}
 .head .sysmark{font-size:0.62rem;letter-spacing:0.34em;color:var(--soft)}
 .head h1{font-weight:500;font-size:clamp(1.4rem,4vw,1.85rem);letter-spacing:0.02em;line-height:1.1;margin-top:0.2rem}
+.head .row{display:grid;grid-template-columns:1fr 270px;align-items:stretch}
+.head .stamp{border-left:1px solid var(--line);padding:0.9rem 1.1rem;text-align:right;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;display:flex;flex-direction:column;justify-content:center;gap:0.35rem}
+.head .stamp a{color:var(--faint);text-decoration:none;transition:color .15s}
+.head .stamp a:hover{color:var(--enum)}
+@media(max-width:560px){.head .row{grid-template-columns:1fr}.head .stamp{border-left:none;border-top:1px solid var(--line);text-align:left}}
 .lede{color:var(--soft);max-width:80ch;margin-bottom:1.4rem;font-size:0.85rem;line-height:1.75}
 .lede b{color:var(--ink);font-weight:500} .lede a{color:var(--enum)}
 .sec{font-size:0.66rem;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;color:var(--ink);margin:1.7rem 0 0.3rem;display:flex;align-items:center;gap:0.7rem}
@@ -100,7 +107,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 </style>
 </head>
 <body>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* ---------------------------------------------------------------------------
    anatomy of a web request
@@ -110,7 +116,6 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
    --------------------------------------------------------------------------- */
 :root{
   --mono:var(--ff);
-  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --ink-mid:var(--soft);
   --ink-dim:var(--faint);
   --accent:var(--enum);
@@ -129,16 +134,12 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
    build.py keeps the breakdown <head> byte-verbatim, so the rules it sets for
    a 1040px single-column page cannot be deleted from here. Everything in this
    block deliberately overrides one of them; edit these, not the head's.
-       .sheet     1040 -> 1180      this page carries a sticky inspector
        body       1.7  -> 1.5       the sibling's leading; 1.7 cost 13% height
-       .lede      80ch/0.85rem mono -> 66ch/14px sans
-   One vertical scale down the spine, in px, so the rhythm is inspectable:
-       24 masthead . 24 lede . 24 rule . 16 controls . 24 work
+   The masthead, lede and frame width are the series standard and are not
+   overridden here. Below the lede, one vertical scale in px:
+       24 rule . 16 controls . 24 work
    --------------------------------------------------------------------------- */
-.sheet{max-width:1180px;padding-left:28px;padding-right:28px}
 body{line-height:1.5}
-.head{margin-bottom:24px}
-.lede{font-size:14px;line-height:1.5;max-width:66ch;margin-bottom:24px}
 .rule{margin:24px 0 0}
 .bar-controls{margin:16px 0 0}
 .work{margin-top:24px}
@@ -146,10 +147,6 @@ body{line-height:1.5}
    its own narrower measure */
 .plede,.note,.callout{font-size:13px;line-height:1.5;max-width:60ch}
 
-/* prose in sans, the apparatus stays mono */
-.lede,.plede,.note,.callout,.desc,.pcap,.atable td.p{font-family:var(--sans);font-weight:400}
-/* one prose measure, not four. 13px Plex Sans sits optically level with the
-   12.5px mono apparatus because the two share an x-height. */
 
 /* geometry lifted from linux_network_stack so the two pages are the same
    object: 1180 outer, 730 content, 360 inspector, 34 gap, sticky at 24 */
@@ -308,8 +305,9 @@ body{line-height:1.5}
           <div class="sysmark">PROTOCOLS-FUN . REQUEST PATH</div>
           <h1>Anatomy of a Web Request</h1>
         </div>
-        <protofun-toggle aria-label="Toggle theme"></protofun-toggle>
+        <protofun-mode></protofun-mode><protofun-toggle aria-label="Toggle theme"></protofun-toggle>
       </div>
+    <div class="stamp"><a href="https://hed0rah.github.io">hed0rah.github.io</a><a href="https://x.com/r3l0z">x.com/r3l0z</a></div>
     </div>
   </div>
 

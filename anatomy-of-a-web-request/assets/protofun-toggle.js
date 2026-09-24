@@ -124,3 +124,34 @@
   }
   customElements.define('protofun-toggle', ProtofunToggle);
 })();
+
+// protofun-mode -- the plain light/dark switch that sits beside RJ. RJ cycles all
+// six themes; this flips within the pair the reader is in (house-light and
+// house-dark, light and dark). It drives RJ's own apply(), so every toggle on
+// the page stays in sync and the choice is stored the same way.
+(function () {
+  if (customElements.get('protofun-mode')) return;
+  var PAIR = { 'light': 'dark', 'dark': 'light', 'house-light': 'house-dark', 'house-dark': 'house-light',
+               'amber': 'light', 'vapor': 'dark' };
+  var css = ':host{display:inline-block;line-height:0}' +
+    'button{-webkit-appearance:none;appearance:none;background:none;border:0;padding:2px;margin:0;cursor:pointer;color:inherit;line-height:0;border-radius:50%}' +
+    'button:focus-visible{outline:2px solid currentColor;outline-offset:2px}' +
+    'svg{display:block;width:var(--protofun-mode-size,20px);height:var(--protofun-mode-size,20px)}';
+  var icon = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/>' +
+             '<path d="M8 1.5a6.5 6.5 0 0 0 0 13z" fill="currentColor"/></svg>';
+  class ProtofunMode extends HTMLElement {
+    connectedCallback() {
+      var root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = '<style>' + css + '</style><button type="button" aria-label="Switch between light and dark" title="Light / dark">' + icon + '</button>';
+      root.querySelector('button').addEventListener('click', function () {
+        var cur = document.documentElement.getAttribute('data-theme') || 'house-light';
+        var next = PAIR[cur] || 'house-dark';
+        var rj = document.querySelector('protofun-toggle:not([passive])');
+        if (rj && rj.apply) { rj.apply(next, true); return; }
+        document.documentElement.setAttribute('data-theme', next);
+        try { localStorage.setItem('protofun-theme', next); } catch (e) {}
+      });
+    }
+  }
+  customElements.define('protofun-mode', ProtofunMode);
+})();
