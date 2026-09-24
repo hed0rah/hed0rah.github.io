@@ -157,9 +157,52 @@ body {
 }
 .side-dial:hover { color: var(--orange); border-color: var(--orange); }
 @media (min-width: 1100px) {
-  .side { display: block; }
-  body { padding-left: 248px; }
   .nav { display: none; }
+  /* The contents panel used to be position:fixed, which anchors it to the
+     viewport, so on a wide screen it sat against the left edge while the text
+     centred itself somewhere else. Everything now shares one grid: a full
+     bleed masthead, then the panel and the text as a single unit. The panel
+     is sticky rather than fixed, so it belongs to the layout and still stays
+     in view while reading. */
+  body {
+    /* the left gutter, as one continuous rule. Zero on a normal screen, so the
+       panel sits against the edge like it always did. From about 1900px it
+       grows faster than the right gutter, and caps at exact symmetry, which it
+       reaches around 2500. No breakpoint, so nothing jumps while resizing.
+       1348 is the unit (248 panel + 1100 text). Written with % rather than vw:
+       a custom property resolves where it is used, so each use measures its
+       own box and there is no scrollbar width to guess. */
+    --gl: clamp(0px, calc((100% - 1894px) * 0.95), calc((100% - 1348px) / 2));
+    display: grid;
+    grid-template-columns: var(--gl) 248px minmax(0, 1100px) 1fr;
+    grid-template-rows: auto auto 1fr auto;
+    align-items: start;
+    min-height: 100vh;
+  }
+  /* the banner stays full width, but its title centres over the unit it
+     heads rather than over the window */
+  .masthead {
+    grid-column: 1 / -1; grid-row: 1;
+    padding-left: calc(20px + var(--gl));
+    padding-right: calc(20px + max(0px, 100% - var(--gl) - 1348px));
+  }
+  .side {
+    display: block;
+    grid-column: 2; grid-row: 2 / 4;
+    position: sticky; top: 0; left: auto; bottom: auto;
+    width: auto; max-height: 100vh;
+    border-right: 0;
+  }
+  .container {
+    grid-column: 3; grid-row: 3;
+    margin: 0; max-width: none; width: 100%;
+    /* the column keeps its own full-height rule; the panel is shorter than
+       the text, so a rule on the panel would stop halfway down the page */
+  }
+  body > footer, body > .footer { grid-column: 2 / 4; grid-row: 4; margin-inline: 0; max-width: none; }
+  /* the spine is decoration on the frame's edge, not the window's. body > for
+     specificity: the base .spine rule comes later in the file and would win. */
+  body > .spine { left: calc(var(--gl) + 1348px + 14px); right: auto; }
 }
 
 /* radial dial */
@@ -515,7 +558,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 
 <!-- sidebar -->
 <nav class="side">
-  <div class="side-brand">ESP32 <span>//</span> Deep Dive</div>
+  <div class="side-brand">Contents</div>
   <a href="#intro"><span>01</span>Intro</a>
   <a href="#variants"><span>02</span>Variants</a>
   <a href="#cores"><span>03</span>Cores</a>
