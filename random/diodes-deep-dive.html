@@ -363,12 +363,12 @@ pre .label {
 }
 pre .kw     { color: #F09030; }
 pre .fn     { color: #C8A030; }
-pre .cm     { color: #5A5952; font-style: italic; }
+pre .cm     { color: #8C8A82; font-style: italic; }
 pre .st     { color: #C8A030; }
 pre .num    { color: #CCCBC4; }
 pre .key    { color: #3AB8AC; }
 pre .val    { color: #C8A030; }
-pre .flag   { color: #7A7870; }
+pre .flag   { color: #A09E96; }
 
 /* diagrams */
 .diagram {
@@ -377,11 +377,11 @@ pre .flag   { color: #7A7870; }
   border-left: 3px solid var(--orange);
   padding: 18px 20px;
   margin: 14px 0;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.7;
   white-space: pre;
   overflow-x: auto;
-  color: #8A8880;
+  color: #B4B2AA;
 }
 .diagram.cy { border-left-color: var(--cyan); }
 .diagram.yl { border-left-color: var(--yellow); }
@@ -389,8 +389,8 @@ pre .flag   { color: #7A7870; }
 .diagram .acc  { color: #F09030; }
 .diagram .acc2 { color: #3AB8AC; }
 .diagram .acc3 { color: #C8A030; }
-.diagram .dim  { color: #4A4942; }
-.diagram .hi   { color: #CCCBC4; }
+.diagram .dim  { color: #8C8A82; }
+.diagram .hi   { color: #E6E5DE; }
 
 /* info boxes */
 .info-box {
@@ -563,14 +563,14 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 
   <h3>The symbol and the part</h3>
 
-  <pre class="diagram"><span class="dim">          the arrow points the way conventional current flows</span>
+  <pre class="diagram"><span class="dim">   the arrow points the way conventional current flows</span>
 
-                <span class="acc">anode (+)</span>                       <span class="acc2">cathode (−)</span>
-                    <span class="dim">│</span>                               <span class="dim">│</span>
-                    <span class="dim">▼</span>                               <span class="dim">▼</span>
-          <span class="acc">──────────</span><span class="hi">▶|</span><span class="acc2">──────────</span>            <span class="dim">real part:</span>  <span class="acc">──[</span><span class="hi"> 1N4148 </span><span class="acc2">▮</span><span class="acc">]──</span>
-                    <span class="dim">P</span>   <span class="dim">N</span>                                   <span class="acc2">▲</span>
-                <span class="dim">forward     block</span>                       <span class="acc2">band = cathode</span>
+     <span class="acc">anode (+)</span> <span class="acc">──────────</span><span class="hi">►|</span><span class="acc2">──────────</span> <span class="acc2">cathode (−)</span>
+                         <span class="dim">PN</span>
+
+     <span class="dim">real part:</span>  <span class="acc">──[</span><span class="hi"> 1N4148 </span><span class="acc2">█</span><span class="acc">]──</span>
+                            <span class="acc2">▲</span>
+                     <span class="acc2">band = cathode</span>
 
      current flows <span class="acc">anode → cathode</span> only, and only once V across it &gt; <span class="hi">Vf</span></pre>
 
@@ -635,7 +635,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 
      <span class="acc">Is</span>  saturation (leakage) current  ─ how leaky in reverse; sets noise floor
      <span class="acc">V</span>   voltage across the diode
-     <span class="acc">n</span>   ideality factor (~1-2)         ─ <span class="hi">how SOFT the knee is</span>
+     <span class="acc">n</span>   ideality factor (~1-2)        ─ <span class="hi">how SOFT the knee is</span>
      <span class="acc">Vt</span>  thermal voltage ≈ <span class="hi">25.85 mV</span> @ 300K  (Vt = kT/q, rises with temperature)
 
    because it is exponential, current changes ~<span class="hi">10×</span> for every ~60 mV (n=1),
@@ -749,7 +749,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   <p>You can characterize a clipping diode with a multimeter and a bench supply -- no fancy rig. Two measurements tell you almost everything that matters for tone: the forward voltage at a real current, and whether a batch is matched.</p>
 
   <h3>The multimeter diode test</h3>
-  <pre><span class="cm"># most DMMs have a diode-test mode (the ▶| symbol) --</span>
+  <pre><span class="cm"># most DMMs have a diode-test mode (the ►| symbol) --</span>
 <span class="cm"># it pushes ~1 mA through and reads the voltage drop</span>
 
   red probe → <span class="kw">anode</span>,  black probe → <span class="kw">cathode</span> (the band)
@@ -769,10 +769,10 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 
   <pre class="diagram cy"><span class="dim">   sorting a bag of germaniums -- measure two things, group by both</span>
 
-     Vf @ 1 mA   Ir (reverse leak, µA)     use
-     <span class="hi">0.28 V</span>       <span class="hi">low</span>                      matched pair for symmetric clip
-     0.24 V       high                     asymmetric side / character
-     0.31 V       low                       ring-mod quad candidate
+     Vf @ 1 mA   Ir (reverse leak, µA)   use
+     <span class="hi">0.28 V</span>      <span class="hi">low</span>                     matched pair for symmetric clip
+     0.24 V      high                    asymmetric side / character
+     0.31 V      low                     ring-mod quad candidate
 
    <span class="acc2">for asymmetry you WANT a mismatch</span> -- pick it on purpose, don't fight it</pre>
 
@@ -1036,32 +1036,32 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   <h3 class="cy">Shunt clipper -- diodes to ground (hard)</h3>
   <p>A series resistor feeds a node with anti-parallel diodes to ground. Below <code>Vf</code> the diodes are open and the signal passes; above it they conduct and clamp the node hard to <code>&plusmn;Vf</code>. Because the clamp is abrupt, this is the <strong>hard</strong>-clipping topology (ProCo Rat, DOD 250, MXR Distortion+).</p>
 
-  <pre class="diagram cy"><span class="dim">                    R (sets how hard it slams the diodes)</span>
-       <span class="hi">in</span> <span class="dim">○──────[</span> <span class="acc">R</span> <span class="dim">]──────┬────────○</span> <span class="hi">out</span>
+  <pre class="diagram cy">                    <span class="dim">R (sets how hard it slams the diodes)</span>
+<span class="dim">       in ○──────</span><span class="acc">[ R ]</span><span class="dim">──────┬────────○ out</span>
 <span class="dim">                            │</span>
 <span class="dim">                    ┌───────┼───────┐</span>
 <span class="dim">                    │       │       │</span>
-<span class="dim">                  </span><span class="acc">──▶|──</span><span class="dim">        </span><span class="acc">──|◀──</span>   <span class="dim">anti-parallel pair</span>
+<span class="dim">                  ──</span><span class="acc">►|</span><span class="dim">──    │    ──</span><span class="acc">|◄</span><span class="dim">──   </span><span class="hi">anti-parallel pair</span>
 <span class="dim">                    │       │       │   (one conducts each half)</span>
 <span class="dim">                    └───────┼───────┘</span>
-<span class="dim">                          </span><span class="acc3">═╪═</span><span class="dim"> GND</span>
+<span class="dim">                           ═╪═ GND</span>
 
-  clamps the node to <span class="hi">±Vf</span> · add diodes in SERIES per leg to raise the ceiling (n·Vf)
+  clamps the node to ±Vf · add diodes in <span class="hi">SERIES</span> per leg to raise the ceiling (n·Vf)
   mix a different diode on one leg → <span class="acc">asymmetric</span></pre>
 
   <h3 class="cy">Feedback clipper -- diodes across the op-amp (soft)</h3>
   <p>Put the diodes in the op-amp's feedback path, in parallel with the feedback resistor. At low levels the amp has full gain; as the output rises past <code>Vf</code> the diodes start conducting and progressively <em>reduce</em> the gain. The limiting is gradual, so this is the <strong>soft</strong>-clipping topology (Tube Screamer, Klon, Bluesbreaker). The output is the clean input plus a smoothly limited overdrive.</p>
 
-  <pre class="diagram cy"><span class="dim">                    ┌──────[</span> <span class="acc">Rf</span> <span class="dim">]──────┐</span>
-<span class="dim">                    │   ┌───</span><span class="acc">▶|</span><span class="dim">───┐      │      diodes across the</span>
-<span class="dim">                    ├───┤         ├──────┤      feedback → gain folds</span>
-<span class="dim">                    │   └───</span><span class="acc">|◀</span><span class="dim">───┘      │      down past ±Vf</span>
-<span class="dim">        in ○─[</span><span class="acc">Ri</span><span class="dim">]──┤ −                    │</span>
-<span class="dim">                    │      </span><span class="hi">＼</span><span class="dim">                     │</span>
-<span class="dim">                    │       </span><span class="hi">＼____</span><span class="dim">───────────────┴──○ out</span>
-<span class="dim">                    │       </span><span class="hi">／</span>
-<span class="dim">        ref ○───────┤ +</span><span class="hi">／</span>
-<span class="dim">                    │</span>
+  <pre class="diagram cy"><span class="dim">                  ┌────────[ </span><span class="acc">Rf</span><span class="dim"> ]────────┐</span>
+<span class="dim">                  │     ┌───</span><span class="acc">►|</span><span class="dim">───┐       │      diodes across the</span>
+<span class="dim">                  ├─────┤        ├───────┤      feedback resistor:</span>
+<span class="dim">                  │     └───</span><span class="acc">|◄</span><span class="dim">───┘       │      the gain folds down</span>
+<span class="dim">                  │                      │      past ±Vf</span>
+<span class="dim">      in ○─[</span><span class="acc">Ri</span><span class="dim">]───┴──┤−</span><span class="hi">╲</span><span class="dim">                 │</span>
+<span class="dim">                     │  </span><span class="hi">╲</span><span class="dim">                │</span>
+<span class="dim">                     │</span><span class="hi">   ►</span><span class="dim">───────────────┴───○ out</span>
+<span class="dim">                     │  </span><span class="hi">╱</span>
+<span class="dim">     ref ○───────────┤+</span><span class="hi">╱</span>
 
   softer because gain is <span class="hi">reduced</span>, not slammed · the dry signal is always present underneath</pre>
 
@@ -1084,18 +1084,18 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   <div class="section-bar"></div>
   <p>Put the physics and the topology together and you can predict a sound before you build it. This is the map from the four junction properties to what you hear.</p>
 
-  <pre class="diagram"><span class="dim">   PROPERTY            →  WHAT YOU HEAR</span>
+  <pre class="diagram"><span class="dim">   PROPERTY             →  WHAT YOU HEAR</span>
 
    <span class="acc">Vf (threshold)</span>       →  loudness &amp; headroom   low Vf = early, quiet, squishy
-                                                high Vf = late, loud, open
+                                                 high Vf = late, loud, open
    <span class="acc">knee (n, softness)</span>   →  harmonic ORDER        sharp = harsh/buzzy (high-order)
-                                                soft  = warm/round (low-order)
-   <span class="acc">symmetry</span>            →  harmonic FLAVOUR      symmetric = odd (hollow)
-                                                asymmetric = +even (2nd, musical)
-   <span class="acc">junction cap Cj</span>      →  treble               high Cj = darker top end
-   <span class="acc">reverse leakage Ir</span>   →  noise / bias         high Ir = hiss, DC drift (Ge)
-   <span class="acc2">topology</span>            →  hard vs soft         shunt-to-gnd = hard
-                                                across-feedback = soft</pre>
+                                                 soft  = warm/round (low-order)
+   <span class="acc">symmetry</span>             →  harmonic FLAVOUR      symmetric = odd (hollow)
+                                                 asymmetric = +even (2nd, musical)
+   <span class="acc">junction cap Cj</span>      →  treble                high Cj = darker top end
+   <span class="acc">reverse leakage Ir</span>   →  noise / bias          high Ir = hiss, DC drift (Ge)
+   <span class="acc2">topology</span>             →  hard vs soft          shunt-to-gnd = hard
+                                                 across-feedback = soft</pre>
 
   <h3>The canon -- what the classics actually use</h3>
   <table>
@@ -1127,9 +1127,9 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
 
   <pre class="diagram rd"><span class="dim">   envelope follower -- the guts of a comp/gate sidechain</span>
 
-     audio ○──<span class="acc">▶|</span><span class="dim">──┬─────┬──────○ envelope (a slow DC that tracks level)</span>
+     audio ○──<span class="acc">►|</span><span class="dim">──┬─────┬──────○ envelope (a slow DC that tracks level)</span>
 <span class="dim">          rectify │     │</span>
-<span class="dim">                 </span><span class="acc2">═╪═ C</span><span class="dim">    </span><span class="acc2">▉ R</span><span class="dim">   ← R·C sets the RELEASE; the diode+source R the ATTACK</span>
+<span class="dim">                 </span><span class="acc2">═╪═ C  █ R</span><span class="dim">   ← R·C sets the RELEASE; the diode+source R the ATTACK</span>
 <span class="dim">                  │     │</span>
 <span class="dim">                 </span><span class="acc3">═╪═</span><span class="dim">   </span><span class="acc3">═╪═</span><span class="dim"> GND</span></pre>
 
@@ -1201,7 +1201,7 @@ h3[id], h4[id], tr[id] { scroll-margin-top: 56px; }
   <span class="fn">partinfo</span> 1n4148        <span class="cm"># silicon signal -- the default clipper</span>
   <span class="fn">partinfo</span> 1n34a         <span class="cm"># germanium -- warm, soft, leaky</span>
   <span class="fn">partinfo</span> 1n5817        <span class="cm"># schottky -- low Vf, fast</span>
-  <span class="fn">partinfo</span> <span class="kw">search</span> diode    <span class="cm"># the whole family in the db</span></pre>
+  <span class="fn">partinfo</span> <span class="kw">search</span> diode  <span class="cm"># the whole family in the db</span></pre>
 
   <div class="info-box">
     <strong>Next in this series</strong>
