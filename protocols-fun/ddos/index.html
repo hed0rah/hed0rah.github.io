@@ -213,16 +213,16 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       <p class="plede">The TCP flags byte, with only SYN set.</p>
       <div id="block-synbits" data-build></div>
 
-      <div class="callout hot"><b>SYN cookies move the state onto the wire.</b> Instead of allocating
+      <div class="callout hot"><b>SYN cookies.</b> Instead of allocating
       on the SYN, the server encodes the connection parameters into the sequence number it sends back
       and keeps nothing. If an ACK returns, the cookie is decoded and the connection is rebuilt from
       it. The backlog stops being a resource an attacker can exhaust.</div>
-      <div class="callout"><b>What the cookie costs you.</b> The sequence number has room for very
+      <div class="callout"><b>What SYN cookies cost.</b> The sequence number has room for very
       little, so options negotiated in the original SYN are lost unless the timestamp option can
       carry them. Window scaling and SACK are the casualties. A connection accepted by cookie can be
       measurably slower than one accepted normally, which is why cookies are usually armed on backlog
       pressure rather than left on.</div>
-      <div class="callout"><b>Why the source is forged anyway.</b> A real source would receive the
+      <div class="callout"><b>Why the source address is forged.</b> A real source would receive the
       SYN-ACK and its kernel would answer with a RST, tearing down the half-open entry the attacker
       just paid for. Spoofing at unallocated address space avoids that. The attack needs the reply to
       go nowhere.</div>
@@ -235,11 +235,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       <div class="sec">an IPv4 header with a forged source</div>
       <div id="block-ipsrc" data-build></div>
 
-      <div class="callout hot"><b>The economics are why it persists.</b> Ingress filtering protects
+      <div class="callout hot"><b>Why spoofing persists.</b> Ingress filtering protects
       everyone except the network that deploys it. An operator who filters spends effort so that
       somebody else does not get attacked, and sees no benefit on their own traffic. BCP 38 was
       published in 1998 and remains partially deployed for that reason, not a technical one.</div>
-      <div class="callout"><b>TTL is the cheap tell.</b> Common initial values are 64, 128 and 255.
+      <div class="callout"><b>TTL as a signal.</b> Common initial values are 64, 128 and 255.
       A packet claiming to be from a host two hops away, arriving with a TTL consistent with fifteen,
       is lying about something. It is weak evidence per packet and useful in aggregate.</div>
       <div class="callout"><b>Why UDP.</b> Reflection needs a protocol that answers an unverified
@@ -259,7 +259,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       <p class="plede">EDNS0 lifted DNS's 512-byte UDP limit. It is the field that allows large reflected answers.</p>
       <div id="block-opt" data-build></div>
 
-      <div class="callout hot"><b>DNSSEC made the answers bigger.</b> A signed zone returns RRSIG
+      <div class="callout hot"><b>DNSSEC and response size.</b> A signed zone returns RRSIG
       records alongside the data, and the DO bit above asks for them. The security extension that
       authenticates DNS is the same one that made it a better amplifier. Both facts are true and
       neither argues against deploying it.</div>
@@ -268,7 +268,7 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       <p class="plede">A vendor-private NTP command that returns the last 600 clients the server talked to. It was used in the 400 Gbps attack of 2014.</p>
       <div id="block-ntp" data-build></div>
 
-      <div class="callout"><b>This one was fixed by deletion.</b> monlist was removed in ntpd
+      <div class="callout"><b>How monlist was fixed.</b> monlist was removed in ntpd
       4.2.7p26 rather than filtered or rate limited. The reflector population aged out as operators
       upgraded. Compare memcached, where providers blocked 11211/udp wholesale, and DNS, where
       Response Rate Limiting shrank the amplifier pool without removing the feature. Three shapes of
@@ -282,15 +282,15 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
       <div class="sec">RST_STREAM, the frame behind Rapid Reset</div>
       <div id="block-h2rst" data-build></div>
 
-      <div class="callout hot"><b>The bound stopped bounding.</b> HTTP/2 limits how many streams may
+      <div class="callout hot"><b>Why the stream limit did not hold.</b> HTTP/2 limits how many streams may
       be open at once, and that limit is what is supposed to cap concurrent work. Open a stream and
       reset it immediately and the server starts the work while the stream is already closed, so it
       never counts. One connection can queue far more work than the limit nominally allows.</div>
-      <div class="callout"><b>Nothing here is malformed.</b> Every frame is valid, the error code is
+      <div class="callout"><b>Why signatures miss it.</b> Every frame is valid, the error code is
       a polite CANCEL, and each individual exchange is something a real client does when a user
       navigates away. The fix was not a signature: it was accounting, tracking the reset ratio per
       connection and sending GOAWAY when it goes wrong.</div>
-      <div class="callout"><b>Slow attacks invert the same idea.</b> Slowloris and RUDY hold
+      <div class="callout"><b>Slow attacks.</b> Slowloris and RUDY hold
       connections open by sending just enough to avoid a timeout, exhausting a worker pool with
       almost no bandwidth. Rapid Reset exhausts by cycling as fast as possible. Both target the same
       resource from opposite directions, which is why a read timeout helps against one and rate
@@ -338,14 +338,14 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
 <div class="tgrp"><span class="g">&#9492;&#9472; </span><span class="gdot" style="background:var(--enum)"></span><span class="glab" style="color:var(--enum)">iot and the terabit era</span></div>
 <div class="tleaf" tabindex="0" data-n="Mirai vs krebsonsecurity.com. Akamai had hosted it pro bono for four years and gave about " data-t="Sep 20 2016" data-d="623 Gbps (Akamai&#x27;s own figure; 620 is Krebs&#x27;s contemporaneous number). No reflection at all, ~24,000 hosts"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Sep 20 2016</span><span class="b">623 Gbps (Akamai&#x27;s own figure; 620 is Krebs&#x27;s contemporaneous number).</span></div>
 <div class="tleaf" tabindex="0" data-n="Mirai vs OVH" data-t="Sep 2016" data-d="~1.1 Tbps claimed, 145,000 devices"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Sep 2016</span><span class="b">~1.1 Tbps claimed, 145,000 devices</span></div>
-<div class="tleaf" tabindex="0" data-n="Mirai source released on Hackforums by &quot;Anna-senpai&quot;" data-t="Sep 30 2016" data-d="The single most consequential act in DDoS history. Every major botnet since is a Mirai descendant"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Sep 30 2016</span><span class="b">The single most consequential act in DDoS history.</span></div>
+<div class="tleaf" tabindex="0" data-n="Mirai source released on Hackforums by &quot;Anna-senpai&quot;" data-t="Sep 30 2016" data-d="Every major botnet since is built on this code"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Sep 30 2016</span><span class="b">Every major botnet since is built on this code</span></div>
 <div class="tleaf" tabindex="0" data-n="Dyn. Managed DNS provider. Twitter, Reddit, Spotify, Netflix, GitHub, PSN all unreachable " data-t="Oct 21 2016" data-d="~1.2 Tbps. The attack that proved you do not need to hit the target, you hit its DNS"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Oct 21 2016</span><span class="b">~1.2 Tbps.</span></div>
 <div class="tleaf" tabindex="0" data-n="AWS, CLDAP reflection" data-t="Feb 2020" data-d="2.3 Tbps"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Feb 2020</span><span class="b">2.3 Tbps</span></div>
 <div class="tleaf" tabindex="0" data-n="Meris. ~250,000 compromised MikroTik routers using HTTP pipelining" data-t="Sep 2021" data-d="21.8 Mrps vs Yandex, 17.2 Mrps vs a Cloudflare customer. An L7 record, not a bandwidth one"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Sep 2021</span><span class="b">21.8 Mrps vs Yandex, 17.2 Mrps vs a Cloudflare customer.</span></div>
 <div class="tleaf" tabindex="0" data-n="HTTP/2 Rapid Reset, CVE-2023-44487" data-t="Oct 2023" data-d="Google 398 Mrps, Cloudflare 201 Mrps, AWS 155 Mrps. A protocol design flaw, exploitable from a few thousand nodes"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Oct 2023</span><span class="b">Google 398 Mrps, Cloudflare 201 Mrps, AWS 155 Mrps.</span></div>
 <div class="tleaf" tabindex="0" data-n="Records fall five times in seven months" data-t="Apr-Oct 2025" data-d="6.5 Tbps (Apr) → 7.3 Tbps (May) → 11.5 Tbps (Sep 1) → 22.2 Tbps / 10.6 Bpps (Sep 22) → 14.1 Bpps (Oct 7) → 29.7 Tbps (Oct 31)"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Apr-Oct 2025</span><span class="b">6.5 Tbps (Apr) → 7.3 Tbps (May) → 11.5 Tbps (Sep 1) → 22.2 Tbps / 10.6 Bpps (Sep 22) → 14.1 Bpps (Oct 7) → 29.7 Tbps (Oc</span></div>
 <div class="tleaf" tabindex="0" data-n="Aisuru / Kimwolf, &quot;The Night Before Christmas&quot;. Estimated 1-4 million hosts, heavily Andro" data-t="Dec 19 2025" data-d="31.4 Tbps sustained for 35 seconds, and 205 Mrps at L7"><span class="g">&nbsp;&nbsp;&nbsp;&#9500;&#9472; </span><span class="n">Dec 19 2025</span><span class="b">31.4 Tbps sustained for 35 seconds, and 205 Mrps at L7</span></div>
-<div class="tleaf" tabindex="0" data-n="Cloudflare mitigates 935 attacks over 1 Tbps in six months, 805 of them in Q2 alone" data-t="H1 2026" data-d="The terabit attack stops being a news event and becomes a weather condition"><span class="g">&nbsp;&nbsp;&nbsp;&#9492;&#9472; </span><span class="n">H1 2026</span><span class="b">The terabit attack stops being a news event and becomes a weather condition</span></div>
+<div class="tleaf" tabindex="0" data-n="Cloudflare mitigates 935 attacks over 1 Tbps in six months, 805 of them in Q2 alone" data-t="H1 2026" data-d="Terabit attacks are now routine"><span class="g">&nbsp;&nbsp;&nbsp;&#9492;&#9472; </span><span class="n">H1 2026</span><span class="b">Terabit attacks are now routine</span></div>
 </div>
         <aside class="detail tdetail" role="status" aria-live="polite">
           <div class="dl"><span>entry</span><span class="kind"></span></div>
@@ -355,11 +355,11 @@ footer a{color:inherit;border-bottom:1px solid var(--hair)} footer a:hover{color
           mattered.</p>
         </aside>
       </div>
-      <div class="callout hot"><b>The fixes that held shrank the attack surface.</b> monlist was
+      <div class="callout hot"><b>Which fixes held.</b> monlist was
       deleted from ntpd, open recursion was turned off by default, providers filtered 11211/udp, and
       the malformed-packet era ended when the reassembly bugs were patched out of every stack. The
       fixes that did not hold were the ones that tried to out-spend the attacker.</div>
-      <div class="callout"><b>Mirai is the hinge.</b> Releasing the source in September 2016 turned a
+      <div class="callout"><b>Mirai.</b> Releasing the source in September 2016 turned a
       single botnet into a base that everything since has been built on. The device population it
       targets has only grown, and the 2025 records come from its descendants.</div>
     </div>
