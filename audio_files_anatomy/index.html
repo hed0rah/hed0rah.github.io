@@ -132,6 +132,8 @@ a{color:inherit;text-decoration:none}
 .vgm  .tab{background:#7A6A3D} .vgm  .name{color:#5F5230}
 .s98  .tab{background:#6A7A3D} .s98  .name{color:#525F30}
 .cmf  .tab{background:#7A4E3D} .cmf  .name{color:#5F3D30}
+.sndh .tab{background:#4E3D7A} .sndh .name{color:#3D305F}
+.ym   .tab{background:#3D7A6A} .ym   .name{color:#305F52}
 
 footer{margin-top:3rem;padding-top:0.9rem;border-top:1px solid var(--ink);display:flex;justify-content:space-between;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);flex-wrap:wrap;gap:0.5rem}
 footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent);border-color:var(--accent)}
@@ -145,7 +147,7 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
   <div class="head">
     <div class="row">
       <div class="title"><div class="tt"><div class="sysmark">ACIDCAT . FILE FORMAT REFERENCE</div><h1>Audio File Anatomy</h1></div><acidcat-toggle aria-label="Cycle theme: light, dark, acid, house light, house dark"></acidcat-toggle></div>
-      <div class="stamp"><b>51 formats</b>interactive<br>rev 2026.09</div>
+      <div class="stamp"><b>53 formats</b>interactive<br>rev 2026.09</div>
     </div>
     <div class="strip">
       <div>view <b>byte / bit maps</b></div>
@@ -473,6 +475,18 @@ footer a{border-bottom:1px solid var(--hair)} footer a:hover{color:var(--accent)
       <span class="tab"></span>
       <div><div class="name">CMF</div>
         <div class="d">A Standard MIDI track with its OPL2 patches packed in front: Creative's 1991 format for the Sound Blaster, where sixteen bytes of FM registers per instrument stand in for a General MIDI bank.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row sndh" href="sndh-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">SNDH</div>
+        <div class="d">Atari ST music as its own 68000 player: three entry branches, a tag header from SNDH to HDNS, then the code, nearly always inside a Pack-Ice stream that is read from the end backwards.</div></div>
+      <span class="t">byte map</span>
+    </a>
+    <a class="row ym" href="ym-anatomy.html">
+      <span class="tab"></span>
+      <div><div class="name">YM</div>
+        <div class="d">What a player routine wrote to the Atari ST's YM2149, one frame of registers per tick, stored column by column so it packs, inside an LHA level-0 archive whose -lh5- body and CRC are drawn too.</div></div>
       <span class="t">byte map</span>
     </a>
   </div>
